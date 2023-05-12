@@ -37,7 +37,7 @@ of additional steps for some systems; you will need a command shell to run them 
 commands themselves.
 
  - Windows: Windows+R to open "run" window, type "cmd" and hit return.  The first time you run
-   the command, the Windows security system will scan it.
+   `cp2.exe`, the Windows security system will scan it.
  - Linux: use "xterm", "gnome-terminal", or whatever you like.  You must `chmod +x cp2` to make
    it executable.
  - Mac OS: from the Finder, in the Go menu, select Utilities.  Double-click Terminal to launch it.
@@ -54,7 +54,8 @@ The commands are:
  - `AddFile`: simple demo program - [README](Examples/AddFile/README.md)
  - `ListContents`: simple demo program - [README](Examples/ListContents/README.md)
 
-On Windows, the executables will have the usual `.exe` suffix.
+The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
+of viewing in a terminal window.
 
 ## Tested Systems ##
 
