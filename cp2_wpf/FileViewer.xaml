@@ -1,0 +1,222 @@
+﻿<!--
+Copyright 2023 faddenSoft
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_wpf.FileViewer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_wpf"
+        mc:Ignorable="d"
+        Title="File Viewer" Width="800" Height="700" MinWidth="400" MinHeight="300"
+        ResizeMode="CanResizeWithGrip"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        SourceInitialized="Window_SourceInitialized"
+        Closed="Window_Closed">
+
+    <Window.Resources>
+        <!-- Rotate the tabs 90 degrees.  Use with:
+             <TabControl [...] ItemContainerStyle="{StaticResource rotateTabStyle}"/> -->
+        <Style x:Key="rotateTabStyle" TargetType="{x:Type TabItem}">
+            <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <ContentPresenter Content="{TemplateBinding Content}">
+                            <ContentPresenter.LayoutTransform>
+                                <RotateTransform Angle="270"/>
+                            </ContentPresenter.LayoutTransform>
+                        </ContentPresenter>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Padding" Value="3,12"/>
+        </Style>
+
+        <!-- Change the text to bold when the header text's ancestor is enabled.  This style
+        is applied to the TextBlock in a custom <TabItem.Header>. -->
+        <Style x:Key="boldHeaderTextBlock" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=TabItem}}"
+                             Value="True">
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Change the text to bold when the tab is enabled.  This style is applied to a
+        TabItem that uses a simple string Header. -->
+        <Style x:Key="boldHeaderText" TargetType="TabItem">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="True">
+                    <Setter Property="HeaderTemplate">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <TextBlock FontWeight="Bold" Text="{Binding}"/>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="0,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- prev/next buttons; use VS icon lib Backwards / Forwards for nicer arrows? -->
+        <Button Grid.Row="0" Grid.Column="0" Content="&lt;" Height="50" Width="20" FontSize="16"
+                ToolTip="{Binding PrevFileTip}" IsEnabled="{Binding HasPrevFile}"
+                Click="PrevFile_Click"/>
+        <Button Grid.Row="0" Grid.Column="2" Content="&gt;" Height="50" Width="20" FontSize="16"
+                ToolTip="{Binding NextFileTip}" IsEnabled="{Binding HasNextFile}"
+                Click="NextFile_Click"/>
+
+        <TabControl Name="tabControl" Grid.Row="0" Grid.Column="1" TabStripPlacement="Bottom"
+                    SelectionChanged="TabControl_SelectionChanged">
+            <TabItem Name="dataTabItem" Header="Data Fork" Style="{StaticResource boldHeaderText}"
+                     IsEnabled="{Binding IsDataTabEnabled}">
+                <Grid>
+                    <!-- TextBox for simple monospace text -->
+                    <TextBox Name="dataForkTextBox" IsReadOnly="True" BorderThickness="0"
+                             Visibility="{Binding SimpleTextVisibility}"
+                             FontFamily="{StaticResource ViewerMonoFont}" FontSize="13"
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap"
+                             Text="{Binding DataPlainText}"/>
+
+                    <!-- RichTextBox for fancier stuff -->
+                    <RichTextBox Name="dataRichTextBox" IsReadOnly="True" BorderThickness="0"
+                                 Visibility="{Binding FancyTextVisibility}"
+                                 VerticalScrollBarVisibility="Auto">
+                        <RichTextBox.Resources>
+                            <!-- remove excess vertical space between paragraphs -->
+                            <Style TargetType="{x:Type Paragraph}">
+                                <Setter Property="Margin" Value="0"/>
+                            </Style>
+                        </RichTextBox.Resources>
+                    </RichTextBox>
+
+                    <!-- bitmap viewer -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" Visibility="{Binding BitmapVisibility}">
+                        <Border Name="bitmapBox" BorderThickness="0"
+                                HorizontalAlignment="Stretch"
+                                BorderBrush="{DynamicResource {x:Static SystemColors.WindowFrameBrushKey}}"
+                                Background="{StaticResource CheckerBackground}"
+                                SnapsToDevicePixels="True">
+                            <Grid Name="previewGrid">
+                                <!-- set previewImage width/height to multiple of image size -->
+                                <Image Name="previewImage" Source="/Res/RedX.png"
+                                    RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            </Grid>
+                        </Border>
+                    </ScrollViewer>
+
+                </Grid>
+            </TabItem>
+
+            <TabItem Name="rsrcTabItem" Header="Resource Fork" Style="{StaticResource boldHeaderText}"
+                     IsEnabled="{Binding IsRsrcTabEnabled}">
+                <TextBox Name="rsrcForkTextBox" IsReadOnly="True" BorderThickness="0"
+                         FontFamily="{StaticResource ViewerMonoFont}"
+                         VerticalScrollBarVisibility="Auto"
+                         TextWrapping="Wrap"
+                         Text="{Binding RsrcPlainText}"/>
+            </TabItem>
+
+            <TabItem Name="noteTabItem" Header="Notes" Style="{StaticResource boldHeaderText}"
+                     IsEnabled="{Binding IsNoteTabEnabled}">
+                <TextBox Name="notesTextBox" IsReadOnly="True" BorderThickness="0"
+                         Text="{Binding NotePlainText}"/>
+            </TabItem>
+        </TabControl>
+
+        <Grid Grid.Row="1" Grid.Column="1" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- left side: converter selection and additional options -->
+            <StackPanel Grid.Column="0" Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Conversion:" Margin="0,2,4,0"/>
+                    <ComboBox Name="convComboBox" Width="200" HorizontalAlignment="Left"
+                              SelectionChanged="ConvComboBox_SelectionChanged"/>
+                </StackPanel>
+                <GroupBox Header="Options" MinHeight="120" IsEnabled="{Binding IsOptionsBoxEnabled}">
+                    <StackPanel>
+                        <TextBlock Name="noOptions" Text="(none)" HorizontalAlignment="Center"/>
+                        <CheckBox Name="checkBox1" Content="Check 1" Margin="0,2,0,0"/>
+                        <CheckBox Name="checkBox2" Content="Check 2" Margin="0,2,0,0"/>
+                        <CheckBox Name="checkBox3" Content="Check 3" Margin="0,2,0,0"/>
+                        <StackPanel Name="stringInput1" Orientation="Horizontal" Margin="0,2,0,0">
+                            <TextBlock Name="stringInput1_Label" Text="Entry label:" Margin="0,0,8,0"/>
+                            <TextBox Name="stringInput1_Box" Width="70" Text="100"/>
+                        </StackPanel>
+                        <GroupBox Name="multiGroup1" Header="Multi Group">
+                            <StackPanel>
+                                <RadioButton Name="radioButton1_1" GroupName="group1"
+                                             Content="Radio 1" Margin="0,2,0,0"/>
+                                <RadioButton Name="radioButton1_2" GroupName="group1"
+                                             Content="Radio 2" Margin="0,2,0,0"/>
+                                <RadioButton Name="radioButton1_3" GroupName="group1"
+                                             Content="Radio 2" Margin="0,2,0,0"/>
+                                <RadioButton Name="radioButton1_4" GroupName="group1"
+                                             Content="Radio 2" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+
+            <!-- right side: view controls -->
+            <DockPanel Grid.Column="1" LastChildFill="False" Margin="8,0,0,0">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                    <Button Width="90" Content="_Text" Click="SelectPlainText_Click"/>
+                    <Button Width="90" Content="_Hex Dump" Margin="8,0,0,0" Click="SelectHexDump_Click"/>
+                    <Button Width="90" Content="_Best" Margin="8,0,0,0" Click="SelectBest_Click"/>
+                </StackPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="0,4,0,0">
+                    <TextBlock DockPanel.Dock="Left" Text="Graphics zoom:" Margin="0,0,4,0"/>
+                    <TextBox DockPanel.Dock="Right" Width="34" Margin="4,0,0,0"
+                             HorizontalContentAlignment="Center" IsReadOnly="true"
+                             Text="{Binding GraphicsZoomStr, FallbackValue=0.5X}" />
+                    <Slider Name="magnificationSlider"
+                            Minimum="0" Maximum="4" TickFrequency="1"
+                            IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+                            ValueChanged="MagnificationSlider_ValueChanged"/>
+                </DockPanel>
+                <CheckBox DockPanel.Dock="Top" Content="Open _raw (DOS 3.x only)"
+                          IsEnabled="{Binding IsDOSRawEnabled}" IsChecked="{Binding IsDOSRaw}"/>
+
+                <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" LastChildFill="False">
+                    <Button DockPanel.Dock="Left" Width="100" Content="Save as _Defaults"/>
+                    <Button DockPanel.Dock="Right" Width="70" Margin="8,0,0,0"
+                        Content="Done" IsCancel="True"/>
+                    <Button DockPanel.Dock="Right" Content="_Export..." Width="70"/>
+                </DockPanel>
+            </DockPanel>
+        </Grid>
+    </Grid>
+</Window>

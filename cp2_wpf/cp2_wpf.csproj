@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>CiderPress2</AssemblyName>
+    <ApplicationIcon>Res\cp2_app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Res\cp2_app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Res\RedX.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppCommon\AppCommon.csproj" />
+    <ProjectReference Include="..\CommonUtil\CommonUtil.csproj" />
+    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" />
+    <ProjectReference Include="..\DiskArc\DiskArc.csproj" />
+    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" />
+    <ProjectReference Include="..\FileConv\FileConv.csproj" />
+  </ItemGroup>
+
+</Project>

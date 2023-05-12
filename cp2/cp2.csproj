@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <StartupObject>cp2.CP2Main</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppCommon\AppCommon.csproj" />
+    <ProjectReference Include="..\CommonUtil\CommonUtil.csproj" />
+    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" />
+    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" />
+    <ProjectReference Include="..\FileConv\FileConv.csproj" />
+    <ProjectReference Include="..\DiskArc\DiskArc.csproj" />
+  </ItemGroup>
+
+</Project>

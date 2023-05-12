@@ -1,0 +1,38 @@
+# CiderPress II CLI sample config file
+#
+# This file lives in ~/.cp2rc or (for Windows) C:\Users\<user>\_cp2rc .  If
+# in doubt, check the output of "cp2 version".
+#
+# Options are processed from the various sources in the following order.
+# The last value seen is used.
+#  (1) application defaults (shown in "help" output)
+#  (2) configuration file global options
+#  (3) configuration file command-specific options
+#  (4) command line options
+#
+# Blank lines and lines starting with '#' are ignored.
+#
+# Lines of the form "command: --option [--option...]" are processed when
+# the specified command is run.  Any alias for a command may be used here.
+# The options for the "global" pseudo-command are applied to all commands.
+
+# Global settings
+#global: --no-verbose --no-skip-simple
+
+# Command-specific settings
+#catalog: --show-notes --depth=shallow
+
+
+#
+# Converter options for import/export.  The line begins with ">import" or
+# ">export" and is followed by an import/export specification (same as you
+# would pass to the export or import command).
+#
+# If the same converter is configured on more than one line, the last
+# definition is used (they are not merged).
+#
+
+#>import text,char=latin
+
+#>export hgr,bw=true
+#>export text,fakething=123,char=mor
