@@ -9,15 +9,15 @@ archives associated with vintage Apple computers, notably the Apple II line
 and early Macintoshes.
 
 The original CiderPress, first published in 2003, is a Windows-only
-application that could only run on other systems with the user of the WINE
-emulation wrapper.  The code was written in C++, and some of the lower-level
-functions were implemented in portable libraries that were shared with other
-applications.
+application that could only run on other systems with the use of the WINE
+emulation wrapper.  The code was written in C++, using the Windows MFC
+toolkit.  Some of the lower-level functions were implemented in portable
+libraries that were shared with other applications.
 
 CiderPress II is written in C#, targeted at .NET Core 6.  It gives equal
-importance to GUI and command-line interfaces.  This allows it to run on a
-variety of Windows, Mac OS, and Linux systems.  Installing the .NET runtime
-is recommended but not required.
+importance to GUI and command-line interfaces, and can run on a variety of
+Windows, Mac OS, and Linux systems.  Installing the .NET runtime is recommended
+but not required.
 
 For installation instructions, see the [install guide](Install.md).
 
@@ -210,6 +210,8 @@ overall package.
 [ TODO ]
 
 See [the manual](cp2/Manual-cp2.md) for instructions on using the command-line "cp2" tool.
+You will need a command shell for your system, such as Terminal for the Mac, or PowerShell
+for Windows.
 
 ## License ##
 
