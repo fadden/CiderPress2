@@ -22,14 +22,14 @@ or use one of these links to download a recent release:
 
 System      | Self-Cont'd? | Link
 ----------- | ------------ | ----
-Windows x86 | no           | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_win-x86_fd.zip
-Windows x86 | yes          | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_win-x86_sc.zip
-Windows x64 | no           | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_win-x64_fd.zip
-Windows x64 | yes          | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_win-x64_sc.zip
-Mac OS x64  | no           | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_osx-x64_fd.zip
-Mac OS x64  | yes          | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_osx-x64_sc.zip
-Linux x64   | no           | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_linux-x64_fd.zip
-Linux x64   | yes          | https://github.com/fadden/ciderpress2/releases/tag/v0.0.1-dev1/cp2_0.0.1d1_linux-x64_sc.zip
+Windows x86 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x86_fd.zip
+Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x86_sc.zip
+Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_fd.zip
+Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_sc.zip
+Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_fd.zip
+Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_sc.zip
+Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_fd.zip
+Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_sc.zip
 
 Once downloaded, the various commands can be run directly from the download directory.  There
 is no installation process.  The commands are:
