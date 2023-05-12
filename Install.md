@@ -41,6 +41,7 @@ are a couple of additional steps for some systems.
    warning dialog.  This works for the framework-dependent version but not the
    self-contained version; I haven't found a workaround yet.  Alternatively, install the
    dotnet runtime and use the shell script shown at the end of this document.
+   See also [Apple support page](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac).
 
 (I hope to eliminate these steps in the future.)
 
