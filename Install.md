@@ -27,12 +27,24 @@ Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/down
 Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_fd.zip
 Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_sc.zip
 Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_fd.zip
-Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_sc.zip
+Mac OS x64  | yes          | (see below)
 Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_fd.zip
 Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_sc.zip
 
 Once downloaded, the various commands can be run directly from the download directory.  There
-is no installation process.  The commands are:
+are a couple of additional steps for some systems.
+
+ - Linux: you must `chmod 755 cp2` to make it executable.
+ - Mac OS: you must `chmod 755 cp2` to make it executable.  Then you need to "bless" the
+   binary in the Finder, because I'm not a registered Apple developer.  Ctrl+Click on
+   the cp2 file from the Finder, then select "Open", and then "Open" on the security
+   warning dialog.  This works for the framework-dependent version but not the
+   self-contained version; I haven't found a workaround yet.  Alternatively, install the
+   dotnet runtime and use the shell script shown at the end of this document.
+
+(I hope to eliminate these steps in the future.)
+
+The commands are:
 
  - `cp2`: command-line interface
  - `CiderPress2`: GUI interface (currently only in the framework-dependent Windows build)
