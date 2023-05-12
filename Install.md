@@ -27,23 +27,25 @@ Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/down
 Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_fd.zip
 Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_sc.zip
 Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_fd.zip
-Mac OS x64  | yes          | (see below)
+Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_sc.zip
 Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_fd.zip
 Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_sc.zip
 
-Once downloaded, the various commands can be run directly from the download directory.  There
-are a couple of additional steps for some systems.
+Once downloaded, unzip the file somewhere convenient (for Safari on the Mac, it will do the unzip
+for you).  The various commands can be run directly from the download directory.  There are a couple
+of additional steps for some systems; you will need a command shell to run them and to run the
+commands themselves.
 
- - Linux: you must `chmod 755 cp2` to make it executable.
- - Mac OS: you must `chmod 755 cp2` to make it executable.  Then you need to "bless" the
-   binary in the Finder, because I'm not a registered Apple developer.  Ctrl+Click on
-   the cp2 file from the Finder, then select "Open", and then "Open" on the security
-   warning dialog.  This works for the framework-dependent version but not the
-   self-contained version; I haven't found a workaround yet.  Alternatively, install the
-   dotnet runtime and use the shell script shown at the end of this document.
-   See also [Apple support page](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac).
+ - Windows: Windows+R to open "run" window, type "cmd" and hit return.  The first time you run
+   the command, the Windows security system will scan it.
+ - Linux: use "xterm", "gnome-terminal", or whatever you like.  You must `chmod +x cp2` to make
+   it executable.
+ - Mac OS: from the Finder, in the Go menu, select Utilities.  Double-click Terminal to launch it.
+   You must `chmod +x cp2` to make it executable.  Then you need to remove the quarantine
+   attribute from the files, or the system will not allow you to execute them.  In the directory
+   where the files were unpacked, run `xattr -d comp.apple.quarantine *`.
 
-(I hope to eliminate these steps in the future.)
+(I hope to eliminate some of these steps in the future.)
 
 The commands are:
 
