@@ -51,7 +51,7 @@ namespace DiskArc.Multi {
         /// </summary>
         /// <remarks>
         /// <para>This will be switched to read-only if <see cref="AnalayzePartition"/> is able
-        /// to identify the fileystem.</para>
+        /// to identify the filesystem.</para>
         /// <para>The object will be a "sub-chunk" accessor, pulling data from another chunk access
         /// object rather than the disk stream itself.</para>
         /// </remarks>
@@ -160,7 +160,7 @@ namespace DiskArc.Multi {
             FileAnalyzer.AnalyzeFileSystem(mPartChunks, false, mAppHook,
                     out IDiskContents? contents);
             if (contents == null) {
-                // Currently ignoring the possibilty of partitions-within-partitions, unless
+                // Currently ignoring the possibility of partitions-within-partitions, unless
                 // they're embedded in a filesystem.
                 ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
             } else if (contents is IFileSystem) {

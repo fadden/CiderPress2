@@ -277,7 +277,7 @@ namespace DiskArcTests {
                 archive.StartTransaction();
                 try {
                     archive.DeletePart(ulysses, FilePart.RsrcFork);
-                    throw new Exception("Deleted non-existant part");
+                    throw new Exception("Deleted non-existent part");
                 } catch (FileNotFoundException) { /*expected*/ }
 
                 archive.DeletePart(ulysses, FilePart.DataFork);

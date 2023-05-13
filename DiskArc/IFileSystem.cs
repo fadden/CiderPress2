@@ -143,7 +143,7 @@ namespace DiskArc {
         /// </remarks>
         /// <param name="doScan">If true, do a full filesystem scan.  If false, do the
         ///   minimum work necessary to prepare the filesystem.</param>
-        /// <exception cref="DAException">Volume is not recognizeable.</exception>
+        /// <exception cref="DAException">Volume is not recognizable.</exception>
         void PrepareFileAccess(bool doScan);
 
         /// <summary>

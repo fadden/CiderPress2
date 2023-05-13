@@ -21,7 +21,7 @@ The partition map starts in block 1, and continues for a number of blocks specif
 entry.  Each block in the map holds the definition for one partition.  The location of a
 partition is defined in "physical blocks", using the block size specified by the DDR.
 
-The integers in Macintosh structures are usually interpeted as signed values.  Assuming 512-byte
+The integers in Macintosh structures are usually interpreted as signed values.  Assuming 512-byte
 blocks, a signed 32-bit block count allows disks of up to 1TB.  That doubles to 2TB if the count
 is treated as unsigned.
 
@@ -81,7 +81,7 @@ with "Maci" (as in "Macintosh"), the Macintosh Start Manager will perform checks
 of the device driver's boot code.
 
 The documentation does not mention case-sensitivity, but examples exist with altered case.  It's
-best to generate the strings exactly as shown, but perform case-insensitive comparisions when
+best to generate the strings exactly as shown, but perform case-insensitive comparisons when
 looking for specific values.  The character set is also not documented, but it's reasonable
 to assume that Mac OS Roman characters are allowed.
 

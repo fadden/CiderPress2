@@ -150,7 +150,7 @@ Newly-created text files have an empty T/S list, and are only 1 sector long.
 ## Sparse Files ##
 
 For sequential-access files, the file cannot be accessed past the point where
-a T/S entry with T=0 is encounted.  If you try to BLOAD a 'B' file with a
+a T/S entry with T=0 is encountered.  If you try to BLOAD a 'B' file with a
 sparse sector, the load will halt when the sector is reached.  For a
 random-access text file, it's possible to seek to an arbitrary sector, so the
 file's true length is determined by the last nonzero entry in the last

@@ -287,7 +287,7 @@ namespace DiskArc.Arc {
                     throw new ArgumentException("Can't have " + value + " files following");
                 }
                 if (ChangeObject.mHeader.mFilesToFollow != value) {
-                    // We set this for every record when comitting a change, so only raise the
+                    // We set this for every record when committing a change, so only raise the
                     // "dirty" flag if the count changes.
                     ChangeObject.mHeader.mFilesToFollow = (byte)value;
                     ChangeObject.HeaderDirty = true;

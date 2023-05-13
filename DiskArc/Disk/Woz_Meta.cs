@@ -106,7 +106,7 @@ namespace DiskArc.Disk {
             "Swedish", "Russian", "Polish", "Turkish",
             "Arabic", "Thai", "Czech", "Hungarian",
             "Catalan", "Croatian", "Greek", "Hebrew",
-            "Romanian", "Slovak", "Ukranian", "Indonesian",
+            "Romanian", "Slovak", "Ukrainian", "Indonesian",
             "Malay", "Vietnamese", "Other"
         };
         private static readonly string[] sRequiresRam = new string[] {

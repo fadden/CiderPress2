@@ -138,7 +138,7 @@ are encoded with UTF-8.  There is no flag for the archive comment in the EOCD re
 
 The standard doesn't require filenames to be unique, and makes no mention of whether filename
 comparisons should be case-insensitive.  Since ZIP may be used on UNIX systems, case-sensitive
-comparisions should be used when checking for duplicates.
+comparisons should be used when checking for duplicates.
 
 Directories may be stored explicitly, though this is not required.  ZIP records have an "external
 attribute" value that may include an "is directory" flag, e.g. MS-DOS has FILE_ATTRIBUTE_DIRECTORY
