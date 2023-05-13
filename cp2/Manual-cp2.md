@@ -18,6 +18,7 @@ Contents:
    - [Import and Export](#import-and-export)
  - [Resource Fork and Attribute Preservation](#resource-fork-and-attribute-preservation)
    - [Finding Resource Forks](#finding-resource-forks)
+   - [Access Flags](#access-flags)
  - [Metadata](#metadata)
    - [2IMG](#2img)
    - [WOZ](#woz)
@@ -1563,6 +1564,25 @@ When adding files, the process for finding associated resource forks is:
 Mixing and matching is not advisable.  For example, when adding a file called
 "FOO#062000", if NAPS is enabled then no attempt to find a "..namedfork/rsrc"
 entry will be made.
+
+### Access Flags ###
+
+The access flags shown in the `catalog` output are based on the ProDOS
+definition:
+```
+  $01 r - read allowed
+  $02 w - write allowed
+  $04 i - invisible / hidden
+  $08 (reserved)
+  $10 (reserved)
+  $20 b - backup needed
+  $40 n - rename allowed
+  $80 d - delete allowed
+```
+Many filesystems and archive formats only have a notion of "locked" vs.
+"unlocked", where unlocked allows read/write/rename/delete, and "locked"
+only allows reading.  When converting between formats, the value will be set
+based on the value of the "write" flag.
 
 
 ## Metadata ##

@@ -654,22 +654,31 @@ namespace AppCommon {
             // for all formats.  It should be correct for HFS-only formats though, and we're
             // calling here after filesystem entries are fully-formed.
             bool hasHfsTypesOnly = newEntry.HasHFSTypes && !newEntry.HasProDOSTypes;
+            bool gotHfsTypes = (addEnt.HFSFileType != 0 || addEnt.HFSCreator != 0);
+            bool gotProTypes = (addEnt.FileType != 0 || addEnt.AuxType != 0);
 
-            if (hasHfsTypesOnly && addEnt.HFSFileType == 0 && addEnt.HFSCreator == 0 &&
-                    (addEnt.FileType != 0 || addEnt.AuxType != 0)) {
+            if (hasHfsTypesOnly && !gotHfsTypes) {
                 // We're adding files to an HFS disk (or other format that only has HFS types),
-                // but there's no HFS file type information.  We do have ProDOS file type info,
-                // so encode it in the HFS type fields.
-                FileAttribs.ProDOSToHFS(addEnt.FileType, addEnt.AuxType, out uint hfsFileType,
-                    out uint hfsCreator);
-                newEntry.HFSFileType = hfsFileType;
-                newEntry.HFSCreator = hfsCreator;
+                // but there's no HFS file type information.
+                if (gotProTypes) {
+                    // Encode the ProDOS type info in the HFS type fields.
+                    FileAttribs.ProDOSToHFS(addEnt.FileType, addEnt.AuxType, out uint hfsFileType,
+                        out uint hfsCreator);
+                    newEntry.HFSFileType = hfsFileType;
+                    newEntry.HFSCreator = hfsCreator;
+                } else {
+                    // Supply a generic default type.
+                    newEntry.HFSFileType = FileAttribs.TYPE_BINA;       // generic binary file
+                    newEntry.HFSCreator = FileAttribs.CREATOR_CPII;
+                }
             } else {
+                // Either it has the ability to store both ProDOS and HFS, or it's HFS-only but
+                // we have nonzero HFS types values.  Either way, store what we got.
                 newEntry.HFSFileType = addEnt.HFSFileType;
                 newEntry.HFSCreator = addEnt.HFSCreator;
             }
 
-            if (addEnt.FileType == 0 && addEnt.AuxType == 0) {
+            if (!gotProTypes) {
                 // Look for a ProDOS type in the HFS type.  This could be an actual encoding
                 // (creator='pdos') or just a handy conversion (any 'TEXT' becomes TXT).
                 FileAttribs.ProDOSFromHFS(newEntry.HFSFileType, newEntry.HFSCreator,
