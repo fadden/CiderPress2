@@ -9,15 +9,16 @@ Not everyone wants to install the .NET runtime on their system, so CiderPress II
 as both "framework-dependent" and "self-contained" downloads.  The former is much smaller
 (by ~30MB), but the latter will work without having the runtime installed.
 
-If you want to install the runtime, get it here: https://dotnet.microsoft.com/en-us/download .
+If you want to install the .NET runtime, get it here: https://dotnet.microsoft.com/en-us/download .
 Click on "all .NET 6.0 downloads" (or whatever version is current), then in the
 ".NET Runtime" section (or, for Windows, ".NET Desktop Runtime" section), download the
-appropriate item from the Installers column.  (You can also download a more complete package,
-such as the SDK or the ASP.NET Core Runtime, but they're larger.  The downloads in the Binaries
-column will give you a "dotnet" executable and libraries without an installer, which means you'll
-have the runtime but may not have it automatically configured in your shell path.)
+appropriate item from the Installers column.  You can also download a more complete package,
+such as the SDK or the ASP.NET Core Runtime, but they're larger and have things you won't need
+if you just want to run CiderPress II.  The downloads in the Binaries column will give you a
+"dotnet" executable and libraries without an installer, which means you'll have the runtime
+but may not have it automatically configured in your shell path.
 
-You can pick a download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
+You can pick a file to download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
 or use one of these links to download a recent release:
 
 System      | Self-Cont'd? | Link
@@ -31,21 +32,25 @@ Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/down
 Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_fd.zip
 Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_sc.zip
 
-Once downloaded, unzip the file somewhere convenient (for Safari on the Mac, it will do the unzip
-for you).  The various commands can be run directly from the download directory.  There are a couple
-of additional steps for some systems; you will need a command shell to run them and to run the
-commands themselves.
+Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
+for you).  There is no installer; the commands are executed directly from where they were unzipped.
+On some systems an additional step may be necessary.  You will need a command-line shell:
 
- - Windows: Windows+R to open "run" window, type "cmd" and hit return.  The first time you run
-   `cp2.exe`, the Windows security system will scan it.
- - Linux: use "xterm", "gnome-terminal", or whatever you like.  You must `chmod +x cp2` to make
-   it executable.
+ - Windows: hit Windows+R to open the "run" window.  Enter "cmd" for a classic DOS shell or
+   "powershell" for something fancier, and hit return.
+ - Linux: use "xterm", "gnome-terminal", or whatever you like.
  - Mac OS: from the Finder, in the Go menu, select Utilities.  Double-click Terminal to launch it.
-   You must `chmod +x cp2` to make it executable.  Then you need to remove the quarantine
-   attribute from the files, or the system will not allow you to execute them.  In the directory
-   where the files were unpacked, run `xattr -d comp.apple.quarantine *`.
 
-(I hope to eliminate some of these steps in the future.)
+In the shell, change to the directory where the files were unzipped.  Then:
+
+ - Windows: run `./cp2 version`.  You will probably need to click through some security warnings.
+ - Linux: use `chmod +x cp2` to make it executable.  Run `./cp2 version` to confirm it works.
+ - Mac OS: use `chmod +x cp2` to make it executable.  You then need to remove the quarantine
+   flag from the files, or the system will not allow you to execute them.  In the directory
+   where the files were unpacked, run `xattr -d comp.apple.quarantine *`.  Run
+   `./cp2 version` to confirm this was successful.
+
+(The "chmod" step will be eliminated in the next release.)
 
 The commands are:
 
@@ -55,7 +60,8 @@ The commands are:
  - `ListContents`: simple demo program - [README](Examples/ListContents/README.md)
 
 The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
-of viewing in a terminal window.
+of viewing in a terminal window.  The file is in "markdown" format, which is perfectly readable
+as a plain text file.
 
 ## Tested Systems ##
 
