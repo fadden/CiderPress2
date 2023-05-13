@@ -14,7 +14,7 @@ and other low-level bit gymnastics.  It can also record track synchronization, m
 effective for capturing the attributes of copy-protected media.
 
 The format supports 5.25" and 3.5" floppy disks.  It has a number of features intended for use
-by emulators, such as a boot sector format declaration and hardware compability flags.
+by emulators, such as a boot sector format declaration and hardware compatibility flags.
 
 ## File Structure ##
 

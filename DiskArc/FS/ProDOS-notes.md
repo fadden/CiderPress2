@@ -69,7 +69,7 @@ and doesn't have to occupy contiguous blocks.  The blocks-in-use bitmap usually 
 after the volume directory, in block 6, and may occupy up to 16 blocks.
 
 All directories, including the volume directory, begin with previous/next block numbers to
-faciliate bidirectional directory traversal:
+facilitate bidirectional directory traversal:
 ```
 +$00 / 2: previous dir block number
 +$02 / 2: next dir block number

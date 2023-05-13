@@ -38,7 +38,7 @@ namespace AppCommon {
             ResourceForkIgnored,
 
             // File with same name already exists.  Filename in Message.
-            // Options: Ovewrite, Skip, Rename, Cancel
+            // Options: Overwrite, Skip, Rename, Cancel
             FileNameExists,
 
             // Partial pathname exceeded archive storage limits.

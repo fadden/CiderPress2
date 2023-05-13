@@ -67,7 +67,7 @@ Files larger than 2^32 may be stored in gzip, but the size value won't match the
 ### Filenames and Comments ###
 
 The specification mandates ISO-8859-1 characters for filenames and comments.  Filenames must
-be forced to lower case if the original file resides on a case-insensitve filesystem.  (But
+be forced to lower case if the original file resides on a case-insensitive filesystem.  (But
 see notes about the gzip utility, below.)  The end-of-line character in comments is a single
 linefeed (0x0a).
 

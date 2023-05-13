@@ -341,7 +341,7 @@ namespace DiskArc {
         /// Encodes a ProDOS file type in the HFS file type / creator fields.
         /// </summary>
         /// <param name="proType">ProDOS file type.</param>
-        /// <param name="proAux">ProDOS auxillary type.</param>
+        /// <param name="proAux">ProDOS auxiliary type.</param>
         /// <param name="hfsFileType">Result: HFS file type.</param>
         /// <param name="hfsCreator">Result: HFS creator type.</param>
         public static void ProDOSToHFS(byte proType, ushort proAux, out uint hfsFileType,

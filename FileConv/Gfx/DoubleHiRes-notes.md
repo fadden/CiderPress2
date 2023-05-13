@@ -19,7 +19,7 @@ main RAM portion, the second half holds the aux RAM portion.
 
 The screen layout and color generation is described in great detail in Apple //e technote #3.
 
-Summary: pixel data is byte-interleaved between main and auxilliary
+Summary: pixel data is byte-interleaved between main and auxiliary
 8K pages.  Seven pixels of each byte contribute to the image; the high
 bit of each byte is ignored.  The screen can be regarded as 560x192 in
 black & white, or 140x192 with 16 colors per pixel.

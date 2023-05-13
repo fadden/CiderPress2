@@ -720,7 +720,7 @@ Usage: `cp2 import [options] <ext-archive> <import-spec> <file-or-dir> [file-or-
 
 This behaves similarly to `add` in most respects, but instead of adding
 preserved "vintage" files, it converts host files into "vintage" formats
-while adding them.  The conversion performed is specifed by `<import-spec>`,
+while adding them.  The conversion performed is specified by `<import-spec>`,
 and is applied to all files.  See
 [Import and Export](#import-and-export) for details.
 
@@ -786,7 +786,7 @@ Renames and/or moves a file.
 Usage: `cp2 rename [options] <ext-archive> <file-in-archive> [file-in-archive...] <new-name>`
 
 For file archives, this can only be used to rename a single entry.
-Recursion does not apply.  Pathname separator chararacters ('/' or ':')
+Recursion does not apply.  Pathname separator characters ('/' or ':')
 in `<new-name>` are automatically converted to the appropriate character.
 
 For disk images with hierarchical filesystems, this can move files between

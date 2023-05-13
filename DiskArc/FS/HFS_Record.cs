@@ -161,7 +161,7 @@ namespace DiskArc.FS {
         }
 
         /// <summary>
-        /// Interface to faciliate key comparisons.  The comparison function is different for
+        /// Interface to facilitate key comparisons.  The comparison function is different for
         /// each tree.
         /// </summary>
         public interface IKey {
