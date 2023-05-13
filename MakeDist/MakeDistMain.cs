@@ -40,44 +40,74 @@ namespace MakeDist {
         /// </summary>
         internal static void Main(string[] args) {
             Environment.ExitCode = 2;       // use code 2 for usage problems
+            bool isDebugBuild = false;
 
             if (args.Length == 0) {
                 Usage();
                 return;
             }
-            string cmd = args[0];
+            // First arg is command.
+            string cmdName = args[0];
 
-            if (cmd == "build") {
-                bool isDebugBuild = false;
-                if (args.Length < 1 || args.Length > 2) {
-                    Usage();
-                    return;
-                }
-                string versionTag = GlobalAppVersion.AppVersion.GetBuildTag();
-
-                if (args.Length == 2) {
-                    if (args[1] == "--debug") {
+            // Process long options.
+            int argStart = 1;
+            while (argStart < args.Length && args[argStart].StartsWith("--")) {
+                string arg = args[argStart++];
+                switch (arg) {
+                    case "--debug":
                         isDebugBuild = true;
-                    } else if (args[1] == "--release") {
+                        break;
+                    case "--release":
                         isDebugBuild = false;
-                    } else {
+                        break;
+                    default:
                         Usage();
                         return;
+                }
+            }
+
+            // Copy remaining args to new array.
+            string[] cmdArgs = new string[args.Length - argStart];
+            for (int i = 0; i < cmdArgs.Length; i++) {
+                cmdArgs[i] = args[argStart + i];
+            }
+
+            switch (cmdName) {
+                case "build": {
+                        if (cmdArgs.Length != 0) {
+                            Usage();
+                            break;
+                        }
+                        string versionTag = GlobalAppVersion.AppVersion.GetBuildTag();
+
+                        // TODO: take RIDs as command-line argument list, with "std" doing default set
+                        bool result = Build.ExecBuild(versionTag, sStdRIDs, isDebugBuild);
+                        Environment.ExitCode = result ? 0 : 1;
                     }
-                }
-
-                // TODO: take RIDs as command-line argument list, with "std" doing default set
-
-                bool result = Build.ExecBuild(versionTag, sStdRIDs, isDebugBuild);
-                Environment.ExitCode = result ? 0 : 1;
-                if (!result) {
-                    Console.Error.WriteLine("FAILED");
-                }
-            } else if (cmd == "clobber") {
-                Clobber();
-                Environment.ExitCode = 0;
-            } else {
-                Usage();
+                    break;
+                case "set-exec": {
+                        if (cmdArgs.Length < 2) {
+                            Usage();
+                            break;
+                        }
+                        bool result = SetExec.HandleSetExec(cmdArgs, true);
+                        Environment.ExitCode = result ? 0 : 1;
+                    }
+                    break;
+                case "clobber":
+                    if (cmdArgs.Length != 0) {
+                        Usage();
+                        break;
+                    }
+                    Clobber();
+                    Environment.ExitCode = 0;
+                    break;
+                default:
+                    Usage();
+                    break;
+            }
+            if (Environment.ExitCode == 1) {
+                Console.Error.WriteLine("Failed");
             }
         }
 
@@ -85,7 +115,8 @@ namespace MakeDist {
         /// Prints general usage summary.
         /// </summary>
         private static void Usage() {
-            Console.WriteLine("Usage: " + APP_NAME + " build version-tag [--debug|--release]");
+            Console.WriteLine("Usage: " + APP_NAME + " build [--debug|--release]");
+            Console.WriteLine("       " + APP_NAME + " set-exec <file.zip> <entry-in-archive...>");
             Console.WriteLine("       " + APP_NAME + " clobber");
         }
 

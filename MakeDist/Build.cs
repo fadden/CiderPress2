@@ -53,7 +53,7 @@ namespace MakeDist {
                 } else {
                     // Can't continue.
                     Console.WriteLine("Cancelled");
-                    return false;
+                    return true;
                 }
             }
 
@@ -152,7 +152,7 @@ namespace MakeDist {
         private static bool Package(string versionTag, string rootPath, string dir) {
             Console.WriteLine("Packaging " + Path.GetFileName(dir) + "...");
 
-            // Copy the support files into each distribution.
+            // Copy the support files into each distribution directory.
             foreach (string fileName in sDistFiles) {
                 string srcPath = Path.Combine(rootPath, fileName);
                 string dstPath = Path.Combine(dir, Path.GetFileName(fileName));
@@ -165,9 +165,22 @@ namespace MakeDist {
             //   CompressionLevel.Optimal      : 15.8 sec, output 128592 KB
             //   CompressionLevel.SmallestSize : 26.4 sec, output 128020 KB
             // Improvement of 0.5%.
-            ZipFile.CreateFromDirectory(dir,
-                "cp2_" + versionTag + "_" + Path.GetFileName(dir) + ".zip",
-                CompressionLevel.Optimal, false);
+            string zipPath = "cp2_" + versionTag + "_" + Path.GetFileName(dir) + ".zip";
+            ZipFile.CreateFromDirectory(dir, zipPath, CompressionLevel.Optimal, false);
+
+            // Set the "exec" permission flags for non-Windows builds.
+            if (!Path.GetFileName(dir).StartsWith("win-")) {
+                string[] args = new string[sTargets.Length + 1];
+                args[0] = zipPath;
+                for (int i = 0; i < sTargets.Length; i++) {
+                    args[i + 1] = Path.GetFileName(sTargets[i]);
+                }
+
+                if (!SetExec.HandleSetExec(args, true)) {
+                    Console.Error.WriteLine("set-exec failed");
+                    return false;
+                }
+            }
             return true;
         }
     }

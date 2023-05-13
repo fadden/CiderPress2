@@ -4,6 +4,7 @@ This is a command-line tool for creating CiderPress II distributions.  It builds
 components for multiple platforms and packages them up.
 
 Usage: `MakeDist build [--debug|--release]`
+       `MakeDist set-exec <file.zip> <entry-in-archive...>`
        `MakeDist clobber`
 
 ## Build ##
@@ -38,6 +39,15 @@ short form of the version number, obtained from AppCommon.GlobalAppVersion.  `ri
 runtime ID.  `fd` indicates framework-dependent, `sc` indicates self-contained.  Debug builds get
 an additional `_debug`.  This naming convention allows the download files for all versions and
 all RIDs to sit in the same directory, and sort nicely.
+
+## Set-Exec ##
+
+This marks entries in a ZIP file as executable.  It does this by changing the platform ID in
+the "version made by" field from 0x00 (MS-DOS) to 0x03 (UNIX), and setting the high 16 bits
+of the "external file attributes" field to UNIX permissions with "execute" set (0755).
+
+If the command is unable to find all named entries, it will abort the operation without modifying
+the archive.
 
 ## Clobber ##
 

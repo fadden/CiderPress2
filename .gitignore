@@ -8,7 +8,9 @@ DIST/
 TestData/_private
 TestTmp/
 _EXTRA/
+# These exist to provide command-line args when debugging.  No need to check in.
 cp2/Properties
+MakeDist/Properties
 
 # User-specific files
 *.rsuser

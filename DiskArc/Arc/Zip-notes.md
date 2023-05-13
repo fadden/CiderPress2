@@ -4,6 +4,7 @@
 
 - APPNOTE.TXT (http://www.pkware.com/appnote)
 - https://en.wikipedia.org/wiki/ZIP_(file_format)
+- https://libzip.org/specifications/extrafld.txt
 
 ## General ##
 
@@ -42,8 +43,8 @@ All integer values are unsigned, stored in little-endian order.
 Local file header:
 ```
 +$00 / 4: signature (0x50 0x4b 0x03 0x04)
-+$04 / 2: version needed to extract
-+$06 / 2: flags
++$04 / 2: version needed to extract (X.Y version number * 10)
++$06 / 2: general-purpose bit flags
 +$08 / 2: compression method
 +$0a / 2: modification time
 +$0c / 2: modification date
@@ -76,9 +77,9 @@ The central directory comes after the data for the last file.  The central direc
 header is a superset of the local file header, containing:
 ```
 +$00 / 4: signature (0x50 0x4b 0x01 0x02)
-+$04 / 2: version made by
-+$06 / 2: version needed to extract
-+$08 / 2: flags
++$04 / 2: version made by (high byte is platform, low byte is X.Y version number * 10)
++$06 / 2: version needed to extract (X.Y version number * 10)
++$08 / 2: general-purpose bit flags
 +$0a / 2: compression method
 +$0c / 2: modification time
 +$0e / 2: modification date
@@ -90,7 +91,7 @@ header is a superset of the local file header, containing:
 +$20 / 2: file comment length
 +$22 / 2: disk number where file starts
 +$24 / 2: internal file attributes
-+$26 / 2: external file attributes
++$26 / 4: external file attributes
 +$2a / 4: relative file offset of local file header
 +$2e /nn: filename data
 +$xx /nn: extra field data
@@ -100,6 +101,14 @@ header is a superset of the local file header, containing:
 Generally speaking, the values of fields in the local and central headers will be identical.  The
 central directory CRC and size fields will be set correctly even if the archive was created by
 writing to a stream (which means the data descriptor can generally be ignored).
+
+The "relative" file offsets are actually absolute, from the start of the file, unless the archive
+spans multiple floppy disks.
+
+The meaning of the external file attributes field depends on the system specified by the
+"version made by" field.  For example, the low 8 bits typically hold MS-DOS attributes, while
+entries created by UNIX store the file attributes in the upper 16 bits (see
+https://unix.stackexchange.com/a/14727/572091).
 
 The end-of-central-directory record (EOCD) appears at the end of the archive:
 ```
@@ -156,13 +165,19 @@ where:
 
 Time values are in local time.
 
-## Extensible Data Fields ##
+### Extensible Data Fields ###
 
 It is possible to store OS-specific and application-specific data in the "extra" field,
 allowing metadata like file types and access permissions to be kept.  The blocks of data are
-identified 16-bit tags that are defined by the ZIP specification maintainer.
+identified by 16-bit tags that are defined by the ZIP specification maintainer.
+```
++$00 / 2: header ID
++$02 / 2: length
++$04 / n: data
+```
 
-As of specification 6.3.10, there are no definitions for HFS or ProDOS.  There are a few
+For example, 0x5455 holds extended timestamp information, and 0x7875 has Info-ZIP UNIX UID/GID
+values.  As of specification 6.3.10, there are no definitions for HFS or ProDOS.  There are a few
 definitions for Macintosh programs that could be useful for HFS files.
 
 ZIP archives generally hold files archived from a host filesystem, rather than files copied
