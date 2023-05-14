@@ -381,8 +381,12 @@ Generates a detailed listing of the contents of an archive.
 
 Usage: `cp2 catalog [options] <ext-archive>`
 
+The "type" and "auxtyp" columns will show either the ProDOS file type and
+auxiliary type, or the HFS file type and creator, depending on which seems
+to be the most relevant.  To see both, use the `--wide` option.
+
 If `--mac-zip` is enabled, the `__MACOSX/.../._filename` entries will be
-merged before display.
+merged with the paired entry, and displayed as a single line.
 
 The `--raw` option will change the display to show the "raw" file size.  This
 is only meaningful on DOS 3.x disks, and primarily affects T/I/A/B files.
@@ -1475,6 +1479,9 @@ resource forks, but occasionally causes trouble.  For example "GSHK" and
 having files with identical names and different preservation methods in the
 same directory.
 
+When files are added without file type information, default types are
+provided.  For ProDOS this is NON/$0000, for HFS BINA/CPII (generic binary).
+
 #### None (default) ####
 
 Resource forks, file types, and access flags are discarded.  File dates will
@@ -1625,7 +1632,7 @@ info:synchronized        | ro  | boolean
 info:cleaned             | ro  | boolean
 info:creator             | ro  | string
 info:disk_sides          | ro  | numeric
-info:boot_sector_format  | ro  | numeric
+info:boot_sector_format  | r/w | numeric
 info:optimal_bit_timing  | ro  | numeric
 info:compatible_hardware | r/w | 16-bit collection of bit flags
 info:required_ram        | r/w | 16-bit value, in KiB

@@ -2,42 +2,30 @@
 
 ### **This is pre-alpha software.  Use at your own risk.**
 
-[Features](#features) - [Getting Started](#getting-started) - [License](#license)
+[Features](#features) - [Getting Started](#getting-started) - [Source/License](#source-code-and-license)
 
-CiderPress II is a software tool for working with disk images and file
-archives associated with vintage Apple computers, notably the Apple II line
-and early Macintoshes.
+CiderPress II is a software tool for working with disk images and file archives associated
+with vintage Apple computers, notably the Apple II line and early Macintoshes.  It runs on
+modern desktop and embedded systems.
 
-The original CiderPress, first published in 2003, is a Windows-only
-application that could only run on other systems with the use of the WINE
-emulation wrapper.  The code was written in C++, using the Windows MFC
-toolkit.  Some of the lower-level functions were implemented in portable
-libraries that were shared with other applications.
-
-CiderPress II is written in C#, targeted at .NET Core 6.  It gives equal
-importance to GUI and command-line interfaces, and can run on a variety of
-Windows, Mac OS, and Linux systems.  Installing the .NET runtime is recommended
-but not required.
+The program allows you to perform various operations on files stored in disk images and file
+archives: list, add, extract, import, export, copy, rename, move, delete, test, print, and
+set attributes.  You can create new disk images in various formats and sizes, get metadata,
+set metadata, copy blocks or sectors, edit blocks or sectors, and view raw tracks.
 
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
  - Video demo of v0.1 here: https://www.youtube.com/watch?v=_jDVdC6-eoA
  - The command-line tool is alpha quality.  The command set is feature-complete for v1.0, though
-   support for some key formats is missing.  See [the manual](cp2/Manual-cp2.md) for usage info.
+   support for some key formats is missing.  See [the manual](cp2/Manual-cp2.md) for a thorough
+   description of commands and features.
  - The GUI tool is still under development, and should not be used by anyone;
    see notes in [GUI Tool Development](#gui-tool-development).
 
 ## Features ##
 
 The goal is to have all features available from both the command line and the GUI.
-
-The command line utility allows you to perform various operations on files stored in disk images
-and file archives: list, add, extract, import, export, copy, rename, move, delete, test, print,
-set attributes.  For disk image files, it allows you to create them, get metadata, set metadata,
-copy blocks or sectors, edit blocks or sectors, view raw tracks.
-
-The GUI utility is still under development.
 
 File archive support:
 
@@ -53,11 +41,12 @@ Stuffit (vintage)   | .sit                     | not yet
 ZIP                 | .zip                     | full support, including __MACOSX handling
 
 "Add/extract" means that you can add or extract files to and from the format, e.g. adding an
-AppleDouble file to an HFS disk image results in creating a single new file with a resource fork
-and file type information from the ADF header.  AppleSingle files can be read like other file
-archives, but are only created as part of extracting files from something else.
+AppleDouble file pair to an HFS disk image results in a single new file with a resource fork
+and file type information.  AppleSingle files can be read like other file archives, but are
+only created as part of extracting files from something else.
 
-The __MACOSX support in ZIP allows files to be stored with resource forks and HFS file types.
+The __MACOSX support allows files in ZIP archives to be stored with resource forks and HFS
+file types.
 
 Compression modes supported are LZW/1 and LZW/2 for NuFX, Squeeze for Binary ][, and deflate for
 ZIP/gzip.
@@ -105,7 +94,7 @@ Early Mac 'TS' Format       | read/write
 
 Creation of multi-volume disk images is not yet supported.
 
-File conversion:
+File conversion (export):
 
 Type                         | Status
 ---------------------------- | ------
@@ -125,12 +114,27 @@ Teach Document               | most formatting supported
 Text conversions can treat the source as low/high ASCII, Mac OS Roman, or ISO Latin-1.
 Hex dump skips over sparse sections of files.
 
- - Text output is .TXT, UTF-8 with host-specific end-of-line markers.
- - Formatted text output is .RTF (Rich Text Format).
- - Graphical output is .PNG (Portable Network Graphic).
- - Cell grid output is .CSV (Comma-Separated Value).
+ - Simple text is output as .TXT, using UTF-8 with host-specific end-of-line markers.
+ - Formatted text is output as .RTF (Rich Text Format).
+ - Bitmap graphics are output as .PNG (Portable Network Graphic).
+ - Cell grid data is output as .CSV (Comma-Separated Value).
+
+ File conversion (import):
+
+Type                         | Status
+---------------------------- | ------
+Plain text                   | convert EOL, character set
+Applesoft BASIC              | plain text to tokenized form
 
 ### Changes from CiderPress ###
+
+The original CiderPress, first published in 2003, is a Windows-only application that can be
+run on other platforms with the use of the WINE emulation wrapper.  The code was written in C++,
+using the Windows MFC toolkit.  Some of the lower-level functions were implemented in portable
+libraries that were shared with other applications.
+
+CiderPress II is written in C#, targeted at .NET Core 6.  It gives equal importance to GUI and
+command-line interfaces, and can run on a variety of Windows, Mac OS, and Linux systems.
 
 Besides new features like a command-line interface and WOZ disk image support, there are a
 few more subtle changes:
@@ -169,7 +173,7 @@ Under the hood there are many significant changes, such as:
    easy to integrate NuFX LZW or Squeeze compression into code that doesn't want the rest of the
    NuFX archive handling.
  - The file conversion library returns platform-agnostic objects that can be converted to
-   PNG or RTF, rather than returning Windows-specific bitmaps and pre-formatted RTF.
+   TXT/RTF/PNG/CSV, rather than returning Windows-specific bitmaps and pre-formatted RTF.
 
 ### GUI Tool Development ###
 
@@ -213,9 +217,9 @@ See [the manual](cp2/Manual-cp2.md) for instructions on using the command-line "
 You will need a command shell for your system, such as Terminal for the Mac, or PowerShell
 for Windows.
 
-## License ##
+## Source Code and License ##
 
-See [Source Notes](SourceNotes.md).
+See [Source Notes](SourceNotes.md) for a brief tour of the source tree.
 
 The source code is licensed under Apache 2.0
 (http://www.apache.org/licenses/LICENSE-2.0), which makes it free for use in

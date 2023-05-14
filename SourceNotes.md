@@ -11,6 +11,10 @@ When installing Visual Studio, be sure to include ".NET Desktop Development".
 See [MakeDist](MakeDist/README.md) for build and packaging.  You will need a
 full .NET SDK installation to do builds (with `dotnet build`).
 
+The source files that deal with disk and file formats have accompanying
+"-notes" documents that describes the format in some detail, and has
+references to primary sources.
+
 ## Projects ##
 
 Libraries:
