@@ -24,7 +24,7 @@ appended ".QQ" to the filename.
 
 The run-length encoder will transform any run of more than two bytes to:
 
-  <value> <delim> <count>
+  `<value> <delim> <count>`
 
 Where 0x90 is the chosen delimiter.  If the delimiter itself appears in the file, it will be
 escaped by following it with a count of zero.  A run of delimiters is a worst-case scenario,
