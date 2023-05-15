@@ -85,24 +85,28 @@ namespace DiskArcTests {
             using (IDiskImage disk = Woz.CreateDisk35(diskStream, MediaKind.GCR_DSDD35, 4,
                     codec, appHook)) {
                 Woz wdisk = (Woz)disk;
-                if (wdisk.Metadata != null) {
+                if (wdisk.HasMeta) {
                     throw new Exception("Non-null metadata");
                 }
                 wdisk.AddMETA();
-                Woz_Meta? metadata = wdisk.Metadata;
-                if (metadata == null) {
+                if (!wdisk.HasMeta) {
                     throw new Exception("Metadata not found");
                 }
                 Helper.ExpectBool(true, wdisk.IsDirty, "not dirty after adding META");
                 disk.Flush();
                 Helper.ExpectBool(false, wdisk.IsDirty, "still dirty after META flush");
 
-                metadata.SetValue("custom_key", "superior_value!");
+                wdisk.SetMetaValue("meta:custom_key", "superior_value!");
                 Helper.ExpectBool(true, wdisk.IsDirty, "not dirty after adding meta item");
                 disk.Flush();
                 Helper.ExpectBool(false, wdisk.IsDirty, "still dirty after item flush");
 
-                metadata.SetValue("language", "English");
+                try {
+                    wdisk.SetMetaValue("meta:language", "Klingon");
+                    throw new Exception("Allowed to set invalid language");
+                } catch (ArgumentException) { /*expected*/ }
+
+                wdisk.SetMetaValue("meta:language", "English");
                 // Let the Dispose do the final update.
             }
 
@@ -110,20 +114,21 @@ namespace DiskArcTests {
 
             using (IDiskImage disk = Woz.OpenDisk(diskStream, appHook)) {
                 Woz wdisk = (Woz)disk;
-                Woz_Meta? metadata = wdisk.Metadata;
-                if (metadata == null) {
+                if (!wdisk.HasMeta) {
                     throw new Exception("No metadata");
                 }
-                Helper.ExpectString("superior_value!", metadata.GetValue("custom_key"),
+                Helper.ExpectString("superior_value!", wdisk.GetMetaValue("meta:custom_key", false),
                     "incorrect custom key value");
-                Helper.ExpectString("English", metadata.GetValue("language"), "incorrect language");
+                Helper.ExpectString("English", wdisk.GetMetaValue("meta:language", false),
+                    "incorrect language");
 
                 disk.AnalyzeDisk();
 
                 // Set values in INFO.
-                Woz_Info info = wdisk.Info;
-                info.BootSectorFormat = 3;
-                info.WriteProtected = 1;
+                Helper.ExpectBool(false, wdisk.IsDirty, "dirty before INFO set");
+                wdisk.SetMetaValue("info:boot_sector_format", "3");
+                wdisk.SetMetaValue("info:write_protected", "true");
+                Helper.ExpectBool(true, wdisk.IsDirty, "not dirty after INFO set");
 
                 // Create a filesystem and add a file.
                 disk.FormatDisk(FileSystemType.ProDOS, "Flusher", 0, true, appHook);
@@ -160,9 +165,10 @@ namespace DiskArcTests {
             // They match; see if they're correct.
             using (IDiskImage disk = Woz.OpenDisk(cloneStream, appHook)) {
                 Woz wdisk = (Woz)disk;
-                Woz_Info info = wdisk.Info;
-                Helper.ExpectByte(3, info.BootSectorFormat, "info bsf not set");
-                Helper.ExpectByte(1, info.WriteProtected, "info wp not set");
+                Helper.ExpectString("3", wdisk.GetMetaValue("info:boot_sector_format", false),
+                    "info bsf not set");
+                Helper.ExpectString("true", wdisk.GetMetaValue("info:write_protected", false),
+                    "info wp not set");
 
                 disk.AnalyzeDisk();
                 IFileSystem fs = (IFileSystem)disk.Contents!;

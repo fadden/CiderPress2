@@ -21,6 +21,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 
 using CommonUtil;
+using static DiskArc.IMetadata;
 
 namespace DiskArc.Disk {
     /// <summary>
@@ -29,11 +30,9 @@ namespace DiskArc.Disk {
     /// <remarks>
     /// <para>The META chunk is the same in WOZ v1 and v2.  Duplicate keys are not allowed.  The
     /// order in which entries are stored doesn't matter.</para>
-    /// <para>Metadata in a read-only disk image can be edited, but the changes will be
-    /// discarded.</para>
     /// <para>The enumeration provides the keys for all entries.</para>
     /// </remarks>
-    public class Woz_Meta : IEnumerable<string> {
+    public class Woz_Meta {
         public const char NV_SEP_CHAR = '\t';           // tab (0x09)
         public const char ENTRY_SEP_CHAR = '\n';        // linefeed (0x0a)
 
@@ -83,22 +82,29 @@ namespace DiskArc.Disk {
         public const string SIDE_KEY = "side";
         public const string IMAGE_DATE_KEY = "image_date";
 
-        private static readonly string[] sStandardEntries = new string[] {
-            "title",
-            "subtitle",
-            "publisher",
-            "developer",
-            "copyright",
-            "version",
-            LANGUAGE_KEY,
-            REQUIRES_RAM_KEY,
-            REQUIRES_MACHINE_KEY,
-            "notes",
-            SIDE_KEY,
-            "side_name",
-            "contributor",
-            IMAGE_DATE_KEY,
+        /// <summary>
+        /// Standard keys, defined by the WOZ specification.  All WOZ files with a META chunk
+        /// are expected to have these.  They don't have to appear in a specific order.  Some
+        /// fields have a restricted set of values or a rigidly defined format.
+        /// </summary>
+        internal static readonly MetaEntry[] sStandardEntries = new MetaEntry[] {
+            new MetaEntry("title", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("subtitle", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("publisher", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("developer", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("copyright", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("version", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry(LANGUAGE_KEY, MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry(REQUIRES_RAM_KEY, MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry(REQUIRES_MACHINE_KEY, MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("notes", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry(SIDE_KEY, MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("side_name", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("contributor", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry(IMAGE_DATE_KEY, MetaEntry.ValType.String, canEdit:true),
         };
+
+        // Valid values for specific keys.
         private static readonly string[] sLanguage = new string[] {
             "English", "Spanish", "French", "German",
             "Chinese", "Japanese", "Italian", "Dutch",
@@ -122,13 +128,6 @@ namespace DiskArc.Disk {
         };
 
         /// <summary>
-        /// Standard metadata keys.  All WOZ files with a META chunk are expected to have these.
-        /// They don't have to appear in a specific order.  Some fields have a restricted set
-        /// of values or a rigidly defined format.
-        /// </summary>
-        public static string[] StandardEntries => sStandardEntries;
-
-        /// <summary>
         /// True if modifications should be blocked.
         /// </summary>
         public bool IsReadOnly { get; internal set; }
@@ -143,12 +142,6 @@ namespace DiskArc.Disk {
         /// </summary>
         private Dictionary<string, string> mEntries = new Dictionary<string, string>();
 
-        public IEnumerator<string> GetEnumerator() {
-            return mEntries.Keys.GetEnumerator();
-        }
-        IEnumerator IEnumerable.GetEnumerator() {
-            return mEntries.Keys.GetEnumerator();
-        }
 
         /// <summary>
         /// Private constructor.
@@ -161,8 +154,8 @@ namespace DiskArc.Disk {
         public static Woz_Meta CreateMETA() {
             Woz_Meta metadata = new Woz_Meta();
             // Create standard entries.  Leave them all blank except for image_date.
-            foreach (string key in sStandardEntries) {
-                metadata.mEntries.Add(key, string.Empty);
+            foreach (MetaEntry met in sStandardEntries) {
+                metadata.mEntries.Add(met.Key, string.Empty);
             }
             metadata.mEntries[IMAGE_DATE_KEY] =
                 XmlConvert.ToString(DateTime.Now, XmlDateTimeSerializationMode.Utc);
@@ -186,9 +179,20 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Makes a copy of the key/value dictionary.
+        /// </summary>
+        internal Dictionary<string, string> GetEntryDict() {
+            Dictionary<string, string> newDict = new Dictionary<string, string>(mEntries.Count);
+            foreach (KeyValuePair<string, string> entry in mEntries) {
+                newDict.Add(entry.Key, entry.Value);
+            }
+            return newDict;
+        }
+
+        /// <summary>
         /// Retrieves the value for the specified key.
         /// </summary>
-        /// <param name="key">Key of entry to get the value of</param>
+        /// <param name="key">Key of entry to get the value of.</param>
         /// <returns>Value, or null if the key was not found.</returns>
         public string? GetValue(string key) {
             if (mEntries.TryGetValue(key, out string? value)) {
@@ -292,21 +296,34 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Deletes the specified key from the metadata set.
+        /// Deletes the specified entry from the metadata set.
         /// </summary>
         /// <param name="key">Key of entry to remove.</param>
-        /// <returns>True on success, false if the key wasn't found.</returns>
-        /// <exception cref="ArgumentException">Key is a standard key.</exception>
-        public bool DeleteValue(string key) {
-            // Don't validate key -- we want to be able to delete bad keys.
-            if (IsInList(key, sStandardEntries)) {
-                throw new ArgumentException("Cannot delete standard key: " + key);
+        /// <returns>True on success, false if the key wasn't found or cannot be removed.</returns>
+        public bool DeleteEntry(string key) {
+            // Don't validate key name -- we want to be able to delete bad keys.
+            if (IsStandardKey(key)) {
+                return false;
             }
             bool didRemove = mEntries.Remove(key);
             if (didRemove) {
                 IsDirty = true;
             }
             return didRemove;
+        }
+
+        /// <summary>
+        /// Determines whether a string is in the standard key set.  Case-sensitive.
+        /// </summary>
+        /// <param name="str">String to search for.</param>
+        /// <returns>True if the value was found, false if not.</returns>
+        private static bool IsStandardKey(string key) {
+            foreach (MetaEntry met in sStandardEntries) {
+                if (met.Key == key) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -383,9 +400,15 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Generates the serialized form of the metadata.
         /// </summary>
+        /// <remarks>
+        /// No attempt is made to impose a particular order of keys.  The specification says
+        /// that key order doesn't matter, and the examples in the standard set have keys
+        /// in various orders (so whatever generated them is probably also using a hash table
+        /// with undefined ordering).
+        /// </remarks>
         /// <param name="offset">Result: offset of start of data within buffer.</param>
         /// <param name="length">Result: length of data.</param>
-        /// <returns>Byte array with serialized data.</returns>
+        /// <returns>Byte array with serialized data (may be over-sized).</returns>
         public byte[] Serialize(out int offset, out int length) {
             MemoryStream stream = new MemoryStream();
             foreach (KeyValuePair<string, string> kvp in mEntries) {
@@ -425,7 +448,7 @@ namespace DiskArc.Disk {
             DebugExpect(meta, "publisher", UNI_TEST_STR);
 
             // Delete an entry.
-            meta.DeleteValue("key1");
+            meta.DeleteEntry("key1");
             DebugExpect(meta, "key1", null);
 
             // Try some generally bad arguments.
@@ -468,7 +491,7 @@ namespace DiskArc.Disk {
             meta.SetValue(LANGUAGE_KEY, "English");
             meta.SetValue(LANGUAGE_KEY, string.Empty);
             try {
-                meta.DeleteValue(LANGUAGE_KEY);
+                meta.DeleteEntry(LANGUAGE_KEY);
                 throw new Exception("standard key deletion allowed");
             } catch (ArgumentException) { /*expected*/ }
             try {

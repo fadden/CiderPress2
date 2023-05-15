@@ -21,6 +21,7 @@ using CommonUtil;
 using DiskArc.Multi;
 using static DiskArc.Defs;
 using static DiskArc.IDiskImage;
+using static DiskArc.IMetadata;
 
 // TODO: add Get/SetTagBytes(uint block, byte[], int) calls to manage tag bytes on 800KB volumes.
 //   Could be useful in conjunction with DiskCopy.  Probably not important unless we start
@@ -63,7 +64,7 @@ namespace DiskArc.Disk {
     /// data using the timing value in the INFO block.  The presence of flux data will force
     /// the disk image into read-only mode.</para>
     /// </remarks>
-    public class Woz : IDiskImage, INibbleDataAccess {
+    public class Woz : IDiskImage, INibbleDataAccess, IMetadata {
         // 3.5" disk images are about 1.2MB.  As flux images they'd be about 6x(?) larger.
         // Figure the max size for an 800KB floppy is 7.2MB.  Set the "max reasonable" value
         // to 16MB so we have lots of headroom.
@@ -121,7 +122,7 @@ namespace DiskArc.Disk {
                     return true;
                 }
                 // Metadata changes?
-                if (Metadata != null && Metadata.IsDirty) {
+                if (MetaChunk != null && MetaChunk.IsDirty) {
                     return true;
                 }
                 // Info chunk changes?
@@ -132,7 +133,7 @@ namespace DiskArc.Disk {
         public bool IsModified {
             get {
                 // Capture any dirty flags.
-                if (mBufferModFlag.IsSet || (Metadata != null && Metadata.IsDirty) ||
+                if (mBufferModFlag.IsSet || (MetaChunk != null && MetaChunk.IsDirty) ||
                         Info.IsDirty) {
                     mIsModified = true;
                 }
@@ -175,8 +176,16 @@ namespace DiskArc.Disk {
         //
 
         public enum WozKind { Unknown = 0, Woz1 = 1, Woz2 = 2 }    // file revision
+
+        /// <summary>
+        /// File revision (1 or 2).  Determines how some of the chunks are parsed.
+        /// </summary>
         public WozKind FileRevision { get; private set; } = WozKind.Unknown;
 
+        /// <summary>
+        /// True if the image has a META chunk.
+        /// </summary>
+        public bool HasMeta { get { return MetaChunk != null; } }
 
         /// <summary>
         /// True if the image has one or more FLUX track entries.
@@ -186,13 +195,20 @@ namespace DiskArc.Disk {
         /// <summary>
         /// INFO chunk data holder.
         /// </summary>
-        public Woz_Info Info { get; private set; }
+        private Woz_Info Info { get; set; }
 
         /// <summary>
-        /// Metadata holder.
+        /// META data holder.  Will be null if the disk image doesn't have a META chunk.
         /// </summary>
-        public Woz_Meta? Metadata { get; private set; }
+        private Woz_Meta? MetaChunk { get; set; }
 
+        //
+        // Innards.
+        //
+
+        /// <summary>
+        /// Modification tracker.
+        /// </summary>
         private GroupBool mBufferModFlag = new GroupBool();
 
         /// <summary>
@@ -226,6 +242,7 @@ namespace DiskArc.Disk {
         /// File offset of FLUX chunk in mBaseData, or -1 if it doesn't exist.
         /// </summary>
         private int mFluxChunkOffset = -1;
+
 
         // IDiskImage-required delegate
         public static bool TestKind(Stream stream, AppHook appHook) {
@@ -273,8 +290,8 @@ namespace DiskArc.Disk {
             // then we block META updates when FLUX is present.
             bool metaReadOnly = newDisk.IsReadOnly;
             newDisk.Info.IsReadOnly = newDisk.IsReadOnly;
-            if (newDisk.Metadata != null) {
-                newDisk.Metadata.IsReadOnly = newDisk.IsReadOnly;
+            if (newDisk.MetaChunk != null) {
+                newDisk.MetaChunk.IsReadOnly = newDisk.IsReadOnly;
             }
             return newDisk;
         }
@@ -397,8 +414,8 @@ namespace DiskArc.Disk {
             if (Info != null) {
                 Info.IsDirty = false;
             }
-            if (Metadata != null) {
-                Metadata.IsDirty = false;
+            if (MetaChunk != null) {
+                MetaChunk.IsDirty = false;
             }
             Debug.Assert(!IsDirty);
         }
@@ -783,7 +800,7 @@ namespace DiskArc.Disk {
 
             // Extract the META chunk, if it exists.  If parsing fails, the object may be null.
             if (metaChunkOffset >= 0) {
-                Metadata = Woz_Meta.ParseMETA(mBaseData, metaChunkOffset, metaChunkLength,
+                MetaChunk = Woz_Meta.ParseMETA(mBaseData, metaChunkOffset, metaChunkLength,
                     mAppHook);
             }
         }
@@ -836,8 +853,8 @@ namespace DiskArc.Disk {
             }
 
             // Generate and append the current META.
-            if (Metadata != null) {
-                byte[] data = Metadata.Serialize(out int metaOffset, out int metaLength);
+            if (MetaChunk != null) {
+                byte[] data = MetaChunk.Serialize(out int metaOffset, out int metaLength);
                 RawData.WriteU32LE(newStream, ID_META);
                 RawData.WriteU32LE(newStream, (uint)metaLength);
                 newStream.Write(data, metaOffset, metaLength);
@@ -995,8 +1012,19 @@ namespace DiskArc.Disk {
             }
 
             // We could copy the data into a correctly-sized buffer, but no real need.
+            // TODO: ought to check for wrap-around, though if the track is that long it
+            //   wouldn't have fit on a physical disk anyway
             bitCount = cbb.BitPosition;
             return outBuf;
+        }
+
+        /// <summary>
+        /// Throws an exception if the disk is not writable.
+        /// </summary>
+        private void CheckAccess() {
+            if (IsReadOnly) {
+                throw new NotSupportedException("Disk is read-only");
+            }
         }
 
         /// <summary>
@@ -1004,19 +1032,98 @@ namespace DiskArc.Disk {
         /// </summary>
         public void AddMETA() {
             CheckAccess();
-            if (Metadata == null) {
-                Metadata = Woz_Meta.CreateMETA();
+            if (MetaChunk == null) {
+                MetaChunk = Woz_Meta.CreateMETA();
             }
         }
 
-        private void CheckAccess() {
-            if (IsReadOnly) {
-                throw new NotSupportedException("Disk is read-only");
+        private const string INFO_PFX = "info:";
+        private const string META_PFX = "meta:";
+
+        // IMetadata
+        public List<MetaEntry> GetMetaEntries() {
+            List<MetaEntry> entries = new List<MetaEntry>();
+
+            // We need to generate the list of Info entries that are appropriate for the
+            // Info.Version.
+            foreach (MetaEntry met in Woz_Info.sInfo1List) {
+                entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType, met.CanEdit, false));
             }
+            if (Info.Version > 1) {
+                foreach (MetaEntry met in Woz_Info.sInfo2List) {
+                    entries.Add(
+                        new MetaEntry(INFO_PFX + met.Key, met.ValueType, met.CanEdit, false));
+                }
+            }
+            if (Info.Version > 2) {
+                foreach (MetaEntry met in Woz_Info.sInfo3List) {
+                    entries.Add(
+                        new MetaEntry(INFO_PFX + met.Key, met.ValueType, met.CanEdit, false));
+                }
+            }
+
+            // We want to add the META entries in the order in which they appear in the
+            // specification, because it's nice to have title/subtitle at the top.  The
+            // values are stored in a key/value dictionary with no defined sort order, so
+            // we want to pick them out one at a time.  Whatever is left are the user-supplied
+            // values, which we can present in any order.
+            if (MetaChunk != null) {
+                Dictionary<string, string> metaEntries = MetaChunk.GetEntryDict();
+                foreach (MetaEntry met in Woz_Meta.sStandardEntries) {
+                    if (metaEntries.ContainsKey(met.Key)) {
+                        entries.Add(
+                            new MetaEntry(META_PFX + met.Key, met.ValueType, met.CanEdit, false));
+                        metaEntries.Remove(met.Key);
+                    }
+                }
+                // Now copy whatever is left.
+                foreach (string key in metaEntries.Keys) {
+                    entries.Add(new MetaEntry(META_PFX + key));
+                }
+            }
+
+            return entries;
+        }
+
+        // IMetadata
+        public string? GetMetaValue(string key, bool verbose) {
+            string? value = null;
+            if (key.StartsWith(INFO_PFX)) {
+                value = Info.GetValue(key.Substring(INFO_PFX.Length), verbose);
+            } else if (key.StartsWith(META_PFX)) {
+                if (MetaChunk != null) {
+                    value = MetaChunk.GetValue(key.Substring(META_PFX.Length));
+                }
+            } else {
+                Debug.WriteLine("Unknown prefix on WOZ meta key: " + key);
+            }
+            return value;
+        }
+
+        // IMetadata
+        public void SetMetaValue(string key, string value) {
+            if (key.StartsWith(INFO_PFX)) {
+                Info.SetValue(key.Substring(INFO_PFX.Length), value);
+            } else if (key.StartsWith(META_PFX)) {
+                if (MetaChunk != null) {
+                    MetaChunk.SetValue(key.Substring(META_PFX.Length), value);
+                }
+            } else {
+                throw new ArgumentException("unknown prefix on key '" + key + "'");
+            }
+        }
+
+        // IMetadata
+        public bool DeleteMetaEntry(string key) {
+            // Cannot delete info: keys.
+            if (key.StartsWith(META_PFX) && MetaChunk != null) {
+                return MetaChunk.DeleteEntry(key.Substring(META_PFX.Length));
+            }
+            return false;
         }
 
         public override string ToString() {
-            return "[WOZ " + FileRevision + " " + DiskKind + "]";
+            return "[WOZ" + FileRevision + " " + DiskKind + "]";
         }
     }
 }

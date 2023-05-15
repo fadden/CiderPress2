@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 using System;
+using System.Diagnostics;
 using System.Text;
 
 using CommonUtil;
 using static DiskArc.Defs;
+using static DiskArc.IMetadata;
 
 namespace DiskArc.Disk {
     /// <summary>
@@ -38,6 +40,42 @@ namespace DiskArc.Disk {
         /// True if one or more fields have been modified.
         /// </summary>
         public bool IsDirty { get; internal set; }
+
+        /// <summary>
+        /// Strings for the bits in the info:compatible_hardware value.
+        /// </summary>
+        public static readonly string[] sWozInfoCompat = new string[] {
+            "2",    // 0x0001
+            "2+",   // 0x0002
+            "2e",   // 0x0004
+            "2c",   // 0x0008
+            "2e+",  // 0x0010
+            "2gs",  // 0x0020
+            "2c+",  // 0x0040
+            "3",    // 0x0080
+            "3+",   // 0x0100
+        };
+
+        internal static readonly MetaEntry[] sInfo1List = new MetaEntry[] {
+            new MetaEntry("info_version", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("disk_type", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("write_protected", MetaEntry.ValType.Bool, canEdit:true),
+            new MetaEntry("synchronized", MetaEntry.ValType.Bool, canEdit:false),
+            new MetaEntry("cleaned", MetaEntry.ValType.Bool, canEdit:false),
+            new MetaEntry("creator", MetaEntry.ValType.String, canEdit:false),
+        };
+        internal static readonly MetaEntry[] sInfo2List = new MetaEntry[] {
+            new MetaEntry("disk_sides", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("boot_sector_format", MetaEntry.ValType.Int, canEdit:true),
+            new MetaEntry("optimal_bit_timing", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("compatible_hardware", MetaEntry.ValType.Int, canEdit:true),
+            new MetaEntry("required_ram", MetaEntry.ValType.Int, canEdit:true),
+            new MetaEntry("largest_track", MetaEntry.ValType.Int, canEdit:false),
+        };
+        internal static readonly MetaEntry[] sInfo3List = new MetaEntry[] {
+            new MetaEntry("flux_block", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("largest_flux_track", MetaEntry.ValType.Int, canEdit:false),
+        };
 
         /// <summary>
         /// Raw INFO chunk data.  All values are read from and written to this.
@@ -73,16 +111,12 @@ namespace DiskArc.Disk {
                 default:
                     throw new NotImplementedException("Unknown disk kind: " + diskKind);
             }
-            WriteProtected = 0;
-            Synchronized = 0;
-            Cleaned = 1;
+            WriteProtected = false;
+            Synchronized = false;
+            Cleaned = true;
             Creator = creator;
-            BootSectorFormat = 0;
-            CompatibleHardware = 0;
-            RequiredRAM = 0;
             LargestTrack = lrgTrkBlkCnt;
-
-            // Leave v3 fields set to zero.
+            // leave other fields set to zero
 
             IsDirty = true;
         }
@@ -108,9 +142,8 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Obtains the raw chunk data buffer.
+        /// Obtains the raw chunk data buffer, for output to the disk image file.
         /// </summary>
-        /// <returns></returns>
         internal byte[] GetData() {
             // This is internal-only, so no need to make a copy.
             return mData;
@@ -119,6 +152,147 @@ namespace DiskArc.Disk {
         private void CheckAccess() {
             if (IsReadOnly) {
                 throw new InvalidOperationException("Image is read-only");
+            }
+        }
+
+        /// <summary>
+        /// Gets the value of a metadata entry as a string.
+        /// </summary>
+        /// <param name="key">Entry key.</param>
+        /// <param name="verbose">True if we want the verbose version.</param>
+        /// <returns>Entry value, or null if the key wasn't recognized.</returns>
+        public string? GetValue(string key, bool verbose) {
+            const string TRUE_LOWER = "true";       // return "true" instead of "True"
+            const string FALSE_LOWER = "false";     // (bool.ToString() capitalizes the value)
+
+            string? value;
+            switch (key) {
+                case "info_version":
+                    value = Version.ToString();
+                    break;
+                case "disk_type":
+                    value = DiskType.ToString();
+                    if (verbose) {
+                        if (DiskType == 1) {
+                            value += " (5.25\")";
+                        } else if (DiskType == 2) {
+                            value += " (3.5\")";
+                        } else {
+                            value += " (?)";
+                        }
+                    }
+                    break;
+                case "write_protected":
+                    value = WriteProtected ? TRUE_LOWER : FALSE_LOWER;
+                    break;
+                case "synchronized":
+                    value = Synchronized ? TRUE_LOWER : FALSE_LOWER;
+                    break;
+                case "cleaned":
+                    value = Cleaned ? TRUE_LOWER : FALSE_LOWER;
+                    break;
+                case "creator":
+                    value = Creator;
+                    break;
+                case "disk_sides":
+                    value = DiskSides.ToString();
+                    break;
+                case "boot_sector_format":
+                    value = BootSectorFormat.ToString();
+                    if (verbose) {
+                        switch (BootSectorFormat) {
+                            case 0:
+                                value += " (unknown)";
+                                break;
+                            case 1:
+                                value += " (16-sector)";
+                                break;
+                            case 2:
+                                value += " (13-sector)";
+                                break;
+                            case 3:
+                                value += " (13/16-sector)";
+                                break;
+                            default:
+                                value = " (?)";
+                                break;
+                        }
+                    }
+                    break;
+                case "optimal_bit_timing":
+                    value = OptimalBitTiming.ToString();
+                    break;
+                case "compatible_hardware":
+                    value = CompatibleHardware.ToString();
+                    if (verbose) {
+                        StringBuilder compatStr = new StringBuilder();
+                        ushort chBits = CompatibleHardware;
+                        for (int i = 0; i < sWozInfoCompat.Length; i++) {
+                            if ((chBits & (1 << i)) != 0) {
+                                if (compatStr.Length != 0) {
+                                    compatStr.Append('|');
+                                }
+                                compatStr.Append(sWozInfoCompat[i]);
+                            }
+                        }
+                        value += " (" + compatStr.ToString() + ")";
+                    }
+                    break;
+                case "required_ram":
+                    value = RequiredRAM.ToString();
+                    break;
+                case "largest_track":
+                    value = LargestTrack.ToString();
+                    break;
+                case "flux_block":
+                    value = FluxBlock.ToString();
+                    break;
+                case "largest_flux_track":
+                    value = LargestFluxTrack.ToString();
+                    break;
+                default:
+                    Debug.WriteLine("Woz info key '" + key + "' not recognized");
+                    value = null;
+                    break;
+            }
+            return value;
+        }
+
+        /// <summary>
+        /// Sets the value of a metadata entry as a string.
+        /// </summary>
+        /// <param name="key">Entry key.</param>
+        /// <exception cref="ArgumentException">Invalid key or value.</exception>
+        public void SetValue(string key, string value) {
+            // Parse the string to a numeric or boolean value, and then set the field.  The
+            // field setter may apply additional restrictions.
+            switch (key) {
+                case "write_protected":
+                    if (!bool.TryParse(value, out bool wpVal)) {
+                        throw new ArgumentException("invalid value '" + value + "'");
+                    }
+                    WriteProtected = wpVal;
+                    break;
+                case "boot_sector_format":
+                    if (!byte.TryParse(value, out byte bsVal)) {
+                        throw new ArgumentException("invalid value '" + value + "'");
+                    }
+                    BootSectorFormat = bsVal;
+                    break;
+                case "compatible_hardware":
+                    if (!ushort.TryParse(value, out ushort chVal)) {
+                        throw new ArgumentException("invalid value '" + value + "'");
+                    }
+                    CompatibleHardware = chVal;
+                    break;
+                case "required_ram":
+                    if (!ushort.TryParse(value, out ushort rrVal)) {
+                        throw new ArgumentException("invalid value '" + value + "'");
+                    }
+                    RequiredRAM = rrVal;
+                    break;
+                default:
+                    throw new ArgumentException("unable to modify '" + key + "'");
             }
         }
 
@@ -156,14 +330,11 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Write protected (v1): 0 = unprotected, 1 = protected.
         /// </summary>
-        public byte WriteProtected {
-            get { return mData[2]; }
+        public bool WriteProtected {
+            get { return mData[2] != 0; }
             set {
                 CheckAccess();
-                if (value > 1) {
-                    throw new ArgumentException("Invalid WP status");
-                }
-                mData[2] = value;
+                mData[2] = (byte)(value ? 1 : 0);
                 IsDirty = true;
             }
         }
@@ -171,14 +342,11 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Synchronized (v1): 0 = not synchronized, 1 = cross-track sync was used during imaging.
         /// </summary>
-        public byte Synchronized {
-            get { return mData[3]; }
+        public bool Synchronized {
+            get { return mData[3] != 0; }
             internal set {
                 CheckAccess();
-                if (value > 1) {
-                    throw new ArgumentException("Invalid sync status");
-                }
-                mData[3] = value;
+                mData[3] = (byte)(value ? 1 : 0);
                 IsDirty = true;
             }
         }
@@ -186,14 +354,11 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Cleaned (v1): 0 = not cleaned, 1 = MC3470 fake bits have been removed.
         /// </summary>
-        public byte Cleaned {
-            get { return mData[4]; }
+        public bool Cleaned {
+            get { return mData[4] != 0; }
             internal set {
                 CheckAccess();
-                if (value > 1) {
-                    throw new ArgumentException("Invalid cleaned status");
-                }
-                mData[4] = value;
+                mData[4] = (byte)(value ? 1 : 0);
                 IsDirty = true;
             }
         }

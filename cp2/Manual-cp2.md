@@ -695,6 +695,10 @@ If no key is specified, all entries are displayed as key/value pairs.
 The allowed formats for keys and values are different for every file format.
 See the [Metadata](#metadata) section for details.
 
+In some cases, additional detail may be provided in the output, e.g. an
+enumerated value may be followed by an explanation.  The additional data can
+be suppressed with the `--no-verbose` flag.
+
 Options: (none)
 
 Examples:
