@@ -6,3 +6,5 @@
 - https://www.discferret.com/wiki/Apple_DiskCopy_4.2
 
 ".dc6", ".dsk", or ".image"
+
+[ TODO ]

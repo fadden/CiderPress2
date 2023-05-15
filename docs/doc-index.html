@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="main.css" />
+    <title>CiderPress Format Docs Index</title>
+
+    <style>
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+
+<body>
+<div id="content">
+<h1>CiderPress Format Documentation Index</h1>
+
+<p>This is an index of the documentation found in the CiderPress II source tree.
+Most of it describes the layout of disk images, file archives, and "vintage"
+graphic and document formats.</p>
+
+<p>Each document starts with a list of authoritative references, when such are
+available, and continues with a low-level description of the format.  Put simply,
+it contains the sorts of things you'd want to have on hand when writing code to
+process files that used the format.  Some are simple "cheat sheets", others have
+detailed explanations.  Most also contain notes on how the "real world" use of
+the formats differs from what the specification asserts.</p>
+
+<p>All documentation in the CiderPress II source tree is copyright faddenSoft,
+distributed with the
+<a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons ShareAlike 4.0 International</a>
+license.</p>
+
+<h3>File Archives</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/AppleSingle-notes.md">
+      AppleSingle and AppleDouble</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/Binary2-notes.md">
+      Binary ][</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/GZip-notes.md">
+      gzip</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/NuFX-notes.md">
+      NuFX (ShrinkIt)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/Zip-notes.md">
+      ZIP</a></li>
+</ul>
+
+<h3>Compression</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/NuLZW-notes.md">
+      NuFX (ShrinkIt) LZW/1 and LZW/2</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/Squeeze-notes.md">
+      Squeeze (Huffman)</a></li>
+</ul>
+
+<h3>Disk Images - Multi-Part</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/APM-notes.md">
+      APM (Apple Partition Map)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/CFFA-notes.md">
+      CFFA</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/DOS800-notes.md">
+      AmDOS, UniDOS, OzDOS</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/MacTS-notes.md">
+      Early Apple 'TS' partition map</a></li>
+</ul>
+
+<h3>Disk Images</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Nibble-notes.md">
+      General notes on nibble data storage</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Trackstar-notes.md">
+      Trackstar (.app)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/TwoIMG-notes.md">
+      2IMG (.2mg .2img)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Unadorned-notes.md">
+      Unadorned sector and nibble files (.do .po .dsk .img .iso .hdv .nib .nb2)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Woz-notes.md">
+      WOZ (.woz)</a></li>
+</ul>
+
+<h3>Filesystems</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/DOS-notes.md">
+      DOS (Disk Operating System) 3.2 / 3.3</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/HFS-notes.md">
+      HFS (Hierarchical File System)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/Hybrid-notes.md">
+      DOS / ProDOS / Pascal / CP/M hybrids and embedded volumes</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/ProDOS-notes.md">
+      ProDOS (Professional Disk Operating System) and SOS (Sophisticated Operating System)</a></li>
+</ul>
+
+<hr/>
+
+<h3>Vintage File Formats</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/BASIC-notes.md">
+      Applesoft, Integer, and Business BASIC</a></li>
+</ul>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Doc/Teach-notes.md">
+      Apple IIgs Teach Document</a></li>
+</ul>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Generic/ResourceFork-notes.md">
+      General notes on Apple IIgs and Macintosh resource forks</a></li>
+</ul>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/DoubleHiRes-notes.md">
+      Apple II double-hi-res image</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/HiRes-notes.md">
+      Apple II hi-res image</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/SuperHiRes-notes.md">
+      Apple IIgs super-hi-res image</a></li>
+</ul>
+
+<hr/>
+
+<p>All of the above is from the <a href="https://ciderpress2.com/">CiderPress II</a> project.</p>
+
+</div>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 ## Primary References ##
 
-- _Inside Macintosh, Volume IV_ (1986), chapter 31 (esp. p.292)
+- _Inside Macintosh, Volume IV_ (1986), chapter 31 (esp. p.292);
   https://vintageapple.org/inside_o/pdf/Inside_Macintosh_Volume_IV_1986.pdf
 
 ## General ##

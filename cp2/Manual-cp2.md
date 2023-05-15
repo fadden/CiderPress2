@@ -1122,8 +1122,9 @@ Enable or disable compression of files being added to a file archive.
 ZIP uses Deflate, NuFX uses LZW/2, Binary II uses Squeeze.  If disabled,
 files are stored without compression.
 
-This option is ignored for gzip, which requires compression, and has no
-effect when adding files to a disk image.
+This option is ignored for gzip, which requires compression, and AppleSingle,
+which does not support it.  The option has no effect when adding files to a
+disk image.
 
 This option affects the archive being modified as well as any containing
 archives that need to be rewritten.
@@ -1140,7 +1141,7 @@ the same effect when adding or extracting files, use the `import` and
 #### `--depth={shallow,subvol,max}` (default=shallow)
 
 Archive descent depth, used when generating catalogs.
- - `shallow`: only the first level is shown.
+ - `shallow`: only the requested level is shown.
  - `subvol`: descend into sub-volumes, but don't open archives stored as
     files in the archive.
  - `max`: go nuts.

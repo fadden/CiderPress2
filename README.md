@@ -228,5 +228,5 @@ terms are similar to BSD or MIT, but with some additional constraints on
 patent licensing.  (This is the same license Google uses for the Android
 Open Source Project.)
 
-Images are licensed under Creative Commons ShareAlike 4.0 International
+Images and documentation are licensed under Creative Commons ShareAlike 4.0 International
 (https://creativecommons.org/licenses/by-sa/4.0/).
