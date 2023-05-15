@@ -1230,7 +1230,13 @@ namespace cp2.Tests {
                     }
                 }
             } else {
-                if (entry.HFSFileType != 0 || entry.HFSCreator != 0) {
+                uint expFileType = 0;
+                uint expCreator = 0;
+                if (entry.HasHFSTypes && !entry.HasProDOSTypes) {
+                    expFileType = FileAttribs.TYPE_BINA;
+                    expCreator = FileAttribs.CREATOR_CPII;
+                }
+                if (entry.HFSFileType != expFileType || entry.HFSCreator != expCreator) {
                     throw new Exception(hdr + "unexpected HFS file type (" +
                         entry.HFSFileType.ToString("x8") + "/" +
                         entry.HFSCreator.ToString("x8") + ")");

@@ -498,6 +498,7 @@ namespace cp2.Tests {
         // Resource fork suffix.
         private const string RSRC_SFX = "/..namedfork/rsrc";
         private const string NAPS_NO_TYPE = "#000000";
+        private const string NAPS_HFS_DEFAULT_TYPE = "#42494e4143504949";
 
         // NuFX: can store files that only have resource forks
         private static ExpectedFile[] sNuFXFiles_NAPS = new ExpectedFile[] {
@@ -557,7 +558,7 @@ namespace cp2.Tests {
         private static ExpectedFile[] sHFSFiles_NAPS = new ExpectedFile[] {
             new ExpectedFile(HFS_FILE, HFS_FILE_DLEN),
             new ExpectedFile(HFS_FILE + "r", HFS_FILE_RLEN),
-            new ExpectedFile(PLAIN_NAME + NAPS_NO_TYPE, PLAIN_DLEN),
+            new ExpectedFile(PLAIN_NAME + NAPS_HFS_DEFAULT_TYPE, PLAIN_DLEN),
             new ExpectedFile(DATA_ONLY_NAME, DATA_ONLY_DLEN),
             new ExpectedFile(DATA_RSRC_NAME, DATA_RSRC_DLEN),
             new ExpectedFile(DATA_RSRC_NAME + "r", DATA_RSRC_RLEN),
@@ -613,6 +614,7 @@ namespace cp2.Tests {
         // is variable but should be small.
         private static ExpectedFile[] sHFSFiles_ADF = new ExpectedFile[] {
             new ExpectedFile("._HFS.file", HFS_FILE_RLEN + 1, HFS_FILE_RLEN + AS_OVHD),
+            new ExpectedFile("._Plain.File", 0 + 1, 0 + AS_OVHD),   // because of HFS default type
             new ExpectedFile("._data-only", 0 + 1, 0 + AS_OVHD),
             new ExpectedFile("._data-rsrc", DATA_RSRC_RLEN + 1, DATA_RSRC_RLEN + AS_OVHD),
             new ExpectedFile("._data-rsrcZ", 0 + 1, 0 + AS_OVHD),
