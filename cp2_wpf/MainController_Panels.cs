@@ -144,8 +144,8 @@ namespace cp2_wpf {
                     IDiskImage disk = (IDiskImage)CurrentWorkObject;
                     mMainWin.SetNotesList(disk.Notes);
 
-                    if (CurrentWorkObject is Woz || CurrentWorkObject is TwoIMG) {
-                        mMainWin.SetMetadataList(CurrentWorkObject.GetType().Name);
+                    if (CurrentWorkObject is IMetadata) {
+                        mMainWin.SetMetadataList((IMetadata)CurrentWorkObject);
                     }
                 } else if (CurrentWorkObject is IMultiPart) {
                     IMultiPart parts = (IMultiPart)CurrentWorkObject;

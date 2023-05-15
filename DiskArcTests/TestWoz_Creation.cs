@@ -107,6 +107,10 @@ namespace DiskArcTests {
                 } catch (ArgumentException) { /*expected*/ }
 
                 wdisk.SetMetaValue("meta:language", "English");
+                if (wdisk.DeleteMetaEntry("meta:language")) {
+                    throw new Exception("Allowed to delete meta:language");
+                }
+
                 // Let the Dispose do the final update.
             }
 

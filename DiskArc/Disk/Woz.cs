@@ -793,7 +793,7 @@ namespace DiskArc.Disk {
             }
             if (Info.Version >= 3) {
                 if (Info.FluxBlock != 0 && Info.LargestFluxTrack != 0) {
-                    Notes.AddI("Found flux data");
+                    Notes.AddI("Found FLUX data, writing will be disabled");
                     HasFlux = true;
                 }
             }
@@ -1027,6 +1027,8 @@ namespace DiskArc.Disk {
             }
         }
 
+        #region Metadata
+
         /// <summary>
         /// Adds a META chunk to a file that doesn't have one.  No effect if the chunk exists.
         /// </summary>
@@ -1121,6 +1123,8 @@ namespace DiskArc.Disk {
             }
             return false;
         }
+
+        #endregion Metadata
 
         public override string ToString() {
             return "[WOZ" + FileRevision + " " + DiskKind + "]";

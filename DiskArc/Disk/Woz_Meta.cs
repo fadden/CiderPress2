@@ -490,10 +490,9 @@ namespace DiskArc.Disk {
             // Test "standard" keys.
             meta.SetValue(LANGUAGE_KEY, "English");
             meta.SetValue(LANGUAGE_KEY, string.Empty);
-            try {
-                meta.DeleteEntry(LANGUAGE_KEY);
+            if (meta.DeleteEntry(LANGUAGE_KEY)) {
                 throw new Exception("standard key deletion allowed");
-            } catch (ArgumentException) { /*expected*/ }
+            }
             try {
                 meta.SetValue(LANGUAGE_KEY, "english");     // test case-sensitivity
                 throw new Exception("value not case-sensitive");

@@ -21,6 +21,7 @@ using CommonUtil;
 using DiskArc.Multi;
 using static DiskArc.Defs;
 using static DiskArc.IDiskImage;
+using static DiskArc.IMetadata;
 
 // This is an IDiskImage instance, which means we modify the original file in place (vs. an
 // IArchive that gets rewritten for every change).  To reduce the risk of a crash causing data
@@ -54,7 +55,7 @@ namespace DiskArc.Disk {
     /// 2IMG files can hold either sector data or nibble data.  We only want to present one
     /// set of interfaces, so we use a subclass for the nibble form.
     /// </remarks>
-    public class TwoIMG : IDiskImage {
+    public class TwoIMG : IDiskImage, IMetadata {
         public static readonly byte[] SIGNATURE = new byte[] { 0x32, 0x49, 0x4d, 0x47 };
         public const int MAX_COMMENT_LEN = 256 * 1024;      // should be a few bytes, this is huge
         public const int MAX_CREATOR_DATA_LEN = 256 * 1024;
@@ -912,5 +913,115 @@ namespace DiskArc.Disk {
             }
             return result;
         }
+
+        #region Metadata
+
+        private static readonly MetaEntry[] sTwoIMGEntries = new MetaEntry[] {
+            new MetaEntry("comment", MetaEntry.ValType.String, canEdit:true),
+            new MetaEntry("creator", MetaEntry.ValType.String, canEdit:false),
+            new MetaEntry("format", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("write_protected", MetaEntry.ValType.Bool, canEdit:true),
+            new MetaEntry("volume_number", MetaEntry.ValType.Int, canEdit:true),
+        };
+
+        // IMetadata
+        public List<MetaEntry> GetMetaEntries() {
+            List<MetaEntry> list = new List<MetaEntry>(sTwoIMGEntries.Length);
+            foreach (MetaEntry met in sTwoIMGEntries) {
+                list.Add(met);
+            }
+            return list;
+        }
+
+        // IMetadata
+        public string? GetMetaValue(string key, bool verbose) {
+            string? value;
+            switch (key) {
+                case "comment":
+                    value = Comment;      // may be multi-line
+                    break;
+                case "creator":
+                    value = Creator;
+                    break;
+                case "format":
+                    value = ImageFormat.ToString();
+                    if (verbose) {
+                        switch (ImageFormat) {
+                            case 0:
+                                value += " (DOS order)";
+                                break;
+                            case 1:
+                                value += " (ProDOS order)";
+                                break;
+                            case 2:
+                                value += " (nibbles)";
+                                break;
+                            default:
+                                value += " (?)";
+                                break;
+                        }
+                    }
+                    break;
+                case "write_protected":
+                    value = WriteProtected ? "true" : "false";  // all lower case
+                    break;
+                case "volume_number":
+                    int volNum = VolumeNumber;
+                    if (volNum < 0) {
+                        if (verbose) {
+                            value = "-1 (not set)";
+                        } else {
+                            value = "-1";
+                        }
+                    } else {
+                        value = volNum.ToString();
+                    }
+                    break;
+                default:
+                    Debug.WriteLine("Key " + key + " not found");
+                    value = null;
+                    break;
+            }
+            return value;
+        }
+
+        // IMetadata
+        public void SetMetaValue(string key, string value) {
+            switch (key) {
+                case "comment":
+                    Comment = value;
+                    break;
+                case "write_protected":
+                    if (!bool.TryParse(value, out bool wpVal)) {
+                        throw new ArgumentException("invalid value '" + value + "'");
+                    }
+                    WriteProtected = wpVal;
+                    break;
+                case "volume_number":
+                    if (!int.TryParse(value, out int intVal)) {
+                        throw new ArgumentException("invalid value '" + value + "'");
+                    }
+                    VolumeNumber = intVal;
+                    break;
+                default:
+                    throw new ArgumentException("unable to modify '" + key + "'");
+            }
+        }
+
+        // IMetadata
+        public bool DeleteMetaEntry(string key) {
+            switch (key) {
+                case "comment":
+                    Comment = string.Empty;
+                    return true;
+                case "volume_number":
+                    VolumeNumber = -1;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        #endregion Metadata
     }
 }

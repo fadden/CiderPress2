@@ -510,11 +510,17 @@ namespace cp2_wpf {
         /// <summary>
         /// Configures the metadata list, displayed on the info panel.
         /// </summary>
-        public void SetMetadataList(string typeName) {
-            // TODO: make this real
+        public void SetMetadataList(IMetadata mdo) {
             MetadataList.Clear();
-            MetadataItem item = new MetadataItem("put_some", "stuff for " + typeName);
-            MetadataList.Add(item);
+            List<IMetadata.MetaEntry> entries = mdo.GetMetaEntries();
+            foreach (IMetadata.MetaEntry met in entries) {
+                string? value = mdo.GetMetaValue(met.Key, true);
+                if (value == null) {
+                    // Shouldn't be possible.
+                    value = "!NOT FOUND!";
+                }
+                MetadataList.Add(new MetadataItem(met.Key, value));
+            }
             ShowMetadata = true;
         }
 
