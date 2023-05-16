@@ -14,8 +14,8 @@ Primary references:
 
 ## Format ##
 
-Double hi-res graphics screens are generally stored as a 16KB file.  The first half holds the
-main RAM portion, the second half holds the aux RAM portion.
+Double hi-res graphics screens are generally stored as a 16KB file.  The first 8KB holds the
+aux RAM portion, the second 8KB holds the main RAM portion.
 
 The screen layout and color generation is described in great detail in Apple //e technote #3.
 
