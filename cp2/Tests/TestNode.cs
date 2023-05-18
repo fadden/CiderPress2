@@ -62,8 +62,6 @@ namespace cp2.Tests {
             // file in the deepest part.  We then do two consecutive updates, close the node,
             // and verify the file contents.
             //
-            // TODO: add update failure tests, e.g. running out of disk space in arc-in-disk.
-            //
 
             TestArc(parms);
             TestDisk(parms);
@@ -74,6 +72,12 @@ namespace cp2.Tests {
 
             TestArcInDiskInArc(parms);
             TestDiskInDiskInArcInArc(parms);
+
+            TestArcInDiskOverflow(parms);
+
+            // Give any finalizer-based checks a chance to run.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
             Controller.RemoveTestTmp(parms);
         }
@@ -614,6 +618,93 @@ namespace cp2.Tests {
                             fs140.PrepareFileAccess(true);
                             IFileEntry vol140 = fs140.GetVolDirEntry();
                             CheckEntries(vol140.ToList());
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Runs tests with a ZIP archive inside an unadorned and undersized DOS disk image.
+        /// </summary>
+        private static void TestArcInDiskOverflow(ParamsBag parms) {
+            string fileName = Path.Combine(Controller.TEST_TMP, "Undersize.do");
+            string arcName = "Archive.ZIP";
+            long freeSpace;
+            using (FileStream file = new FileStream(fileName, FileMode.CreateNew)) {
+                using (IDiskImage newDisk = UnadornedSector.CreateSectorImage(file, 35, 16,
+                        SectorOrder.DOS_Sector, parms.AppHook)) {
+                    using (IFileSystem fs = new DOS(newDisk.ChunkAccess!, parms.AppHook)) {
+                        fs.Format(string.Empty, 254, true);
+                        fs.PrepareFileAccess(true);
+                        IFileEntry volDir = fs.GetVolDirEntry();
+                        IFileEntry arcEntry = fs.CreateFile(volDir, arcName, CreateMode.File);
+                        using (Stream arcFile = fs.OpenFile(arcEntry, FileAccessMode.ReadWrite,
+                                FilePart.DataFork)) {
+                            using (IArchive newArc = Zip.CreateArchive(parms.AppHook)) {
+                                newArc.StartTransaction();
+                                IFileEntry oneEntry = newArc.CreateRecord();
+                                oneEntry.FileName = NAME_ONE;
+                                SimplePartSource source =
+                                    Controller.CreateRandomSource(80 * 1024, 0);
+                                newArc.AddPart(oneEntry, FilePart.DataFork, source,
+                                    CompressionFormat.Uncompressed);
+                                newArc.CommitTransaction(arcFile);
+                            }
+                        }
+                        freeSpace = fs.FreeSpace;
+                    }
+                }
+            }
+
+            string extArcName = fileName + ExtArchive.SPLIT_CHAR + arcName;
+
+            if (!ExtArchive.OpenExtArc(extArcName, false, false, parms,
+                    out DiskArcNode? rootNode, out DiskArcNode? leafNode, out object? leafObj,
+                    out IFileEntry endDirEntry)) {
+                throw new Exception("Failed to open " + extArcName);
+            }
+            using (rootNode) {
+                IArchive arc = (IArchive)leafObj;
+                arc.StartTransaction();
+                IFileEntry entry = arc.CreateRecord();
+                entry.FileName = NAME_TWO;
+                SimplePartSource source = Controller.CreateRandomSource(80 * 1024, 0);
+                arc.AddPart(entry, FilePart.DataFork, source, CompressionFormat.Uncompressed);
+                // Save updates.
+                try {
+                    leafNode.SaveUpdates(false);
+                    throw new Exception("Overflow update succeeded");
+                } catch (IOException ex) {
+                    /*expected*/
+                    Debug.WriteLine("Got exception for overflow: " + ex.Message);
+                }
+                leafNode.HealthCheck();
+            }
+
+            // Verify.
+            using (FileStream file = new FileStream(fileName, FileMode.Open)) {
+                using (IDiskImage checkDisk = UnadornedSector.OpenDisk(file, parms.AppHook)) {
+                    checkDisk.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)checkDisk.Contents!;
+                    fs.PrepareFileAccess(true);
+                    if (fs.Notes.WarningCount != 0 || fs.Notes.ErrorCount != 0) {
+                        throw new Exception("Something went wrong with filesystem");
+                    }
+                    // Verify no change in space used in filesystem.
+                    if (fs.FreeSpace != freeSpace) {
+                        throw new Exception("Free space changed: was " + freeSpace + ", now " +
+                            fs.FreeSpace);
+                    }
+                    IFileEntry volDir = fs.GetVolDirEntry();
+                    IFileEntry arcEntry = fs.FindFileEntry(volDir, arcName);
+                    using (Stream arcStream = fs.OpenFile(arcEntry, FileAccessMode.ReadOnly,
+                            FilePart.DataFork)) {
+                        using (IArchive checkArc = Zip.OpenArchive(arcStream, parms.AppHook)) {
+                            int count = checkArc.ToList().Count;
+                            if (count != 1) {
+                                throw new Exception("Unexpected number of files: " + count);
+                            }
                         }
                     }
                 }

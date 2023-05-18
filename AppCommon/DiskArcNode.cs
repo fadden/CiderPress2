@@ -23,6 +23,53 @@ using DiskArc.Arc;
 using static DiskArc.Defs;
 using static DiskArc.IFileSystem;
 
+// A few notes...
+//
+// The DiskArc library has no notion of hierarchy.  A disk image or file archive that sits
+// inside another disk image or file archive is just another file entry.  This class organizes
+// IDiskImage and IArchive objects into a tree so that, if an entry is updated, the changes can
+// be propagated upward to the root.  There are no nodes for IFileSystem, IMultiPart, or
+// Partition, even though those are logically independent entities that the user might want to
+// reference, because they are wholly contained within an IDiskImage.
+//
+// After changes are made, the UpdateChanges() function is called at the appropriate level.
+// Changes may be made to leaves or internal nodes, but not to the root itself, which is always a
+// file on the host system.  For any update we need to consider how the change affects the
+// disk/archive entry, and how that change is handled in the parent.
+//
+// If a disk image is modified, we need to flush any data that is cached in IFileSystem or
+// elsewhere, so that the underlying stream is in sync.  If a file archive is modified, we need
+// to commit the transaction to a new stream and discard the old when the transaction completes.
+// There are four scenarios to consider.
+//
+// Parent is disk, child is disk: flush changes.  The child blocks are mapped directly onto the
+// parent, so any writes to the child are effectively visible in the parent immediately.  We just
+// have to be sure that the data structures aren't caching anything.
+//
+// Parent is disk, child is archive: commit the transaction to a new file on the same disk (either
+// host or disk image).  When the transaction succeeds, delete the original and rename the new
+// file in its place.
+//
+// Parent is archive, child is disk: execute a transaction that replaces the contents of the disk
+// image file.
+//
+// Parent is archive, child is archive: commit the child's transaction to a temporary stream.
+// Execute a transaction that replaces the child archive entry in the parent.
+//
+// This gets a little complicated because we may not be able to rename or delete a file while
+// it's open.  (Even if the host filesystem allows it, IFileSystem does not.)  Rotating an updated
+// IArchive file requires closing and re-opening the underlying stream, but if we do that we'll
+// invalidate all of our IFileEntry objects, which is a significant issue if we change an archive
+// that isn't a leaf node.  We could be required to reopen all of the children.  To work around
+// this, IArchive has a ReopenStream() method that can be used to replace the Stream object
+// without disrupting the data structures.
+//
+// Another note: when something is stored in a file archive, it must be extracted to a temporary
+// stream, in memory or on disk, because IArchive and IFileSystem require a seekable stream.  This
+// means the parent entry is not actually held open.  Disk images or file archives stored in a
+// disk image or the host filesystem are kept open because they're accessed directly.  This
+// matters when trying to rename or delete an open object.
+
 namespace AppCommon {
     /// <summary>
     /// <para>Tree of nodes that wrap nested IDiskImage and IArchive objects.  When a disk image
@@ -31,9 +78,6 @@ namespace AppCommon {
     /// <remarks>
     /// <para>This allows changes to be made to disk images and archives stored inside other
     /// disk images and archives.</para>
-    /// <para>There is no such thing as a "partition node".  Multi-part volumes and embedded
-    /// volumes are part of a disk image object, so making changes to a partition also
-    /// modifies that disk image.  It's important to flush all changes.</para>
     /// </remarks>
     public abstract class DiskArcNode : IDisposable {
         internal const int MAX_TMP_ITER = 1000;

@@ -431,8 +431,8 @@ namespace cp2 {
                     return false;
                 }
                 using (stream) {
-                    using (IDisposable? obj = ExtArchive.IdentifyStreamContents(entry.FileName,
-                            stream, ext, false, parms.AppHook)) {
+                    using (IDisposable? obj = WorkTree.IdentifyStreamContents(stream, ext,
+                            parms.AppHook)) {
                         // Assume we already did TryAsDiskImage, so we won't be finding NuFX disk
                         // images here.
                         if (obj is IArchive) {
@@ -490,8 +490,8 @@ namespace cp2 {
                     return false;
                 }
                 using (stream) {
-                    using (IDisposable? obj = ExtArchive.IdentifyStreamContents(entry.FileName,
-                            stream, ext, false, parms.AppHook)) {
+                    using (IDisposable? obj = WorkTree.IdentifyStreamContents(stream, ext,
+                            parms.AppHook)) {
                         if (obj is IDiskImage) {
                             Console.WriteLine(indent + "Catalog of \"" +
                                 entry.FullPathName + "\"");
@@ -513,8 +513,8 @@ namespace cp2 {
                             }
                             using (Stream subStream = ArcTemp.ExtractToTemp(arc, subEntry,
                                     FilePart.DiskImage)) {
-                                using (IDisposable? subDisk = ExtArchive.IdentifyStreamContents(
-                                      subEntry.FileName, subStream, ".po", false, parms.AppHook)) {
+                                using (IDisposable? subDisk = WorkTree.IdentifyStreamContents(
+                                      subStream, ".po", parms.AppHook)) {
                                     if (subDisk is IDiskImage) {
                                         Console.WriteLine(indent + "Catalog of \"" +
                                             entry.FullPathName + "\"");
@@ -951,8 +951,8 @@ namespace cp2 {
         /// </summary>
         private static bool PrintCatalog(Stream arcStream, string pathName, string ext,
                 ParamsBag parms) {
-            using (IDisposable? thing = ExtArchive.IdentifyStreamContents(pathName, arcStream, ext,
-                    false, parms.AppHook)) {
+            using (IDisposable? thing = WorkTree.IdentifyStreamContents(arcStream, ext,
+                    parms.AppHook)) {
                 // Peel away gzip and .SDK wrapping.
                 if (parms.SkipSimple) {
                     if (thing is GZip) {

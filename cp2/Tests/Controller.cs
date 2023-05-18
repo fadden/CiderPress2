@@ -259,6 +259,21 @@ namespace cp2.Tests {
             return new SimplePartSource(new MemoryStream(data));
         }
 
+        /// <summary>
+        /// Creates a simple test source filled with random values.
+        /// </summary>
+        /// <param name="length">Length of stream.</param>
+        /// <param name="seed">Random number seed.</param>
+        /// <returns>New memory stream.</returns>
+        public static SimplePartSource CreateRandomSource(int length, int seed) {
+            Random rand = new Random(seed);
+            byte[] data = new byte[length];
+            for (int i = 0; i < length; i++) {
+                data[i] = (byte)rand.Next(256);
+            }
+            return new SimplePartSource(new MemoryStream(data));
+        }
+
         #endregion Helper functions
     }
 }

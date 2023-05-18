@@ -52,10 +52,9 @@ using static DiskArc.IFileSystem;
 //
 // The various other interesting situations can be tested as part of the "copy" command tests.
 //
-// None of this helps when copying to an ancestor with a file archive in the path.  Transactions
-// may not be started when a file is open, so we can't copy files directly out of the child.
-// We would need to extract the child archive to a temp file and reopen it there, and then
-// match the old IFileEntry to the new by index (filenames aren't guaranteed unique).
+// Copying to an ancestor should work; either the ancestor is a disk image with an open file
+// for the child (which is fine so long as the ancestor itself is not the copy target), or the
+// ancestor is an archive and the child was extracted to a temporary file.
 //
 
 namespace cp2 {
@@ -251,8 +250,10 @@ namespace cp2 {
                 // if this is a partition/sub-volume.
                 if (stream != null) {
                     Debug.Assert(leafObj == null);
-                    leafObj = IdentifyStreamContents(label, stream, ext, true, parms.AppHook);
+                    leafObj = WorkTree.IdentifyStreamContents(stream, ext, label, parms.AppHook,
+                        out string errorMsg, out bool unused);
                     if (leafObj == null) {
+                        Console.Error.WriteLine("Error: " + errorMsg);
                         return false;
                     }
 
@@ -677,57 +678,6 @@ namespace cp2 {
                 return false;
             }
             return Misc.IsSameFile(set1[0], set2[0], out isSame);
-        }
-
-        /// <summary>
-        /// Analyzes the contents of a stream, and returns the result of the analysis.
-        /// </summary>
-        /// <param name="label">Stream label, e.g. filename.</param>
-        /// <param name="stream">Stream to analyze.</param>
-        /// <param name="ext">Filename extension associated with the stream.</param>
-        /// <param name="doMsg">If true, print failure messages to console.</param>
-        /// <param name="appHook">Application hook reference.</param>
-        /// <returns>IArchive, IDiskImage, or (if analysis fails) null.</returns>
-        internal static IDisposable? IdentifyStreamContents(string label, Stream stream, string ext,
-                bool doMsg, AppHook appHook) {
-            ext = ext.ToLowerInvariant();
-            if (stream.Length == 0 && ext != ".bny" && ext != ".bqy") {
-                if (doMsg) {
-                    Console.Error.WriteLine("File is empty (" + ext + "): " + label);
-                }
-                return null;
-            }
-            // Analyze file structure.
-            FileAnalyzer.AnalysisResult result = FileAnalyzer.Analyze(stream, ext,
-                appHook, out FileKind kind, out SectorOrder orderHint);
-            if (result != FileAnalyzer.AnalysisResult.Success) {
-                if (doMsg) {
-                    Console.Error.WriteLine("Not recognized as disk image or archive: " + label +
-                        " (ext='" + ext + "')");
-                }
-                return null;
-            }
-            if (IsDiskImageFile(kind)) {
-                IDiskImage? diskImage = FileAnalyzer.PrepareDiskImage(stream, kind, appHook);
-                if (diskImage == null) {
-                    if (doMsg) {
-                        Console.Error.WriteLine("Unable to open disk image: " + label);
-                    }
-                    return null;
-                }
-                // Do the disk analysis while we have the order hint handy.
-                diskImage.AnalyzeDisk(null, orderHint, IDiskImage.AnalysisDepth.Full);
-                return diskImage;
-            } else {
-                IArchive? archive = FileAnalyzer.PrepareArchive(stream, kind, appHook);
-                if (archive == null) {
-                    if (doMsg) {
-                        Console.Error.WriteLine("Unable to open archive: " + label);
-                    }
-                    return null;
-                }
-                return archive;
-            }
         }
     }
 }

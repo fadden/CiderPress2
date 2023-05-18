@@ -115,7 +115,8 @@ namespace DiskArc {
         /// This allows the file to be closed and re-opened without discarding state.</para>
         /// <para>The re-opened stream must match the original exactly, or the behavior is
         /// undefined.  Implementations are not required to verify the contents of the new
-        /// stream.  The old stream may already have been closed when this is called.</para>
+        /// stream.  The old stream may already have been closed when this is called, so it's
+        /// not possible to verify stream contents by reading the old stream.</para>
         /// </remarks>
         /// <param name="newStream">New stream.</param>
         /// <returns>Old data stream.  May be null for a newly-created archive (though this

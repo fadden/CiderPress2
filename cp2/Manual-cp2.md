@@ -1725,6 +1725,7 @@ Some ideas for the future:
  - Add file "fingerprint" feature: print CRC-32 or other hash for data/rsrc
    next to each filename.
  - Multi-archive "grep" (same transformation as "print", but does text search).
+   Could support modifiers, e.g. search by file type or mod date range.
  - Non-archive file utilities: EOL / high ASCII converter, sciibin, etc.
  - Support half/quarter tracks and 524-byte sectors in the read/write sector
    commands.
@@ -1735,8 +1736,9 @@ Some ideas for the future:
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add `get-attr` to get file attributes in machine-readable form.
  - Add `show-vol-bitmap` to display free/in-use blocks.
- - Add command to zero out unused blocks on disk images, to improve
-   compression / security ("wipe", "clean", "scrub", ?)
+ - Add command to zero out unused blocks on disk images, and perhaps the
+   names of deleted files, to improve compression / security ("wipe",
+   "clean", "scrub", ?)
 
 Additional short options to consider:
  - `-v` for `--verbose`?  (Not needed, verbose is default)
