@@ -66,11 +66,7 @@ namespace cp2 {
         /// <summary>
         /// True if we number partitions and embedded volumes from 1, instead of 0.
         /// </summary>
-        /// <remarks>
-        /// I think it looks better to start at 1, but it sure feels weird.  If everything
-        /// that cares references this constant it'll be easier to undo.
-        /// </remarks>
-        public static readonly bool ONE_BASED_INDEX = true;
+        public const bool ONE_BASED_INDEX = WorkTree.ONE_BASED_INDEX;
 
 
         /// <summary>

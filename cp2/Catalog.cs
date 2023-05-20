@@ -410,7 +410,7 @@ namespace cp2 {
                 Console.WriteLine("+++ rejected as archive (damage): " + entry.FullPathName);
                 return false;
             }
-            if (!FileIdentifier.HasArchiveAttribs(entry, out string ext)) {
+            if (!FileIdentifier.HasFileArchiveAttribs(entry, out string ext)) {
                 if (parms.Debug) {
                     Console.WriteLine("+++ rejected as archive (attribs): " + entry.FullPathName);
                 }
@@ -505,6 +505,7 @@ namespace cp2 {
                                 // archive" code rejects .SDK, because we try to treat .SDK as
                                 // a disk image since that's what people expect.  This yields
                                 // different behavior for .SDK in the host FS vs. in an archive.
+                                // Thought: have Has*Attribs() take a flag to toggle .SDK handling.
                             }
                             // If this is a NuFX-compressed disk image, handle it like a disk image.
                             NuFX arc = (NuFX)obj;

@@ -161,7 +161,7 @@ simultaneous opens.
 
 The library has no mutable global state, and may be used from multiple threads simultaneously.
 However, individual object instances are not reentrant, so access to filesystems and file data
-objects must be single-threaded.  In particular, a volume and all of its sub-volumes must be
+objects must be single-threaded.  In particular, a disk image and everything within it must be
 accessed from a single thread.
 
 Many library calls take an `AppHook` object as an argument.  This provides a way for the

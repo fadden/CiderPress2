@@ -309,7 +309,7 @@ namespace cp2 {
             GC.WaitForPendingFinalizers();
 #endif
             if (parms.ShowLog) {
-                parms.AppHook.LogD("Application exiting");
+                parms.AppHook.LogI("Application exiting");
                 SimpleMessageLog log = (SimpleMessageLog)parms.AppHook.Log;
                 Console.WriteLine("Log:");
                 Console.WriteLine(log.WriteToString());

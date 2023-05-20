@@ -264,7 +264,7 @@ namespace DiskArc.FS {
                 }
             }
 
-            AppHook.LogI("HFS.Dispose(" + disposing + ")");
+            AppHook.LogD("HFS.Dispose(" + disposing + ")");
 
             // This can happen easily if we have the filesystem in a "using" block and
             // something throws with a file open.  Post a warning and close all files.

@@ -539,7 +539,7 @@ namespace cp2_wpf {
                     type = ((APM_Partition)part).PartitionType;
                 }
                 PartitionListItem item =
-                    new PartitionListItem(index + (ArchiveTreeItem.ONE_BASED_INDEX ? 1 : 0),
+                    new PartitionListItem(index + (WorkTree.ONE_BASED_INDEX ? 1 : 0),
                         part.StartOffset / Defs.BLOCK_SIZE, part.Length / Defs.BLOCK_SIZE,
                         name, type);
                 PartitionList.Add(item);

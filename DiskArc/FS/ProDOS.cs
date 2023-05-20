@@ -287,7 +287,7 @@ namespace DiskArc.FS {
                 return;
             }
 
-            AppHook.LogI("ProDOS.Dispose(" + disposing + "): " + mVolDirHeader.VolumeName);
+            AppHook.LogD("ProDOS.Dispose(" + disposing + "): " + mVolDirHeader.VolumeName);
 
             // This can happen easily if we have the filesystem in a "using" block and
             // something throws with a file open.  Post a warning and close all files.

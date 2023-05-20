@@ -413,7 +413,7 @@ namespace DiskArc.FS {
                 return;
             }
 
-            AppHook.LogI("DOS.Dispose(" + disposing + "): Vol" + VolumeNum);
+            AppHook.LogD("DOS.Dispose(" + disposing + "): Vol" + VolumeNum);
 
             // This can happen easily if we have the filesystem in a "using" block and
             // something throws with a file open.  Post a warning and close all files.

@@ -291,7 +291,7 @@ namespace cp2_wpf {
                 string ext;
                 if (firstExt == string.Empty) {
                     if (!FileIdentifier.HasDiskImageAttribs(entry, out ext) &&
-                            !FileIdentifier.HasArchiveAttribs(entry, out ext)) {
+                            !FileIdentifier.HasFileArchiveAttribs(entry, out ext)) {
                         continue;
                     }
                 } else {
@@ -416,7 +416,7 @@ namespace cp2_wpf {
                 } else {
                     string ext;
                     if (!FileIdentifier.HasDiskImageAttribs(entry, out ext) &&
-                            !FileIdentifier.HasArchiveAttribs(entry, out ext)) {
+                            !FileIdentifier.HasFileArchiveAttribs(entry, out ext)) {
                         continue;
                     }
                     FilePart part = entry.IsDiskImage ? FilePart.DiskImage : FilePart.DataFork;

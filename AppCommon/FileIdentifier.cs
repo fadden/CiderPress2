@@ -21,7 +21,8 @@ namespace AppCommon {
     /// <summary>
     /// Functions for identifying file archives and disk images by name or file type.  This is
     /// used for files stored inside file archives or disk images, not those stored on the host
-    /// filesystem.
+    /// filesystem.  The goal is to filter out anything that doesn't appear to be a file
+    /// that we can descend into.
     /// </summary>
     public static class FileIdentifier {
         /// <summary>
@@ -51,7 +52,7 @@ namespace AppCommon {
         /// <summary>
         /// Returns true if the file attributes (type, extension) match those of a file archive.
         /// </summary>
-        public static bool HasArchiveAttribs(IFileEntry entry, out string ext) {
+        public static bool HasFileArchiveAttribs(IFileEntry entry, out string ext) {
             bool looksGood = false;
             bool hasProType = false;
             byte proType = 0;

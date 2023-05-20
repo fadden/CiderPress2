@@ -1736,6 +1736,7 @@ Some ideas for the future:
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add `get-attr` to get file attributes in machine-readable form.
  - Add `show-vol-bitmap` to display free/in-use blocks.
+ - Allow `test` to descend into the archive (use `--depth` option).
  - Add command to zero out unused blocks on disk images, and perhaps the
    names of deleted files, to improve compression / security ("wipe",
    "clean", "scrub", ?)

@@ -20,7 +20,6 @@ using AppCommon;
 using CommonUtil;
 using DiskArc;
 using static AppCommon.WorkTree;
-using static DiskArc.Defs;
 
 namespace cp2.Tests {
     public static class DebugWorkTree {
@@ -32,34 +31,76 @@ namespace cp2.Tests {
 
             string extArchive = args[0];
 
-            using WorkTree tree = new WorkTree(extArchive,
-                delegate(FileKind parentKind, FileKind childKind, string candidateName) {
-                        return DepthLimit(parentKind, childKind, candidateName, parms);
-                    }, parms.AppHook);
-            DumpTreeSummary(tree.RootNode, 0, "", true);
+            // Include the config parameters in the closure.
+            DepthLimiter limiter =
+                delegate (DepthParentKind parentKind, DepthChildKind childKind) {
+                    return DepthLimit(parentKind, childKind, parms.Depth);
+            };
+            using (WorkTree tree = new WorkTree(extArchive, limiter, parms.AppHook)) {
+                Console.Write(WorkTree.GenerateTreeSummary(tree));
+            }
 
             return true;
         }
 
         /// <summary>
-        /// WorkTree depth limiter function (<see cref="WorkTree.DepthLimiter"/>).
+        /// WorkTree depth limiter function (<see cref="WorkTree.DepthLimiter"/>).  This mimics
+        /// the behavior of "catalog".
         /// </summary>
-        private static bool DepthLimit(FileKind parentKind, FileKind childKind,
-                string candidateName, ParamsBag parms) {
-            return true;
-        }
-
-        private static void DumpTreeSummary(Node node, int depth, string indent,
-                bool isLastSib) {
-            Console.Write(indent);
-            Console.Write("+-");
-            Console.WriteLine(node.Label);
-
-            Node[] children = node.Children;
-            for (int i = 0; i < children.Length; i++) {
-                string newIndent = indent + (isLastSib ? "  " : "| ");
-                DumpTreeSummary(children[i], depth + 1, newIndent, i == children.Length - 1);
+        private static bool DepthLimit(DepthParentKind parentKind, DepthChildKind childKind,
+                ParamsBag.ScanDepth depth) {
+            if (depth == ParamsBag.ScanDepth.Max) {
+                // Always descend.
+                return true;
+            } else if (depth == ParamsBag.ScanDepth.Shallow) {
+                // We always descend into gzip, because gzip isn't very interesting for us,
+                // and we want to treat .SDK generally like a disk image.  Otherwise, never
+                // descend.
+                if (childKind == DepthChildKind.AnyFile) {
+                    return (parentKind == DepthParentKind.GZip ||
+                            parentKind == DepthParentKind.NuFX);
+                }
+                if (parentKind == DepthParentKind.GZip ||
+                        (parentKind == DepthParentKind.NuFX &&
+                         childKind == DepthChildKind.DiskPart)) {
+                    return true;
+                }
+            } else {
+                // Depth is "SubVol".  Explore ZIP, multi-part, .SDK, and embeds.  Don't examine
+                // any files in a filesystem.
+                if (childKind == DepthChildKind.AnyFile) {
+                    return (parentKind != DepthParentKind.FileSystem);
+                }
+                switch (parentKind) {
+                    case DepthParentKind.GZip:
+                        return true;
+                    case DepthParentKind.Zip:
+                        // Descend into disk images, but don't open archives.
+                        if (childKind == DepthChildKind.DiskImage) {
+                            return true;
+                        }
+                        break;
+                    case DepthParentKind.NuFX:
+                        // Descend into .SDK, but don't otherwise open the contents.
+                        if (parentKind == DepthParentKind.NuFX &&
+                                childKind == DepthChildKind.DiskPart) {
+                            return true;
+                        }
+                        break;
+                    case DepthParentKind.FileSystem:
+                        // Descend into embedded volumes, otherwise stop.
+                        if (childKind == DepthChildKind.Embed) {
+                            return true;
+                        }
+                        break;
+                    case DepthParentKind.MultiPart:
+                        return true;
+                    default:
+                        Debug.Assert(false, "Unhandled case: " + parentKind);
+                        break;
+                }
             }
+            return false;
         }
     }
 }

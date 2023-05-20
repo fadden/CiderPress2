@@ -15,6 +15,7 @@
  */
 using System;
 using System.Diagnostics;
+using System.Text;
 
 using CommonUtil;
 using DiskArc;
@@ -23,24 +24,33 @@ using DiskArc.Multi;
 using static DiskArc.Defs;
 using static DiskArc.IFileSystem;
 
+// TODO:
+// - replace ArchiveTreeItem implementation
+// - add new items on double-click; close items when requested (in case of accidental double-click)
+
 namespace AppCommon {
     /// <summary>
     /// <para>Tree of DiskArc library objects we're working on.  This includes all multi-part
     /// formats, filesystems, embedded volumes, and file archives, which may be nested inside
     /// each other.</para>
+    /// <para>This is the tree that we show the user, so that they can examine every part of
+    /// every file.  The expectation is that there will be a 1:1 mapping between this and a
+    /// TreeView control.</para>
     /// </summary>
     /// <remarks>
     /// <para>This is intended for use from a GUI application, possibly running on a background
     /// thread, so progress updates and some of the customization are handled through
-    /// callbacks.</para>
-    /// <para><see cref="DiskArcNode"/> handles propagation of modifications.</para>
+    /// callbacks.  Raising or listening for events requires multi-thread awareness.</para>
+    /// <para><see cref="DiskArcNode"/> handles propagation of modifications.  This tree holds
+    /// a superset of the DiskArcNode tree nodes, but does not include the host file.</para>
     /// </remarks>
     public class WorkTree : IDisposable {
         /// <summary>
         /// True if we number partitions and embedded volumes from 1, instead of 0.
         /// </summary>
         /// <remarks>
-        /// <para>If this changes, also update ExtArchive for consistency with the CLI app.</para>
+        /// I think it looks better to start at 1, but it sure feels weird.  If everything
+        /// that cares references this constant it'll be easier to undo.
         /// </remarks>
         public const bool ONE_BASED_INDEX = true;
 
@@ -48,7 +58,26 @@ namespace AppCommon {
         /// One node in the work tree.
         /// </summary>
         public class Node {
-            public string Label { get; private set; }
+            /// <summary>
+            /// Human-readable label.
+            /// </summary>
+            public string Label { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Human-readable type string for DAObject.
+            /// </summary>
+            public string TypeStr { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Node status indicator.
+            /// </summary>
+            public Status NodeStatus { get; set; } = Status.Unknown;
+            public enum Status { Unknown = 0, OK, Dubious, Warning, Error };
+
+            /// <summary>
+            /// True if DAObject is read-only.
+            /// </summary>
+            public bool IsReadOnly { get; set; } = false;
 
             /// <summary>
             /// DiskArc library object.  May be IArchive, IDiskImage, IMultiPart, IFileSystem, or
@@ -63,15 +92,7 @@ namespace AppCommon {
             public DiskArcNode? DANode { get; private set; }
 
             /// <summary>
-            /// Node status indicator.
-            /// </summary>
-            public Status NodeStatus { get; private set; }
-            public enum Status { None = 0, OK, Dubious, Warning, Error };
-
-            // TODO: IsReadOnly, TypeString
-
-            /// <summary>
-            /// Copy of list of child nodes.
+            /// Copy of the list of child nodes.
             /// </summary>
             public Node[] Children { get { return mChildren.ToArray(); } }
 
@@ -88,9 +109,8 @@ namespace AppCommon {
             /// </summary>
             /// <param name="daObject">DiskArc object.</param>
             /// <param name="parent">Parent node reference.</param>
-            public Node(object daObject, string label, Node? parent) {
+            public Node(object daObject, Node? parent) {
                 DAObject = daObject;
-                Label = label;
                 Parent = parent;
                 DANode = null;
             }
@@ -101,9 +121,8 @@ namespace AppCommon {
             /// <param name="daObject">DiskArc object.</param>
             /// <param name="parent">Parent node reference.</param>
             /// <param name="daNode">DiskArcNode reference.</param>
-            public Node(object daObject, string label, Node? parent, DiskArcNode daNode) {
+            public Node(object daObject, Node? parent, DiskArcNode daNode) {
                 DAObject = daObject;
-                Label = label;
                 Parent = parent;
                 DANode = daNode;
             }
@@ -120,6 +139,9 @@ namespace AppCommon {
                 }
             }
 
+            /// <summary>
+            /// Adds a new child to this node.
+            /// </summary>
             public void AddChild(Node child) {
                 mChildren.Add(child);
             }
@@ -135,16 +157,28 @@ namespace AppCommon {
         private AppHook mAppHook;
 
         /// <summary>
-        /// Callback function used to decide if we want to go deeper.  Returns true if we should
-        /// proceed.
+        /// Callback function used to decide if we want to go deeper.
         /// </summary>
+        /// <remarks>
+        /// <para>We want to avoid scanning through child objects if we have no possible
+        /// interest in opening them, especially if they're stored compressed in an archive.</para>
+        /// <para>This feels a bit ad hoc, and it is: it exactly fits the current requirements.
+        /// We don't really have anything more appropriate to use at the moment.</para>
+        /// </remarks>
+        /// <param name="parentKind">Kind of file we're currently in.</param>
+        /// <param name="childKind">Kind of file we're thinking about prying open.</param>
+        /// <returns>True if we want to descend.</returns>
+        public delegate bool DepthLimiter(DepthParentKind parentKind, DepthChildKind childKind);
+        public enum DepthParentKind {
+            Unknown = 0, Zip, GZip, NuFX, Archive, FileSystem, MultiPart };
+        public enum DepthChildKind {
+            Unknown = 0, AnyFile, FileArchive, DiskImage, DiskPart, Embed };
+
         private DepthLimiter mDepthLimitFunc;
 
-        public delegate bool DepthLimiter(FileKind parentKind, FileKind childKind,
-            string candidateName);
 
         /// <summary>
-        /// Opens a file, unfolding a work tree.
+        /// Constructor.  Opens a file, unfolding a work tree.
         /// </summary>
         /// <param name="hostPathName">Pathname to file.</param>
         /// <param name="depthLimitFunc">Callback function that determines whether or not we
@@ -157,6 +191,8 @@ namespace AppCommon {
             mDepthLimitFunc = depthLimitFunc;
             mAppHook = appHook;
 
+            DateTime startWhen = DateTime.Now;
+            appHook.LogI("Constructing work tree for '" + hostPathName + "'");
             mHostFileNode = new HostFileNode(hostPathName, appHook);
 
             Stream? hostStream = null;
@@ -165,9 +201,10 @@ namespace AppCommon {
                     // Try to open with read-write access.
                     hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.ReadWrite,
                         FileShare.Read);
-                } catch (IOException) {
+                } catch (IOException ex) {
                     // Retry with read-only access.
-                    appHook.LogI("R/W open failed, retrying R/O: '" + hostPathName + "'");
+                    appHook.LogI("R/W open failed (" + ex.Message + "), retrying R/O: '" +
+                        hostPathName + "'");
                     hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.Read,
                         FileShare.Read);
                 }
@@ -176,39 +213,89 @@ namespace AppCommon {
                 // This will throw InvalidDataException if the stream isn't recognized.  Let
                 // the caller handle the exception (it has the error message).
                 Node? newNode = ProcessStream(hostStream, ext, hostPathName, null, mHostFileNode,
-                    IFileEntry.NO_ENTRY, appHook, out string errorMsg);
+                    IFileEntry.NO_ENTRY, out string errorMsg);
                 if (newNode == null) {
                     throw new InvalidDataException(errorMsg);
                 }
                 RootNode = newNode;
 
-                hostStream = null;      // don't close in "finally"
+                hostStream = null;      // we're good, don't let "finally" close it
             } finally {
                 hostStream?.Close();
             }
+
+            appHook.LogD("Work tree construction finished in " +
+                (DateTime.Now - startWhen).TotalMilliseconds + " ms");
         }
 
-        private static Node? ProcessStream(Stream stream, string ext, string pathName,
-                Node? parentNode, DiskArcNode daParent, IFileEntry entryInParent, AppHook appHook,
+        /// <summary>
+        /// Processes a stream with uncertain contents to see if it contains a disk image or
+        /// file archive.  If so, new nodes are created for the work tree and the DiskArcNode
+        /// tree.
+        /// </summary>
+        /// <param name="stream">Data stream.</param>
+        /// <param name="ext">File extension to use when analyzing the stream.</param>
+        /// <param name="pathName">Original pathname.  The extension may differ in certain
+        ///   cases (e.g. gzip and .SDK contents).</param>
+        /// <param name="parentNode">Work tree node parent.</param>
+        /// <param name="daParent">DiskArcNode tree parent.</param>
+        /// <param name="entryInParent">File entry in parent node's DAObject.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <param name="errorMsg">Error message with failure information.</param>
+        /// <returns>New work tree node, or null if the stream isn't disk or archive.</returns>
+        private Node? ProcessStream(Stream stream, string ext, string pathName,
+                Node? parentNode, DiskArcNode daParent, IFileEntry entryInParent,
                 out string errorMsg) {
-            IDisposable? leafObj = IdentifyStreamContents(stream, ext, pathName,
-                appHook, out errorMsg, out bool hasFiles);
+            IDisposable? leafObj = IdentifyStreamContents(stream, ext, pathName, mAppHook,
+                out errorMsg, out bool hasFiles);
             if (leafObj == null) {
                 return null;
             }
 
             DiskArcNode? leafNode;
+            string typeStr;
+            Node.Status status;
             Node newNode;
             if (leafObj is IArchive) {
                 IArchive arc = (IArchive)leafObj;
-                leafNode = new ArchiveNode(daParent, stream, arc, entryInParent, appHook);
-                newNode = new Node(leafObj, pathName, parentNode, leafNode);
-                ProcessFileArchive((IArchive)leafObj, stream, newNode, leafNode, pathName, appHook);
+                leafNode = new ArchiveNode(daParent, stream, arc, entryInParent, mAppHook);
+
+                typeStr = ThingString.IArchive(arc);
+                if (arc.IsDubious) {
+                    status = Node.Status.Dubious;
+                } else if (arc.Notes.WarningCount > 0 || arc.Notes.ErrorCount > 0) {
+                    status = Node.Status.Warning;
+                } else {
+                    status = Node.Status.OK;
+                }
+                newNode = new Node(leafObj, parentNode, leafNode) {
+                    Label = pathName,
+                    TypeStr = typeStr,
+                    NodeStatus = status,
+                    IsReadOnly = arc.IsDubious
+                };
+
+                ProcessFileArchive((IArchive)leafObj, newNode, leafNode, pathName);
             } else if (leafObj is IDiskImage) {
                 IDiskImage disk = (IDiskImage)leafObj;
-                leafNode = new DiskImageNode(daParent, stream, disk, entryInParent, appHook);
-                newNode = new Node(leafObj, pathName, parentNode, leafNode);
-                ProcessDiskImage((IDiskImage)leafObj, stream, newNode, leafNode, appHook);
+                leafNode = new DiskImageNode(daParent, stream, disk, entryInParent, mAppHook);
+
+                typeStr = ThingString.IDiskImage(disk);
+                if (disk.IsDubious) {
+                    status = Node.Status.Dubious;
+                } else if (disk.Notes.WarningCount > 0 || disk.Notes.ErrorCount > 0) {
+                    status = Node.Status.Warning;
+                } else {
+                    status = Node.Status.OK;
+                }
+                newNode = new Node(leafObj, parentNode, leafNode) {
+                    Label = pathName,
+                    TypeStr = typeStr,
+                    NodeStatus = status,
+                    IsReadOnly = disk.IsReadOnly
+                };
+
+                ProcessDiskImage((IDiskImage)leafObj, newNode, leafNode);
             } else {
                 throw new NotImplementedException(
                     "Unexpected result from IdentifyStreamContents: " + leafObj);
@@ -216,44 +303,75 @@ namespace AppCommon {
             return newNode;
         }
 
-        private static void ProcessFileArchive(IArchive arc, Stream UNUSED, Node arcNode,
-                DiskArcNode daParent, string pathName, AppHook appHook) {
+        /// <summary>
+        /// Processes the contents of a file archive.
+        /// </summary>
+        private void ProcessFileArchive(IArchive arc, Node arcNode, DiskArcNode daParent,
+                string pathName) {
+            DepthParentKind parentKind;
+
             string firstExt = string.Empty;
             if (arc is GZip) {
-                if (pathName.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase)) {
-                    firstExt = Path.GetExtension(pathName.Substring(0, pathName.Length - 3));
-                } else {
-                    firstExt = Path.GetExtension(pathName);
-                }
+                parentKind = DepthParentKind.GZip;
             } else if (arc is NuFX) {
-                IEnumerator<IFileEntry> numer = arc.GetEnumerator();
-                if (numer.MoveNext()) {
-                    // has at least one entry
-                    if (numer.Current.IsDiskImage && !numer.MoveNext()) {
-                        // single entry, is disk image
-                        firstExt = ".po";
-                    }
-                }
+                parentKind = DepthParentKind.NuFX;
+                //IEnumerator<IFileEntry> numer = arc.GetEnumerator();
+                //if (numer.MoveNext()) {
+                //    // has at least one entry
+                //    if (numer.Current.IsDiskImage && !numer.MoveNext()) {
+                //        // single entry, is disk image
+                //        firstExt = ".po";
+                //    }
+                //}
+            } else if (arc is Zip) {
+                parentKind = DepthParentKind.Zip;
+            } else {
+                parentKind = DepthParentKind.Archive;
+            }
+
+            // If we're not interested in opening any sort of child, bail out now.
+            if (!mDepthLimitFunc(parentKind, DepthChildKind.AnyFile)) {
+                return;
             }
 
             // Evaluate entries to see if they look like archives or disk images.  If the
             // attributes are favorable, open the file and peek at it.
             foreach (IFileEntry entry in arc) {
+                DepthChildKind childKind;
                 string ext;
-                if (firstExt == string.Empty) {
-                    if (!FileIdentifier.HasDiskImageAttribs(entry, out ext) &&
-                            !FileIdentifier.HasArchiveAttribs(entry, out ext)) {
+                if (entry.IsDiskImage) {
+                    childKind = DepthChildKind.DiskPart;
+                    // For .SDK we always want to treat it as a ProDOS-ordered image.
+                    ext = ".po";
+                } else {
+                    if (FileIdentifier.HasDiskImageAttribs(entry, out ext)) {
+                        childKind = DepthChildKind.DiskImage;
+                    } else if (FileIdentifier.HasFileArchiveAttribs(entry, out ext)) {
+                        childKind = DepthChildKind.FileArchive;
+                    } else {
+                        // Doesn't look like disk image or file archive.
                         continue;
                     }
-                } else {
-                    ext = firstExt;
+
+                    // For gzip we want to use the name of the gzip archive without the ".gz".
+                    // The name stored inside the archive may be out of date.
+                    if (arc is GZip) {
+                        if (pathName.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase)) {
+                            ext = Path.GetExtension(pathName.Substring(0, pathName.Length - 3));
+                        }
+                        // If it doesn't end with ".gz", use whatever we found earlier.
+                    }
                 }
+                if (!mDepthLimitFunc(parentKind, childKind)) {
+                    continue;
+                }
+
                 FilePart part = entry.IsDiskImage ? FilePart.DiskImage : FilePart.DataFork;
                 try {
                     Debug.WriteLine("+++ extract to temp: " + entry.FullPathName);
                     Stream tmpStream = ArcTemp.ExtractToTemp(arc, entry, part);
                     Node? newNode = ProcessStream(tmpStream, ext, entry.FullPathName, arcNode,
-                        daParent, entry, appHook, out string errorMsg);
+                        daParent, entry, out string errorMsg);
                     if (newNode == null) {
                         // Nothing was recognized.
                         return;
@@ -266,21 +384,27 @@ namespace AppCommon {
             }
         }
 
-        private static void ProcessDiskImage(IDiskImage disk, Stream UNUSED, Node diskImageNode,
-                DiskArcNode daParent, AppHook appHook) {
+        /// <summary>
+        /// Processes a disk image.  It may hold a filesystem, multi-partition layout, or
+        /// nothing recognizable (which can still be sector-edited).
+        /// </summary>
+        private void ProcessDiskImage(IDiskImage disk, Node diskImageNode,
+                DiskArcNode daParent) {
             // AnalyzeDisk() has already been called.  We want to set up tree items for the
             // filesystem, or for multiple partitions.
             if (disk.Contents is IFileSystem) {
-                ProcessFileSystem((IFileSystem)disk.Contents, diskImageNode, daParent, appHook);
+                ProcessFileSystem((IFileSystem)disk.Contents, diskImageNode, daParent);
             } else if (disk.Contents is IMultiPart) {
-                ProcessPartitions((IMultiPart)disk.Contents, diskImageNode, daParent, appHook);
+                ProcessMultiPart((IMultiPart)disk.Contents, diskImageNode, daParent);
             } else {
                 // Nothing recognizable.  Sector editing is still possible.
             }
         }
 
-        private static void ProcessFileSystem(IFileSystem fs, Node diskImageNode,
-                DiskArcNode daParent, AppHook appHook) {
+        /// <summary>
+        /// Processes a filesystem, looking for file archives and disk images.
+        /// </summary>
+        private void ProcessFileSystem(IFileSystem fs, Node diskImageNode, DiskArcNode daParent) {
             // Generate a label for the filesystem.
             string label;
             try {
@@ -290,68 +414,119 @@ namespace AppCommon {
             } catch (DAException) {
                 label = "(unknown)";
             }
+            string typeStr = ThingString.IFileSystem(fs);
+            Node.Status status;
+            if (fs.IsDubious) {
+                status = Node.Status.Dubious;
+            } else if (fs.Notes.WarningCount > 0 || fs.Notes.ErrorCount > 0) {
+                status = Node.Status.Warning;
+            } else {
+                status = Node.Status.OK;
+            }
 
             // Add a node for the filesystem.  No DiskArcNode.
-            Node fsNode = new Node(fs, label, diskImageNode);
+            Node fsNode = new Node(fs, diskImageNode) {
+                Label = label,
+                TypeStr = typeStr,
+                NodeStatus = status,
+                IsReadOnly = fs.IsReadOnly
+            };
             diskImageNode.AddChild(fsNode);
 
             // Check for embedded volumes.
-            IMultiPart? embeds = fs.FindEmbeddedVolumes();
-            if (embeds != null) {
-                ProcessPartitions(embeds, fsNode, daParent, appHook);
+            if (mDepthLimitFunc(DepthParentKind.FileSystem, DepthChildKind.Embed)) {
+                IMultiPart? embeds = fs.FindEmbeddedVolumes();
+                if (embeds != null) {
+                    ProcessMultiPart(embeds, fsNode, daParent);
+                }
             }
 
-            ScanFileSystem(fs, fsNode, daParent, appHook);
+            if (mDepthLimitFunc(DepthParentKind.FileSystem, DepthChildKind.AnyFile)) {
+                ScanFileSystem(fs, fsNode, daParent);
+            }
         }
 
-        private static void ProcessPartitions(IMultiPart partitions, Node parentNode,
-                DiskArcNode daParent, AppHook appHook) {
+        /// <summary>
+        /// Processes the partitions in a multi-partition layout.
+        /// </summary>
+        private void ProcessMultiPart(IMultiPart partitions, Node parentNode,
+                DiskArcNode daParent) {
             // Create an entry for the partition map object.
             string typeStr = ThingString.IMultiPart(partitions);
-            string label = "partitions";
-            Node multiNode = new Node(partitions, label, parentNode);
+            Node.Status status = partitions.IsDubious ? Node.Status.Dubious : Node.Status.OK;
+            Node multiNode = new Node(partitions, parentNode) {
+                Label = "partitions",
+                TypeStr = typeStr,
+                NodeStatus = status,
+                IsReadOnly = false
+            };
             parentNode.AddChild(multiNode);
 
-            int index = ONE_BASED_INDEX ? 1 : 0;
-            foreach (Partition part in partitions) {
-                ProcessPartition(part, index, multiNode, daParent, appHook);
-                index++;
+            if (mDepthLimitFunc(DepthParentKind.MultiPart, DepthChildKind.AnyFile)) {
+                int index = ONE_BASED_INDEX ? 1 : 0;
+                foreach (Partition part in partitions) {
+                    ProcessPartition(part, index, multiNode, daParent);
+                    index++;
+                }
             }
         }
 
-        private static void ProcessPartition(Partition part, int index, Node parentNode,
-                DiskArcNode daParent, AppHook appHook) {
+        /// <summary>
+        /// Processes a single partition.  If we find a filesystem, go process that.
+        /// </summary>
+        private void ProcessPartition(Partition part, int index, Node parentNode,
+                DiskArcNode daParent) {
             // Create an entry for this partition.
-            string label = "Part #" + index;
+            string typeStr = ThingString.Partition(part);
+            string label = "#" + index;
             if (part is APM_Partition) {
                 label += ": " + ((APM_Partition)part).PartitionName;
             }
-            Node partNode = new Node(part, label, parentNode);
+            Node partNode = new Node(part, parentNode) {
+                Label = label,
+                TypeStr = typeStr,
+                NodeStatus = Node.Status.OK,
+                IsReadOnly = false
+            };
             parentNode.AddChild(partNode);
 
             part.AnalyzePartition();
             if (part.FileSystem != null) {
-                ProcessFileSystem(part.FileSystem, partNode, daParent, appHook);
+                ProcessFileSystem(part.FileSystem, partNode, daParent);
             }
         }
 
-        private static void ScanFileSystem(IFileSystem fs, Node parentNode, DiskArcNode daParent,
-                AppHook appHook) {
+        /// <summary>
+        /// Scans a filesystem, looking for disk images and file archives.
+        /// </summary>
+        private void ScanFileSystem(IFileSystem fs, Node parentNode, DiskArcNode daParent) {
+            Debug.Assert(mDepthLimitFunc(DepthParentKind.FileSystem, DepthChildKind.AnyFile));
             IFileEntry volDir = fs.GetVolDirEntry();
-            ScanDirectory(fs, volDir, parentNode, daParent, appHook);
+            ScanDirectory(fs, volDir, parentNode, daParent);
         }
 
-        private static void ScanDirectory(IFileSystem fs, IFileEntry dirEntry,
-                Node fsNode, DiskArcNode daParent, AppHook appHook) {
+        /// <summary>
+        /// Recursively scans the directory structure.
+        /// </summary>
+        private void ScanDirectory(IFileSystem fs, IFileEntry dirEntry, Node fsNode,
+                DiskArcNode daParent) {
             foreach (IFileEntry entry in dirEntry) {
                 if (entry.IsDirectory) {
-                    ScanDirectory(fs, entry, fsNode, daParent, appHook);
+                    ScanDirectory(fs, entry, fsNode, daParent);
                 } else {
+                    DepthChildKind childKind;
                     string ext;
-                    if (!FileIdentifier.HasDiskImageAttribs(entry, out ext) &&
-                            !FileIdentifier.HasArchiveAttribs(entry, out ext)) {
+                    if (FileIdentifier.HasDiskImageAttribs(entry, out ext)) {
+                        childKind = DepthChildKind.DiskImage;
+                    } else if (FileIdentifier.HasFileArchiveAttribs(entry, out ext)) {
+                        childKind = DepthChildKind.FileArchive;
+                    } else {
                         continue;
                     }
+                    if (!mDepthLimitFunc(DepthParentKind.FileSystem, childKind)) {
+                        continue;
+                    }
+
                     FilePart part = entry.IsDiskImage ? FilePart.DiskImage : FilePart.DataFork;
                     Stream? stream = null;
                     try {
@@ -361,7 +536,7 @@ namespace AppCommon {
 
                         stream = fs.OpenFile(entry, accessMode, part);
                         Node? newNode = ProcessStream(stream, ext, entry.FullPathName, fsNode,
-                            daParent, entry, appHook, out string errorMsg);
+                            daParent, entry, out string errorMsg);
                         if (newNode == null) {
                             // Nothing was recognized.
                             return;
@@ -449,7 +624,50 @@ namespace AppCommon {
         }
         protected virtual void Dispose(bool disposing) {
             if (disposing) {
+                mAppHook.LogD("Disposing work tree (disp=" + disposing + ")");
                 mHostFileNode.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Generates an ASCII-art diagram of the work tree.
+        /// </summary>
+        public static string GenerateTreeSummary(WorkTree tree) {
+            StringBuilder sb = new StringBuilder();
+            GenerateTreeSummary(tree.RootNode, 0, "", true, sb);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Recursively generates an ASCII-art diagram of the work tree.
+        /// </summary>
+        private static void GenerateTreeSummary(Node node, int depth, string indent,
+                bool isLastSib, StringBuilder sb) {
+            sb.Append(indent);
+            sb.Append("+-");
+            sb.Append(node.TypeStr);
+            sb.Append(": ");
+            sb.Append(node.Label);
+            if (node.IsReadOnly) {
+                sb.Append(" -RO-");
+            }
+            if (node.NodeStatus != Node.Status.OK) {
+                sb.Append(" *");
+                sb.Append(node.NodeStatus);
+                sb.Append('*');
+            }
+            if (node.DANode != null) {
+                sb.Append(" [");
+                sb.Append(node.DANode.GetType().Name);
+                sb.Append("]");
+            }
+            sb.AppendLine();
+
+            Node[] children = node.Children;
+            for (int i = 0; i < children.Length; i++) {
+                string newIndent = indent + (isLastSib ? "  " : "| ");
+                GenerateTreeSummary(children[i], depth + 1, newIndent, i == children.Length - 1,
+                    sb);
             }
         }
     }
