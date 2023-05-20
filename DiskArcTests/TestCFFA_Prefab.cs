@@ -153,7 +153,9 @@ namespace DiskArcTests {
                 // Should be zeroed if it's part of the filesystem [citation needed], but if we
                 // want the MemoryStream zeroed we'll need to do it ourselves.  Doing so negates
                 // most of the performance advantage of keeping the temp file in RAM, at least on
-                // a system with lots of RAM (big file cache) and M.2 storage.
+                // a system with lots of RAM (big file cache) and M.2 storage.  We could probably
+                // get away with just zeroing the first few blocks every 32MB to ensure we're
+                // not getting a false-positive from a previous volume.
                 tmpStream.SetLength(0);
                 tmpStream.SetLength((long)totalBlocks * BLOCK_SIZE);
                 if (tmpStream is MemoryStream) {
@@ -200,6 +202,23 @@ namespace DiskArcTests {
             }
 
             appHook.LogI("Total generation time: " + totalTimeMsec + " ms");
+            tmpStream.Close();
+        }
+
+        // Create a large empty file to verify that CFFA rejects it.
+        public static void TestNot(AppHook appHook) {
+            using Stream tmpStream = TempFile.CreateTempFile();
+            tmpStream.SetLength(SIZE_32MB * BLOCK_SIZE * 5);
+            using (IDiskImage? disk = FileAnalyzer.PrepareDiskImage(tmpStream,
+                    FileKind.UnadornedSector, appHook)) {
+                if (disk == null) {
+                    throw new Exception("Failed to prepare disk image");
+                }
+                disk.AnalyzeDisk();
+                if (disk.Contents is CFFA) {
+                    throw new Exception("Disk was accepted as CFFA");
+                }
+            }
         }
 
         /// <summary>

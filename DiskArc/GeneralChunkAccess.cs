@@ -115,7 +115,7 @@ namespace DiskArc {
                 uint sectorsPerTrack, SectorOrder fileOrder)
                 : this(file, startOffset) {
             if (fileOrder == SectorOrder.Unknown) {
-                throw new ArgumentException("Sector ordering must be specified");
+                throw new ArgumentException("Sector ordering must be specified for sector access");
             }
             if (numTracks == 0 || numTracks > 255) {
                 // No real need to limit the upper bound.  Cap it for now in case we decide

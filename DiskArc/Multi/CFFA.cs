@@ -174,6 +174,10 @@ namespace DiskArc.Multi {
                     DisposePartitions(partitions);
                     return null;
                 }
+            } else if (goodCount == 0) {
+                // If there's nothing recognizable in the first four, bail.
+                DisposePartitions(partitions);
+                return null;
             }
             Debug.Assert(startBlock == STD_PART_COUNT * 4);
 
@@ -217,11 +221,8 @@ namespace DiskArc.Multi {
 
             appHook.LogI("CFFA > 4: " + partitions.Count + " partitions, " +
                 goodCount + " good");
-            if (partitions.Count > 1) {
-                return partitions;
-            } else {
-                return null;
-            }
+            Debug.Assert(goodCount > 0);
+            return partitions;
         }
 
         /// <summary>
