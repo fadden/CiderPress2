@@ -52,9 +52,10 @@ using static DiskArc.IFileSystem;
 //
 // The various other interesting situations can be tested as part of the "copy" command tests.
 //
-// Copying to an ancestor should work; either the ancestor is a disk image with an open file
+// Copying to a tree ancestor should work; either the ancestor is a disk image with an open file
 // for the child (which is fine so long as the ancestor itself is not the copy target), or the
-// ancestor is an archive and the child was extracted to a temporary file.
+// ancestor is an archive and the child was extracted to a temporary file, so the child archive can
+// be accessed even when the parent is mid-transaction.
 //
 
 namespace cp2 {

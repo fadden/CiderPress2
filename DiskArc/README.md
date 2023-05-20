@@ -18,11 +18,30 @@ fundamentally different.
  - File archive entries include the entire pathname, not just a filename, and the archive can
    have multiple entries with the same name.  The rules for determining whether a name is a
    duplicate of an existing entry are often left up to the application.  Disk image entries
-   only store the filename, and may have a hierarchical structure.
+   only hold the filename, are unique, and may have a hierarchical structure.
 
 The differences mean that having a single model for working with both disk images and file
 archives is difficult.  The DiskArc library uses a different set of classes for each, with a
 few things in common.
+
+The class/interface relationships look something like this:
+```
+ - IDiskImage (opt: INibbleDataAccess, IMetadata)
+   - IChunkAccess (opt: SectorCodec)
+   - IMultiPart
+     - Partition
+   - IFileSystem
+     - IChunkAccess
+     - IFileEntry
+     - DiskFileStream
+ - IArchive
+   - IFileEntry
+   - ArcReadStream
+   - IPartSource
+```
+The relationships are more complicated than shown, e.g. most `Partitions` have an `IFileSystem`,
+and filesystems with embedded volumes have an `IMultiPart`.  Note `IFileEntry` is used for both
+filesystems and file archives.
 
 ## About Disk Images ##
 
@@ -36,14 +55,15 @@ images, and `Woz` for bit- and flux-level imaging of 5.25" and 3.5" disks.
 The disk image provides the data as "cooked" sector data or "raw" nibble data.  This is formed
 into 256-byte, 512-byte, or 1024-byte chunks by an implementation of the `IChunkAccess` class.
 If the source has raw nibbles, that data can be accessed through the `INibbleDataAccess`
-interface.  These classes are effectively disk device drivers (or RWTS code).
+interface, which uses instances of `SectorCodec` to cook the raw data.  These classes are
+effectively disk device drivers (or RWTS code).
 
 If the disk image has multiple partitions, e.g. the Apple Partition Map (APM) format used on
 hard drives and CD-ROMs, an instance of the `IMultiPart` class will break it into individual
 subclasses of `Partition`.
 
 Once we have access to chunks, we need to read the filesystem.  Instances of the `IFileSystem`
-class can be found in the "DiskArc.FS" namespace.  Individual file entries are presented through
+class can be found in the `DiskArc.FS` namespace.  Individual file entries are presented through
 a filesystem-specific subclass of `IFileEntry` (this interface is also used by the file archive
 classes).
 
@@ -166,7 +186,7 @@ they're not accessible at all.  Minor problems are logged in human-readable form
 object associated with the disk image, filesystem, partition, or archive.  Applications can
 display these to the user.
 
-TODO: the VolumeUsage class provides an annotated volume bitmap, showing which blocks or sectors
+TODO: the `VolumeUsage` class provides an annotated volume bitmap, showing which blocks or sectors
 are in use, and by whom.  Requires a full scan and file-access mode.  (Not currently available.)
 
 ### IDisposable ###
@@ -301,7 +321,7 @@ HFS does not support ProDOS file types or sparse files.  A scheme for storing Pr
 in the creator and file type fields is defined, but it is up to the application to perform
 the translation if desired.
 
-Using SetLength() to extend a file will cause additional storage to be allocated immediately.
+Using `SetLength()` to extend a file will cause additional storage to be allocated immediately.
 
 Filenames may be up to 31 characters long, and include any character except colon (':'), except
 for the volume name which is limited to 27 characters.  Names may have embedded null bytes, though

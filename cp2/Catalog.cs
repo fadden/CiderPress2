@@ -497,6 +497,15 @@ namespace cp2 {
                                 entry.FullPathName + "\"");
                             CatalogDiskImage((IDiskImage)obj, indent, parms);
                         } else if (obj is NuFX) {
+                            if (!parms.SkipSimple) {
+                                // TODO:
+                                // If we're not skipping simple, we should return false here and
+                                // let the archive-dump code display the NuFX, and then dump the
+                                // disk when it drops one level down.  However, the "is it an
+                                // archive" code rejects .SDK, because we try to treat .SDK as
+                                // a disk image since that's what people expect.  This yields
+                                // different behavior for .SDK in the host FS vs. in an archive.
+                            }
                             // If this is a NuFX-compressed disk image, handle it like a disk image.
                             NuFX arc = (NuFX)obj;
                             IEnumerator<IFileEntry> numer = arc.GetEnumerator();

@@ -53,14 +53,15 @@ namespace cp2.Tests {
             //
             // It's also important to test disk-in-disk-in-arc, to ensure that disk-in-disk updates
             // don't get lazy.  Disks are just subsets of disk parents, so any changes propagate
-            // automatically.  Putting an archive on top ensures it's calling upward.  We also
-            // need arc-disk-arc, to verify that the disk "child archive was updated" code is
-            // also notifying the parent.  It's best to use a variety of formats, especially
-            // disk images like WOZ that cache track data until explicitly flushed.
+            // automatically, but may require an explicit "flush" call.  Putting an archive on
+            // top ensures that the sequence is calling upward.  We also need arc-disk-arc, to
+            // verify that the disk "child archive was updated" code is also notifying the parent.
+            // It's best to use a variety of formats, especially nibble formats like WOZ that cache
+            // track data until explicitly flushed.
             //
-            // In each case we want to create the file with the specified structure, and one
-            // file in the deepest part.  We then do two consecutive updates, close the node,
-            // and verify the file contents.
+            // In each case we want to create the file with the specified structure, with one
+            // file in the deepest part.  We then do two consecutive updates, adding one more file
+            // each time, then close the node and verify the file contents.
             //
 
             TestArc(parms);
