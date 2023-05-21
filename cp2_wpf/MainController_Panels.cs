@@ -318,6 +318,10 @@ namespace cp2_wpf {
             mMainWin.CenterStatusText = sb.ToString();
         }
 
+        private void ClearEntryCounts() {
+            mMainWin.CenterStatusText = string.Empty;
+        }
+
         /// <summary>
         /// Handles a double-click on a line in the file list grid.
         /// </summary>

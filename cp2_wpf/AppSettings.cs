@@ -40,6 +40,8 @@ namespace cp2_wpf {
         public const string MAIN_RIGHT_PANEL_VISIBLE = "main-right-panel-visible";
         public const string MAIN_WORK_TREE_HEIGHT = "main-work-tree-height";
 
+        public const string RECENT_FILES_LIST = "recent-files-list";
+
         // File handling features.
         public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -105,39 +106,81 @@ namespace cp2_wpf {
             }
         }
 
-        public bool ShowRecentProject1 {
-            get { return !string.IsNullOrEmpty(mRecentProjectName1); }
+        public bool ShowRecentFile1 {
+            get { return !string.IsNullOrEmpty(mRecentFileName1); }
         }
-        public string RecentProjectName1 {
-            get { return mRecentProjectName1; }
-            set { mRecentProjectName1 = value; OnPropertyChanged();
-                OnPropertyChanged("ShowRecentProject1"); }
+        public string RecentFileName1 {
+            get { return mRecentFileName1; }
+            set { mRecentFileName1 = value; OnPropertyChanged();
+                OnPropertyChanged("ShowRecentFile1"); }
         }
-        public string RecentProjectPath1 {
-            get { return mRecentProjectPath1; }
-            set { mRecentProjectPath1 = value; OnPropertyChanged(); }
+        public string RecentFilePath1 {
+            get { return mRecentFilePath1; }
+            set { mRecentFilePath1 = value; OnPropertyChanged(); }
         }
-        private string mRecentProjectName1 = string.Empty;
-        private string mRecentProjectPath1 = string.Empty;
+        private string mRecentFileName1 = string.Empty;
+        private string mRecentFilePath1 = string.Empty;
 
-        public bool ShowRecentProject2 {
-            get { return !string.IsNullOrEmpty(mRecentProjectName2); }
+        public bool ShowRecentFile2 {
+            get { return !string.IsNullOrEmpty(mRecentFileName2); }
         }
-        public string RecentProjectName2 {
-            get { return mRecentProjectName2; }
+        public string RecentFileName2 {
+            get { return mRecentFileName2; }
             set {
-                mRecentProjectName2 = value;
+                mRecentFileName2 = value;
                 OnPropertyChanged();
-                OnPropertyChanged("ShowRecentProject2");
+                OnPropertyChanged("ShowRecentFile2");
             }
         }
-        public string RecentProjectPath2 {
-            get { return mRecentProjectPath2; }
-            set { mRecentProjectPath2 = value; OnPropertyChanged(); }
+        public string RecentFilePath2 {
+            get { return mRecentFilePath2; }
+            set { mRecentFilePath2 = value; OnPropertyChanged(); }
         }
-        private string mRecentProjectName2 = string.Empty;
-        private string mRecentProjectPath2 = string.Empty;
+        private string mRecentFileName2 = string.Empty;
+        private string mRecentFilePath2 = string.Empty;
 
+        public void UpdateRecentLinks() {
+            List<string> pathList = mMainCtrl.RecentFilePaths;
+
+            if (pathList.Count >= 1) {
+                RecentFilePath1 = pathList[0];
+                RecentFileName1 = Path.GetFileName(pathList[0]);
+            }
+            if (pathList.Count >= 2) {
+                RecentFilePath2 = pathList[1];
+                RecentFileName2 = Path.GetFileName(pathList[1]);
+            }
+        }
+
+        /// <summary>
+        /// Generates the list of recently-opened files for the "open recent" menu.
+        /// </summary>
+        private void RecentFilesMenu_SubmenuOpened(object sender, RoutedEventArgs e) {
+            MenuItem recents = (MenuItem)sender;
+            recents.Items.Clear();
+
+            if (mMainCtrl.RecentFilePaths.Count == 0) {
+                MenuItem mi = new MenuItem();
+                mi.Header = "(none)";
+                recents.Items.Add(mi);
+            } else {
+                for (int i = 0; i < mMainCtrl.RecentFilePaths.Count; i++) {
+                    MenuItem mi = new MenuItem();
+                    mi.Header = EscapeMenuString(string.Format("{0}: {1}", i + 1,
+                        mMainCtrl.RecentFilePaths[i]));
+                    mi.Command = recentFileCmd.Command;
+                    mi.CommandParameter = i;
+                    recents.Items.Add(mi);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Escapes a string for use as a WPF menu item.
+        /// </summary>
+        private string EscapeMenuString(string instr) {
+            return instr.Replace("_", "__");
+        }
 
         /// <summary>
         /// Set to true if the DEBUG menu should be visible on the main menu strip.
@@ -305,7 +348,7 @@ namespace cp2_wpf {
         private void PasteCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Paste!");
         }
-        private void RecentProjectCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+        private void RecentFileCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             int recentIndex;
             if (e.Parameter is int) {
                 recentIndex = (int)e.Parameter;
@@ -314,12 +357,12 @@ namespace cp2_wpf {
             } else {
                 throw new Exception("Bad parameter: " + e.Parameter);
             }
-            if (recentIndex < 0 || recentIndex >= MainController.MAX_RECENT_PROJECTS) {
+            if (recentIndex < 0 || recentIndex >= MainController.MAX_RECENT_FILES) {
                 throw new Exception("Bad parameter: " + e.Parameter);
             }
 
             Debug.WriteLine("Recent project #" + recentIndex);
-            mMainCtrl.OpenRecentProject(recentIndex);
+            mMainCtrl.OpenRecentFile(recentIndex);
         }
         private void ResetSortCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             fileListDataGrid.ResetSort();

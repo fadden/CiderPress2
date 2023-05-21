@@ -64,7 +64,7 @@ limitations under the License.
             <RoutedUICommand x:Key="ExtractFilesCmd" Text="_Extract Files..."/>
             <RoutedUICommand x:Key="NewDiskImageCmd" Text="New _Disk Image..."/>
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
-            <RoutedUICommand x:Key="RecentProjectCmd"/>
+            <RoutedUICommand x:Key="RecentFileCmd"/>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>
             <RoutedUICommand x:Key="ShowDirListCmd" Text="Show Directory List"/>
             <RoutedUICommand x:Key="ShowFullListCmd" Text="Show Full List"/>
@@ -107,8 +107,8 @@ limitations under the License.
                         Executed="OpenCmd_Executed"/>
         <CommandBinding Command="Paste"
                         CanExecute="IsFileOpen" Executed="PasteCmd_Executed"/>
-        <CommandBinding Command="{StaticResource RecentProjectCmd}" x:Name="recentProjectCmd"
-                        Executed="RecentProjectCmd_Executed"/>
+        <CommandBinding Command="{StaticResource RecentFileCmd}" x:Name="recentFileCmd"
+                        Executed="RecentFileCmd_Executed"/>
         <CommandBinding Command="{StaticResource ResetSortCmd}"
                         CanExecute="IsFileOpen" Executed="ResetSortCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowDirListCmd}"
@@ -138,6 +138,10 @@ limitations under the License.
                 <MenuItem Command="{StaticResource NewFileArchiveCmd}"/>
                 <MenuItem Command="Open" Header="_Open"/>
                 <MenuItem Command="{StaticResource CloseCmd}"/>
+                <Separator/>
+                <MenuItem Name="recentFilesMenu" Header="Recent Files" SubmenuOpened="RecentFilesMenu_SubmenuOpened">
+                    <MenuItem Header="(none)"/>
+                </MenuItem>
                 <Separator/>
                 <MenuItem Command="{StaticResource ExitCmd}" InputGestureText="Alt+F4"/>
             </MenuItem>
@@ -217,8 +221,8 @@ limitations under the License.
                 <TextBlock Grid.Column="0" Text="Ready"/>
                 <TextBlock Grid.Column="1" HorizontalAlignment="Center"
                            Text="{Binding CenterStatusText, FallbackValue=MESSAGE}"/>
-                <TextBlock Grid.Column="2" Margin="4,0,20,0"
-                           Text="BOTTOM-RIGHT"/>
+                <!--<TextBlock Grid.Column="2" Margin="4,0,20,0"
+                           Text="BOTTOM-RIGHT"/>-->
             </Grid>
         </StatusBar>
 
@@ -270,24 +274,24 @@ limitations under the License.
                     <Button Content="Open file" Width="240" Height="50" Margin="10"
                             Command="Open"/>
                     <Button Width="240" Height="50" Margin="10"
-                            Visibility="{Binding ShowRecentProject1, Converter={StaticResource BoolToVis}}"
-                            ToolTip="{Binding RecentProjectPath1}" ToolTipService.InitialShowDelay="750"
-                            Command="{DynamicResource RecentProjectCmd}" CommandParameter="0">
+                            Visibility="{Binding ShowRecentFile1, Converter={StaticResource BoolToVis}}"
+                            ToolTip="{Binding RecentFilePath1}" ToolTipService.InitialShowDelay="750"
+                            Command="{DynamicResource RecentFileCmd}" CommandParameter="0">
                         <Button.Content>
                             <StackPanel>
-                                <TextBlock HorizontalAlignment="Center">Recent project #1</TextBlock>
-                                <TextBlock Text="{Binding RecentProjectName1, FallbackValue=RECENT 1}" HorizontalAlignment="Center"/>
+                                <TextBlock HorizontalAlignment="Center">Recent file #1</TextBlock>
+                                <TextBlock Text="{Binding RecentFileName1, FallbackValue=RECENT 1}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button.Content>
                     </Button>
                     <Button Width="240" Height="50" Margin="10"
-                            Visibility="{Binding ShowRecentProject2, Converter={StaticResource BoolToVis}}"
-                            ToolTip="{Binding RecentProjectPath2}" ToolTipService.InitialShowDelay="750"
-                            Command="{DynamicResource RecentProjectCmd}" CommandParameter="1">
+                            Visibility="{Binding ShowRecentFile2, Converter={StaticResource BoolToVis}}"
+                            ToolTip="{Binding RecentFilePath2}" ToolTipService.InitialShowDelay="750"
+                            Command="{DynamicResource RecentFileCmd}" CommandParameter="1">
                         <Button.Content>
                             <StackPanel>
-                                <TextBlock HorizontalAlignment="Center">Recent project #2</TextBlock>
-                                <TextBlock Text="{Binding RecentProjectName2, FallbackValue=RECENT 1}" HorizontalAlignment="Center"/>
+                                <TextBlock HorizontalAlignment="Center">Recent file #2</TextBlock>
+                                <TextBlock Text="{Binding RecentFileName2, FallbackValue=RECENT 2}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button.Content>
                     </Button>

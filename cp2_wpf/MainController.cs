@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -61,10 +62,10 @@ namespace cp2_wpf {
         //public bool IsFileAreaSelected { get { return IsFileOpen; } }   // TODO
 
         /// <summary>
-        /// List of recently-opened projects.
+        /// List of recently-opened files.
         /// </summary>
-        public List<string> RecentProjectPaths = new List<string>(MAX_RECENT_PROJECTS);
-        public const int MAX_RECENT_PROJECTS = 6;
+        public List<string> RecentFilePaths = new List<string>(MAX_RECENT_FILES);
+        public const int MAX_RECENT_FILES = 6;
 
         /// <summary>
         /// Auto-open behavior.
@@ -141,6 +142,7 @@ namespace cp2_wpf {
             ApplyAppSettings();
 
             UpdateTitle();
+            mMainWin.UpdateRecentLinks();
 
             ProcessCommandLine();
         }
@@ -228,7 +230,7 @@ namespace cp2_wpf {
 
         private void ApplyAppSettings() {
             // TODO
-            UnpackRecentProjectList();
+            UnpackRecentFileList();
         }
 
         public void NewDiskImage() {
@@ -288,6 +290,7 @@ namespace cp2_wpf {
 
             mWorkPathName = pathName;
             UpdateTitle();
+            UpdateRecentFilesList(pathName);
             mMainWin.ShowLaunchPanel = false;
         }
 
@@ -350,25 +353,65 @@ namespace cp2_wpf {
         /// <summary>
         /// Opens the Nth recently-opened project.
         /// </summary>
-        /// <param name="projIndex"></param>
-        public void OpenRecentProject(int projIndex) {
+        /// <param name="recentIndex"></param>
+        public void OpenRecentFile(int recentIndex) {
             if (!CloseWorkFile()) {
                 return;
             }
-            DoOpenWorkFile(RecentProjectPaths[projIndex], false);
+            DoOpenWorkFile(RecentFilePaths[recentIndex], false);
         }
 
-        private void UnpackRecentProjectList() {
-            RecentProjectPaths.Clear();
-            // TODO
-            string sample1 = @"C:\Src\CiderPress2\TestData\fileconv\test-files.sdk";
-            RecentProjectPaths.Add(sample1);
-            mMainWin.RecentProjectName1 = Path.GetFileName(sample1);
-            mMainWin.RecentProjectPath1 = sample1;
-            string sample2 = @"C:\Src\test\foo.po";
-            RecentProjectPaths.Add(sample2);
-            mMainWin.RecentProjectName2 = Path.GetFileName(sample2);
-            mMainWin.RecentProjectPath2 = sample2;
+        /// <summary>
+        /// Ensures that the named project is at the top of the list.  If it's elsewhere
+        /// in the list, move it to the top.  Excess items are removed.
+        /// </summary>
+        /// <param name="projectPath"></param>
+        private void UpdateRecentFilesList(string projectPath) {
+            if (string.IsNullOrEmpty(projectPath)) {
+                // This can happen if you create a new project, then close the window
+                // without having saved it.
+                return;
+            }
+            int index = RecentFilePaths.IndexOf(projectPath);
+            if (index == 0) {
+                // Already in the list, nothing changes.  No need to update anything else.
+                return;
+            }
+            if (index > 0) {
+                RecentFilePaths.RemoveAt(index);
+            }
+            RecentFilePaths.Insert(0, projectPath);
+
+            // Trim the list to the max allowed.
+            while (RecentFilePaths.Count > MAX_RECENT_FILES) {
+                RecentFilePaths.RemoveAt(MAX_RECENT_FILES);
+            }
+
+            // Store updated list in app settings.  JSON-in-JSON is ugly and inefficient,
+            // but it'll do for now.
+            string cereal = JsonSerializer.Serialize(RecentFilePaths, typeof(List<string>));
+            AppSettings.Global.SetString(AppSettings.RECENT_FILES_LIST, cereal);
+
+            mMainWin.UpdateRecentLinks();
+        }
+
+        private void UnpackRecentFileList() {
+            RecentFilePaths.Clear();
+
+            string cereal = AppSettings.Global.GetString(AppSettings.RECENT_FILES_LIST, "");
+            if (string.IsNullOrEmpty(cereal)) {
+                return;
+            }
+
+            try {
+                object? parsed = JsonSerializer.Deserialize<List<string>>(cereal);
+                if (parsed != null) {
+                    RecentFilePaths = (List<string>)parsed;
+                }
+            } catch (Exception ex) {
+                Debug.WriteLine("Failed deserializing recent projects: " + ex.Message);
+                return;
+            }
         }
 
         /// <summary>
@@ -388,6 +431,7 @@ namespace cp2_wpf {
             mWorkTree = null;
 
             UpdateTitle();
+            ClearEntryCounts();
             mMainWin.ShowLaunchPanel = true;
 
             // Not necessary, but it lets us check the memory monitor to see if we got
