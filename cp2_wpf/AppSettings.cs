@@ -45,5 +45,7 @@ namespace cp2_wpf {
         // File handling features.
         public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";
+
+        public const string DEBUG_MENU_ENABLED = "debug-menu-enabled";
     }
 }

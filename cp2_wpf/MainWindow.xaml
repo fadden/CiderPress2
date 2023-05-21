@@ -60,6 +60,7 @@ limitations under the License.
                     <KeyGesture>Ctrl+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
+            <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
             <RoutedUICommand x:Key="ExitCmd" Text="E_xit"/>
             <RoutedUICommand x:Key="ExtractFilesCmd" Text="_Extract Files..."/>
             <RoutedUICommand x:Key="NewDiskImageCmd" Text="New _Disk Image..."/>
@@ -93,6 +94,8 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="CopyCmd_Executed"/>
         <CommandBinding Command="Cut"
                         CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
+        <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
+                        Executed="EditAppSettingsCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExitCmd}"
                         Executed="ExitCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExtractFilesCmd}"
@@ -153,6 +156,8 @@ limitations under the License.
                 <MenuItem Command="Find" Header="_Find"/>
                 <Separator/>
                 <MenuItem Command="SelectAll" Header="Select _All"/>
+                <Separator/>
+                <MenuItem Command="{StaticResource EditAppSettingsCmd}"/>
             </MenuItem>
             <MenuItem Header="_Actions">
                 <MenuItem Command="{StaticResource ViewFilesCmd}"/>
@@ -586,7 +591,6 @@ limitations under the License.
                             <StackPanel Grid.Row="1" Margin="2,6,0,0">
                                 <CheckBox Content="Recursive"/>
                                 <CheckBox Content="Use Compression"/>
-                                <CheckBox Content="Mac ZIP"/>
                                 <CheckBox Content="Strip Paths"/>
                                 <CheckBox Content="Strip Redundant Extensions"/>
                                 <CheckBox Content="Raw (for DOS 3.x)"/>
@@ -597,7 +601,6 @@ limitations under the License.
                             </StackPanel>
 
                             <StackPanel Grid.Row="3" Margin="2,6,0,0">
-                                <CheckBox Content="Mac ZIP"/>
                                 <CheckBox Content="Strip Paths"/>
                                 <CheckBox Content="Raw (for DOS 3.x)"/>
                                 <GroupBox Header="Preservation Mode">

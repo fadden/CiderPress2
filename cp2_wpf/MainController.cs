@@ -130,14 +130,16 @@ namespace cp2_wpf {
         /// to this point so we can report fatal errors directly to the user.
         /// </summary>
         public void WindowLoaded() {
-            Debug.WriteLine("Unit tests...");
+            Debug.WriteLine("--- running unit tests ---");
+            Debug.Assert(CommonUtil.RangeSet.Test());
+            Debug.Assert(CommonUtil.Version.Test());
             Debug.Assert(CircularBitBuffer.DebugTest());
             Debug.Assert(Glob.DebugTest());
             Debug.Assert(PathName.DebugTest());
             Debug.Assert(TimeStamp.DebugTestDates());
             Debug.Assert(DiskArc.Disk.TrackInit.DebugCheckInterleave());
             Debug.Assert(DiskArc.Disk.Woz_Meta.DebugTest());
-            Debug.WriteLine("Unit tests complete");
+            Debug.WriteLine("--- unit tests complete ---");
 
             ApplyAppSettings();
 
@@ -229,7 +231,12 @@ namespace cp2_wpf {
         }
 
         private void ApplyAppSettings() {
-            // TODO
+            Debug.WriteLine("Applying app settings...");
+
+            // Enable the DEBUG menu if configured.
+            mMainWin.ShowDebugMenu =
+                AppSettings.Global.GetBool(AppSettings.DEBUG_MENU_ENABLED, false);
+
             UnpackRecentFileList();
         }
 
@@ -458,6 +465,16 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Edit : Application Settings.
+        /// </summary>
+        public void EditAppSettings() {
+            EditAppSettings dlg = new EditAppSettings(mMainWin);
+            dlg.SettingsApplied += ApplyAppSettings;
+            dlg.ShowDialog();
+            // Settings are applied via event.
+        }
+
+        /// <summary>
         /// Obtains the currently-selected entries from the archive tree and directory tree.
         /// </summary>
         /// <param name="archiveOrFileSystem">Result: IArchive or IFileSystem object selected
@@ -562,6 +579,9 @@ namespace cp2_wpf {
             return true;
         }
 
+        /// <summary>
+        /// Opens the file viewer.
+        /// </summary>
         public void ViewFiles() {
             // TODO: if only one file is selected, select all files in the same directory, to
             //   enable the forward/backward buttons in the viewer.

@@ -189,7 +189,7 @@ namespace cp2_wpf {
             get { return mShowDebugMenu; }
             set { mShowDebugMenu = value; OnPropertyChanged(); }
         }
-        private bool mShowDebugMenu = true;
+        private bool mShowDebugMenu = false;
 
 
         /// <summary>
@@ -325,6 +325,9 @@ namespace cp2_wpf {
         }
         private void CutCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Cut!");
+        }
+        private void EditAppSettingsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.EditAppSettings();
         }
         private void ExitCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // Close the main window.  This operation can be cancelled by the user.

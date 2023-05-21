@@ -234,6 +234,9 @@ namespace AppCommon {
                 CanWrite = hostStream.CanWrite;
 
                 hostStream = null;      // we're good, don't let "finally" close it
+            } catch {
+                mHostFileNode.Dispose();
+                throw;
             } finally {
                 hostStream?.Close();
             }

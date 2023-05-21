@@ -42,6 +42,7 @@ namespace cp2_wpf.Tools {
         /// </summary>
         private DebugMessageLog mLog;
 
+
         public LogViewer(Window? owner, DebugMessageLog log) {
             InitializeComponent();
             Owner = owner;

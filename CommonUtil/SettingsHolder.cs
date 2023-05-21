@@ -55,8 +55,8 @@ namespace CommonUtil {
         /// Copy constructor.  Makes a deep copy of the original.
         /// </summary>
         public SettingsHolder(SettingsHolder src) {
-            mSettings.EnsureCapacity(mSettings.Count);
-            foreach (KeyValuePair<string, string> kvp in mSettings) {
+            mSettings.EnsureCapacity(src.mSettings.Count);
+            foreach (KeyValuePair<string, string> kvp in src.mSettings) {
                 mSettings.Add(kvp.Key, kvp.Value);
             }
         }
