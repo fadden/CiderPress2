@@ -88,10 +88,22 @@ namespace cp2_wpf {
             get { return mainTriptychPanel.ColumnDefinitions[0].ActualWidth; }
             set { mainTriptychPanel.ColumnDefinitions[0].Width = new GridLength(value); }
         }
-        //public double RightPanelWidth {
-        //    get { return mainTriptychPanel.ColumnDefinitions[4].ActualWidth; }
-        //    set { mainTriptychPanel.ColumnDefinitions[4].Width = new GridLength(value); }
-        //}
+        public double WorkTreePanelHeight {
+            get { return leftPanel.RowDefinitions[0].ActualHeight; }
+            set {
+                // If you set the height to a pixel value, you lose the auto-sizing behavior,
+                // and the splitter will happily shove the bottom panel off the bottom of the
+                // main window.  The trick is to use "star" units.
+                // Thanks: https://stackoverflow.com/q/35000893/294248
+                double totalHeight = leftPanel.RowDefinitions[0].ActualHeight +
+                    leftPanel.RowDefinitions[2].ActualHeight;
+                if (totalHeight > value) {
+                    leftPanel.RowDefinitions[0].Height = new GridLength(value, GridUnitType.Star);
+                    leftPanel.RowDefinitions[2].Height = new GridLength(totalHeight - value,
+                        GridUnitType.Star);
+                }
+            }
+        }
 
         public bool ShowRecentProject1 {
             get { return !string.IsNullOrEmpty(mRecentProjectName1); }
@@ -222,18 +234,22 @@ namespace cp2_wpf {
         //
         private void Window_LocationChanged(object? sender, EventArgs e) {
             //Debug.WriteLine("Main window location changed");
+            AppSettings.Global.IsDirty = true;
         }
         private void Window_SizeChanged(object? sender, SizeChangedEventArgs e) {
             //Debug.WriteLine("Main window size changed");
+            AppSettings.Global.IsDirty = true;
         }
         private void GridSizeChanged(object? sender, EventArgs e) {
             //Debug.WriteLine("Grid size change: " + sender);
+            AppSettings.Global.IsDirty = true;
         }
         private void ColumnWidthChanged(object? sender, EventArgs e) {
             DataGridTextColumn? col = sender as DataGridTextColumn;
             if (col != null) {
                 Debug.WriteLine("Column " + col.Header + " width now " + col.ActualWidth);
             }
+            AppSettings.Global.IsDirty = true;
         }
 
         #region Can-execute handlers

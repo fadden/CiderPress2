@@ -143,6 +143,11 @@ namespace AppCommon {
             public void AddChild(Node child) {
                 mChildren.Add(child);
             }
+
+            public override string ToString() {
+                return "[WTNode: label='" + Label + "' daObject=" + DAObject.GetType().Name +
+                    " daNode=" + (DANode == null ? "(null)" : DANode.GetType().Name) + "]";
+            }
         }
 
         /// <summary>

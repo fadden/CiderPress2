@@ -29,6 +29,16 @@ namespace CommonUtil {
         /// be cleared by the caller after the changes have been processed (e.g. save to a file).
         /// </summary>
         public bool IsDirty { get; set; }
+        //public bool IsDirty {
+        //    get { return mIsDirty; }
+        //    set {
+        //        if (value == true) {
+        //            Debug.WriteLine("IsDirty=true");
+        //        }
+        //        mIsDirty = value;
+        //    }
+        //}
+        //private bool mIsDirty;
 
         /// <summary>
         /// Settings storage.
@@ -174,6 +184,10 @@ namespace CommonUtil {
         /// <summary>
         /// Sets an enumerated setting.
         /// </summary>
+        /// <remarks>
+        /// The value is output to the settings file as a string, rather than an integer, allowing
+        /// the correct handling even if the enumerated values are renumbered.
+        /// </remarks>
         /// <param name="name">Setting name.</param>
         /// <param name="enumType">Enum type.</param>
         /// <param name="value">Setting value (integer enum index).</param>
@@ -230,6 +244,7 @@ namespace CommonUtil {
         /// </remarks>
         /// <returns>Serialized settings.</returns>
         public string Serialize() {
+            // Use WriteIndented to improve readability for nosy humans.
             string cereal = JsonSerializer.Serialize(mSettings, typeof(Dictionary<string, string>),
                 new JsonSerializerOptions() { WriteIndented = true });
             return cereal;

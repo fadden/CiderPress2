@@ -66,6 +66,11 @@ namespace cp2_wpf {
         public List<string> RecentProjectPaths = new List<string>(MAX_RECENT_PROJECTS);
         public const int MAX_RECENT_PROJECTS = 6;
 
+        /// <summary>
+        /// Auto-open behavior.
+        /// </summary>
+        public enum AutoOpenDepth { Unknown = 0, Shallow, SubVol, Max }
+
 
         /// <summary>
         /// Constructor.
@@ -88,14 +93,14 @@ namespace cp2_wpf {
         public void WindowSourceInitialized() {
             // Load the settings from the file.  If this fails we have no way to tell the user,
             // so just keep going.
-            //LoadAppSettings();
-
-            // TODO: replace these with something like "--depth"?  It's less a question of which
-            //   things to open than how far down to go.
-            AppSettings.Global.SetBool(AppSettings.DEEP_SCAN_ARCHIVES, true);       // DEBUG DEBUG
-            AppSettings.Global.SetBool(AppSettings.DEEP_SCAN_FILESYSTEMS, true);    // DEBUG DEBUG
+            LoadAppSettings();
 
             SetAppWindowLocation();
+
+            // The SetPlacement call causes the Loaded event to fire, so we get here after
+            // WindowLoaded has run.  This has probably caused spurious setting of the app
+            // settings dirty flag when components got sized.  Clear it here.
+            AppSettings.Global.IsDirty = false;
         }
 
         /// <summary>
@@ -103,9 +108,20 @@ namespace cp2_wpf {
         /// finished initialization.
         /// </summary>
         private void SetAppWindowLocation() {
-            // These *must* be set or the panel resize doesn't work the way we want.
-            mMainWin.LeftPanelWidth = 300;
-            //mMainWin.RightPanelWidth = 180;
+            // NOTE: this will cause the window Loaded event to fire immediately.
+            string placement = AppSettings.Global.GetString(AppSettings.MAIN_WINDOW_PLACEMENT, "");
+            if (!string.IsNullOrEmpty(placement)) {
+                mMainWin.SetPlacement(placement);
+            }
+
+            SettingsHolder settings = AppSettings.Global;
+            // This *must* be set or the left panel resize doesn't work the way we want.
+            mMainWin.LeftPanelWidth =
+                settings.GetInt(AppSettings.MAIN_LEFT_PANEL_WIDTH, 300);
+            mMainWin.ShowOptionsPanel =
+                settings.GetBool(AppSettings.MAIN_RIGHT_PANEL_VISIBLE, true);
+            mMainWin.WorkTreePanelHeight =
+                settings.GetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, 200);
         }
 
         /// <summary>
@@ -129,8 +145,12 @@ namespace cp2_wpf {
             ProcessCommandLine();
         }
 
+        /// <summary>
+        /// Processes any command-line arguments.
+        /// </summary>
         private void ProcessCommandLine() {
             string[] args = Environment.GetCommandLineArgs();
+            // Currently we just look for the name of a file to open.
             if (args.Length == 2) {
                 DoOpenWorkFile(Path.GetFullPath(args[1]), false);
             }
@@ -141,7 +161,7 @@ namespace cp2_wpf {
         /// </summary>
         /// <returns>True if it's okay for the window to close, false to cancel it.</returns>
         public bool WindowClosing() {
-            //SaveAppSettings();
+            SaveAppSettings();
             if (!CloseWorkFile()) {
                 return false;
             }
@@ -151,6 +171,59 @@ namespace cp2_wpf {
             mDebugLogViewer?.Close();
 
             return true;
+        }
+
+        private void LoadAppSettings() {
+            // Configure defaults.
+            AppSettings.Global.SetBool(AppSettings.MAC_ZIP_ENABLED, true);
+            AppSettings.Global.SetEnum(AppSettings.AUTO_OPEN_DEPTH, typeof(AutoOpenDepth),
+                (int)AutoOpenDepth.SubVol);
+
+            // Load settings from file and merge them in.
+            string settingsPath =
+                Path.Combine(WinUtil.GetRuntimeDataDir(), AppSettings.SETTINGS_FILE_NAME);
+            try {
+                string text = File.ReadAllText(settingsPath);
+                SettingsHolder? fileSettings = SettingsHolder.Deserialize(text);
+                if (fileSettings != null) {
+                    AppSettings.Global.MergeSettings(fileSettings);
+                }
+                Debug.WriteLine("Settings file loaded and merged");
+            } catch (Exception ex) {
+                Debug.WriteLine("Unable to read settings file: " + ex.Message);
+            }
+        }
+
+        private void SaveAppSettings() {
+            SettingsHolder settings = AppSettings.Global;
+
+            if (!settings.IsDirty) {
+                Debug.WriteLine("Settings not dirty, not saving");
+                return;
+            }
+
+            // Main window position and size.
+            settings.SetString(AppSettings.MAIN_WINDOW_PLACEMENT, mMainWin.GetPlacement());
+
+            // Horizontal splitters.
+            settings.SetInt(AppSettings.MAIN_LEFT_PANEL_WIDTH, (int)mMainWin.LeftPanelWidth);
+            settings.SetBool(AppSettings.MAIN_RIGHT_PANEL_VISIBLE, mMainWin.ShowOptionsPanel);
+
+            // Vertical splitters.
+            settings.SetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, (int)mMainWin.WorkTreePanelHeight);
+
+            //mMainWin.CaptureColumnWidths();
+
+            string settingsPath =
+                Path.Combine(WinUtil.GetRuntimeDataDir(), AppSettings.SETTINGS_FILE_NAME);
+            try {
+                string cereal = settings.Serialize();
+                File.WriteAllText(settingsPath, cereal);
+                settings.IsDirty = false;
+                Debug.WriteLine("Saved settings to '" + settingsPath + "'");
+            } catch (Exception ex) {
+                Debug.WriteLine("Failed to save settings: " + ex.Message);
+            }
         }
 
         private void ApplyAppSettings() {
@@ -190,9 +263,11 @@ namespace cp2_wpf {
                 return;
             }
 
+            AutoOpenDepth depth = (AutoOpenDepth)AppSettings.Global.GetEnum(
+                AppSettings.AUTO_OPEN_DEPTH, typeof(AutoOpenDepth), (int)AutoOpenDepth.SubVol);
             WorkTree.DepthLimiter limiter =
                 delegate (WorkTree.DepthParentKind parentKind, WorkTree.DepthChildKind childKind) {
-                    return DepthLimit(parentKind, childKind /*TODO: pass settings*/);
+                    return DepthLimit(parentKind, childKind, depth);
                 };
 
             try {
@@ -217,9 +292,59 @@ namespace cp2_wpf {
         }
 
         private static bool DepthLimit(WorkTree.DepthParentKind parentKind,
-                WorkTree.DepthChildKind childKind) {
-            // TODO
-            return true;
+                WorkTree.DepthChildKind childKind, AutoOpenDepth depth) {
+            if (depth == AutoOpenDepth.Max) {
+                // Always descend.
+                return true;
+            } else if (depth == AutoOpenDepth.Shallow) {
+                // We always descend into gzip, because gzip isn't very interesting for us,
+                // and we want to treat .SDK generally like a disk image.  Otherwise, never
+                // descend.
+                if (childKind == WorkTree.DepthChildKind.AnyFile) {
+                    return (parentKind == WorkTree.DepthParentKind.GZip ||
+                            parentKind == WorkTree.DepthParentKind.NuFX);
+                }
+                if (parentKind == WorkTree.DepthParentKind.GZip ||
+                        (parentKind == WorkTree.DepthParentKind.NuFX &&
+                         childKind == WorkTree.DepthChildKind.DiskPart)) {
+                    return true;
+                }
+            } else {
+                // Depth is "SubVol".  Explore ZIP, multi-part, .SDK, and embeds.  Don't examine
+                // any files in a filesystem.
+                if (childKind == WorkTree.DepthChildKind.AnyFile) {
+                    return (parentKind != WorkTree.DepthParentKind.FileSystem);
+                }
+                switch (parentKind) {
+                    case WorkTree.DepthParentKind.GZip:
+                        return true;
+                    case WorkTree.DepthParentKind.Zip:
+                        // Descend into disk images, but don't open archives.
+                        if (childKind == WorkTree.DepthChildKind.DiskImage) {
+                            return true;
+                        }
+                        break;
+                    case WorkTree.DepthParentKind.NuFX:
+                        // Descend into .SDK, but don't otherwise open the contents.
+                        if (parentKind == WorkTree.DepthParentKind.NuFX &&
+                                childKind == WorkTree.DepthChildKind.DiskPart) {
+                            return true;
+                        }
+                        break;
+                    case WorkTree.DepthParentKind.FileSystem:
+                        // Descend into embedded volumes, otherwise stop.
+                        if (childKind == WorkTree.DepthChildKind.Embed) {
+                            return true;
+                        }
+                        break;
+                    case WorkTree.DepthParentKind.MultiPart:
+                        return true;
+                    default:
+                        Debug.Assert(false, "Unhandled case: " + parentKind);
+                        break;
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -293,7 +418,8 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="archiveOrFileSystem">Result: IArchive or IFileSystem object selected
         ///   in the archive tree, or null if no such object is selected.</param>
-        /// <param name="daNode">Result: selected DiskArcNode.</param>
+        /// <param name="daNode">Result: DiskArcNode from this node, or nearest parent with a
+        ///   non-null node.</param>
         /// <param name="selectionDir">Result: directory file entry selected in the directory
         ///   tree, or NO_ENTRY if no directory is selected (e.g. IArchive).</param>
         /// <returns>True if an IArchive or IFileSystem was selected.</returns>
@@ -320,8 +446,12 @@ namespace cp2_wpf {
             }
             archiveOrFileSystem = arcObj;
             selectionDir = dirTreeSel.FileEntry;
-            daNode = arcTreeSel.WorkTreeNode.DANode;
-            Debug.Assert(daNode != null);
+
+            WorkTree.Node node = arcTreeSel.WorkTreeNode;
+            while (node.DANode == null) {
+                node = node.Parent!;
+            }
+            daNode = node.DANode;
 
             return true;
         }

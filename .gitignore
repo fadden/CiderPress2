@@ -8,6 +8,7 @@ DIST/
 TestData/_private
 TestTmp/
 _EXTRA/
+CiderPress2-settings.json
 # No need to check in the debug launch settings.
 cp2/Properties/launchSettings.json
 MakeDist/Properties/launchSettings.json

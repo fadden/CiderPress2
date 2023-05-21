@@ -20,6 +20,12 @@ using CommonUtil;
 namespace cp2_wpf {
     internal static class AppSettings {
         /// <summary>
+        /// Name of file that holds our settings.  This lives in the same directory as the
+        /// executable.
+        /// </summary>
+        public const string SETTINGS_FILE_NAME = "CiderPress2-settings.json";
+
+        /// <summary>
         /// Global application settings object.
         /// </summary>
         public static SettingsHolder Global { get; private set; } = new SettingsHolder();
@@ -28,8 +34,14 @@ namespace cp2_wpf {
         // Setting name constants.
         //
 
-        // If set, the GUI app will scan the contents of archives and/or filesystems.
-        public const string DEEP_SCAN_ARCHIVES = "deep-scan-archives";
-        public const string DEEP_SCAN_FILESYSTEMS = "deep-scan-filesystems";
+        // Main window position and panel sizing.
+        public const string MAIN_WINDOW_PLACEMENT = "main-window-placement";
+        public const string MAIN_LEFT_PANEL_WIDTH = "main-left-panel-width";
+        public const string MAIN_RIGHT_PANEL_VISIBLE = "main-right-panel-visible";
+        public const string MAIN_WORK_TREE_HEIGHT = "main-work-tree-height";
+
+        // File handling features.
+        public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
+        public const string AUTO_OPEN_DEPTH = "auto-open-depth";
     }
 }
