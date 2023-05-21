@@ -34,6 +34,11 @@ namespace cp2_wpf {
         /// <summary>
         /// Asks the user to select a file to open.
         /// </summary>
+        /// <remarks>
+        /// <para>I'd like to show the "read only" checkbox here, but it's broken:
+        /// <see href="https://github.com/dotnet/wpf/issues/6346">
+        /// "OpenFileDialog.ShowReadOnly does not work"</see></para>
+        /// </remarks>
         /// <returns>Full pathname of selected file, or the empty string if the operation
         ///   was cancelled.</returns>
         public static string AskFileToOpen() {
@@ -44,7 +49,6 @@ namespace cp2_wpf {
             if (fileDlg.ShowDialog() != true) {
                 return string.Empty;
             }
-
             return Path.GetFullPath(fileDlg.FileName);
         }
 

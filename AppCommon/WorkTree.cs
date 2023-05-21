@@ -24,10 +24,6 @@ using DiskArc.Multi;
 using static DiskArc.Defs;
 using static DiskArc.IFileSystem;
 
-// TODO:
-// - replace ArchiveTreeItem implementation
-// - add new items on double-click; close items when requested (in case of accidental double-click)
-
 namespace AppCommon {
     /// <summary>
     /// <para>Tree of DiskArc library objects we're working on.  This includes all multi-part
@@ -92,11 +88,6 @@ namespace AppCommon {
             public DiskArcNode? DANode { get; private set; }
 
             /// <summary>
-            /// Copy of the list of child nodes.
-            /// </summary>
-            public Node[] Children { get { return mChildren.ToArray(); } }
-
-            /// <summary>
             /// Reference to parent node.
             /// </summary>
             public Node? Parent { get; private set; }
@@ -140,6 +131,13 @@ namespace AppCommon {
             }
 
             /// <summary>
+            /// Copy of the list of child nodes.
+            /// </summary>
+            public Node[] GetChildren() {
+                return mChildren.ToArray();
+            }
+
+            /// <summary>
             /// Adds a new child to this node.
             /// </summary>
             public void AddChild(Node child) {
@@ -151,6 +149,11 @@ namespace AppCommon {
         /// Root of the tree.  This will hold an IArchive or IDiskImage.
         /// </summary>
         public Node RootNode { get; private set; }
+
+        /// <summary>
+        /// True if the host file is writable.
+        /// </summary>
+        public bool CanWrite { get; private set; }
 
         private string mHostPathName;
         private HostFileNode mHostFileNode;
@@ -186,7 +189,8 @@ namespace AppCommon {
         /// <param name="appHook">Application hook reference.</param>
         /// <exception cref="IOException">File open or read failed.</exception>
         /// <exception cref="InvalidDataException">File contents not recognized.</exception>
-        public WorkTree(string hostPathName, DepthLimiter depthLimitFunc, AppHook appHook) {
+        public WorkTree(string hostPathName, DepthLimiter depthLimitFunc, bool readOnly,
+                AppHook appHook) {
             mHostPathName = hostPathName;
             mDepthLimitFunc = depthLimitFunc;
             mAppHook = appHook;
@@ -198,11 +202,15 @@ namespace AppCommon {
             Stream? hostStream = null;
             try {
                 try {
-                    // Try to open with read-write access.
-                    hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.ReadWrite,
+                    // Try to open with read-write access unless read-only requested.
+                    FileAccess access = readOnly ? FileAccess.Read : FileAccess.ReadWrite;
+                    hostStream = new FileStream(hostPathName, FileMode.Open, access,
                         FileShare.Read);
                 } catch (IOException ex) {
-                    // Retry with read-only access.
+                    // Retry with read-only access unless we did that the first time around.
+                    if (readOnly) {
+                        throw;
+                    }
                     appHook.LogI("R/W open failed (" + ex.Message + "), retrying R/O: '" +
                         hostPathName + "'");
                     hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.Read,
@@ -212,12 +220,13 @@ namespace AppCommon {
                 string ext = Path.GetExtension(hostPathName);
                 // This will throw InvalidDataException if the stream isn't recognized.  Let
                 // the caller handle the exception (it has the error message).
-                Node? newNode = ProcessStream(hostStream, ext, hostPathName, null, mHostFileNode,
-                    IFileEntry.NO_ENTRY, out string errorMsg);
+                Node? newNode = ProcessStream(hostStream, ext, Path.GetFileName(hostPathName),
+                        null, mHostFileNode, IFileEntry.NO_ENTRY, out string errorMsg);
                 if (newNode == null) {
                     throw new InvalidDataException(errorMsg);
                 }
                 RootNode = newNode;
+                CanWrite = hostStream.CanWrite;
 
                 hostStream = null;      // we're good, don't let "finally" close it
             } finally {
@@ -663,7 +672,7 @@ namespace AppCommon {
             }
             sb.AppendLine();
 
-            Node[] children = node.Children;
+            Node[] children = node.GetChildren();
             for (int i = 0; i < children.Length; i++) {
                 string newIndent = indent + (isLastSib ? "  " : "| ");
                 GenerateTreeSummary(children[i], depth + 1, newIndent, i == children.Length - 1,

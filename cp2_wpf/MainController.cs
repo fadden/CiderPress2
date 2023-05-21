@@ -42,14 +42,13 @@ namespace cp2_wpf {
         private AppHook mAppHook;
 
         private string mWorkPathName = string.Empty;
-        private FileStream? mWorkFileStream = null;
-        private DiskArcNode? mWorkFileNodeRoot = null;
+        private WorkTree? mWorkTree = null;
         public Formatter mFormatter;
 
         /// <summary>
         /// True when a work file is open.
         /// </summary>
-        public bool IsFileOpen { get { return mWorkFileStream != null; } }
+        public bool IsFileOpen { get { return mWorkTree != null; } }
 
         /// <summary>
         /// True when the file is open, and the file list is being shown.  False if we're showing
@@ -133,7 +132,7 @@ namespace cp2_wpf {
         private void ProcessCommandLine() {
             string[] args = Environment.GetCommandLineArgs();
             if (args.Length == 2) {
-                DoOpenWorkFile(Path.GetFullPath(args[1]));
+                DoOpenWorkFile(Path.GetFullPath(args[1]), false);
             }
         }
 
@@ -179,11 +178,11 @@ namespace cp2_wpf {
             if (string.IsNullOrEmpty(pathName)) {
                 return;
             }
-            DoOpenWorkFile(pathName);
+            DoOpenWorkFile(pathName, false);
         }
 
-        private void DoOpenWorkFile(string pathName) {
-            Debug.Assert(mWorkFileStream == null);
+        private void DoOpenWorkFile(string pathName, bool asReadOnly) {
+            Debug.Assert(mWorkTree == null);
             if (!File.Exists(pathName)) {
                 // Should only happen for projects in "recents" list.
                 string msg = "File not found: '" + pathName + "'";
@@ -191,47 +190,47 @@ namespace cp2_wpf {
                 return;
             }
 
-            FileStream? stream = null;
-            try {
-                stream = new FileStream(pathName, FileMode.Open, FileAccess.ReadWrite,
-                    FileShare.Read);
-            } catch (IOException ex) {
-                Debug.WriteLine("Initial open attempt failed: " + ex.Message);
-            }
-            if (stream == null) {
-                try {
-                    stream = new FileStream(pathName, FileMode.Open, FileAccess.Read,
-                        FileShare.Read);
-                } catch (IOException ex) {
-                    ShowFileError("Unable to open file: " + ex.Message);
-                    return;
-                }
-            }
+            WorkTree.DepthLimiter limiter =
+                delegate (WorkTree.DepthParentKind parentKind, WorkTree.DepthChildKind childKind) {
+                    return DepthLimit(parentKind, childKind /*TODO: pass settings*/);
+                };
 
             try {
                 Mouse.OverrideCursor = Cursors.Wait;
-                // TODO: if we're prying open every sub-image and archive, this can be fairly
-                //   slow for a large file (e.g. A2Romulan).  We want to gather the information
-                //   in a background thread and assemble the GUI elements afterward, showing
-                //   progress updates as we work.
-                if (!LoadWorkFile(pathName, stream)) {
-                    return;
-                }
+                // TODO: do this on a background thread, in case we're opening something with
+                //   lots of bits or from slow media
+                mWorkTree = new WorkTree(pathName, limiter, asReadOnly, mAppHook);
+
+                // File is fully parsed.  Generate the archive tree.
+                PopulateArchiveTree();
+            } catch (Exception ex) {
+                // Expecting IOException and InvalidDataException.
+                ShowFileError("Unable to open file: " + ex.Message);
+                return;
             } finally {
                 Mouse.OverrideCursor = null;
             }
 
-            mWorkFileStream = stream;
             mWorkPathName = pathName;
             UpdateTitle();
             mMainWin.ShowLaunchPanel = false;
         }
 
+        private static bool DepthLimit(WorkTree.DepthParentKind parentKind,
+                WorkTree.DepthChildKind childKind) {
+            // TODO
+            return true;
+        }
+
+        /// <summary>
+        /// Opens the Nth recently-opened project.
+        /// </summary>
+        /// <param name="projIndex"></param>
         public void OpenRecentProject(int projIndex) {
             if (!CloseWorkFile()) {
                 return;
             }
-            DoOpenWorkFile(RecentProjectPaths[projIndex]);
+            DoOpenWorkFile(RecentProjectPaths[projIndex], false);
         }
 
         private void UnpackRecentProjectList() {
@@ -252,7 +251,7 @@ namespace cp2_wpf {
         /// </summary>
         /// <returns>True if the file was closed, false if the operation was cancelled.</returns>
         public bool CloseWorkFile() {
-            if (mWorkFileStream == null) {
+            if (mWorkTree == null) {
                 return true;
             }
             Debug.WriteLine("Closing " + mWorkPathName);
@@ -260,8 +259,8 @@ namespace cp2_wpf {
             // Flush and close all disk images and file archives.
             ClearArchiveTree();
             // Close the host file.
-            mWorkFileStream.Close();
-            mWorkFileStream = null;
+            mWorkTree.Dispose();
+            mWorkTree = null;
 
             UpdateTitle();
             mMainWin.ShowLaunchPanel = true;
@@ -277,9 +276,9 @@ namespace cp2_wpf {
         /// </summary>
         private void UpdateTitle() {
             StringBuilder sb = new StringBuilder();
-            if (mWorkFileStream != null) {
+            if (mWorkTree != null) {
                 sb.Append(Path.GetFileName(mWorkPathName));
-                if (!mWorkFileStream.CanWrite) {
+                if (!mWorkTree.CanWrite) {
                     sb.Append(" *READONLY*");
                 }
                 sb.Append(" - ");
@@ -311,7 +310,7 @@ namespace cp2_wpf {
                 return false;
             }
 
-            object? arcObj = arcTreeSel.DAObject;
+            object? arcObj = arcTreeSel.WorkTreeNode.DAObject;
             if (arcObj == null) {
                 Debug.WriteLine("DAObject was null");
                 return false;
@@ -321,7 +320,7 @@ namespace cp2_wpf {
             }
             archiveOrFileSystem = arcObj;
             selectionDir = dirTreeSel.FileEntry;
-            daNode = arcTreeSel.DANode;
+            daNode = arcTreeSel.WorkTreeNode.DANode;
             Debug.Assert(daNode != null);
 
             return true;

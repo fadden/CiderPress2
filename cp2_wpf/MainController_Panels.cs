@@ -33,17 +33,17 @@ using static DiskArc.Defs;
 
 namespace cp2_wpf {
     public partial class MainController {
+        /// <summary>
+        /// Currently-selected DiskArc library object in the archive tree (i.e.
+        /// WorkTreeNode.DAObject).  May be IDiskImage, IArchive, IMultiPart, IFileSystem, or
+        /// Partition.
+        /// </summary>
         private object? CurrentWorkObject { get; set; }
 
         /// <summary>
-        /// Clears the contents of the archive tree.  Disposes the DiskArcNode hierarchy.
+        /// Clears the contents of the archive tree.
         /// </summary>
         private void ClearArchiveTree() {
-            if (mWorkFileNodeRoot == null) {
-                return;
-            }
-            Debug.Assert(mWorkFileNodeRoot is HostFileNode);
-            mWorkFileNodeRoot.Dispose();
             mMainWin.ArchiveTreeRoot.Clear();
         }
 
@@ -53,53 +53,35 @@ namespace cp2_wpf {
         /// <param name="pathName">File pathname.</param>
         /// <param name="stream">Open file stream.</param>
         /// <returns>True on success.</returns>
-        private bool LoadWorkFile(string pathName, Stream stream) {
+        private bool PopulateArchiveTree() {
+            Debug.Assert(mWorkTree != null);
+
             // Tree should be empty.
             ObservableCollection<ArchiveTreeItem> tvRoot = mMainWin.ArchiveTreeRoot;
             Debug.Assert(tvRoot.Count == 0);
 
-            // The root of the DiskArcNode tree is always a file in the host filesystem.  It
-            // has no entry in the TreeView hierarchy.  Instead, the IDiskImage or IArchive
-            // is at the root.
-            HostFileNode rootNode = new HostFileNode(pathName, mAppHook);
-            string? ext = Path.GetExtension(pathName);
-            Debug.Assert(ext != null);
-
-            // Open the file.  If this fails, we need to complain loudly and give up.
-            IDisposable? leafObj = ArchiveTreeItem.IdentifyStreamContents(stream, ext, mAppHook,
-                out string errorMsg, out bool hasFiles);
-            if (leafObj == null) {
-                ShowFileError(errorMsg);
-                return false;
-            }
-
             mAppHook.LogI("Constructing content trees...");
             DateTime startWhen = DateTime.Now;
 
-            errorMsg = ArchiveTreeItem.ConstructTree(tvRoot, pathName, ext, stream, leafObj,
-                rootNode, IFileEntry.NO_ENTRY, mAppHook);
-            if (!string.IsNullOrEmpty(errorMsg)) {
-                rootNode.Dispose();
-                ShowFileError(errorMsg);
-                return false;
-            }
-            mWorkFileNodeRoot = rootNode;
-            mAppHook.LogI("Finished scan in " +
+            ArchiveTreeItem.ConstructTree(mWorkTree.RootNode, tvRoot);
+
+            mAppHook.LogI("Finished tree element construction in " +
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
 
             // Select the first filesystem or archive we encounter while chasing the first child.
             ArchiveTreeItem item = tvRoot[0];
             while (item.Items.Count > 0) {
                 // More items farther down.  Do we need to go deeper?
-                if (item.DAObject is GZip) {
+                if (item.WorkTreeNode.DAObject is GZip) {
                     // we need to go deeper
-                } else if (item.DAObject is NuFX) {
-                    IFileEntry firstEntry = ((NuFX)item.DAObject).GetFirstEntry();
+                } else if (item.WorkTreeNode.DAObject is NuFX) {
+                    IFileEntry firstEntry = ((NuFX)item.WorkTreeNode.DAObject).GetFirstEntry();
                     if (!firstEntry.IsDiskImage) {
                         break;
                     }
                     // first entry is disk image, go deeper
-                } else if (item.DAObject is IFileSystem || item.DAObject is IArchive) {
+                } else if (item.WorkTreeNode.DAObject is IFileSystem ||
+                           item.WorkTreeNode.DAObject is IArchive) {
                     break;      // no, stop here
                 }
                 item = item.Items[0];
@@ -125,7 +107,7 @@ namespace cp2_wpf {
             mMainWin.DirectoryTreeRoot.Clear();
             mMainWin.ClearCenterInfo();
 
-            CurrentWorkObject = newSel.DAObject;
+            CurrentWorkObject = newSel.WorkTreeNode.DAObject;
             mMainWin.CenterInfoText1 = "Entry: " + newSel.Name;
             mMainWin.CenterInfoText2 = GetInfoString(CurrentWorkObject);
             if (CurrentWorkObject is IFileSystem) {
@@ -356,8 +338,8 @@ namespace cp2_wpf {
 
             // Get the currently-selected file archive or filesystem.  If something else is
             // selected (disk image file, partition map), we shouldn't be here.
-            IArchive? arc = arcTreeSel.DAObject as IArchive;
-            IFileSystem? fs = arcTreeSel.DAObject as IFileSystem;
+            IArchive? arc = arcTreeSel.WorkTreeNode.DAObject as IArchive;
+            IFileSystem? fs = arcTreeSel.WorkTreeNode.DAObject as IFileSystem;
             if (!(arc == null ^ fs == null)) {
                 Debug.Assert(false, "Unexpected: arc=" + arc + " fs=" + fs);
                 return;
