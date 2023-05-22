@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
@@ -26,6 +25,9 @@ using DiskArc;
 using FileConv;
 
 namespace cp2_wpf {
+    /// <summary>
+    /// This runs an AddFileWorker inside a WorkProgress dialog.
+    /// </summary>
     internal class AddProgress : WorkProgress.IWorker {
         private object mArchiveOrFileSystem;
         private DiskArcNode mLeafNode;

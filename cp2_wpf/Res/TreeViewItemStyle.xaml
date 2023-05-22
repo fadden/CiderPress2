@@ -19,7 +19,7 @@ TreeViewItem style that extends all the way across, rather than just framing the
 text.  This is mostly to make it easier to click on.
 
 See https://leecampbell.com/2009/01/14/horizontal-stretch-on-treeviewitems/ for
-explanation of why it's necessary to clone all this stuff
+explanation of why it's necessary to clone all this stuff.
 -->
 
 <!--
@@ -130,6 +130,9 @@ inserting the new resource in a XAML doc.
     <Style x:Key="wideTreeViewItemStyle" TargetType="{x:Type TreeViewItem}">
         <Setter Property="Template" Value="{StaticResource TreeViewItemTemplate1}"/>
         <!--<Setter Property="Background" Value="Red"/>-->
+
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Top"/>
     </Style>
 
 </ResourceDictionary>

@@ -317,7 +317,7 @@ namespace cp2_wpf {
         }
         private void CloseCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             if (!mMainCtrl.CloseWorkFile()) {
-                Debug.WriteLine("Close canceled");
+                Debug.WriteLine("Close cancelled");
             }
         }
         private void CopyCmd_Executed(object sender, ExecutedRoutedEventArgs e) {

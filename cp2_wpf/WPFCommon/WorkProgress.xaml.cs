@@ -144,8 +144,7 @@ namespace cp2_wpf.WPFCommon {
             }
         }
 
-        // NOTE: executes on work thread.  DO NOT do any UI work here.  DO NOT access
-        // the Results property directly.
+        // NOTE: executes on work thread.  DO NOT do any UI work here.
         private void DoWork(object? sender, DoWorkEventArgs e) {
             Debug.Assert(sender == mWorker);
 

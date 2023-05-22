@@ -177,6 +177,9 @@ namespace cp2_wpf {
             return true;
         }
 
+        /// <summary>
+        /// Loads application settings from the config file.
+        /// </summary>
         private void LoadAppSettings() {
             // Configure defaults.
             AppSettings.Global.SetBool(AppSettings.MAC_ZIP_ENABLED, true);
@@ -198,6 +201,9 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// Saves application settings to the config file.
+        /// </summary>
         private void SaveAppSettings() {
             SettingsHolder settings = AppSettings.Global;
 
@@ -230,6 +236,10 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// Applies application settings.  This is run on startup, and when the "Apply" button
+        /// is hit in the Edit App Settings dialog.
+        /// </summary>
         private void ApplyAppSettings() {
             Debug.WriteLine("Applying app settings...");
 
@@ -241,11 +251,11 @@ namespace cp2_wpf {
         }
 
         public void NewDiskImage() {
-            Debug.WriteLine("new disk image!");
+            Debug.WriteLine("new disk image!");     // TODO
         }
 
         public void NewFileArchive() {
-            Debug.WriteLine("new file archive!");
+            Debug.WriteLine("new file archive!");   // TODO
         }
 
         /// <summary>
@@ -281,9 +291,21 @@ namespace cp2_wpf {
 
             try {
                 Mouse.OverrideCursor = Cursors.Wait;
-                // TODO: do this on a background thread, in case we're opening something with
-                //   lots of bits or from slow media
-                mWorkTree = new WorkTree(pathName, limiter, asReadOnly, mAppHook);
+
+                // Do the load on a background thread so we can show progress.
+                OpenProgress prog = new OpenProgress(pathName, limiter, asReadOnly, mAppHook);
+                WorkProgress workDialog = new WorkProgress(mMainWin, prog, true);
+                if (workDialog.ShowDialog() != true) {
+                    // cancelled or failed
+                    return;
+                }
+                if (prog.Results.mException != null) {
+                    MessageBox.Show("Error: " + prog.Results.mException.Message,
+                        FILE_ERR_CAPTION, MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                Debug.Assert(prog.Results.mWorkTree != null);
+                mWorkTree = prog.Results.mWorkTree;
 
                 // File is fully parsed.  Generate the archive tree.
                 PopulateArchiveTree();
@@ -360,26 +382,30 @@ namespace cp2_wpf {
         /// <summary>
         /// Opens the Nth recently-opened project.
         /// </summary>
-        /// <param name="recentIndex"></param>
+        /// <param name="recentIndex">Index of entry in recents list.</param>
         public void OpenRecentFile(int recentIndex) {
             if (!CloseWorkFile()) {
+                return;
+            }
+            if (recentIndex >= RecentFilePaths.Count) {
+                Debug.Assert(false);
                 return;
             }
             DoOpenWorkFile(RecentFilePaths[recentIndex], false);
         }
 
         /// <summary>
-        /// Ensures that the named project is at the top of the list.  If it's elsewhere
+        /// Ensures that the named file is at the top of the list.  If it's elsewhere
         /// in the list, move it to the top.  Excess items are removed.
         /// </summary>
-        /// <param name="projectPath"></param>
-        private void UpdateRecentFilesList(string projectPath) {
-            if (string.IsNullOrEmpty(projectPath)) {
+        /// <param name="pathName">Pathname of file to add to list.</param>
+        private void UpdateRecentFilesList(string pathName) {
+            if (string.IsNullOrEmpty(pathName)) {
                 // This can happen if you create a new project, then close the window
                 // without having saved it.
                 return;
             }
-            int index = RecentFilePaths.IndexOf(projectPath);
+            int index = RecentFilePaths.IndexOf(pathName);
             if (index == 0) {
                 // Already in the list, nothing changes.  No need to update anything else.
                 return;
@@ -387,7 +413,7 @@ namespace cp2_wpf {
             if (index > 0) {
                 RecentFilePaths.RemoveAt(index);
             }
-            RecentFilePaths.Insert(0, projectPath);
+            RecentFilePaths.Insert(0, pathName);
 
             // Trim the list to the max allowed.
             while (RecentFilePaths.Count > MAX_RECENT_FILES) {
@@ -402,6 +428,9 @@ namespace cp2_wpf {
             mMainWin.UpdateRecentLinks();
         }
 
+        /// <summary>
+        /// Unpacks the list of recent files from the application settings entry.
+        /// </summary>
         private void UnpackRecentFileList() {
             RecentFilePaths.Clear();
 

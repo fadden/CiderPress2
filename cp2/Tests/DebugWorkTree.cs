@@ -36,7 +36,7 @@ namespace cp2.Tests {
                 delegate (DepthParentKind parentKind, DepthChildKind childKind) {
                     return DepthLimit(parentKind, childKind, parms.Depth);
             };
-            using (WorkTree tree = new WorkTree(extArchive, limiter, true, parms.AppHook)) {
+            using (WorkTree tree = new WorkTree(extArchive, limiter, true, null, parms.AppHook)) {
                 Console.Write(WorkTree.GenerateTreeSummary(tree));
             }
 

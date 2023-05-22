@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
@@ -162,6 +163,7 @@ namespace AppCommon {
 
         private string mHostPathName;
         private HostFileNode mHostFileNode;
+        private BackgroundWorker? mWorker;
         private AppHook mAppHook;
 
         /// <summary>
@@ -191,13 +193,17 @@ namespace AppCommon {
         /// <param name="hostPathName">Pathname to file.</param>
         /// <param name="depthLimitFunc">Callback function that determines whether or not we
         ///   descend into children.</param>
+        /// <param name="readOnly">If true, try to open the file read-only first.</param>
+        /// <param name="worker">Background worker, for cancel requests and progress
+        ///   updates.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <exception cref="IOException">File open or read failed.</exception>
         /// <exception cref="InvalidDataException">File contents not recognized.</exception>
         public WorkTree(string hostPathName, DepthLimiter depthLimitFunc, bool readOnly,
-                AppHook appHook) {
+                BackgroundWorker? worker, AppHook appHook) {
             mHostPathName = hostPathName;
             mDepthLimitFunc = depthLimitFunc;
+            mWorker = worker;
             mAppHook = appHook;
 
             DateTime startWhen = DateTime.Now;
@@ -229,6 +235,10 @@ namespace AppCommon {
                         null, mHostFileNode, IFileEntry.NO_ENTRY, out string errorMsg);
                 if (newNode == null) {
                     throw new InvalidDataException(errorMsg);
+                }
+                if (mWorker != null && mWorker.CancellationPending) {
+                    appHook.LogW("Work tree construction was cancelled");
+                    throw new Exception("cancelled");   // kind doesn't matter, just want cleanup
                 }
                 RootNode = newNode;
                 CanWrite = hostStream.CanWrite;
@@ -263,6 +273,13 @@ namespace AppCommon {
         private Node? ProcessStream(Stream stream, string ext, string pathName,
                 Node? parentNode, DiskArcNode daParent, IFileEntry entryInParent,
                 out string errorMsg) {
+            if (mWorker != null) {
+                if (mWorker.CancellationPending) {
+                    errorMsg = "cancelled";
+                    return null;
+                }
+                mWorker.ReportProgress(0, pathName);
+            }
             IDisposable? leafObj = IdentifyStreamContents(stream, ext, pathName, mAppHook,
                 out errorMsg, out bool hasFiles);
             if (leafObj == null) {

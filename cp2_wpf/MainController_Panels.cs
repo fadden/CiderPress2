@@ -265,16 +265,11 @@ namespace cp2_wpf {
         }
 
         private void AddDiskItems(IFileEntry dirEntry) {
-            // Experiment with creating a new ObservableCollection, rather than clearing the old.
-            // Clear() seems to be expensive.  It's unclear what makes this generally slow;
-            // replacing ObservableCollection with List didn't make a noticeable difference.
             DateTime startWhen = DateTime.Now;
-            //mMainWin.FileList.Clear();
-            ObservableCollection<FileListItem> newList = new ObservableCollection<FileListItem>();
+            mMainWin.FileList.Clear();
             foreach (IFileEntry entry in dirEntry) {
-                newList.Add(new FileListItem(entry, mFormatter));
+                mMainWin.FileList.Add(new FileListItem(entry, mFormatter));
             }
-            mMainWin.FileList = newList;
             Debug.WriteLine("Added disk items for " + dirEntry + " in " +
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
         }

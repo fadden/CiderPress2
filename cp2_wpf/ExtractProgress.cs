@@ -25,6 +25,9 @@ using cp2_wpf.WPFCommon;
 using DiskArc;
 
 namespace cp2_wpf {
+    /// <summary>
+    /// This runs an ExtractFileWorker inside a WorkProgress dialog.
+    /// </summary>
     internal class ExtractProgress : WorkProgress.IWorker {
         private object mArchiveOrFileSystem;
         private IFileEntry mSelectionDir;
