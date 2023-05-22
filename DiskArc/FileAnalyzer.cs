@@ -443,6 +443,9 @@ namespace DiskArc {
             return result;
         }
 
+        /// <summary>
+        /// List of things to try, in order, when we don't recognize the file extension.
+        /// </summary>
         private static FileKind[] sProbeKinds = new FileKind[] {
             // These can be detected reliably.
             FileKind.TwoIMG,
@@ -453,7 +456,7 @@ namespace DiskArc {
             FileKind.AppleSingle,
             FileKind.DiskCopy42,
             FileKind.ACU,
-            FileKind.Binary2,
+            FileKind.Binary2,       // test after NuFX (.BXY > .BNY)
             // These are less definite, depending primarily on the size of the file.
             FileKind.Trackstar,
             FileKind.UnadornedNibble525,

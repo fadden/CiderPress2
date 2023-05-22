@@ -536,13 +536,23 @@ namespace cp2_wpf {
             public string PartName { get; private set; }
             public string PartType { get; private set; }
 
-            public PartitionListItem(int index, long startBlock, long blockCount, string partName,
-                    string partType) {
+            public Partition PartRef { get; private set; }
+
+            public PartitionListItem(int index, Partition part) {
+                PartRef = part;
+
+                string name = string.Empty;
+                string type = string.Empty;
+                if (part is APM_Partition) {
+                    name = ((APM_Partition)part).PartitionName;
+                    type = ((APM_Partition)part).PartitionType;
+                }
+
                 Index = index;
-                StartBlock = startBlock;
-                BlockCount = blockCount;
-                PartName = partName;
-                PartType = partType;
+                StartBlock = part.StartOffset / Defs.BLOCK_SIZE;
+                BlockCount = part.Length / Defs.BLOCK_SIZE;
+                PartName = name;
+                PartType = type;
             }
             public override string ToString() {
                 return "[Part: start=" + StartBlock + " count=" + BlockCount + " name=" +
@@ -594,16 +604,8 @@ namespace cp2_wpf {
             PartitionList.Clear();
             for (int index = 0; index < parts.Count; index++) {
                 Partition part = parts[index];
-                string name = string.Empty;
-                string type = string.Empty;
-                if (part is APM_Partition) {
-                    name = ((APM_Partition)part).PartitionName;
-                    type = ((APM_Partition)part).PartitionType;
-                }
                 PartitionListItem item =
-                    new PartitionListItem(index + (WorkTree.ONE_BASED_INDEX ? 1 : 0),
-                        part.StartOffset / Defs.BLOCK_SIZE, part.Length / Defs.BLOCK_SIZE,
-                        name, type);
+                    new PartitionListItem(index + (WorkTree.ONE_BASED_INDEX ? 1 : 0), part);
                 PartitionList.Add(item);
             }
             ShowPartitionLayout = (PartitionList.Count > 0);
@@ -670,6 +672,22 @@ namespace cp2_wpf {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 mMainCtrl.AddFileDrop(dropTarget, files);
             }
+        }
+
+        private void PartitionLayout_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+            DataGrid grid = (DataGrid)sender;
+            if (!grid.GetClickRowColItem(e, out int row, out int col, out object? item)) {
+                // Header or empty area; ignore.
+                return;
+            }
+            PartitionListItem pli = (PartitionListItem)item;
+
+            ArchiveTreeItem? arcTreeSel = archiveTree.SelectedItem as ArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.Assert(false, "archive tree is missing selection");
+                return;
+            }
+            mMainCtrl.HandlePartitionLayoutDoubleClick(pli, row, col, arcTreeSel);
         }
 
         #endregion Center Panel

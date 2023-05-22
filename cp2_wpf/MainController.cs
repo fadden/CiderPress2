@@ -537,12 +537,7 @@ namespace cp2_wpf {
             archiveOrFileSystem = arcObj;
             selectionDir = dirTreeSel.FileEntry;
 
-            WorkTree.Node node = arcTreeSel.WorkTreeNode;
-            while (node.DANode == null) {
-                node = node.Parent!;
-            }
-            daNode = node.DANode;
-
+            daNode = WorkTree.FindDANode(arcTreeSel.WorkTreeNode);
             return true;
         }
 

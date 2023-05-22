@@ -69,24 +69,7 @@ namespace cp2_wpf {
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
 
             // Select the first filesystem or archive we encounter while chasing the first child.
-            ArchiveTreeItem item = tvRoot[0];
-            while (item.Items.Count > 0) {
-                // More items farther down.  Do we need to go deeper?
-                if (item.WorkTreeNode.DAObject is GZip) {
-                    // we need to go deeper
-                } else if (item.WorkTreeNode.DAObject is NuFX) {
-                    IFileEntry firstEntry = ((NuFX)item.WorkTreeNode.DAObject).GetFirstEntry();
-                    if (!firstEntry.IsDiskImage) {
-                        break;
-                    }
-                    // first entry is disk image, go deeper
-                } else if (item.WorkTreeNode.DAObject is IFileSystem ||
-                           item.WorkTreeNode.DAObject is IArchive) {
-                    break;      // no, stop here
-                }
-                item = item.Items[0];
-            }
-            item.IsSelected = true;
+            ArchiveTreeItem.SelectBestFrom(tvRoot[0]);
 
             return true;
         }
@@ -318,15 +301,14 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Handles a double-click on a line in the file list grid.
+        /// Handles a double-click on an item in the file list grid.
         /// </summary>
-        /// <param name="item">Item that was double-clicked.</param>
         public void HandleFileListDoubleClick(FileListItem item, int row, int col,
                 ArchiveTreeItem arcTreeSel, DirectoryTreeItem dirTreeSel) {
-            Debug.WriteLine("DCLICK: r=" + row + " c=" + col + " item=" + item);
+            //Debug.WriteLine("DCLICK: r=" + row + " c=" + col + " item=" + item);
 
             //
-            // Something has been double-clicked.  Process:
+            // Something has been double-clicked.  If it's a single entry:
             // (1) If it's a directory, select the appropriate entry in the directory tree.
             // (2) See if it exists in the archive tree, i.e. it's an archive or disk image
             //   that has already been identified and opened.
@@ -334,9 +316,12 @@ namespace cp2_wpf {
             //   to the archive tree and select it.
             // (4) Open the file viewer with archive+entry or image+entry.
             //
+            // If multiple items are selected, go directly to #4.  We could probably do a
+            // multi-open on sub-files, but that seems peculiar.
+            //
 
-            // Get the currently-selected file archive or filesystem.  If something else is
-            // selected (disk image file, partition map), we shouldn't be here.
+            // Get the currently-selected file archive or filesystem.  If something without files
+            // is selected (disk image file, partition map), we shouldn't be here.
             IArchive? arc = arcTreeSel.WorkTreeNode.DAObject as IArchive;
             IFileSystem? fs = arcTreeSel.WorkTreeNode.DAObject as IFileSystem;
             if (!(arc == null ^ fs == null)) {
@@ -348,7 +333,7 @@ namespace cp2_wpf {
             DataGrid dg = mMainWin.fileListDataGrid;
             int treeSelIndex = dg.SelectedIndex;    // index of first item in selection
             if (treeSelIndex < 0) {
-                // Double-click was on something other than list item before anything was selected.
+                // Double-click was on something other than list item, with nothing selected.
                 Debug.WriteLine("Double-click but no selection");
                 return;
             }
@@ -360,6 +345,7 @@ namespace cp2_wpf {
                 IFileEntry entry = item.FileEntry;
                 if (entry.IsDirectory) {
                     if (fs != null) {
+                        // Select the entry in the dir tree.  This may rewrite the file list.
                         if (!DirectoryTreeItem.SelectItemByEntry(mMainWin.DirectoryTreeRoot,
                                 entry)) {
                             Debug.WriteLine("Unable to find dir tree entry for " + entry);
@@ -370,21 +356,54 @@ namespace cp2_wpf {
                     return;
                 }
 
+                // Is it a disk image or file archive that's already open in the tree?
                 ArchiveTreeItem? ati =
                     ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);
                 if (ati != null) {
-                    ati.IsSelected = true;
+                    ArchiveTreeItem.SelectBestFrom(ati);
                     return;
                 }
 
-                // TODO: if it looks like an archive or disk image, scan it; if it works out,
-                //   add it to the tree and open it.  Might want to make that an explicit
-                //   action, but there's no reason to open "Archive.SHK" in the file viewer.
-                //   (No need to filter things out when multiple items selected.)
+                // Evalute this file to see if it could be a disk image or file archive.  If it
+                // is, add it to the work tree, and select it.
+                WorkTree.Node? newNode = mWorkTree!.TryCreateSub(arcTreeSel.WorkTreeNode, entry);
+                if (newNode != null) {
+                    // Successfully opened.  Update the TreeView.
+                    ArchiveTreeItem newItem =
+                        ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
+                    // Select something in what we just added.  If it was a disk image, we want
+                    // to select the first filesystem, not the disk image itself.
+                    ArchiveTreeItem.SelectBestFrom(newItem);
+                }
             }
 
             // View the selection.
             ViewFiles();
+        }
+
+        /// <summary>
+        /// Handles a double-click on an item in the partition layout grid shown for
+        /// IMultiPart entries.
+        /// </summary>
+        public void HandlePartitionLayoutDoubleClick(MainWindow.PartitionListItem item,
+                int row, int col, ArchiveTreeItem arcTreeSel) {
+            ArchiveTreeItem? ati = ArchiveTreeItem.FindItemByPartition(mMainWin.ArchiveTreeRoot,
+                item.PartRef);
+            if (ati != null) {
+                ArchiveTreeItem.SelectBestFrom(ati);
+                return;
+            }
+
+            WorkTree.Node? newNode =
+                mWorkTree!.TryCreatePartition(arcTreeSel.WorkTreeNode, item.Index);
+            if (newNode != null) {
+                // Successfully opened.  Update the TreeView.
+                ArchiveTreeItem newItem =
+                    ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
+                // Select something in what we just added.  If it was a disk image, we want
+                // to select the first filesystem, not the disk image itself.
+                ArchiveTreeItem.SelectBestFrom(newItem);
+            }
         }
     }
 }

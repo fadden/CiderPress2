@@ -30,7 +30,8 @@ namespace DiskArc.Multi {
     /// <para>Partitions must not overlap with other partitions, but the definition of
     /// "overlap" is somewhat flexible.  For example, on 800KB OzDOS disks, one 400KB DOS volume
     /// uses the top half of every 512-byte block, while the other volume uses the bottom half.  So
-    /// the range of blocks overlaps, but they don't actually interact with the same data.</para>
+    /// the range of blocks overlaps, but they don't actually interact with the same data.  This
+    /// means that a partition cannot be uniquely identified by start+length.</para>
     /// <para>Partitions are expected to hold filesystems, not disk images or multi-partition
     /// formats.</para>
     /// </remarks>

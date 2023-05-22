@@ -434,9 +434,9 @@ limitations under the License.
                               VerticalScrollBarVisibility="Visible"
                               SelectionMode="Extended"
                               Background="{x:Static SystemColors.WindowBrush}"
-                              MouseDoubleClick="FileList_MouseDoubleClick"
                               EnableRowVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
+                              MouseDoubleClick="FileList_MouseDoubleClick"
                               AllowDrop="True"
                               Drop="FileListDataGrid_Drop">
                               <!--FontFamily="{StaticResource GeneralMonoFont}"-->
@@ -510,7 +510,8 @@ limitations under the License.
                                         AutoGenerateColumns="False"
                                         HeadersVisibility="Column"
                                         CanUserReorderColumns="False"
-                                        VirtualizingStackPanel.VirtualizationMode="Recycling">
+                                        VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                        MouseDoubleClick="PartitionLayout_MouseDoubleClick">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="#" Width="30" Binding="{Binding Index}"/>
                                         <DataGridTextColumn Header="Start Block" Width="80" Binding="{Binding StartBlock}"/>

@@ -26,6 +26,8 @@ using System.Windows.Controls;
 using AppCommon;
 using CommonUtil;
 using DiskArc;
+using DiskArc.Arc;
+using DiskArc.Multi;
 
 namespace cp2_wpf {
     /// <summary>
@@ -152,6 +154,22 @@ namespace cp2_wpf {
             return null;
         }
 
+        public static ArchiveTreeItem? FindItemByPartition(
+                ObservableCollection<ArchiveTreeItem> tvRoot, Partition part) {
+            foreach (ArchiveTreeItem treeItem in tvRoot) {
+                Partition? itemPart = treeItem.WorkTreeNode.DAObject as Partition;
+                if (itemPart == part) {
+                    return treeItem;
+                }
+                ArchiveTreeItem? found = FindItemByPartition(treeItem.Items, part);
+                if (found != null) {
+                    treeItem.IsExpanded = true;
+                    return found;
+                }
+            }
+            return null;
+        }
+
         public override string ToString() {
             return "[ArchiveTreeItem: name='" + Name + "' node=" + WorkTreeNode + "]";
         }
@@ -162,7 +180,8 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="workNode">Work tree node.</param>
         /// <param name="tvRoot">Root of sub-tree.</param>
-        public static void ConstructTree(WorkTree.Node workNode,
+        /// <returns>Item created.</returns>
+        public static ArchiveTreeItem ConstructTree(WorkTree.Node workNode,
                 ObservableCollection<ArchiveTreeItem> tvRoot) {
             ArchiveTreeItem newItem = new ArchiveTreeItem(workNode);
             tvRoot.Add(newItem);
@@ -170,6 +189,33 @@ namespace cp2_wpf {
             foreach (WorkTree.Node child in children) {
                 ConstructTree(child, newItem.Items);
             }
+            return newItem;
+        }
+
+        /// <summary>
+        /// Selects the "best" thing in the specified tree.  For example, we prefer to select
+        /// filesystems rather than the disk image that contains them.
+        /// </summary>
+        /// <param name="root">Starting point.</param>
+        public static void SelectBestFrom(ArchiveTreeItem root) {
+            ArchiveTreeItem item = root;
+            while (item.Items.Count > 0) {
+                // More items farther down.  Do we need to go deeper?
+                if (item.WorkTreeNode.DAObject is GZip) {
+                    // we need to go deeper
+                } else if (item.WorkTreeNode.DAObject is NuFX) {
+                    IFileEntry firstEntry = ((NuFX)item.WorkTreeNode.DAObject).GetFirstEntry();
+                    if (!firstEntry.IsDiskImage) {
+                        break;
+                    }
+                    // first entry is disk image, go deeper
+                } else if (item.WorkTreeNode.DAObject is IFileSystem ||
+                           item.WorkTreeNode.DAObject is IArchive) {
+                    break;      // no, stop here
+                }
+                item = item.Items[0];
+            }
+            item.IsSelected = true;
         }
     }
 }
