@@ -41,6 +41,32 @@ namespace cp2_wpf {
         private object? CurrentWorkObject { get; set; }
 
         /// <summary>
+        /// True if the object selected in the archive tree has an editable IChunkAccess.
+        /// </summary>
+        /// <remarks>
+        /// <para>IDiskImage and Partition provide "direct" access, while IFileSystem must be
+        /// used if the filesystem has been identified (after the fs is switched to raw-access
+        /// mode).  IMultiPart provides read-only chunk access, but that object is meant to be
+        /// carved up for partitions, not edited directly (the disk image container should be
+        /// edited instead).</para>
+        /// </remarks>
+        public bool IsChunkAccessSelected {
+            get { return CurrentWorkObject is IDiskImage || CurrentWorkObject is Partition ||
+                         CurrentWorkObject is IFileSystem; }
+        }
+
+        /// <summary>
+        /// True if the object selected in the archive tree is a disk image.
+        /// </summary>
+        public bool IsDiskImageSelected { get { return CurrentWorkObject is IDiskImage; } }
+
+        /// <summary>
+        /// True if the object selected in the archive tree is a filesystem.
+        /// </summary>
+        public bool IsFileSystemSelected { get { return CurrentWorkObject is IFileSystem; } }
+
+
+        /// <summary>
         /// Clears the contents of the archive tree.
         /// </summary>
         private void ClearArchiveTree() {
@@ -122,6 +148,46 @@ namespace cp2_wpf {
                 }
                 DirectoryTreeItem newItem = new DirectoryTreeItem(title, IFileEntry.NO_ENTRY);
                 mMainWin.DirectoryTreeRoot.Add(newItem);
+                newItem.IsSelected = true;
+            }
+        }
+
+        /// <summary>
+        /// Scans for filesystem sub-volumes.
+        /// </summary>
+        public void ScanForSubVol() {
+            IFileSystem? fs = CurrentWorkObject as IFileSystem;
+            if (fs == null) {
+                Debug.Assert(false);        // shouldn't be able to get here
+                return;
+            }
+            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.Assert(false);
+                return;
+            }
+
+            IMultiPart? embeds = fs.FindEmbeddedVolumes();
+            if (embeds == null) {
+                Debug.WriteLine("No sub-volumes found");
+                return;
+            }
+
+            // Is it already open?
+            ArchiveTreeItem? ati =
+                ArchiveTreeItem.FindItemByDAObject(mMainWin.ArchiveTreeRoot, embeds);
+            if (ati != null) {
+                ati.IsSelected = true;
+                return;
+            }
+
+
+            // Add it to the tree.
+            WorkTree.Node? newNode = mWorkTree!.TryCreateMultiPart(arcTreeSel.WorkTreeNode, embeds);
+            if (newNode != null) {
+                // Successfully opened.  Update the TreeView and select the multipart.
+                ArchiveTreeItem newItem =
+                    ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
                 newItem.IsSelected = true;
             }
         }
@@ -387,7 +453,7 @@ namespace cp2_wpf {
         /// </summary>
         public void HandlePartitionLayoutDoubleClick(MainWindow.PartitionListItem item,
                 int row, int col, ArchiveTreeItem arcTreeSel) {
-            ArchiveTreeItem? ati = ArchiveTreeItem.FindItemByPartition(mMainWin.ArchiveTreeRoot,
+            ArchiveTreeItem? ati = ArchiveTreeItem.FindItemByDAObject(mMainWin.ArchiveTreeRoot,
                 item.PartRef);
             if (ati != null) {
                 ArchiveTreeItem.SelectBestFrom(ati);

@@ -169,6 +169,21 @@ Years start in 1900, with some weird rules.  Months are 1-12, days 1-31,
 hours 0-23, and minutes 0-59.  Seconds are not represented.  Timestamps are
 in local time.
 
+The year field holds 0-127.  The official (ProDOS Tech Note #28) mapping is:
+ - 0-39 = 2000-2039
+ - 40-99 = 1940-1999
+ - 100-127 = unused
+
+However, the tech note says, "Apple II and Apple IIgs System Software does not
+currently reflect this definition".  In practice, many ProDOS utilities seem
+to work best when 100 is used for Y2K which suggests that it might be better
+to use:
+ - 0-39 = 2000-2039
+ - 40-99 = 1940-1999
+ - 100-127 = 2000-2027
+
+See the ProDOS section in the [TimeStamp code](../../CommonUtil/TimeStamp.cs)
+for the details of how this is handled.
 
 ## Extended Files ##
 

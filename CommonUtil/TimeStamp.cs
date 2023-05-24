@@ -22,7 +22,9 @@ namespace CommonUtil {
     /// </summary>
     /// <remarks>
     /// These functions convert between the .NET DateTime class and various system-specific
-    /// encodings.
+    /// encodings.  Vintage date/time encodings are always in the current time zone, so a
+    /// file edited at 10am in San Francisco was also edited at 10am in New York.  If we don't
+    /// handle the time zone conversion correctly things can be subtly wrong.
     /// </remarks>
     public static class TimeStamp {
         // Pick a couple of values to use for invalid dates.  This is sort of fun:
@@ -85,6 +87,10 @@ namespace CommonUtil {
         /// note says, "Note: Apple II and Apple IIgs System Software does not currently
         /// reflect this definition".  So... "never mind"?</para>
         ///
+        /// <para>Best practice: when converting from ProDOS dates, treat 00-39 as 2000-2039,
+        /// because 29 is more likely to be 2029 than 1929, but also accept values >= 100 because
+        /// that's what many utilities actually use.</para>
+        ///
         /// <para>Some discussion about extending the date/time field is here:
         /// <see href="https://groups.google.com/g/comp.sys.apple2/c/6MwlJSKTmQc/m/Wb2-yn-VBQAJ"/>
         /// One item of relevance: don't assume the extra bits in the time field are zero,
@@ -126,24 +132,24 @@ namespace CommonUtil {
         /// Converts a DateTime object to a ProDOS timestamp.
         /// </summary>
         /// <param name="when">DateTime object with date or sentinel value.</param>
-        /// <returns>Four-byte ProDOS date/time value.</returns>
+        /// <returns>Four-byte ProDOS date/time value, or zero for NO_DATE.</returns>
         public static uint ConvertDateTime_ProDOS(DateTime when) {
             if (when == INVALID_DATE || when == NO_DATE) {
                 return 0;
             }
 
-            // As noted earlier, the preferred way to deal with dates is to convert 1940-1999
+            // As noted earlier, the "official" way to deal with dates is to convert 1940-1999
             // to 40-99, and 2000-2039 to 0-39, and not generate values >= 100.  In practice
             // most things seem to work best with the >= 100 values, so we use those when
             // possible.
             int year = when.Year;
             int prodosYear;
             if (year >= 1940 && year <= 1999) {
-                prodosYear = year - 1900;
+                prodosYear = year - 1900;   // 40-99
             } else if (year >= 2000 && year <= 2027) {
-                prodosYear = year - 1900;   // arguably should be 2000
+                prodosYear = year - 1900;   // 100-127; arguably should subtract 2000
             } else if (year >= 2028 && year <= 2039) {
-                prodosYear = year - 2000;
+                prodosYear = year - 2000;   // 28-39
             } else {
                 // Can't represent this date.  Return the NO_DATE value.
                 return 0;
@@ -177,9 +183,8 @@ namespace CommonUtil {
             // This calculation is harder to get right than you might expect.  If we try to
             // manually factor the current time zone in, as libhfs does, some times end up off
             // by an hour, because the daylight saving time offset of the "when" date affects the
-            // time that is represented.  Some values end up off by an hour, and don't agree with
-            // the time shown on a IIgs or a simple manual check.
-            // cf. https://github.com/fadden/ciderpress/issues/56
+            // time that is represented.  The results won't agree with the time shown on a IIgs
+            // or a simple manual check.  cf. https://github.com/fadden/ciderpress/issues/56
             //
             // Here we essentially compute the hour/minute/second as if it were in UTC, and
             // then just declare that it's really in the local time zone.

@@ -15,21 +15,6 @@
  */
 using System;
 
-// FUNC: ConfidenceLevel TestVol(block_source)
-
-// API: volume usage: get file ref for block N.
-
-// FileNameRules -- property with max length, allowed chars, lowerCaseAllowed for
-//   filenames and volume names; should allow rename to be written in generic way
-// - two kinds of syntax check: absolute correctness, and recommended.  For DOS 3.3,
-//   we should discourage control chars and commas, but they're not illegal
-// - maybe a pair of functions (IsFileNameValid vs. IsFileNameGood) that do yes/no?
-
-// API: MakeNameValid(string fileName) -- converts to a valid form
-//    ? MakeNameUnique(IFileEntry dir, string validFileName) -- make unique by adding
-//        numbers or characters in fs-specific way; or could make it a library function
-//        and just trample digits before the file extension (if any)
-
 namespace DiskArc {
     /// <summary>
     /// <para>General interface for access to a disk filesystem.  This is focused on the
@@ -86,7 +71,8 @@ namespace DiskArc {
     ///   <item>Un-deleting files (requires multiple interfaces to find/test/undelete).</item>
     ///   <item>Direct manipulation of block/sector in-use bitmaps (e.g. to create embedded
     ///     sub-volumes).</item>
-    ///   <item>Volume usage map generation.  (Currently done, just not exposed.)</item>
+    ///   <item>Volume usage map generation.  (Currently done, just not exposed.)  Retrieve
+    ///     map, with option to identify the file using block N.</item>
     /// </list>
     public interface IFileSystem : IDiskContents, IDisposable {
         /// <summary>
@@ -188,18 +174,20 @@ namespace DiskArc {
         /// <para>Searches for filesystems that are embedded within the current filesystem.
         /// Useful for "hybrid" disk images.</para>
         /// <para>This call can only be made while the filesystem is in file-access mode.
-        /// Further, the PrepareFileAccess() call must be made with "doScan" set to true, so
+        /// Further, the PrepareFileAccess() call must have been made with "doScan" set to true, so
         /// that we can tell which blocks are in use but not associated with files.</para>
         /// <para>All partitions will be analyzed before returning.  There is no need to
         /// call AnalyzePartition() on the partitions.  (At present, calling it may actually
         /// cause problems, as the wrong part of the hybrid disk might be found.)</para>
+        /// <para>If embedded volumes were found by an earlier call, the same IMultiPart
+        /// object will be returned.</para>
         /// </summary>
         /// <remarks>
         /// <para>Embedded volumes aren't arranged like partitions -- they can overlap with the
         /// host filesystem -- so IMultiPart isn't quite right.  It does have a number of
         /// things we want, and it's convenient, so we use it anyway.</para>
-        /// <para>This will be disposed when the filesystem is disposed or switched to raw-access
-        /// mode.  Do not wrap access to this with "using".</para>
+        /// <para>The object returned will be disposed when the filesystem is disposed or switched
+        /// to raw-access mode.  Do not wrap uses of this with "using".</para>
         /// </remarks>
         /// <returns>List of volumes found, or null if there were none.</returns>
         /// <exception cref="IOException">Filesystem is not in file-access mode.</exception>

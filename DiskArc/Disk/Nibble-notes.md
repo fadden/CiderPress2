@@ -18,23 +18,28 @@
 
 The Apple II receives a stream of bits from the floppy disk controller.  For a variety of reasons
 (see Beneath Apple DOS for an introduction, or _Understanding the Apple IIe_ chapter 9 for a
-deep dive), it's not possible to simply write arbitrary byte values to the stream.  The original
-Disk ][ drive controller imposed a requirement that the bit stream not have more than one
-consecutive zero bit, so 11010110 was okay, but 11001110 was not.  An update to the controller
-allowed two consecutive zero bits.  It was further required that every byte have a '1' in the
-high bit, to make it easy to see when 8 bits had been shifted into a latch.
+deep dive), it's not possible to write arbitrary values to the stream.  The original Disk ][
+drive controller imposed a requirement that the bit stream not have more than one consecutive
+zero bit, so 1011 was okay, but 1001 was not.  An update to the controller allowed two consecutive
+zero bits.  Every byte written to the stream also had to have a '1' in the high bit, to make it
+easy to see when 8 bits had been read.
 
-There are 70 valid octets that meet the requirements for double zeroes.  If we add an additional
-requirement that there must be two adjacent 1 bits, excluding bit 7, we get exactly 64.  We can
-use a table of these values to encode three bytes as four octets: three six-bit values from the
-original bytes, plus one six-bit value that has the remaining two bits of each byte.  This is
-called "6&2" encoding.  A similar approach for single-zero bytes yields 32 values, allowing
-five bytes to be stored as eight octets.  This is "5&3" encoding.
+There are 70 valid octets that have a '1' in the high bit and no more than two consecutive '0'
+bits.  If we add an additional requirement that there must be two adjacent 1 bits, excluding bit 7,
+we get exactly 64 possibilities.  We can use a table of these values to encode three bytes in four
+octets: three six-bit values from the original bytes, plus one six-bit value that has the remaining
+two bits of each byte.  This is called "6&2" encoding, and is used on 16-sector 5.25" disks and
+on 3.5" disks.
 
-To align the controller with the bytes in the bit stream, "self-sync" bytes are written between
-parts of sectors.  These bytes are longer than normal, 9 or 10 bits.  (See _Beneath Apple DOS_
-for an illustration.)  They're written by delaying the delivery of the next byte by one or two
-bit periods, effectively appending one or two zero bits to the end of the byte.
+A similar approach for an encoding that does not allow any consecutive '0' bits yields 32 values,
+allowing five bytes to be stored as eight octets.  This is "5&3" encoding, used on 13-sector 5.25"
+floppy disks.
+
+To align the software with the bytes in the bit stream, "self-sync" bytes are written
+occasionally, usually between parts of sectors.  These bytes are longer than normal, 9 or 10 bits.
+(See _Beneath Apple DOS_ for an illustration.)  They're written by delaying the delivery of the
+next byte by one or two bit periods, effectively appending one or two zero bits to the end of
+the byte.
 
 This type of encoding is called Group Code Recording (GCR).  Some other contemporary drives used
 Modified Frequency Modulation (MFM) encoding, which places a '1' bit between every data bit.
@@ -43,15 +48,15 @@ is referred to as "4&4" encoding.
 
 ### Storage ###
 
-There are two basic approaches for storing "raw" data from a floppy:
+There are two basic approaches for capturing "raw" data from a floppy:
   1. Record all bits.  This correctly captures regular data and self-sync bytes, but is
      difficult to do accurately with unmodified floppy drive hardware.  WOZ and FDI do this.
   2. Record full bytes only.  This is easy to do with standard drive hardware, but loses the
      self-sync byte information.  NIB and APP (Trackstar) do this.
 
-Byte-oriented is easier, bit-oriented is more accurate.  For disks with a standard format, the
-choice is largely irrelevant, but some copy-protection schemes relied on detecting unusual
-patterns of bits.  (See e.g. https://retrocomputing.stackexchange.com/q/37/56 .)
+Byte-oriented is easier to capture, bit-oriented is more accurate.  For disks with a standard
+sector format, the choice is largely irrelevant, but some copy-protection schemes relied on
+detecting unusual patterns of bits.  (See e.g. https://retrocomputing.stackexchange.com/q/37/56 .)
 
 It's possible to make a lower-level recording by measuring the time between magnetic flux
 transitions.  This requires modified drive hardware, and is more difficult to work with.

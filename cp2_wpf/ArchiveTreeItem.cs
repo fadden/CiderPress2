@@ -154,14 +154,19 @@ namespace cp2_wpf {
             return null;
         }
 
-        public static ArchiveTreeItem? FindItemByPartition(
-                ObservableCollection<ArchiveTreeItem> tvRoot, Partition part) {
+        /// <summary>
+        /// Recursively finds a DiskArc object (IFileSystem, Partition, etc.) in the tree.
+        /// </summary>
+        /// <param name="tvRoot">Root of tree to search.</param>
+        /// <param name="matchObj">Object to search for.</param>
+        /// <returns></returns>
+        public static ArchiveTreeItem? FindItemByDAObject(
+                ObservableCollection<ArchiveTreeItem> tvRoot, object matchObj) {
             foreach (ArchiveTreeItem treeItem in tvRoot) {
-                Partition? itemPart = treeItem.WorkTreeNode.DAObject as Partition;
-                if (itemPart == part) {
+                if (matchObj == treeItem.WorkTreeNode.DAObject) {
                     return treeItem;
                 }
-                ArchiveTreeItem? found = FindItemByPartition(treeItem.Items, part);
+                ArchiveTreeItem? found = FindItemByDAObject(treeItem.Items, matchObj);
                 if (found != null) {
                     treeItem.IsExpanded = true;
                     return found;

@@ -61,12 +61,14 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
+            <RoutedUICommand x:Key="EditBlockSectorCmd" Text="Edit Blocks/Sectors..."/>
             <RoutedUICommand x:Key="ExitCmd" Text="E_xit"/>
             <RoutedUICommand x:Key="ExtractFilesCmd" Text="_Extract Files..."/>
             <RoutedUICommand x:Key="NewDiskImageCmd" Text="New _Disk Image..."/>
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
             <RoutedUICommand x:Key="RecentFileCmd"/>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>
+            <RoutedUICommand x:Key="ScanForSubVolCmd" Text="Scan for Sub-Volumes"/>
             <RoutedUICommand x:Key="ShowDirListCmd" Text="Show Directory List"/>
             <RoutedUICommand x:Key="ShowFullListCmd" Text="Show Full List"/>
             <RoutedUICommand x:Key="ShowInfoCmd" Text="Show Information"/>
@@ -96,6 +98,8 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
                         Executed="EditAppSettingsCmd_Executed"/>
+        <CommandBinding Command="{StaticResource EditBlockSectorCmd}"
+                        CanExecute="IsChunkAccessSelected" Executed="EditBlockSectorCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExitCmd}"
                         Executed="ExitCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExtractFilesCmd}"
@@ -114,6 +118,8 @@ limitations under the License.
                         Executed="RecentFileCmd_Executed"/>
         <CommandBinding Command="{StaticResource ResetSortCmd}"
                         CanExecute="IsFileOpen" Executed="ResetSortCmd_Executed"/>
+        <CommandBinding Command="{StaticResource ScanForSubVolCmd}"
+                        CanExecute="IsFileSystemSelected" Executed="ScanForSubVolCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowDirListCmd}"
                         CanExecute="IsFileOpen" Executed="ShowDirListCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowFullListCmd}"
@@ -163,6 +169,9 @@ limitations under the License.
                 <MenuItem Command="{StaticResource ViewFilesCmd}"/>
                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
+                <Separator/>
+                <MenuItem Command="{StaticResource EditBlockSectorCmd}"/>
+                <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Command="{StaticResource ShowFullListCmd}"/>
@@ -376,6 +385,12 @@ limitations under the License.
                                     </Style.Triggers>-->
                                 </Style>
                             </TreeView.ItemContainerStyle>
+                            <TreeView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
+                                    <MenuItem Command="{StaticResource EditBlockSectorCmd}"/>
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
                         </TreeView>
                     </Grid>
 

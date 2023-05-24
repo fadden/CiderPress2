@@ -7,6 +7,7 @@
 
 ## General ##
 
+[ TODO ]
 - captured disk images for hardware
 - 80-track capture of half-tracks
 

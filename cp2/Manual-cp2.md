@@ -125,7 +125,7 @@ Changes to file archives are made by creating a new archive, and renaming
 it in place of the original when the update has completed.  If the operation
 is cancelled partway through, none of the changes will be retained.
 
-### Add, Extract, Import, Export ##
+### Add, Extract, Import, Export ###
 
 There are four distinct operations for adding and extracting files:
 

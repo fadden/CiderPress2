@@ -393,6 +393,11 @@ namespace AppCommon {
             return newNode;
         }
 
+        public Node? TryCreateMultiPart(Node workNode, IMultiPart partitions) {
+            DiskArcNode daParent = FindDANode(workNode.Parent!);
+            return ProcessMultiPart(partitions, workNode, daParent);
+        }
+
         /// <summary>
         /// Processes a stream with uncertain contents to see if it contains a disk image or
         /// file archive.  If so, new nodes are created for the work tree and the DiskArcNode
@@ -548,7 +553,7 @@ namespace AppCommon {
         /// <summary>
         /// Processes the partitions in a multi-partition layout.
         /// </summary>
-        private void ProcessMultiPart(IMultiPart partitions, Node parentNode,
+        private Node? ProcessMultiPart(IMultiPart partitions, Node parentNode,
                 DiskArcNode daParent) {
             // Create an entry for the partition map object.
             string typeStr = ThingString.IMultiPart(partitions);
@@ -568,6 +573,7 @@ namespace AppCommon {
                     index++;
                 }
             }
+            return multiNode;
         }
 
         /// <summary>

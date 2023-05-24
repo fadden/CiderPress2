@@ -305,6 +305,19 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList);
         }
 
+        private void IsChunkAccessSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsChunkAccessSelected);
+        }
+        private void IsDiskImageSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsDiskImageSelected);
+        }
+        private void IsFileSystemSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsFileSystemSelected);
+        }
+
         #endregion Can-execute handlers
 
         #region Command handlers
@@ -328,6 +341,9 @@ namespace cp2_wpf {
         }
         private void EditAppSettingsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.EditAppSettings();
+        }
+        private void EditBlockSectorCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            Debug.WriteLine("Edit blocks/sectors!");
         }
         private void ExitCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // Close the main window.  This operation can be cancelled by the user.
@@ -369,6 +385,9 @@ namespace cp2_wpf {
         }
         private void ResetSortCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             fileListDataGrid.ResetSort();
+        }
+        private void ScanForSubVolCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.ScanForSubVol();
         }
         private void ShowDirListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // TODO: reconfigure file list
