@@ -195,8 +195,9 @@ The record header CRC covers all header data, including the thread headers.
 
 The specification does not say whether filenames are case-sensitive, or which character set is
 used.  Since the primary filesystems are ProDOS and HFS, it's reasonable to assume that
-filenames use Mac OS Roman.  Because UNIX implementations exist, the filenames should be compared
-in a case-sensitive fashion when checking for duplicate entries.
+filenames use Mac OS Roman.  Because UNIX implementations exist, the filenames should theoretically
+be compared in a case-sensitive fashion when checking for duplicate entries, but in practice a
+case-insensitive comparison works fine since nearly all archives are from ProDOS or HFS.
 
 ### Disk Images ###
 

@@ -4,6 +4,8 @@
 
 - _Inside Macintosh: Files_, chapter 2 (esp. p. 2-52+)
 - _Inside Macintosh: Macintosh Toolbox Essentials_ (esp. p. 7-47+)
+
+Additional resources:
 - https://www.savagetaylor.com/2018/01/01/mac-os-standard-format-specifications-apple-kb-article-8647/
   (general overview)
 - https://opensource.apple.com/source/xnu/xnu-2050.18.24/bsd/hfs/hfs_format.h or
@@ -11,14 +13,15 @@
   (data structures and constants for HFS and HFS+)
 - HFS/HFS+ doc:
   https://github.com/libyal/libfshfs/blob/main/documentation/Hierarchical%20File%20System%20(HFS).asciidoc
-
 - libhfs project: https://www.mars.org/home/rob/proj/hfs/
 - Linux kernel: https://github.com/torvalds/linux/tree/master/fs/hfs
-
 - https://developer.apple.com/library/archive/documentation/mac/Files/Files-99.html
   (2-52 in IM:Files as HTML)
 - https://developer.apple.com/library/archive/technotes/tn/tn1150.html (HFS+ info, some useful)
 
+The _Inside Macintosh: Files_ chapter does a nice job of explaining how things are laid out on
+disk, but falls a bit short when it comes to explaining how some of the pieces fit together.
+This document summarizes the general information and then details the recommended algorithms.
 
 ## General ##
 
@@ -281,7 +284,7 @@ the left of everything because it is the child of CNID 1.  In the extents tree, 
 need to insert a node to the left of all previous nodes.  When this happens, it is necessary to
 walk up the tree and rewrite the index records to use the newly-inserted key.
 
-** Insert node:**
+**Insert node:**
 
  - If root node does not exist, create it.
 
@@ -496,4 +499,4 @@ crashes immediately (using hfsprogs 332.25-11build1 amd64), but the i386 version
 The command will fix minor problems without asking unless the "-n" flag is given.
 
 The GS/OS System 6.0.1 FST has a serious bug that can cause file corruption.  A software patch is
-available in the test file collection, as `TestData/nufx/PatchHFS.shk`.
+available in the test file collection, as [`TestData/nufx/PatchHFS.shk`](TestData/nufx).

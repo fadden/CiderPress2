@@ -4,6 +4,10 @@ This document discusses disk images with multiple operating systems.  While mult
 formats typically have a series of well-defined discrete containers, hybrid disks have filesystem
 regions that overlap.  This can make them more difficult to detect.
 
+## Primary References ##
+
+- Some documentation, mostly reverse-engineering
+
 ## DOS MASTER ##
 
 DOS MASTER, by Glen Bredon, allows DOS 3.3 volumes to be embedded in a ProDOS filesystem.  A

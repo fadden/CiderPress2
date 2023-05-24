@@ -10,8 +10,8 @@
 
 The data compression performed by ShrinkIt and GS/ShrinkIt uses a combination of run-length
 encoding (RLE) and Lempel-Ziv-Welch sequence encoding (LZW; see
-https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch).  The code was developed by
-Kent Dickey and Andy Nicholas.
+https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch).  The Apple II code was developed
+by Kent Dickey and Andy Nicholas.
 
 The original goal was to compress 5.25" disk images, offering a significant improvement over
 programs like Dalton's Disk Disintegrator (DDD), which combined RLE with a simplified Huffman
@@ -28,9 +28,9 @@ space, or when LZW fails to make a 4KB chunk smaller.
 
 The run-length encoder will transform any run of more than three bytes to:
 
-  <delim> <count-1> <value>
+  `<delim> <count-1> <value>`
 
-The delimiter is specified in the compressed data, but ShrinkIt always uses $db.
+The delimiter is specified in the compressed data, but ShrinkIt always uses $DB.
 
 The length of a run is encoded as (count - 1), allowing runs up to 256 bytes.  Delimiters
 are escaped by encoding them as a run, no matter how many appear.  The worse case scenario
