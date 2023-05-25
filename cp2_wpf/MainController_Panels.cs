@@ -22,6 +22,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 using AppCommon;
 using DiskArc;
@@ -430,16 +431,22 @@ namespace cp2_wpf {
                     return;
                 }
 
-                // Evalute this file to see if it could be a disk image or file archive.  If it
-                // is, add it to the work tree, and select it.
-                WorkTree.Node? newNode = mWorkTree!.TryCreateSub(arcTreeSel.WorkTreeNode, entry);
-                if (newNode != null) {
-                    // Successfully opened.  Update the TreeView.
-                    ArchiveTreeItem newItem =
-                        ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
-                    // Select something in what we just added.  If it was a disk image, we want
-                    // to select the first filesystem, not the disk image itself.
-                    ArchiveTreeItem.SelectBestFrom(newItem);
+                try {
+                    Mouse.OverrideCursor = Cursors.Wait;
+
+                    // Evalute this file to see if it could be a disk image or file archive.  If it
+                    // is, add it to the work tree, and select it.
+                    WorkTree.Node? newNode = mWorkTree!.TryCreateSub(arcTreeSel.WorkTreeNode, entry);
+                    if (newNode != null) {
+                        // Successfully opened.  Update the TreeView.
+                        ArchiveTreeItem newItem =
+                            ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
+                        // Select something in what we just added.  If it was a disk image, we want
+                        // to select the first filesystem, not the disk image itself.
+                        ArchiveTreeItem.SelectBestFrom(newItem);
+                    }
+                } finally {
+                    Mouse.OverrideCursor = null;
                 }
             }
 
@@ -460,15 +467,21 @@ namespace cp2_wpf {
                 return;
             }
 
-            WorkTree.Node? newNode =
-                mWorkTree!.TryCreatePartition(arcTreeSel.WorkTreeNode, item.Index);
-            if (newNode != null) {
-                // Successfully opened.  Update the TreeView.
-                ArchiveTreeItem newItem =
-                    ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
-                // Select something in what we just added.  If it was a disk image, we want
-                // to select the first filesystem, not the disk image itself.
-                ArchiveTreeItem.SelectBestFrom(newItem);
+            try {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                WorkTree.Node? newNode =
+                    mWorkTree!.TryCreatePartition(arcTreeSel.WorkTreeNode, item.Index);
+                if (newNode != null) {
+                    // Successfully opened.  Update the TreeView.
+                    ArchiveTreeItem newItem =
+                        ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
+                    // Select something in what we just added.  If it was a disk image, we want
+                    // to select the first filesystem, not the disk image itself.
+                    ArchiveTreeItem.SelectBestFrom(newItem);
+                }
+            } finally {
+                Mouse.OverrideCursor = null;
             }
         }
     }

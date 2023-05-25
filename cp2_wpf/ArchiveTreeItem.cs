@@ -155,7 +155,8 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Recursively finds a DiskArc object (IFileSystem, Partition, etc.) in the tree.
+        /// Recursively finds a node with a specific DiskArc object (IFileSystem, Partition, etc.)
+        /// in the tree.
         /// </summary>
         /// <param name="tvRoot">Root of tree to search.</param>
         /// <param name="matchObj">Object to search for.</param>

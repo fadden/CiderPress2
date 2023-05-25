@@ -343,7 +343,7 @@ namespace cp2_wpf {
             mMainCtrl.EditAppSettings();
         }
         private void EditBlockSectorCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            Debug.WriteLine("Edit blocks/sectors!");
+            mMainCtrl.EditSectors();
         }
         private void ExitCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // Close the main window.  This operation can be cancelled by the user.

@@ -1,0 +1,86 @@
+﻿<!--
+Copyright 2023 faddenSoft
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_wpf.WPFCommon.EditSector"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_wpf.WPFCommon"
+        mc:Ignorable="d"
+        Title="Edit Block / Sector"
+        Height="450" Width="800" ResizeMode="NoResize"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+    <Grid Margin="8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Column="0" Grid.ColumnSpan="1" Grid.Row="0"
+                   Text="This Is A Place-Holder" HorizontalAlignment="Center"/>
+
+        <TextBox Grid.Column="0" Grid.Row="1" Margin="0,4,8,0"
+                 Text="{Binding SectorData, FallbackValue=DATA_HERE}"
+                 FontFamily="{StaticResource GeneralMonoFont}"/>
+
+        <StackPanel Grid.Column="1" Grid.Row="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="Track:"/>
+                <TextBox Grid.Column="1" Grid.Row="0" Width="50"/>
+                <TextBlock Grid.Column="0" Grid.Row="1" Text="Sector:"/>
+                <TextBox Grid.Column="1" Grid.Row="1" Width="50"/>
+
+                <Button Grid.Column="0" Grid.Row="2" Width="40" Margin="0,4,0,0"
+                        Content="Prev" HorizontalAlignment="Left"/>
+                <Button Grid.Column="1" Grid.Row="2" Width="40" Margin="0,4,0,0"
+                        Content="Next" HorizontalAlignment="Right"/>
+            </Grid>
+
+            <Button Width="90" Content="Read &#x23ce;" Margin="0,16,0,0" IsDefault="True"
+                    Click="ReadButton_Click"/>
+            <Button Width="90" Content="Write" Margin="0,16,0,0"
+                    IsEnabled="{Binding IsWriteEnabled}"
+                    Click="WriteButton_Click"/>
+
+            <Button Width="90" Content="Enable Writes" Margin="0,24,0,0"
+                    IsEnabled="{Binding IsEnableWritesEnabled}"
+                    Click="EnableWrites_Click"/>
+        </StackPanel>
+        
+        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Margin="0,8,0,0"
+                    Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Name="cancelButton" Content="Done" IsCancel="True"
+                    Width="70" Margin="4,0,0,0"/>
+        </StackPanel>
+
+    </Grid>
+</Window>

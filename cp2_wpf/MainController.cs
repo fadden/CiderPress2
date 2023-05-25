@@ -604,51 +604,6 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Opens the file viewer.
-        /// </summary>
-        public void ViewFiles() {
-            // TODO: if only one file is selected, select all files in the same directory, to
-            //   enable the forward/backward buttons in the viewer.
-            if (!GetFileSelection(true, true, false, out object? archiveOrFileSystem,
-                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
-                return;
-            }
-
-            FileViewer dialog = new FileViewer(mMainWin, archiveOrFileSystem, selected, mAppHook);
-            dialog.ShowDialog();
-        }
-
-        /// <summary>
-        /// Handles Actions : Extract Files
-        /// </summary>
-        public void ExtractFiles() {
-            if (!GetFileSelection(false, false, true, out object? archiveOrFileSystem,
-                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
-                return;
-            }
-
-            // TODO: there's no "pick a folder" dialog in WPF.  We can either use the Forms
-            // version or pull in a 3rd-party library, e.g.
-            // https://github.com/ookii-dialogs/ookii-dialogs-wpf
-            // Unfortunately, drag & drop *out* of the application is fairly involved.
-            // Hard-wire it for now.
-
-            string outputDir = @"C:\src\test\_cp2";
-            if (!Directory.Exists(outputDir)) {
-                MessageBox.Show(mMainWin, "Files can only be extracted to '" + outputDir + "'",
-                    "I said it's not ready");
-                return;
-            }
-            ExtractProgress prog = new ExtractProgress(archiveOrFileSystem, selectionDir,
-                selected, outputDir, mAppHook);
-            Debug.WriteLine("Extract: selectionDir='" + selectionDir + "'");
-
-            // Do the extraction on a background thread so we can show progress.
-            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
-            workDialog.ShowDialog();
-        }
-
-        /// <summary>
         /// Handles Actions : Add Files
         /// </summary>
         public void AddFiles() {
@@ -706,6 +661,66 @@ namespace cp2_wpf {
             } else {
                 AddDiskItems(targetDir);
             }
+        }
+
+        /// <summary>
+        /// Handles Actions : Edit Blocks / Sectors
+        /// </summary>
+        public void EditSectors() {
+            bool writeEnabled = false;
+            EditSector.EnableWriteFunc func = delegate () {
+                Debug.WriteLine("Enable write func!");
+                writeEnabled = true;
+                return true;
+            };
+            EditSector dialog = new EditSector(mMainWin, func);
+            dialog.ShowDialog();
+            Debug.WriteLine("After dialog, enabled=" + writeEnabled);
+        }
+
+        /// <summary>
+        /// Handles Actions : Extract Files
+        /// </summary>
+        public void ExtractFiles() {
+            if (!GetFileSelection(false, false, true, out object? archiveOrFileSystem,
+                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
+                return;
+            }
+
+            // TODO: there's no "pick a folder" dialog in WPF.  We can either use the Forms
+            // version or pull in a 3rd-party library, e.g.
+            // https://github.com/ookii-dialogs/ookii-dialogs-wpf
+            // Unfortunately, drag & drop *out* of the application is fairly involved.
+            // Hard-wire it for now.
+
+            string outputDir = @"C:\src\test\_cp2";
+            if (!Directory.Exists(outputDir)) {
+                MessageBox.Show(mMainWin, "Files can only be extracted to '" + outputDir + "'",
+                    "I said it's not ready");
+                return;
+            }
+            ExtractProgress prog = new ExtractProgress(archiveOrFileSystem, selectionDir,
+                selected, outputDir, mAppHook);
+            Debug.WriteLine("Extract: selectionDir='" + selectionDir + "'");
+
+            // Do the extraction on a background thread so we can show progress.
+            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
+            workDialog.ShowDialog();
+        }
+
+        /// <summary>
+        /// Handles Actions : View Files.
+        /// </summary>
+        public void ViewFiles() {
+            // TODO: if only one file is selected, select all files in the same directory, to
+            //   enable the forward/backward buttons in the viewer.
+            if (!GetFileSelection(true, true, false, out object? archiveOrFileSystem,
+                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
+                return;
+            }
+
+            FileViewer dialog = new FileViewer(mMainWin, archiveOrFileSystem, selected, mAppHook);
+            dialog.ShowDialog();
         }
 
         /// <summary>
