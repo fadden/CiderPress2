@@ -72,6 +72,11 @@ limitations under the License.
             <RoutedUICommand x:Key="ShowDirListCmd" Text="Show Directory List"/>
             <RoutedUICommand x:Key="ShowFullListCmd" Text="Show Full List"/>
             <RoutedUICommand x:Key="ShowInfoCmd" Text="Show Information"/>
+            <RoutedUICommand x:Key="ToggleInfoCmd" Text="Toggle Information">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+I</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
             <RoutedUICommand x:Key="ViewFilesCmd" Text="_View Files"/>
 
             <RoutedUICommand x:Key="Debug_BulkCompressTestCmd" Text="Bulk Compression Test..."/>
@@ -126,6 +131,8 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="ShowFullListCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowInfoCmd}"
                         CanExecute="IsFileOpen" Executed="ShowInfoCmd_Executed"/>
+        <CommandBinding Command="{StaticResource ToggleInfoCmd}"
+                        CanExecute="IsFileOpen" Executed="ToggleInfoCmd_Executed"/>
         <CommandBinding Command="{StaticResource ViewFilesCmd}"
                         CanExecute="IsFileOpen" Executed="ViewFilesCmd_Executed"/>
 

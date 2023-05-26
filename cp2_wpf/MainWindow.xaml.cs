@@ -391,14 +391,17 @@ namespace cp2_wpf {
         }
         private void ShowDirListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // TODO: reconfigure file list
-            SetShowCenterInfo(false);
+            SetShowCenterInfo(CenterPanelChange.Files);
         }
         private void ShowFullListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // TODO: reconfigure file list
-            SetShowCenterInfo(false);
+            SetShowCenterInfo(CenterPanelChange.Files);
         }
         private void ShowInfoCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            SetShowCenterInfo(true);
+            SetShowCenterInfo(CenterPanelChange.Info);
+        }
+        private void ToggleInfoCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            SetShowCenterInfo(CenterPanelChange.Toggle);
         }
         private void ViewFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.ViewFiles();
@@ -475,19 +478,34 @@ namespace cp2_wpf {
         public enum CenterPanelContents { Unknown = 0, FileArchive, DiskImage, InfoOnly }
         public void SetCenterPanelContents(CenterPanelContents cont) {
             mCenterPanelContents = cont;
-            SetShowCenterInfo(cont == CenterPanelContents.InfoOnly);
+            if (cont == CenterPanelContents.InfoOnly) {
+                SetShowCenterInfo(CenterPanelChange.Info);
+            } else {
+                SetShowCenterInfo(CenterPanelChange.Files);
+            }
         }
         private CenterPanelContents mCenterPanelContents = CenterPanelContents.Unknown;
 
+        public enum CenterPanelChange { Unknown = 0, Files, Info, Toggle }
         public bool ShowCenterFileList { get { return !mShowCenterInfo; } }
         public bool ShowCenterInfoPanel { get { return mShowCenterInfo; } }
-        private void SetShowCenterInfo(bool value) {
-            if (!value && mCenterPanelContents == CenterPanelContents.InfoOnly) {
-                // No file list to switch to; ignore request.
+        private void SetShowCenterInfo(CenterPanelChange req) {
+            if (mCenterPanelContents == CenterPanelContents.InfoOnly &&
+                    req != CenterPanelChange.Info) {
                 Debug.WriteLine("Ignoring attempt to switch to file list");
                 return;
             }
-            mShowCenterInfo = value;
+            switch (req) {
+                case CenterPanelChange.Info:
+                    mShowCenterInfo = true;
+                    break;
+                case CenterPanelChange.Files:
+                    mShowCenterInfo = false;
+                    break;
+                case CenterPanelChange.Toggle:
+                    mShowCenterInfo = !mShowCenterInfo;
+                    break;
+            }
             OnPropertyChanged("ShowCenterFileList");
             OnPropertyChanged("ShowCenterInfoPanel");
         }

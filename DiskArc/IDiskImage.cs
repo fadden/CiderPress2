@@ -110,10 +110,12 @@ namespace DiskArc {
         /// </summary>
         /// <remarks>
         /// <para>If the filesystem has been detected and made available through the FileSystem
-        /// property, chunk access will be disabled.  To access individual blocks and sectors,
-        /// use <see cref="IFileSystem.RawAccess"/> in the IFileSystem object instead.  This
-        /// ensures that low-level editing isn't possible while the filesystem is open for file
-        /// access.</para>
+        /// property, chunk access will be read-only, regardless of the filesystem state.  Writes
+        /// must be made through the <see cref="IFileSystem.RawAccess"/> property in the
+        /// IFileSystem object instead.  This ensures that low-level editing isn't possible while
+        /// the filesystem is open for file access.</para>
+        /// <para>Changes made to the filesystem not be visible until <see cref="Flush"/> is
+        /// called.</para>
         /// <para>Will be null if the disk layout hasn't been analyzed yet, or for nibble images
         /// for which the sector format cannot be determined.</para>
         /// </remarks>

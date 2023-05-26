@@ -197,17 +197,26 @@ namespace cp2_wpf {
         /// Generates a one-line blurb about the specified object, which may be any type that
         /// can be found in the archive tree.
         /// </summary>
-        private static string GetInfoString(object workObj) {
+        private string GetInfoString(object workObj) {
             if (workObj is IArchive) {
                 return ThingString.IArchive((IArchive)workObj) + " file archive";
             } else if (workObj is IDiskImage) {
                 IDiskImage disk = (IDiskImage)workObj;
-                // ChunkAccess will be unavailable
+                IChunkAccess? chunks = disk.ChunkAccess;
                 StringBuilder sb = new StringBuilder();
                 sb.Append(ThingString.IDiskImage(disk));
                 sb.Append(" disk image");
-                if (disk is INibbleDataAccess) {
+                if (chunks != null && chunks.NibbleCodec != null) {
+                    sb.Append(", nibble codec=" + chunks.NibbleCodec.Name);
+                } else if (disk is INibbleDataAccess) {
                     sb.Append(" (nibble)");
+                }
+                if (chunks != null) {
+                    if (chunks.HasSectors && chunks.NumSectorsPerTrack == 16) {
+                        sb.Append(", order=" + ThingString.SectorOrder(chunks.FileOrder));
+                    }
+                    sb.Append(", ");
+                    sb.Append(mFormatter.FormatSizeOnDisk(chunks.FormattedLength, KBLOCK_SIZE));
                 }
                 return sb.ToString();
             } else if (workObj is IFileSystem) {
@@ -216,14 +225,21 @@ namespace cp2_wpf {
                 sb.Append(ThingString.IFileSystem(fs));
                 sb.Append(" filesystem");
                 IChunkAccess chunks = fs.RawAccess;
-                if (chunks.NibbleCodec != null) {
-                    sb.Append(", nibble codec=" + chunks.NibbleCodec.Name);
-                } else if (chunks.HasSectors && chunks.NumSectorsPerTrack == 16) {
-                    sb.Append(", order=" + ThingString.SectorOrder(chunks.FileOrder));
+                sb.Append(", size=");
+                if (fs is DOS) {
+                    sb.Append(mFormatter.FormatSizeOnDisk(chunks.FormattedLength, SECTOR_SIZE));
+                } else {
+                    sb.Append(mFormatter.FormatSizeOnDisk(chunks.FormattedLength, BLOCK_SIZE));
                 }
                 return sb.ToString();
             } else if (workObj is IMultiPart) {
-                return ThingString.IMultiPart((IMultiPart)workObj) + " multi-part image";
+                IMultiPart partitions = (IMultiPart)workObj;
+                StringBuilder sb = new StringBuilder();
+                sb.Append(ThingString.IMultiPart((IMultiPart)workObj));
+                sb.Append(" multi-part image, with ");
+                sb.Append(partitions.Count);
+                sb.Append(" partitions");
+                return sb.ToString();
             } else if (workObj is Partition) {
                 Partition part = (Partition)workObj;
                 StringBuilder sb = new StringBuilder();
@@ -235,40 +251,6 @@ namespace cp2_wpf {
                 return sb.ToString();
             } else {
                 return string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Formats a value that represents the size of something stored on a disk, such as a
-        /// file or a partition.
-        /// </summary>
-        /// <param name="length">Value to format.</param>
-        /// <param name="baseUnit">Base units: sectors, blocks, or KiB.</param>
-        /// <returns>Formatted string.</returns>
-        internal static string FormatSizeOnDisk(long length, int baseUnit) {
-            if (baseUnit == KBLOCK_SIZE || length >= 10 * 1024 * 1024) {
-                if (length >= 1024 * 1024 * 1024) {
-                    return string.Format("{0:F1}GB", length / (1024.0 * 1024.0 * 1024.0));
-                } else if (length >= 10 * 1024 * 1024) {
-                    return string.Format("{0:F1}MB", length / (1024.0 * 1024.0));
-                } else {
-                    return string.Format("{0:F0}KB", length / 1024.0);
-                }
-            } else {
-                long num = length / baseUnit;
-                string unitStr;
-                switch (baseUnit) {
-                    case SECTOR_SIZE:
-                        unitStr = "sector";
-                        break;
-                    case BLOCK_SIZE:
-                        unitStr = "block";
-                        break;
-                    default:
-                        unitStr = "unit";
-                        break;
-                }
-                return string.Format("{0:D0} {1}{2}", num, unitStr, (num == 1) ? "" : "s");
             }
         }
 
@@ -356,7 +338,7 @@ namespace cp2_wpf {
                     baseUnit = KBLOCK_SIZE;
                 }
                 sb.Append(", ");
-                sb.Append(FormatSizeOnDisk(fs.FreeSpace, baseUnit));
+                sb.Append(mFormatter.FormatSizeOnDisk(fs.FreeSpace, baseUnit));
                 sb.Append(" free");
             }
 

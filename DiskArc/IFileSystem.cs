@@ -149,6 +149,12 @@ namespace DiskArc {
         /// A chunk source that may be used to read and write blocks in the filesystem.  Access
         /// will be limited unless the filesystem is configured for "raw" access.
         /// </summary>
+        /// <remarks>
+        /// <para>If the filesystem is contained within an IDiskImage or Partition, this will
+        /// reference the same chunk access object available there (but will be gated
+        /// independently).  This may not reflect changes cached by the filesystem code unless
+        /// <see cref="Flush"/> is called.</para>
+        /// </remarks>
         GatedChunkAccess RawAccess { get; }
 
         /// <summary>

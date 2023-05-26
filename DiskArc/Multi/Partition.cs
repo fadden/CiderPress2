@@ -165,9 +165,7 @@ namespace DiskArc.Multi {
                 // they're embedded in a filesystem.
                 ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
             } else if (contents is IFileSystem) {
-                // IDiskImage classes set this to Closed.  For consistency we could do the same
-                // (or the other classes could do ReadOnly).  Not sure it matters so long as
-                // it isn't Open.
+                // Allow read-only access.  The chunk access object is shared with the filesystem.
                 ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
                 FileSystem = (IFileSystem)contents;
             } else {

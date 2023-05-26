@@ -108,6 +108,12 @@ namespace CommonUtil {
         }
 
         private const string ACCESS_LETTERS = "dnb??iwr";
+
+        /// <summary>
+        /// Formats ProDOS-style access flags.
+        /// </summary>
+        /// <param name="access">Access flag byte.</param>
+        /// <returns>Formatted string.</returns>
         public string FormatAccessFlags(byte access) {
             StringBuilder sb = new StringBuilder(8);
             for (int i = 0; i < 8; i++) {
@@ -117,6 +123,43 @@ namespace CommonUtil {
                 access <<= 1;
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Formats a value that represents the size of something stored on a disk, such as a
+        /// file or a partition.
+        /// </summary>
+        /// <param name="length">Value to format.</param>
+        /// <param name="baseUnit">Base units: sectors, blocks, or KiB.</param>
+        /// <returns>Formatted string.</returns>
+        public string FormatSizeOnDisk(long length, int baseUnit) {
+            const int SECTOR_SIZE = 256;
+            const int BLOCK_SIZE = 512;
+            const int KBLOCK_SIZE = 1024;
+            if (baseUnit == KBLOCK_SIZE || length >= 10 * 1024 * 1024) {
+                if (length >= 1024 * 1024 * 1024) {
+                    return string.Format("{0:F1}GB", length / (1024.0 * 1024.0 * 1024.0));
+                } else if (length >= 10 * 1024 * 1024) {
+                    return string.Format("{0:F1}MB", length / (1024.0 * 1024.0));
+                } else {
+                    return string.Format("{0:F0}KB", length / 1024.0);
+                }
+            } else {
+                long num = length / baseUnit;
+                string unitStr;
+                switch (baseUnit) {
+                    case SECTOR_SIZE:
+                        unitStr = "sector";
+                        break;
+                    case BLOCK_SIZE:
+                        unitStr = "block";
+                        break;
+                    default:
+                        unitStr = "unit";
+                        break;
+                }
+                return string.Format("{0:D0} {1}{2}", num, unitStr, (num == 1) ? "" : "s");
+            }
         }
 
         /// <summary>

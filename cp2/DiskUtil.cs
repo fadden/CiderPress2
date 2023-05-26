@@ -660,7 +660,7 @@ namespace cp2 {
             if (disk.ChunkAccess == null) {
                 Console.Error.WriteLine("Error: unable to determine sector format");
                 return null;
-            } else if (disk.ChunkAccess.AccessLevel != GatedChunkAccess.AccessLvl.Closed) {
+            } else if (disk.Contents == null) {
                 // Filesystem not identified, use the disk-level chunk object.
                 chunks = disk.ChunkAccess;
             } else if (disk.Contents is IFileSystem) {

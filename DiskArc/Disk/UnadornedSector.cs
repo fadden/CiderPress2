@@ -229,7 +229,7 @@ namespace DiskArc.Disk {
             }
             // Got the disk layout, disable direct chunk access.
             Contents = contents;
-            ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;    // could be ReadOnly
+            ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
             return true;
         }
 
