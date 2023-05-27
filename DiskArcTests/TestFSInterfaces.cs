@@ -25,7 +25,7 @@ using static DiskArc.IFileSystem;
 
 namespace DiskArcTests {
     /// <summary>
-    /// Tests filesystem interfaces in a filesystem-independent way.  We can't exercise the
+    /// Tests IFileSystem interfaces in a filesystem-independent way.  We can't exercise the
     /// interesting instance-specific edge cases, but we can confirm that everything fails
     /// the same way when bad arguments are passed.  These tests are less about exercising
     /// the success cases and more about checking the simple failure cases for consistency.

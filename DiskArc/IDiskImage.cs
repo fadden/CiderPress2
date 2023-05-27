@@ -159,8 +159,14 @@ namespace DiskArc {
         ///   the filesystem or partition layout was recognized.</returns>
         bool AnalyzeDisk(SectorCodec? codec, SectorOrder orderHint, AnalysisDepth depth);
 
-        // TODO: do we want a CloseFileSystem() call to re-open the IChunkAccess?  Easier
-        //   then calling AnalyzeDisk() again with chunksOnly=true.
+        /// <summary>
+        /// Closes the IFileSystem or IMultiPart object referenced by <see cref="Contents"/>.
+        /// The property will be set to null.
+        /// </summary>
+        /// <remarks>
+        /// <para>This has no effect if Contents is already null.</para>
+        /// </remarks>
+        void CloseContents();
 
         /// <summary>
         /// Flushes any cached data to the disk image storage.

@@ -37,7 +37,7 @@ namespace cp2.Tests {
                     return DepthLimit(parentKind, childKind, parms.Depth);
             };
             using (WorkTree tree = new WorkTree(extArchive, limiter, true, null, parms.AppHook)) {
-                Console.Write(WorkTree.GenerateTreeSummary(tree));
+                Console.Write(tree.GenerateTreeSummary());
             }
 
             return true;

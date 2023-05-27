@@ -680,7 +680,7 @@ namespace cp2.Tests {
                     /*expected*/
                     Debug.WriteLine("Got exception for overflow: " + ex.Message);
                 }
-                leafNode.HealthCheck();
+                leafNode.CheckHealth();
             }
 
             // Verify.
@@ -716,7 +716,7 @@ namespace cp2.Tests {
         /// Adds entries TWO and THREE to the specified leaf node.
         /// </summary>
         private static void AddDiskEntries(IDiskImage disk, DiskArcNode leafNode) {
-            leafNode.HealthCheck();
+            leafNode.CheckHealth();
 
             IFileSystem fs = (IFileSystem)disk.Contents!;   // disk image already analyzed
             fs.PrepareFileAccess(true);
@@ -734,7 +734,7 @@ namespace cp2.Tests {
                 Debug.WriteLine("SaveUpdates failed: " + ex);
                 throw;
             }
-            leafNode.HealthCheck();
+            leafNode.CheckHealth();
 
             // Create another file.
             IFileEntry threeEntry = fs.CreateFile(volDir, NAME_THREE, CreateMode.File);
@@ -750,14 +750,14 @@ namespace cp2.Tests {
                 throw;
             }
 
-            leafNode.HealthCheck();
+            leafNode.CheckHealth();
         }
 
         /// <summary>
         /// Adds entries TWO and THREE to the specified leaf node.
         /// </summary>
         private static void AddArchiveEntries(IArchive arc, DiskArcNode leafNode) {
-            leafNode.HealthCheck();
+            leafNode.CheckHealth();
 
             // Add a file.
             arc.StartTransaction();
@@ -772,7 +772,7 @@ namespace cp2.Tests {
                 Debug.WriteLine("SaveUpdates failed: " + ex);
                 throw;
             }
-            leafNode.HealthCheck();
+            leafNode.CheckHealth();
 
             // Add a second file.
             arc.StartTransaction();
@@ -788,7 +788,7 @@ namespace cp2.Tests {
                 throw;
             }
 
-            leafNode.HealthCheck();
+            leafNode.CheckHealth();
         }
 
         /// <summary>

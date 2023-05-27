@@ -691,12 +691,7 @@ namespace DiskArc.Disk {
         public virtual bool AnalyzeDisk(SectorCodec? codec, SectorOrder orderHint,
                 AnalysisDepth depth) {
             // Discard existing FileSystem and ChunkAccess objects (filesystem will be flushed).
-            if (Contents is IFileSystem) {
-                ((IFileSystem)Contents).Dispose();
-            } else if (Contents is IMultiPart) {
-                ((IMultiPart)Contents).Dispose();
-            }
-            Contents = null;
+            CloseContents();
             if (ChunkAccess != null) {
                 ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
                 ChunkAccess = null;
@@ -744,6 +739,16 @@ namespace DiskArc.Disk {
             Contents = contents;
             ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
             return true;
+        }
+
+        // IDiskImage
+        public virtual void CloseContents() {
+            if (Contents is IFileSystem) {
+                ((IFileSystem)Contents).Dispose();
+            } else if (Contents is IMultiPart) {
+                ((IMultiPart)Contents).Dispose();
+            }
+            Contents = null;
         }
 
         ~TwoIMG() {

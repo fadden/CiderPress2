@@ -176,11 +176,6 @@ namespace cp2_wpf {
             return null;
         }
 
-        public override string ToString() {
-            return "[ArchiveTreeItem: name='" + Name + "' node=" + WorkTreeNode + "]";
-        }
-
-
         /// <summary>
         /// Constructs a section of the archive tree.  This is called recursively.
         /// </summary>
@@ -189,10 +184,11 @@ namespace cp2_wpf {
         /// <returns>Item created.</returns>
         public static ArchiveTreeItem ConstructTree(WorkTree.Node workNode,
                 ObservableCollection<ArchiveTreeItem> tvRoot) {
+            // Create a new tree item for workNode, and add it to tvRoot's child list.
             ArchiveTreeItem newItem = new ArchiveTreeItem(workNode);
             tvRoot.Add(newItem);
-            WorkTree.Node[] children = workNode.GetChildren();
-            foreach (WorkTree.Node child in children) {
+            // Descend into workNode's children.
+            foreach (WorkTree.Node child in workNode) {
                 ConstructTree(child, newItem.Items);
             }
             return newItem;
@@ -222,6 +218,10 @@ namespace cp2_wpf {
                 item = item.Items[0];
             }
             item.IsSelected = true;
+        }
+
+        public override string ToString() {
+            return "[ArchiveTreeItem: name='" + Name + "' node=" + WorkTreeNode + "]";
         }
     }
 }

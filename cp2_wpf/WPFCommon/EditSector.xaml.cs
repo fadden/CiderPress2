@@ -26,6 +26,7 @@ using System.Windows.Input;
 
 using CommonUtil;
 using DiskArc;
+using static DiskArc.Defs;
 
 namespace cp2_wpf.WPFCommon {
     /// <summary>
@@ -67,21 +68,42 @@ namespace cp2_wpf.WPFCommon {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public EditSector(Window owner, EnableWriteFunc? enableWriteFunc) {
+        private IChunkAccess mChunkAccess;
+        private bool mAsSectors;
+        private Formatter mFormatter;
+
+        public EditSector(Window owner, IChunkAccess chunks, bool asSectors,
+                EnableWriteFunc? enableWriteFunc, Formatter formatter) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
+            mChunkAccess = chunks;
+            mAsSectors = asSectors;
             mEnableWriteFunc = enableWriteFunc;
+            mFormatter = formatter;
+
             if (enableWriteFunc != null) {
                 IsEnableWritesEnabled = true;
             }
 
-            mSectorData = "TODO: put real data here";
+            byte[] buf = new byte[BLOCK_SIZE];
+            if (mAsSectors && !chunks.HasSectors) {
+                mAsSectors = false;
+            }
+            StringBuilder sb = new StringBuilder();
+            if (mAsSectors) {
+                chunks.ReadSector(0, 0, buf, 0);
+                mFormatter.FormatHexDump(buf, 0, SECTOR_SIZE, sb);
+            } else {
+                chunks.ReadBlock(0, buf, 0);
+                mFormatter.FormatHexDump(buf, 0, BLOCK_SIZE, sb);
+            }
+
+            mSectorData = sb.ToString();
         }
 
         private void EnableWrites_Click(object sender, RoutedEventArgs e) {
-            Debug.WriteLine("click");
             if (mEnableWriteFunc == null) {
                 return;     // shouldn't be here
             }
@@ -92,7 +114,7 @@ namespace cp2_wpf.WPFCommon {
             }
 
             IsWriteEnabled = true;
-            Debug.WriteLine("enabled");
+            Debug.WriteLine("Writes enabled");
         }
 
         private void ReadButton_Click(object sender, RoutedEventArgs e) {
@@ -101,6 +123,7 @@ namespace cp2_wpf.WPFCommon {
 
         private void WriteButton_Click(object sender, RoutedEventArgs e) {
             Debug.WriteLine("Write!");
+            Debug.Assert(!mChunkAccess.IsReadOnly);
         }
     }
 }

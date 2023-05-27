@@ -45,15 +45,14 @@ namespace cp2_wpf {
         /// True if the object selected in the archive tree has an editable IChunkAccess.
         /// </summary>
         /// <remarks>
-        /// <para>IDiskImage and Partition provide "direct" access, while IFileSystem must be
-        /// used if the filesystem has been identified (after the fs is switched to raw-access
-        /// mode).  IMultiPart provides read-only chunk access, but that object is meant to be
-        /// carved up for partitions, not edited directly (the disk image container should be
+        /// <para>IDiskImage and Partition define the chunk access, and share it with IFileSystem.
+        /// We don't allow IFileSystem as a chunk-access target because we will need to close it
+        /// to allow writes.  IMultiPart provides read-only chunk access, but that object is meant
+        /// to be carved up for partitions, not edited directly (the disk image container should be
         /// edited instead).</para>
         /// </remarks>
         public bool IsChunkAccessSelected {
-            get { return CurrentWorkObject is IDiskImage || CurrentWorkObject is Partition ||
-                         CurrentWorkObject is IFileSystem; }
+            get { return CurrentWorkObject is IDiskImage || CurrentWorkObject is Partition; }
         }
 
         /// <summary>

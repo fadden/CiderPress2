@@ -111,6 +111,12 @@ namespace DiskArcTests {
                     }
                     fs.PrepareFileAccess(true);
                     Helper.CheckNotes(fs, 0, 0);
+
+                    // Test CloseContents().
+                    diskImage.CloseContents();
+                    if (diskImage.Contents != null) {
+                        throw new Exception("CloseContents did nothing");
+                    }
                 }
             }
         }

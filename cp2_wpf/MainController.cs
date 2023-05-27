@@ -29,6 +29,8 @@ using AppCommon;
 using CommonUtil;
 using cp2_wpf.WPFCommon;
 using DiskArc;
+using DiskArc.FS;
+using DiskArc.Multi;
 
 namespace cp2_wpf {
     /// <summary>
@@ -246,6 +248,17 @@ namespace cp2_wpf {
             // Enable the DEBUG menu if configured.
             mMainWin.ShowDebugMenu =
                 AppSettings.Global.GetBool(AppSettings.DEBUG_MENU_ENABLED, false);
+
+            if (mWorkTree != null) {
+                AutoOpenDepth depth = (AutoOpenDepth)AppSettings.Global.GetEnum(
+                    AppSettings.AUTO_OPEN_DEPTH, typeof(AutoOpenDepth), (int)AutoOpenDepth.SubVol);
+                WorkTree.DepthLimiter limiter =
+                    delegate (WorkTree.DepthParentKind parentKind,
+                            WorkTree.DepthChildKind childKind) {
+                        return DepthLimit(parentKind, childKind, depth);
+                    };
+                mWorkTree.DepthLimitFunc = limiter;
+            }
 
             UnpackRecentFileList();
         }
@@ -537,7 +550,7 @@ namespace cp2_wpf {
             archiveOrFileSystem = arcObj;
             selectionDir = dirTreeSel.FileEntry;
 
-            daNode = WorkTree.FindDANode(arcTreeSel.WorkTreeNode);
+            daNode = arcTreeSel.WorkTreeNode.FindDANode();
             return true;
         }
 
@@ -667,15 +680,66 @@ namespace cp2_wpf {
         /// Handles Actions : Edit Blocks / Sectors
         /// </summary>
         public void EditSectors() {
+            Debug.Assert(mWorkTree != null);
+            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.Assert(false);
+                return;
+            }
+            WorkTree.Node workNode = arcTreeSel.WorkTreeNode;
+            object daObject = workNode.DAObject;
+            IChunkAccess? chunks;
+            IFileSystem? fs;
+            if (daObject is IDiskImage) {
+                chunks = ((IDiskImage)daObject).ChunkAccess;
+                fs = ((IDiskImage)daObject).Contents as IFileSystem;
+            } else if (daObject is Partition) {
+                chunks = ((Partition)daObject).ChunkAccess;
+                fs = ((Partition)daObject).FileSystem;
+            } else {
+                Debug.Assert(false, "unexpected sector edit target: " + daObject);
+                return;
+            }
+            if (chunks == null) {
+                MessageBox.Show(mMainWin, "Disk sector format not recognized", "Trouble",
+                    MessageBoxButton.OK, MessageBoxImage.Stop);
+                return;
+            }
+            bool asSectors = (fs is DOS);
+
             bool writeEnabled = false;
             EditSector.EnableWriteFunc func = delegate () {
-                Debug.WriteLine("Enable write func!");
+                // Close everything below the current node.
+                Debug.Assert(mWorkTree.CheckHealth());
+                workNode.CloseChildren();
+                // Close the IFileSystem or IMultiPart object.
+                if (daObject is IDiskImage) {
+                    ((IDiskImage)daObject).CloseContents();
+                } else if (daObject is Partition) {
+                    ((Partition)daObject).CloseContents();
+                }
+                Debug.Assert(mWorkTree.CheckHealth());
+                // Drop all child references.
+                arcTreeSel.Items.Clear();
                 writeEnabled = true;
                 return true;
             };
-            EditSector dialog = new EditSector(mMainWin, func);
+            EditSector dialog = new EditSector(mMainWin, chunks, asSectors, func, mFormatter);
             dialog.ShowDialog();
             Debug.WriteLine("After dialog, enabled=" + writeEnabled);
+
+            if (writeEnabled) {
+                // Re-scan the disk image.
+                if (daObject is IDiskImage) {
+                    mWorkTree.ReprocessDiskImage(workNode);
+                } else if (daObject is Partition) {
+                    mWorkTree.ReprocessPartition(workNode);
+                }
+                // Repopulate the archive tree.
+                foreach (WorkTree.Node childNode in workNode) {
+                    ArchiveTreeItem.ConstructTree(childNode, arcTreeSel.Items);
+                }
+            }
         }
 
         /// <summary>

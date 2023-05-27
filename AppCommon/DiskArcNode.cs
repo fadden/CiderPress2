@@ -153,10 +153,23 @@ namespace AppCommon {
         private string mCreationStackTrace = "  (stack trace not enabled)";
 #endif
 
+        /// <summary>
+        /// Disposes of a specific single child node, and removes it from the tree.
+        /// </summary>
+        /// <param name="child"></param>
+        public void DisposeChild(DiskArcNode child) {
+            if (!Children.Remove(child)) {
+                Debug.Assert(false, "asked to remove non-existent child");
+                return;
+            }
+            child.Dispose();
+        }
+
         protected void DisposeChildren() {
             foreach (DiskArcNode child in Children) {
                 child.Dispose();
             }
+            Children.Clear();
         }
 
         /// <summary>
@@ -221,7 +234,7 @@ namespace AppCommon {
         /// Scans the entire node tree, looking for problems.
         /// </summary>
         /// <returns>True if all is healthy.</returns>
-        public bool HealthCheck() {
+        public bool CheckHealth() {
             DiskArcNode rootNode = this;
             while (rootNode.Parent != null) {
                 rootNode = rootNode.Parent;
@@ -264,6 +277,38 @@ namespace AppCommon {
                 sb.Append(Parent.DebugDumpBranch());
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Generates an ASCII-art diagram of the work tree.
+        /// </summary>
+        public string GenerateTreeSummary() {
+            StringBuilder sb = new StringBuilder();
+            GenerateTreeSummary(this, 0, "", true, sb);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Recursively generates an ASCII-art diagram of the work tree.
+        /// </summary>
+        private static void GenerateTreeSummary(DiskArcNode node, int depth, string indent,
+                bool isLastSib, StringBuilder sb) {
+            sb.Append(indent);
+            sb.Append("+-");
+            sb.Append(node.GetType().Name);
+            sb.Append(": ");
+            sb.Append(node.EntryInParent == IFileEntry.NO_ENTRY ?
+                "(no entry)" : node.EntryInParent.FileName);
+            if (!node.NodeStream.CanRead) {
+                sb.Append(" *CLOSED*");
+            }
+            sb.AppendLine();
+
+            for (int i = 0; i < node.Children.Count; i++) {
+                string newIndent = indent + (isLastSib ? "  " : "| ");
+                GenerateTreeSummary(node.Children[i], depth + 1, newIndent,
+                    i == node.Children.Count - 1, sb);
+            }
         }
 
         public override string ToString() {
@@ -593,7 +638,7 @@ namespace AppCommon {
 
         protected override void Dispose(bool disposing) {
             if (disposing) {
-                if (HealthCheck()) {
+                if (CheckHealth()) {
                     AppHook.LogI("Disposing DiskArcNode tree; health check OK");
                 } else {
                     AppHook.LogE("DiskArcNode tree health check failed");

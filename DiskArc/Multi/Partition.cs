@@ -150,10 +150,7 @@ namespace DiskArc.Multi {
                 Debug.WriteLine("Reanalysis not allowed");
                 return;
             }
-            if (FileSystem != null) {
-                FileSystem.Dispose();
-                FileSystem = null;
-            }
+            CloseContents();
             // leave the ChunkAccess alone
 
             // (Re-)analyze the filesystem.  Use the non-gated version of the chunk source.
@@ -161,15 +158,29 @@ namespace DiskArc.Multi {
             FileAnalyzer.AnalyzeFileSystem(mPartChunks, false, mAppHook,
                     out IDiskContents? contents);
             if (contents == null) {
-                // Currently ignoring the possibility of partitions-within-partitions, unless
-                // they're embedded in a filesystem.
                 ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
             } else if (contents is IFileSystem) {
                 // Allow read-only access.  The chunk access object is shared with the filesystem.
                 ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
                 FileSystem = (IFileSystem)contents;
             } else {
+                // Currently ignoring the possibility of partitions-within-partitions, unless
+                // they're embedded in a filesystem.
                 throw new NotImplementedException("Found " + contents);
+            }
+        }
+
+        /// <summary>
+        /// Closes the IFileSystem object referenced by <see cref="FileSystem"/>.
+        /// The property will be set to null.
+        /// </summary>
+        /// <remarks>
+        /// <para>This has no effect if Contents is already null.</para>
+        /// </remarks>
+        public virtual void CloseContents() {
+            if (FileSystem != null) {
+                FileSystem.Dispose();
+                FileSystem = null;
             }
         }
     }

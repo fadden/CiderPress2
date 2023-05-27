@@ -248,7 +248,7 @@ namespace cp2 {
                 if (stream != null) {
                     Debug.Assert(leafObj == null);
                     leafObj = WorkTree.IdentifyStreamContents(stream, ext, label, parms.AppHook,
-                        out string errorMsg, out bool unused);
+                        out string errorMsg, out bool unused1, out SectorOrder unused2);
                     if (leafObj == null) {
                         Console.Error.WriteLine("Error: " + errorMsg);
                         return false;
