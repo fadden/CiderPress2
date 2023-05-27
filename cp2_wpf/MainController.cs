@@ -679,7 +679,7 @@ namespace cp2_wpf {
         /// <summary>
         /// Handles Actions : Edit Blocks / Sectors
         /// </summary>
-        public void EditSectors() {
+        public void EditBlocksSectors(bool asSectors) {
             Debug.Assert(mWorkTree != null);
             ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
             if (arcTreeSel == null) {
@@ -705,7 +705,6 @@ namespace cp2_wpf {
                     MessageBoxButton.OK, MessageBoxImage.Stop);
                 return;
             }
-            bool asSectors = (fs is DOS);
 
             bool writeEnabled = false;
             EditSector.EnableWriteFunc func = delegate () {
@@ -729,15 +728,22 @@ namespace cp2_wpf {
             Debug.WriteLine("After dialog, enabled=" + writeEnabled);
 
             if (writeEnabled) {
-                // Re-scan the disk image.
-                if (daObject is IDiskImage) {
-                    mWorkTree.ReprocessDiskImage(workNode);
-                } else if (daObject is Partition) {
-                    mWorkTree.ReprocessPartition(workNode);
-                }
-                // Repopulate the archive tree.
-                foreach (WorkTree.Node childNode in workNode) {
-                    ArchiveTreeItem.ConstructTree(childNode, arcTreeSel.Items);
+                try {
+                    // TODO: should probably show a progress dialog here
+                    Mouse.OverrideCursor = Cursors.Wait;
+
+                    // Re-scan the disk image.
+                    if (daObject is IDiskImage) {
+                        mWorkTree.ReprocessDiskImage(workNode);
+                    } else if (daObject is Partition) {
+                        mWorkTree.ReprocessPartition(workNode);
+                    }
+                    // Repopulate the archive tree.
+                    foreach (WorkTree.Node childNode in workNode) {
+                        ArchiveTreeItem.ConstructTree(childNode, arcTreeSel.Items);
+                    }
+                } finally {
+                    Mouse.OverrideCursor = null;
                 }
             }
         }
@@ -751,21 +757,20 @@ namespace cp2_wpf {
                 return;
             }
 
-            // TODO: there's no "pick a folder" dialog in WPF.  We can either use the Forms
-            // version or pull in a 3rd-party library, e.g.
-            // https://github.com/ookii-dialogs/ookii-dialogs-wpf
-            // Unfortunately, drag & drop *out* of the application is fairly involved.
-            // Hard-wire it for now.
+            string initialDir = AppSettings.Global.GetString(AppSettings.LAST_EXTRACT_DIR, @"C:\");
 
-            string outputDir = @"C:\src\test\_cp2";
-            if (!Directory.Exists(outputDir)) {
-                MessageBox.Show(mMainWin, "Files can only be extracted to '" + outputDir + "'",
-                    "I said it's not ready");
+            BrowseForFolder folderDialog = new BrowseForFolder();
+            string? outputDir = folderDialog.SelectFolder("Select destination for extracted files:",
+                initialDir, mMainWin);
+            if (outputDir == null) {
                 return;
             }
+            AppSettings.Global.SetString(AppSettings.LAST_EXTRACT_DIR, outputDir);
+
             ExtractProgress prog = new ExtractProgress(archiveOrFileSystem, selectionDir,
                 selected, outputDir, mAppHook);
-            Debug.WriteLine("Extract: selectionDir='" + selectionDir + "'");
+            Debug.WriteLine("Extract: outputDir='" + outputDir +
+                "', selectionDir='" + selectionDir + "'");
 
             // Do the extraction on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);

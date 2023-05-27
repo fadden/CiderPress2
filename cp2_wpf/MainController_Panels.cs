@@ -41,18 +41,30 @@ namespace cp2_wpf {
         /// </summary>
         private object? CurrentWorkObject { get; set; }
 
+        public bool CanEditBlocks { get { return CanEditChunk(false); } }
+        public bool CanEditSectors { get { return CanEditChunk(true); } }
+
         /// <summary>
-        /// True if the object selected in the archive tree has an editable IChunkAccess.
+        /// Determines whether the current work object can be sector-edited by blocks or sectors.
+        /// This only works for IDiskImage and Partition.  IFileSystem and IMultiPart also have
+        /// chunk access objects, but filesystems have to be closed before they can be edited,
+        /// and the multi-part chunks are really just meant to be carved up into smaller pieces.
         /// </summary>
-        /// <remarks>
-        /// <para>IDiskImage and Partition define the chunk access, and share it with IFileSystem.
-        /// We don't allow IFileSystem as a chunk-access target because we will need to close it
-        /// to allow writes.  IMultiPart provides read-only chunk access, but that object is meant
-        /// to be carved up for partitions, not edited directly (the disk image container should be
-        /// edited instead).</para>
-        /// </remarks>
-        public bool IsChunkAccessSelected {
-            get { return CurrentWorkObject is IDiskImage || CurrentWorkObject is Partition; }
+        private bool CanEditChunk(bool asSectors) {
+            IChunkAccess? chunks = null;
+            if (CurrentWorkObject is IDiskImage) {
+                chunks = ((IDiskImage)CurrentWorkObject).ChunkAccess;
+            } else if (CurrentWorkObject is Partition) {
+                chunks = ((Partition)CurrentWorkObject).ChunkAccess;
+            }
+            if (chunks != null) {
+                if (asSectors) {
+                    return chunks.HasSectors;
+                } else {
+                    return chunks.HasBlocks;
+                }
+            }
+            return false;
         }
 
         /// <summary>

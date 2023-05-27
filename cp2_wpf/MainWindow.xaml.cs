@@ -305,9 +305,13 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList);
         }
 
-        private void IsChunkAccessSelected(object sender, CanExecuteRoutedEventArgs e) {
+        private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
-                mMainCtrl.IsChunkAccessSelected);
+                mMainCtrl.CanEditBlocks);
+        }
+        private void CanEditSectors(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.CanEditSectors);
         }
         private void IsDiskImageSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
@@ -342,8 +346,11 @@ namespace cp2_wpf {
         private void EditAppSettingsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.EditAppSettings();
         }
-        private void EditBlockSectorCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            mMainCtrl.EditSectors();
+        private void EditBlocksCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.EditBlocksSectors(false);
+        }
+        private void EditSectorsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.EditBlocksSectors(true);
         }
         private void ExitCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // Close the main window.  This operation can be cancelled by the user.

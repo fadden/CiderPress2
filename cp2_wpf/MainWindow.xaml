@@ -61,7 +61,8 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
-            <RoutedUICommand x:Key="EditBlockSectorCmd" Text="Edit Blocks/Sectors..."/>
+            <RoutedUICommand x:Key="EditBlocksCmd" Text="Edit Blocks..."/>
+            <RoutedUICommand x:Key="EditSectorsCmd" Text="Edit Sectors..."/>
             <RoutedUICommand x:Key="ExitCmd" Text="E_xit"/>
             <RoutedUICommand x:Key="ExtractFilesCmd" Text="_Extract Files..."/>
             <RoutedUICommand x:Key="NewDiskImageCmd" Text="New _Disk Image..."/>
@@ -103,8 +104,10 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
                         Executed="EditAppSettingsCmd_Executed"/>
-        <CommandBinding Command="{StaticResource EditBlockSectorCmd}"
-                        CanExecute="IsChunkAccessSelected" Executed="EditBlockSectorCmd_Executed"/>
+        <CommandBinding Command="{StaticResource EditBlocksCmd}"
+                        CanExecute="CanEditBlocks" Executed="EditBlocksCmd_Executed"/>
+        <CommandBinding Command="{StaticResource EditSectorsCmd}"
+                        CanExecute="CanEditSectors" Executed="EditSectorsCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExitCmd}"
                         Executed="ExitCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExtractFilesCmd}"
@@ -177,7 +180,8 @@ limitations under the License.
                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                 <Separator/>
-                <MenuItem Command="{StaticResource EditBlockSectorCmd}"/>
+                <MenuItem Command="{StaticResource EditBlocksCmd}"/>
+                <MenuItem Command="{StaticResource EditSectorsCmd}"/>
                 <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
             </MenuItem>
             <MenuItem Header="_View">
@@ -364,6 +368,14 @@ limitations under the License.
                                    VirtualizingStackPanel.IsVirtualizing="True"
                                    VirtualizingStackPanel.VirtualizationMode="Recycling"
                                   SelectedItemChanged="ArchiveTree_SelectedItemChanged">
+                            <TreeView.Resources>
+                                <!-- make the no-focus color the same as the in-focus color -->
+                                <!-- thanks: https://stackoverflow.com/a/13053511/294248 -->
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                                                 Color="{x:Static SystemColors.HighlightColor}"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                                                 Color="{x:Static SystemColors.HighlightTextColor}"/>
+                            </TreeView.Resources>
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Items}">
                                     <StackPanel Orientation="Horizontal">
@@ -395,7 +407,8 @@ limitations under the License.
                             <TreeView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
-                                    <MenuItem Command="{StaticResource EditBlockSectorCmd}"/>
+                                    <MenuItem Command="{StaticResource EditBlocksCmd}"/>
+                                    <MenuItem Command="{StaticResource EditSectorsCmd}"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                         </TreeView>
@@ -415,6 +428,13 @@ limitations under the License.
                                    VirtualizingStackPanel.IsVirtualizing="True"
                                    VirtualizingStackPanel.VirtualizationMode="Recycling"
                                   SelectedItemChanged="DirectoryTree_SelectedItemChanged">
+                            <TreeView.Resources>
+                                <!-- make the no-focus color the same as the in-focus color -->
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                                                 Color="{x:Static SystemColors.HighlightColor}"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                                                 Color="{x:Static SystemColors.HighlightTextColor}"/>
+                            </TreeView.Resources>
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Items}">
                                     <TextBlock Text="{Binding Name}" Padding="4,0,4,0"/>
@@ -430,6 +450,11 @@ limitations under the License.
                                     <!--<Setter Property="Background" Value="Blue"/>-->
                                 </Style>
                             </TreeView.ItemContainerStyle>
+                            <!--<TreeView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="TO DO"/>
+                                </ContextMenu>
+                            </TreeView.ContextMenu>-->
                         </TreeView>
                     </Grid>
 
@@ -465,11 +490,10 @@ limitations under the License.
                               <!-- use RowBackground to set area to right of last cell -->
                         <DataGrid.Resources>
                             <!-- make the no-focus color the same as the in-focus color -->
-                            <!-- thanks: https://stackoverflow.com/a/13053511/294248 -->
-                            <!--<SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
                                              Color="{x:Static SystemColors.HighlightColor}"/>
                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
-                                             Color="{x:Static SystemColors.HighlightTextColor}"/>-->
+                                             Color="{x:Static SystemColors.HighlightTextColor}"/>
                         </DataGrid.Resources>
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Header="?" Width="SizeToCells">
@@ -502,6 +526,12 @@ limitations under the License.
                                 Visibility="{Binding DataContext.DiskColVis, Source={x:Reference dummyElement}}"/>
                             <DataGridTextColumn Header="Access" Width="50" Binding="{Binding Access}"/>
                         </DataGrid.Columns>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Command="{StaticResource ViewFilesCmd}"/>
+                                <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
                     </DataGrid>
 
                     <!-- center panel, option #2: information -->

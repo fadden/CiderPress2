@@ -41,6 +41,7 @@ namespace cp2_wpf {
         public const string MAIN_WORK_TREE_HEIGHT = "main-work-tree-height";
 
         public const string RECENT_FILES_LIST = "recent-files-list";
+        public const string LAST_EXTRACT_DIR = "last-extract-dir";
 
         // File handling features.
         public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
