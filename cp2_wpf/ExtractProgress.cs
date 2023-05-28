@@ -58,11 +58,11 @@ namespace cp2_wpf {
                 // Copy this to object for the benefit of the extract worker callbacks.
 
                 ExtractFileWorker extWorker = new ExtractFileWorker(
-                    delegate (CallbackFacts what, object? obj) {
+                    delegate (CallbackFacts what) {
                         return HandleCallback(what, "extract", bkWorker);
                     }, mAppHook);
                 // TODO: get these from settings
-                extWorker.EnableMacOSZip = true;
+                extWorker.IsMacZipEnabled = true;
                 extWorker.Preserve = ExtractFileWorker.PreserveMode.NAPS;
                 extWorker.RawMode = false;
                 extWorker.StripPaths = false;

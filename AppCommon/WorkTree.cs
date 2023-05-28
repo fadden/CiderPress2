@@ -78,6 +78,11 @@ namespace AppCommon {
             /// <summary>
             /// True if DAObject is read-only.
             /// </summary>
+            /// <remarks>
+            /// This is meant for display, e.g. via status icon, and may be set to an
+            /// "incorrect" value to reduce clutter in the visuals.  Do not rely on this as an
+            /// indicator of whether the referenced objects are writable.
+            /// </remarks>
             public bool IsReadOnly { get; set; } = false;
 
             /// <summary>

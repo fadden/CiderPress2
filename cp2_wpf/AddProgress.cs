@@ -57,7 +57,7 @@ namespace cp2_wpf {
             string curDir = Environment.CurrentDirectory;
 
             AddFileWorker addWorker = new AddFileWorker(mAddFileSet,
-                delegate (CallbackFacts what, object? obj) {
+                delegate (CallbackFacts what) {
                     return HandleCallback(what, "add", bkWorker);
                 }, mAppHook);
 

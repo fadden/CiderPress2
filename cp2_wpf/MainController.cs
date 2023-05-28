@@ -707,22 +707,25 @@ namespace cp2_wpf {
             }
 
             bool writeEnabled = false;
-            EditSector.EnableWriteFunc func = delegate () {
-                // Close everything below the current node.
-                Debug.Assert(mWorkTree.CheckHealth());
-                workNode.CloseChildren();
-                // Close the IFileSystem or IMultiPart object.
-                if (daObject is IDiskImage) {
-                    ((IDiskImage)daObject).CloseContents();
-                } else if (daObject is Partition) {
-                    ((Partition)daObject).CloseContents();
-                }
-                Debug.Assert(mWorkTree.CheckHealth());
-                // Drop all child references.
-                arcTreeSel.Items.Clear();
-                writeEnabled = true;
-                return true;
-            };
+            EditSector.EnableWriteFunc? func = null;
+            if (!chunks.IsReadOnly) {
+                func = delegate () {
+                    // Close everything below the current node.
+                    Debug.Assert(mWorkTree.CheckHealth());
+                    workNode.CloseChildren();
+                    // Close the IFileSystem or IMultiPart object.
+                    if (daObject is IDiskImage) {
+                        ((IDiskImage)daObject).CloseContents();
+                    } else if (daObject is Partition) {
+                        ((Partition)daObject).CloseContents();
+                    }
+                    Debug.Assert(mWorkTree.CheckHealth());
+                    // Drop all child references.
+                    arcTreeSel.Items.Clear();
+                    writeEnabled = true;
+                    return true;
+                };
+            }
             EditSector dialog = new EditSector(mMainWin, chunks, asSectors, func, mFormatter);
             dialog.ShowDialog();
             Debug.WriteLine("After dialog, enabled=" + writeEnabled);

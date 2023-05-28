@@ -147,7 +147,7 @@ namespace cp2 {
 
                 opStr = (importSpec == null) ? "adding" : "importing";
                 AddFileWorker worker = new AddFileWorker(addSet,
-                    delegate(CallbackFacts what, object? obj) {
+                    delegate(CallbackFacts what) {
                         return Misc.HandleCallback(what, opStr, parms);
                     },
                     parms.AppHook);

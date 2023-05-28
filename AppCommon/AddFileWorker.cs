@@ -51,7 +51,7 @@ namespace AppCommon {
         /// <summary>
         /// Callback function interface definition.
         /// </summary>
-        public delegate CallbackFacts.Results CallbackFunc(CallbackFacts what, object? obj);
+        public delegate CallbackFacts.Results CallbackFunc(CallbackFacts what);
 
         /// <summary>
         /// If set, files added to archives with compression features will be compressed using
@@ -146,7 +146,7 @@ namespace AppCommon {
                         CallbackFacts.Reasons.ResourceForkIgnored, addEnt.FullRsrcPath,
                         Path.DirectorySeparatorChar);
                     facts.Part = FilePart.RsrcFork;
-                    mFunc(facts, null);
+                    mFunc(facts);
                     continue;
                 }
 
@@ -169,7 +169,7 @@ namespace AppCommon {
                     CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.PathTooLong,
                         storageDir + Path.DirectorySeparatorChar + storageName,
                         Path.DirectorySeparatorChar);
-                    CallbackFacts.Results result = mFunc(facts, null);
+                    CallbackFacts.Results result = mFunc(facts);
                     if (result == CallbackFacts.Results.Skip) {
                         continue;
                     } else {
@@ -181,7 +181,7 @@ namespace AppCommon {
                 if (dupCheck.TryGetValue(adjPath, out IFileEntry? dupEntry)) {
                     CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
                         adjPath, addEnt.StorageDirSep);
-                    CallbackFacts.Results result = mFunc(facts, null);
+                    CallbackFacts.Results result = mFunc(facts);
                     switch (result) {
                         case CallbackFacts.Results.Cancel:
                             isCancelled = true;
@@ -250,7 +250,7 @@ namespace AppCommon {
                             CallbackFacts.Reasons.ResourceForkIgnored, addEnt.FullRsrcPath,
                             Path.DirectorySeparatorChar);
                         facts.Part = FilePart.RsrcFork;
-                        mFunc(facts, null);
+                        mFunc(facts);
                     } else {
                         // Add resource fork to record created earlier.
                         string storageDisplayName;
@@ -386,7 +386,7 @@ namespace AppCommon {
                         CallbackFacts.Reasons.ResourceForkIgnored,
                         addEnt.FullRsrcPath, Path.DirectorySeparatorChar);
                     facts.Part = FilePart.RsrcFork;
-                    mFunc(facts, null);
+                    mFunc(facts);
                     continue;
                 }
 
@@ -406,7 +406,7 @@ namespace AppCommon {
                     bool doSkip = false;
                     CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
                         newEntry.FullPathName, newEntry.DirectorySeparatorChar);
-                    CallbackFacts.Results result = mFunc(facts, null);
+                    CallbackFacts.Results result = mFunc(facts);
                     switch (result) {
                         case CallbackFacts.Results.Cancel:
                             isCancelled = true;
@@ -567,7 +567,7 @@ namespace AppCommon {
             facts.NewDirSep = storageDirSep;
             facts.ProgressPercent = progressPercent;
             facts.Part = part;
-            mFunc(facts, null);
+            mFunc(facts);
 
             try {
                 // Open the file stream.

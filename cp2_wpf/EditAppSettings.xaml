@@ -57,7 +57,7 @@ limitations under the License.
                                 <RadioButton Content="Shallow"
                                              ToolTip="Don't scan for disks and archives"
                                              IsChecked="{Binding AutoOpenDepth_Shallow}"/>
-                                <RadioButton Content="Sub-Volume"
+                                <RadioButton Content="Sub-Volume (recommended)"
                                              ToolTip="Scan for filesystem sub-volumes, and disk images in archives"
                                              IsChecked="{Binding AutoOpenDepth_SubVol}"/>
                                 <RadioButton Content="Max"
@@ -66,7 +66,7 @@ limitations under the License.
                             </StackPanel>
                         </GroupBox>
 
-                        <CheckBox Content="Enable MacZip handling" Margin="0,4,0,0" IsEnabled="false"
+                        <CheckBox Content="Enable MacZip handling" Margin="4,4,0,0" IsEnabled="false"
                                   ToolTip="Combine __MACOSX pairs automatically"
                                   IsChecked="{Binding EnableMacZip}"/>
                     </StackPanel>

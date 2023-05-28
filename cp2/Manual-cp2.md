@@ -1484,8 +1484,17 @@ resource forks, but occasionally causes trouble.  For example "GSHK" and
 having files with identical names and different preservation methods in the
 same directory.
 
+For most methods, both forks must be specified on the command line.  For
+example, to add a NAPS-preserved file with data and resource forks, you must
+include both files in the argument list.  AppleDouble is an exception:
+because the AppleDouble header files are "hidden" from some shells (the names
+start with '.'), they won't automatically be included in wildcards, so they
+are explicitly searched for.  For "host" preservation, the resource fork is a
+part of the same file, and it will be included automatically.
+
 When files are added without file type information, default types are
-provided.  For ProDOS this is NON/$0000, for HFS BINA/CPII (generic binary).
+provided.  For ProDOS this is NON/$0000, for HFS 'BINA'/'CPII' is used
+(generic binary).
 
 #### None (default) ####
 
@@ -1616,8 +1625,8 @@ write_protected          | r/w | boolean; "true" marks disk as write-protected f
 volume_number            | r/w | volume number (0-254), for DOS disks
 comment                  | r/w | string; ASCII only
 
-Deleting `volume_number` will remove the stored value.  Emulators are
-expected to use the default (254).
+The volume number is optional, so deleting `volume_number` will remove the
+stored value.  Emulators are expected to use the default (254) in that case.
 
 ### WOZ ###
 

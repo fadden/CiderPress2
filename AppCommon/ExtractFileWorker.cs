@@ -40,13 +40,13 @@ namespace AppCommon {
         /// <summary>
         /// Callback function interface definition.
         /// </summary>
-        public delegate CallbackFacts.Results CallbackFunc(CallbackFacts what, object? obj);
+        public delegate CallbackFacts.Results CallbackFunc(CallbackFacts what);
 
         /// <summary>
         /// If set, files added to a ZIP archive that have resource forks or HFS types will
         /// be stored as AppleDouble with a "__MACOSX" prefix.
         /// </summary>
-        public bool EnableMacOSZip { get; set; } = false;
+        public bool IsMacZipEnabled { get; set; } = false;
 
         /// <summary>
         /// File preservation mode to use when extracting.
@@ -91,7 +91,7 @@ namespace AppCommon {
             foreach (IFileEntry entry in entries) {
                 if (entry.IsDirectory) {
                     entryCount--;
-                } else if (archive is Zip && EnableMacOSZip) {
+                } else if (archive is Zip && IsMacZipEnabled) {
                     if (entry.IsMacZipHeader()) {
                         entryCount--;
                     }
@@ -122,7 +122,7 @@ namespace AppCommon {
 
                 // Handle MacZip archives, if enabled.
                 IFileEntry adfEntry = IFileEntry.NO_ENTRY;
-                if (archive is Zip && EnableMacOSZip) {
+                if (archive is Zip && IsMacZipEnabled) {
                     // Only handle __MACOSX/ entries when paired with other entries.
                     if (entry.IsMacZipHeader()) {
                         continue;
@@ -349,7 +349,7 @@ namespace AppCommon {
                                 CallbackFacts.Reasons.ResourceForkIgnored, extractPath,
                                 Path.DirectorySeparatorChar);
                             rfacts.Part = FilePart.RsrcFork;
-                            mFunc(rfacts, null);
+                            mFunc(rfacts);
                         }
                         // We might not have done anything, if the record only had a resource fork.
                         break;
@@ -539,7 +539,7 @@ namespace AppCommon {
                 if (!attrsGood) {
                     CallbackFacts rfacts = new CallbackFacts(CallbackFacts.Reasons.AttrFailure,
                         extractPath, Path.DirectorySeparatorChar);
-                    mFunc(rfacts, null);
+                    mFunc(rfacts);
                 }
             } catch {
                 // Try to clean up partial work, then re-throw exception.
@@ -691,13 +691,13 @@ namespace AppCommon {
             facts.ProgressPercent = percent;
             facts.Part = isRsrc ? FilePart.RsrcFork : FilePart.DataFork;
             facts.ConvTag = convTag;
-            mFunc(facts, null);
+            mFunc(facts);
         }
 
         private void ReportFailure(string msg) {
             CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Failure);
             facts.FailMessage = msg;
-            mFunc(facts, null);
+            mFunc(facts);
         }
 
         /// <summary>
@@ -715,7 +715,7 @@ namespace AppCommon {
                 CallbackFacts dfacts = new CallbackFacts(CallbackFacts.Reasons.OverwriteFailure,
                     pathName, Path.DirectorySeparatorChar);
                 dfacts.FailMessage = "existing directory with same name as file";
-                mFunc(dfacts, null);
+                mFunc(dfacts);
                 return false;
             }
             FileInfo info = new FileInfo(pathName);
@@ -726,7 +726,7 @@ namespace AppCommon {
 
             CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
                 pathName, Path.DirectorySeparatorChar);
-            CallbackFacts.Results result = mFunc(facts, null);
+            CallbackFacts.Results result = mFunc(facts);
             switch (result) {
                 case CallbackFacts.Results.Cancel:
                     doCancel = true;
@@ -768,7 +768,7 @@ namespace AppCommon {
                 CallbackFacts dfacts = new CallbackFacts(CallbackFacts.Reasons.OverwriteFailure,
                     directoryName, Path.DirectorySeparatorChar);
                 dfacts.FailMessage = "existing file with same name as directory";
-                mFunc(dfacts, null);
+                mFunc(dfacts);
                 doCancel = true;
                 return false;
             }

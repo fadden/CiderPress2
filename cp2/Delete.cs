@@ -18,7 +18,6 @@ using System;
 using AppCommon;
 using CommonUtil;
 using DiskArc;
-using DiskArc.Arc;
 
 namespace cp2 {
     internal static class Delete {
@@ -44,6 +43,13 @@ namespace cp2 {
                 Console.Error.WriteLine("Error: " + ex.Message);
                 return false;
             }
+
+            DeleteFileWorker worker = new DeleteFileWorker(
+                delegate (CallbackFacts what) {
+                    return Misc.HandleCallback(what, "deleting", parms);
+                },
+                parms.AppHook);
+            worker.IsMacZipEnabled = parms.MacZip;
 
             if (!ExtArchive.OpenExtArc(args[0], true, false, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
@@ -72,7 +78,7 @@ namespace cp2 {
                     }
                     try {
                         arc.StartTransaction();
-                        if (!DeleteFromArchive(arc, entries, parms)) {
+                        if (!worker.DeleteFromArchive(arc, entries)) {
                             return false;
                         }
                         leafNode.SaveUpdates(parms.Compress);
@@ -103,9 +109,9 @@ namespace cp2 {
                         Console.Error.WriteLine("Weird: nothing found");
                         return false;
                     }
-                    bool success = DeleteFromDisk(fs, entries, parms);
-
+                    bool success = worker.DeleteFromDisk(fs, entries);
                     try {
+                        // Save the deletions we managed to handle.
                         leafNode.SaveUpdates(parms.Compress);
                     } catch (Exception ex) {
                         Console.Error.WriteLine("Error: update failed: " + ex.Message);
@@ -117,62 +123,6 @@ namespace cp2 {
                 }
             }
 
-            return true;
-        }
-
-        private static bool DeleteFromArchive(IArchive arc, List<IFileEntry> entries,
-                ParamsBag parms) {
-            int doneCount = 0;
-            foreach (IFileEntry entry in entries) {
-                CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Progress,
-                    entry.FullPathName, entry.DirectorySeparatorChar);
-                facts.ProgressPercent = (100 * doneCount) / entries.Count;
-                Misc.HandleCallback(facts, "deleting", parms);
-
-                IFileEntry adfEntry = IFileEntry.NO_ENTRY;
-                if (arc is Zip && parms.MacZip) {
-                    // Only handle __MACOSX/ entries when paired with other entries.
-                    if (entry.IsMacZipHeader()) {
-                        continue;
-                    }
-                    // Check to see if we have a paired entry.
-                    string? macZipName = Zip.GenerateMacZipName(entry.FullPathName);
-                    if (!string.IsNullOrEmpty(macZipName)) {
-                        arc.TryFindFileEntry(macZipName, out adfEntry);
-                    }
-                }
-
-                arc.DeleteRecord(entry);
-                if (adfEntry != IFileEntry.NO_ENTRY) {
-                    arc.DeleteRecord(adfEntry);
-                }
-                doneCount++;
-            }
-            return true;
-        }
-
-        private static bool DeleteFromDisk(IFileSystem fs, List<IFileEntry> entries,
-                ParamsBag parms) {
-            // We need to delete the files that live in a directory before we delete that
-            // directory.  The recursive glob matcher generated the list in exactly the
-            // wrong order, so we need to walk it from back to front.
-            int doneCount = 0;
-            for (int i = entries.Count - 1; i >= 0; i--) {
-                IFileEntry entry = entries[i];
-                try {
-                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Progress,
-                        entry.FullPathName, entry.DirectorySeparatorChar);
-                    facts.ProgressPercent = (100 * doneCount) / entries.Count;
-                    Misc.HandleCallback(facts, "deleting", parms);
-
-                    fs.DeleteFile(entry);
-                    doneCount++;
-                } catch (IOException ex) {
-                    Console.Error.WriteLine("Error: unable to delete '" + entry.FullPathName +
-                        "': " + ex.Message);
-                    return false;
-                }
-            }
             return true;
         }
     }

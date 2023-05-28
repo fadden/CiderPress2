@@ -130,11 +130,11 @@ namespace cp2 {
 
             string opStr = (exportSpec == null) ? "extracting" : "exporting";
             ExtractFileWorker worker = new ExtractFileWorker(
-                delegate (CallbackFacts what, object? obj) {
+                delegate (CallbackFacts what) {
                     return Misc.HandleCallback(what, opStr, parms);
                 },
                 parms.AppHook);
-            worker.EnableMacOSZip = parms.MacZip;
+            worker.IsMacZipEnabled = parms.MacZip;
             worker.Preserve = parms.Preserve;
             worker.RawMode = parms.Raw;
             worker.StripPaths = parms.StripPaths;

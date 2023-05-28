@@ -105,7 +105,7 @@ namespace AppCommon {
             facts.NewDirSep = mStorageDirSep;
             facts.Part = mPart;
             facts.ProgressPercent = mProgressPercent;
-            mFunc(facts, null);
+            mFunc(facts);
 
             switch (mSourceType) {
                 case AddFileEntry.SourceType.Plain:
