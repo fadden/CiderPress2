@@ -67,6 +67,10 @@ namespace cp2_wpf {
             return false;
         }
 
+        public bool AreFilesSelected {
+            get { return mMainWin.fileListDataGrid.SelectedIndex >= 0; }
+        }
+
         /// <summary>
         /// True if the object selected in the archive tree is a disk image.
         /// </summary>

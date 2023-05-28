@@ -301,8 +301,12 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen);
         }
 
-        private void IsFileAreaSelected(object sender, CanExecuteRoutedEventArgs e) {
+        private void IsFileAreaShowing(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList);
+        }
+        private void AreFilesSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList &&
+                mMainCtrl.AreFilesSelected);
         }
 
         private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
@@ -342,6 +346,9 @@ namespace cp2_wpf {
         }
         private void CutCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Cut!");
+        }
+        private void DeleteFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.DeleteFiles();
         }
         private void EditAppSettingsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.EditAppSettings();

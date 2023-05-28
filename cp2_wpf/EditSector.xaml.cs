@@ -28,7 +28,7 @@ using CommonUtil;
 using DiskArc;
 using static DiskArc.Defs;
 
-namespace cp2_wpf.WPFCommon {
+namespace cp2_wpf {
     /// <summary>
     /// Sector edit dialog.
     /// </summary>

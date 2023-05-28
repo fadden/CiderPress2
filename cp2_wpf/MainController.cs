@@ -749,6 +749,13 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Actions : Delete Files
+        /// </summary>
+        public void DeleteFiles() {
+            Debug.WriteLine("Delete!");
+        }
+
+        /// <summary>
         /// Handles Actions : Extract Files
         /// </summary>
         public void ExtractFiles() {

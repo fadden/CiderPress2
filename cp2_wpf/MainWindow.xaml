@@ -60,6 +60,11 @@ limitations under the License.
                     <KeyGesture>Ctrl+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
+            <RoutedUICommand x:Key="DeleteFilesCmd" Text="_Delete Files">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Del</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
             <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
             <RoutedUICommand x:Key="EditBlocksCmd" Text="Edit Blocks..."/>
             <RoutedUICommand x:Key="EditSectorsCmd" Text="Edit Sectors..."/>
@@ -95,13 +100,15 @@ limitations under the License.
         <CommandBinding Command="{StaticResource AboutCmd}"
                         Executed="AboutCmd_Executed"/>
         <CommandBinding Command="{StaticResource AddFilesCmd}"
-                        CanExecute="IsFileAreaSelected" Executed="AddFilesCmd_Executed"/>
+                        CanExecute="IsFileAreaShowing" Executed="AddFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource CloseCmd}"
                         CanExecute="IsFileOpen" Executed="CloseCmd_Executed"/>
         <CommandBinding Command="Copy"
                         CanExecute="IsFileOpen" Executed="CopyCmd_Executed"/>
         <CommandBinding Command="Cut"
                         CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
+        <CommandBinding Command="{StaticResource DeleteFilesCmd}"
+                        CanExecute="AreFilesSelected" Executed="DeleteFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
                         Executed="EditAppSettingsCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditBlocksCmd}"
@@ -111,7 +118,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource ExitCmd}"
                         Executed="ExitCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExtractFilesCmd}"
-                        CanExecute="IsFileAreaSelected" Executed="ExtractFilesCmd_Executed"/>
+                        CanExecute="AreFilesSelected" Executed="ExtractFilesCmd_Executed"/>
         <CommandBinding Command="Help"
                         Executed="HelpCmd_Executed"/>
         <CommandBinding Command="{StaticResource NewDiskImageCmd}"
@@ -137,7 +144,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource ToggleInfoCmd}"
                         CanExecute="IsFileOpen" Executed="ToggleInfoCmd_Executed"/>
         <CommandBinding Command="{StaticResource ViewFilesCmd}"
-                        CanExecute="IsFileOpen" Executed="ViewFilesCmd_Executed"/>
+                        CanExecute="AreFilesSelected" Executed="ViewFilesCmd_Executed"/>
 
         <CommandBinding Command="{StaticResource Debug_BulkCompressTestCmd}"
                         Executed="Debug_BulkCompressTestCmd_Executed"/>
@@ -179,6 +186,7 @@ limitations under the License.
                 <MenuItem Command="{StaticResource ViewFilesCmd}"/>
                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
+                <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
                 <Separator/>
                 <MenuItem Command="{StaticResource EditBlocksCmd}"/>
                 <MenuItem Command="{StaticResource EditSectorsCmd}"/>
@@ -529,7 +537,9 @@ limitations under the License.
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Command="{StaticResource ViewFilesCmd}"/>
+                                <MenuItem Command="{StaticResource AddFilesCmd}"/>
                                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
+                                <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                     </DataGrid>
