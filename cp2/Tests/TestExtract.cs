@@ -116,6 +116,7 @@ namespace cp2.Tests {
             TestRaw(parms);
             TestWildNoRecurse(parms);
             TestNAPSEscape(parms);
+            TestEmptyDir(parms);
 
             Controller.RemoveTestTmp(parms);
         }
@@ -326,12 +327,62 @@ namespace cp2.Tests {
                 File.Delete(escPath);
                 Directory.Delete(escSubName);
                 if (!Extract.HandleExtract("x", new string[] { diskFileName }, parms)) {
-                    throw new Exception("Extract from " + diskFileName + "' failed");
+                    throw new Exception("Extract from '" + diskFileName + "' failed");
                 }
 
                 // Should be exactly the same.
                 if (!File.Exists(escPath)) {
                     throw new Exception("NAPS quoting failed: not found: '" + escPath + "'");
+                }
+            } finally {
+                Environment.CurrentDirectory = oldCurrentDir;
+            }
+            RemoveOutputDir();
+        }
+
+        private static void TestEmptyDir(ParamsBag parms) {
+            CreateOutputDir();
+            string oldCurrentDir = Environment.CurrentDirectory;
+            try {
+                Environment.CurrentDirectory = OUTPUT_DIR;
+                parms.Recurse = true;
+                parms.Preserve = ExtractFileWorker.PreserveMode.NAPS;
+
+                string diskFileName = "test-empty-dir.po";
+                string dirName = "SUBDIR1";
+                if (!DiskUtil.HandleCreateDiskImage("cdi",
+                        new string[] { diskFileName, "140K", "PRODOS" }, parms)) {
+                    throw new Exception("Error: cdi failed");
+                }
+                if (!Mkdir.HandleMkdir("mkdir", new string[] { diskFileName, dirName }, parms)) {
+                    throw new Exception("mkdir failed");
+                }
+
+                parms.StripPaths = true;
+                if (!Extract.HandleExtract("x", new string[] { diskFileName }, parms)) {
+                    throw new Exception("Extract from '" + diskFileName + "' failed");
+                }
+                if (Directory.Exists(dirName)) {
+                    throw new Exception("Extraction of empty dir succeeded with stripping on");
+                }
+
+                parms.StripPaths = false;
+                if (!Extract.HandleExtract("x", new string[] { diskFileName }, parms)) {
+                    throw new Exception("Extract from '" + diskFileName + "' failed");
+                }
+                if (!Directory.Exists(dirName)) {
+                    throw new Exception("Extraction of empty dir failed");
+                }
+
+                string dirName2 = "SUBDIR1/SUBDIR2";
+                if (!Mkdir.HandleMkdir("mkdir", new string[] { diskFileName, dirName2 }, parms)) {
+                    throw new Exception("mkdir 2 failed");
+                }
+                if (!Extract.HandleExtract("x", new string[] { diskFileName }, parms)) {
+                    throw new Exception("Extract 2 from '" + diskFileName + "' failed");
+                }
+                if (!Directory.Exists(dirName2)) {
+                    throw new Exception("Extraction of empty dir 2 failed");
                 }
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;

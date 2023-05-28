@@ -457,6 +457,10 @@ namespace AppCommon {
             int doneCount = 0;
             foreach (IFileEntry srcEntry in entries) {
                 if (srcEntry.IsDirectory) {
+                    // We may want to handle this case, so we can copy empty directories from
+                    // place to place.  It's not as straightforward when copying to file
+                    // archives since not all of them have directories.  Consistently ignoring
+                    // empty directories may be better?
                     continue;
                 }
                 if (!srcEntry.HasDataFork && srcEntry.HasRsrcFork && !canRsrcFork) {

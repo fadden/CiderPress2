@@ -85,6 +85,11 @@ namespace AppCommon {
         /// <summary>
         /// Deletes a list of files from a disk image.
         /// </summary>
+        /// <remarks>
+        /// <para>The list of files must be in sorted order.  Any descending sort should work.
+        /// We just need the contents of each subdirectory to appear after the entry for
+        /// the subdirectory itself.</para>
+        /// </remarks>
         public bool DeleteFromDisk(IFileSystem fs, List<IFileEntry> entries) {
             // We need to delete the files that live in a directory before we delete that
             // directory.  Recursive traversals generate the list in exactly the

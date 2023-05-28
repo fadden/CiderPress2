@@ -125,10 +125,10 @@ namespace cp2 {
                         if (string.IsNullOrEmpty(origPath)) {
                             origPath = "''";
                         }
-                        // To show progress, add: "{0,3:D}% "
-                        string msg = string.Format("{1} {2}{3}",
-                            what.ProgressPercent, actionStr, origPath,
-                            what.Part == FilePart.RsrcFork ? " (rsrc)" : "");
+                        string fmtStr = "{1} {2}{3}";
+                        //string fmtStr = "{0,3:D}% {1} {2}{3}";    // show progress percent
+                        string msg = string.Format(fmtStr, what.ProgressPercent, actionStr,
+                            origPath, what.Part == FilePart.RsrcFork ? " (rsrc)" : "");
                         if (what.NewPathName.Length > 0 &&
                                 PathName.ComparePathNames(what.OrigPathName, what.OrigDirSep,
                                     what.NewPathName, what.NewDirSep,

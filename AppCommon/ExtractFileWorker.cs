@@ -218,6 +218,10 @@ namespace AppCommon {
                 out bool wasCancelled) {
             wasCancelled = false;
 
+            if (entries.Count == 0) {
+                return true;
+            }
+
             // Get entry count, excluding directories.
             int entryCount = entries.Count;
             foreach (IFileEntry entry in entries) {
@@ -225,13 +229,10 @@ namespace AppCommon {
                     entryCount--;
                 }
             }
-            if (entryCount == 0) {
-                return true;
-            }
             int doneCount = 0;
 
             foreach (IFileEntry entry in entries) {
-                if (entry.IsDirectory) {
+                if (StripPaths && entry.IsDirectory) {
                     continue;
                 }
                 IFileEntry aboveRootEntry;
@@ -241,7 +242,7 @@ namespace AppCommon {
                     aboveRootEntry = startDirEntry.ContainingDir;
                 }
                 string extractPath;
-                if (Preserve == PreserveMode.NAPS) {
+                if (Preserve == PreserveMode.NAPS && !entry.IsDirectory) {
                     extractPath = GetAdjEscPathName(entry, aboveRootEntry,
                         Path.DirectorySeparatorChar);
                 } else {
@@ -253,6 +254,17 @@ namespace AppCommon {
                 }
 
                 FileAttribs attrs = new FileAttribs(entry);
+
+                if (entry.IsDirectory) {
+                    // We don't do a progress update here because directory creation should
+                    // be near-instantaneous.  We don't include them in "entryCount", so the
+                    // progress bar won't show a hiccup.
+                    bool ok = CreateDirectory(extractPath, attrs, out wasCancelled);
+                    if (!ok || wasCancelled) {
+                        return false;
+                    }
+                    continue;
+                }
 
                 // When extracting from ProDOS, do extract zero-length resource forks, because
                 // we want to preserve the fact that the file was extended.  For HFS, all files
@@ -752,6 +764,7 @@ namespace AppCommon {
         /// Recursively creates directories referenced by the pathname.
         /// </summary>
         /// <param name="pathName">Pathname, including filename.</param>
+        /// <param name="doCancel">Result: true if the operation was cancelled.</param>
         /// <returns>True on success, false if directory creation failed.</returns>
         private bool CreateDirectories(string pathName, out bool doCancel) {
             doCancel = false;
@@ -773,7 +786,9 @@ namespace AppCommon {
                 return false;
             }
             // Make sure the previous directories exist.
-            CreateDirectories(directoryName, out doCancel);
+            if (!CreateDirectories(directoryName, out doCancel)) {
+                return false;
+            }
             // Create this one.
             Directory.CreateDirectory(directoryName);
 
@@ -781,15 +796,35 @@ namespace AppCommon {
         }
 
         /// <summary>
+        /// Creates a single directory.  Sets the directory file's attributes to match.
+        /// </summary>
+        /// <param name="pathName">Pathname of directory to create.</param>
+        /// <param name="attrs">File attributes.</param>
+        /// <param name="doCancel">Result: true if the operation was cancelled.</param>
+        /// <returns>True on success.</returns>
+        private bool CreateDirectory(string pathName, FileAttribs attrs, out bool doCancel) {
+            string xname = Path.Combine(pathName, "X");
+            if (!CreateDirectories(xname, out doCancel)) {
+                return false;
+            }
+            return SetDirectoryAttributes(pathName, attrs);
+        }
+
+        /// <summary>
         /// Sets file attributes, such as the modification date and read-only flag.  In "host"
         /// preservation mode this also attempts to set the file types.
         /// </summary>
         /// <param name="pathName">Full or partial pathname of file.</param>
-        /// <param name="attrs">Attribute set.</param>
+        /// <param name="attrs">File attributes.</param>
+        /// <param name="doSetAccess">If true, set the read-only flag if file is locked.</param>
         private bool SetFileAttributes(string pathName, FileAttribs attrs, bool doSetAccess) {
             FileInfo info = new FileInfo(pathName);
-            info.CreationTime = attrs.CreateWhen;
-            info.LastWriteTime = attrs.ModWhen;
+            if (TimeStamp.IsValidDate(attrs.CreateWhen)) {
+                info.CreationTime = attrs.CreateWhen;
+            }
+            if (TimeStamp.IsValidDate(attrs.ModWhen)) {
+                info.LastWriteTime = attrs.ModWhen;
+            }
             if (doSetAccess && (attrs.Access & (byte)AccessFlags.Write) == 0) {
                 info.Attributes |= FileAttributes.ReadOnly;
             }
@@ -801,6 +836,25 @@ namespace AppCommon {
                 if (SystemXAttr.SetXAttr(pathName, SystemXAttr.XATTR_FINDERINFO_NAME, buf, 0) < 0) {
                     return false;
                 }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Sets directory file attributes, notably the creation and modification dates.
+        /// </summary>
+        /// <remarks>
+        /// The modification date likely won't stick, because it gets changed as soon as we
+        /// extract files into the directory.  I don't think there's value in trying to make
+        /// that work correctly.
+        /// </remarks>
+        private bool SetDirectoryAttributes(string pathName, FileAttribs attrs) {
+            DirectoryInfo info = new DirectoryInfo(pathName);
+            if (TimeStamp.IsValidDate(attrs.CreateWhen)) {
+                info.CreationTime = attrs.CreateWhen;
+            }
+            if (TimeStamp.IsValidDate(attrs.ModWhen)) {
+                info.LastWriteTime = attrs.ModWhen;
             }
             return true;
         }
