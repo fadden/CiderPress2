@@ -185,6 +185,10 @@ namespace cp2_wpf.LibTest {
                 }
 
                 //Debug.WriteLine("  " + pathName);
+                if (ent.IsDirectory) {
+                    TestDiskFiles(fs, ent, pathName);
+                    continue;
+                }
                 mFileCount++;
                 using (DiskFileStream stream =
                         fs.OpenFile(ent, FileAccessMode.ReadOnly, FilePart.DataFork)) {
@@ -198,10 +202,6 @@ namespace cp2_wpf.LibTest {
                         mForkCount++;
                         TestFile(stream, pathName + " [rsrc]");
                     }
-                }
-
-                if (ent.IsDirectory) {
-                    TestDiskFiles(fs, ent, pathName);
                 }
             }
         }

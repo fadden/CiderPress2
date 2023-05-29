@@ -27,6 +27,7 @@ using System.Windows.Input;
 
 using AppCommon;
 using CommonUtil;
+using cp2_wpf.Actions;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.FS;
@@ -756,6 +757,10 @@ namespace cp2_wpf {
         /// </summary>
         public void DeleteFiles() {
             Debug.WriteLine("Delete!");
+
+            // TODO: convert the selection list into a full list, with the contents of
+            //   subdirectories listed explicitly.
+            //   --> need to do that for Extract as well
         }
 
         /// <summary>

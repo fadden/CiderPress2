@@ -21,7 +21,7 @@ using AppCommon;
 using CommonUtil;
 using cp2_wpf.WPFCommon;
 
-namespace cp2_wpf {
+namespace cp2_wpf.Actions {
     /// <summary>
     /// This opens the work file inside a WorkProgress dialog.
     /// </summary>

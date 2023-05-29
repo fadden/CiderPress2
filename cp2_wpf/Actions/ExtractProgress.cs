@@ -17,14 +17,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Windows;
 
 using AppCommon;
 using CommonUtil;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 
-namespace cp2_wpf {
+namespace cp2_wpf.Actions {
     /// <summary>
     /// This runs an ExtractFileWorker inside a WorkProgress dialog.
     /// </summary>
@@ -59,7 +58,7 @@ namespace cp2_wpf {
 
                 ExtractFileWorker extWorker = new ExtractFileWorker(
                     delegate (CallbackFacts what) {
-                        return HandleCallback(what, "extract", bkWorker);
+                        return ProgressUtil.HandleCallback(what, "extract", bkWorker);
                     }, mAppHook);
                 // TODO: get these from settings
                 extWorker.IsMacZipEnabled = true;
@@ -102,50 +101,5 @@ namespace cp2_wpf {
             Debug.WriteLine("Operation completed, success=" + success);
         }
 
-        public CallbackFacts.Results HandleCallback(CallbackFacts what, string actionStr,
-                BackgroundWorker bkWorker) {
-            CallbackFacts.Results result = CallbackFacts.Results.Unknown;
-            switch (what.Reason) {
-                case CallbackFacts.Reasons.Progress:
-                    if (bkWorker.CancellationPending) {
-                        // TODO: the AppCommon code is currently ignoring this
-                        result = CallbackFacts.Results.Cancel;
-                        break;
-                    }
-                    bkWorker.ReportProgress(what.ProgressPercent, what.OrigPathName);
-                    // DEBUG: sleep briefly so we can see the progress
-                    //System.Threading.Thread.Sleep(500);
-                    break;
-                case CallbackFacts.Reasons.ResourceForkIgnored:
-                case CallbackFacts.Reasons.PathTooLong:
-                case CallbackFacts.Reasons.FileNameExists:
-                    string ovwr = "Overwrite '" + what.OrigPathName + "' ?";
-                    WorkProgress.MessageBoxQuery query = new WorkProgress.MessageBoxQuery(ovwr,
-                        "Overwrite File?", MessageBoxButton.YesNoCancel,
-                        MessageBoxImage.Question);
-                    bkWorker.ReportProgress(0, query);
-                    MessageBoxResult res = query.WaitForResult();
-                    Debug.WriteLine("Overwrite '" + what.OrigPathName + "' -> " + res);
-                    switch (res) {
-                        case MessageBoxResult.Cancel:
-                            result = CallbackFacts.Results.Cancel;
-                            break;
-                        case MessageBoxResult.OK:
-                        case MessageBoxResult.Yes:
-                            result = CallbackFacts.Results.Overwrite;
-                            break;
-                        case MessageBoxResult.No:
-                        default:
-                            result = CallbackFacts.Results.Skip;
-                            break;
-                    }
-                    break;
-                case CallbackFacts.Reasons.AttrFailure:
-                case CallbackFacts.Reasons.OverwriteFailure:
-                case CallbackFacts.Reasons.Failure:
-                    break;
-            }
-            return result;
-        }
     }
 }
