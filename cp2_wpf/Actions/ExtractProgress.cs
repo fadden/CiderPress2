@@ -44,7 +44,7 @@ namespace cp2_wpf.Actions {
         }
 
         /// <summary>
-        /// Perform the operation.
+        /// Performs the operation.
         /// </summary>
         /// <remarks>
         /// THIS RUNS ON THE WORKER THREAD.  Do not try to access GUI objects.
@@ -54,8 +54,6 @@ namespace cp2_wpf.Actions {
         public object DoWork(BackgroundWorker bkWorker) {
             string curDir = Environment.CurrentDirectory;
             try {
-                // Copy this to object for the benefit of the extract worker callbacks.
-
                 ExtractFileWorker extWorker = new ExtractFileWorker(
                     delegate (CallbackFacts what) {
                         return ProgressUtil.HandleCallback(what, "extract", bkWorker);
@@ -75,6 +73,8 @@ namespace cp2_wpf.Actions {
                             out bool wasCancelled)) {
                         // failed
                         if (wasCancelled) {
+                            ProgressUtil.ShowCancelled(bkWorker);
+                            return false;
                         }
                         return false;
                     }
@@ -84,6 +84,8 @@ namespace cp2_wpf.Actions {
                             out bool wasCancelled)) {
                         // failed
                         if (wasCancelled) {
+                            ProgressUtil.ShowCancelled(bkWorker);
+                            return false;
                         }
                         return false;
                     }
@@ -100,6 +102,5 @@ namespace cp2_wpf.Actions {
             bool success = (results is true);
             Debug.WriteLine("Operation completed, success=" + success);
         }
-
     }
 }

@@ -26,6 +26,13 @@ using FileConv;
 
 namespace cp2_wpf.Actions {
     public static class ProgressUtil {
+        /// <summary>
+        /// Handles a callback from the library code.
+        /// </summary>
+        /// <param name="what">What happened.</param>
+        /// <param name="actionStr">Verb that describes the action being performed.</param>
+        /// <param name="bkWorker">Background worker that receives progress updates.</param>
+        /// <returns></returns>
         public static CallbackFacts.Results HandleCallback(CallbackFacts what, string actionStr,
                 BackgroundWorker bkWorker) {
             CallbackFacts.Results result = CallbackFacts.Results.Unknown;
@@ -70,20 +77,36 @@ namespace cp2_wpf.Actions {
                 case CallbackFacts.Reasons.OverwriteFailure:
                 case CallbackFacts.Reasons.Failure:
                     WorkProgress.MessageBoxQuery failMsg =
-                        new WorkProgress.MessageBoxQuery("Error: " + what.FailMessage,
+                        new WorkProgress.MessageBoxQuery(what.FailMessage,
                             "Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                     bkWorker.ReportProgress(0, failMsg);
+                    failMsg.WaitForResult();
                     break;
             }
             return result;
         }
 
+        /// <summary>
+        /// Displays a message box with an informative or error message.
+        /// </summary>
+        /// <param name="msg">Message to show.</param>
+        /// <param name="isError">True if this is an error message.</param>
+        /// <param name="bkWorker">Background worker that receives progress updates.</param>
         public static void ShowMessage(string msg, bool isError, BackgroundWorker bkWorker) {
             WorkProgress.MessageBoxQuery failMsg =
                 new WorkProgress.MessageBoxQuery(msg, isError ? "Failed" : "Info",
                     MessageBoxButton.OK,
                     isError ? MessageBoxImage.Error : MessageBoxImage.Information);
             bkWorker.ReportProgress(0, failMsg);
+            failMsg.WaitForResult();
+        }
+
+        /// <summary>
+        /// Informs the user that the action has been cancelled.
+        /// </summary>
+        /// <param name="bkWorker">Background worker that receives progress updates.</param>
+        public static void ShowCancelled(BackgroundWorker bkWorker) {
+            ShowMessage("Cancelled.", false, bkWorker);
         }
     }
 }

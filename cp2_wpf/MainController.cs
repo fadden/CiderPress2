@@ -761,6 +761,31 @@ namespace cp2_wpf {
             // TODO: convert the selection list into a full list, with the contents of
             //   subdirectories listed explicitly.
             //   --> need to do that for Extract as well
+
+            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
+                    out IFileEntry unused)) {
+                // We don't have an archive and (optionally) directory target selected.
+                return;
+            }
+
+            if (!GetFileSelection(false, false, true, out archiveOrFileSystem,
+                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
+                return;
+            }
+            DeleteProgress prog = new DeleteProgress(archiveOrFileSystem, daNode, selected,
+                mAppHook);
+
+            // Do the deletion on a background thread so we can show progress.
+            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
+            workDialog.ShowDialog();
+
+            // Refresh the contents of the file list.
+            // TODO: if we added directories we also need to refresh the directory list
+            if (archiveOrFileSystem is IArchive) {
+                AddArchiveItems((IArchive)archiveOrFileSystem);
+            } else {
+                AddDiskItems(((IFileSystem)archiveOrFileSystem).GetVolDirEntry());
+            }
         }
 
         /// <summary>

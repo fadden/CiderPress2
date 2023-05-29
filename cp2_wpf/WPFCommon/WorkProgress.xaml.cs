@@ -97,7 +97,6 @@ namespace cp2_wpf.WPFCommon {
         }
 
         private IWorker mCallbacks;
-
         private BackgroundWorker mWorker;
 
 
@@ -156,7 +155,14 @@ namespace cp2_wpf.WPFCommon {
             }
         }
 
-        // Callback that fires when a progress update is made.
+        /// <summary>
+        /// Executes when a progress update is sent from the work thread.  The update can be
+        /// a MessageBox request, or a simple string update with a completion percentage.
+        /// </summary>
+        /// <remarks>
+        /// <para>Message box queries must wait for the result.  Otherwise the progress dialog
+        /// can close, cancelling the MessageBox and confusing the window manager.</para>
+        /// </remarks>
         private void ProgressChanged(object? sender, ProgressChangedEventArgs e) {
             MessageBoxQuery? qq = e.UserState as MessageBoxQuery;
             if (qq != null) {

@@ -45,7 +45,7 @@ namespace cp2_wpf.Actions {
         }
 
         /// <summary>
-        /// Perform the operation.
+        /// Performs the operation.
         /// </summary>
         /// <remarks>
         /// THIS RUNS ON THE WORKER THREAD.  Do not try to access GUI objects.
@@ -67,7 +67,7 @@ namespace cp2_wpf.Actions {
                     arc.StartTransaction();
                     addWorker.AddFilesToArchive(arc, out bool isCancelled);
                     if (isCancelled) {
-                        ProgressUtil.ShowMessage("Cancelled.", false, bkWorker);
+                        ProgressUtil.ShowCancelled(bkWorker);
                         return false;
                     }
                     mLeafNode.SaveUpdates(mDoCompress);
@@ -87,7 +87,7 @@ namespace cp2_wpf.Actions {
                 try {
                     addWorker.AddFilesToDisk(fs, mTargetDir, out bool isCancelled);
                     if (isCancelled) {
-                        ProgressUtil.ShowMessage("Cancelled.", false, bkWorker);
+                        ProgressUtil.ShowCancelled(bkWorker);
                         // continue; some changes may have been made
                         success = false;
                     }
