@@ -250,7 +250,7 @@ namespace cp2.Tests {
         /// <summary>
         /// Creates a simple single-valued test source.
         /// </summary>
-        /// <param name="length">Length of stream.</param>
+        /// <param name="length">Length of stream.  May be zero.</param>
         /// <param name="value">Value to store in stream.</param>
         /// <returns>New memory stream.</returns>
         public static SimplePartSource CreateSimpleSource(int length, byte value) {

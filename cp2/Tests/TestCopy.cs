@@ -72,6 +72,7 @@ namespace cp2.Tests {
             TestLongBNY(parms);
             TestMacZip(parms);
             TestExtArchive(parms);
+            TestEmptyDir(parms);
             TestTurducken(parms);
 
             Controller.RemoveTestTmp(parms);
@@ -513,6 +514,81 @@ namespace cp2.Tests {
             File.Delete(dstPath);
         }
 
+        public static void TestEmptyDir(ParamsBag parms) {
+            parms.StripPaths = false;
+            parms.Recurse = true;
+
+            string arcPath = Path.Combine(Controller.TEST_TMP, "empty-src.zip");
+            string srcPath = Path.Combine(Controller.TEST_TMP, "empty-src.po");
+            string dstPath = Path.Combine(Controller.TEST_TMP, "empty-dst.po");
+            if (!DiskUtil.HandleCreateDiskImage("cdi",
+                    new string[] { srcPath, "140k", "prodos" }, parms)) {
+                throw new Exception("cdi " + srcPath + " failed");
+            }
+            if (!DiskUtil.HandleCreateDiskImage("cdi",
+                    new string[] { dstPath, "140k", "prodos" }, parms)) {
+                throw new Exception("cdi " + dstPath + " failed");
+            }
+
+            const string subdir1 = "SUBDIR1";
+            const string subdir2 = "SUBDIR2";
+            if (!Mkdir.HandleMkdir("mkdir", new string[] { srcPath, "subdir1" }, parms)) {
+                throw new Exception("mkdir " + subdir1 + " failed");
+            }
+            if (!Copy.HandleCopy("cp", new string[] { srcPath, dstPath }, parms)) {
+                throw new Exception("cp " + srcPath + " " + dstPath + " failed");
+            }
+            using (FileStream stream = new FileStream(dstPath, FileMode.Open)) {
+                using (IDiskImage disk = UnadornedSector.OpenDisk(stream, parms.AppHook)) {
+                    disk.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)disk.Contents!;
+                    fs.PrepareFileAccess(true);
+                    IFileEntry volDir = fs.GetVolDirEntry();
+                    IFileEntry dirEntry = fs.FindFileEntry(volDir, subdir1);
+                    if (!dirEntry.IsDirectory) {
+                        throw new Exception("created file wasn't a directory");
+                    }
+                }
+            }
+
+            // Create a ZIP archive with two directory entries (zero-length, name ends with '/').
+            const string arcName1 = subdir1 + "/";
+            const string arcName2 = subdir1 + "/" + subdir2 + "/";
+            using (FileStream stream = new FileStream(arcPath, FileMode.Create)) {
+                using (IArchive arc = Zip.CreateArchive(parms.AppHook)) {
+                    arc.StartTransaction();
+                    IFileEntry dir1 = arc.CreateRecord();
+                    dir1.FileName = arcName1;
+                    arc.AddPart(dir1, FilePart.DataFork, Controller.CreateSimpleSource(0, 0),
+                        CompressionFormat.Default);
+                    IFileEntry dir2 = arc.CreateRecord();
+                    dir2.FileName = arcName2;
+                    arc.AddPart(dir2, FilePart.DataFork, Controller.CreateSimpleSource(0, 0),
+                        CompressionFormat.Default);
+                    arc.CommitTransaction(stream);
+                }
+            }
+
+            // Copy the directories from the archive to the disk image.  The first directory
+            // already exists, the second should cause an empty directory to be created.
+            if (!Copy.HandleCopy("cp", new string[] { arcPath, dstPath }, parms)) {
+                throw new Exception("cp " + srcPath + " " + dstPath + " failed");
+            }
+
+            using (FileStream stream = new FileStream(dstPath, FileMode.Open)) {
+                using (IDiskImage disk = UnadornedSector.OpenDisk(stream, parms.AppHook)) {
+                    disk.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)disk.Contents!;
+                    fs.PrepareFileAccess(true);
+                    IFileEntry volDir = fs.GetVolDirEntry();
+                    IFileEntry dirEntry = LocateFileEntry(fs, arcName2);
+                    if (!dirEntry.IsDirectory) {
+                        throw new Exception("created file wasn't a directory");
+                    }
+                }
+            }
+        }
+
         private static void TestTurducken(ParamsBag parms) {
             // Make a copy of a turducken file.
             string inputFile = Path.Join(Controller.TEST_DATA, "turducken", "MultiPart.hdv");
@@ -706,7 +782,9 @@ namespace cp2.Tests {
         private static IFileEntry LocateFileEntry(IFileSystem fs, string pathName) {
             IFileEntry curEntry = fs.GetVolDirEntry();
             if (fs.Characteristics.IsHierarchical) {
-                string[] paths = pathName.Split(fs.Characteristics.DirSep);
+                // Use RemoveEmptyEntries to remove trailing '/' from ZIP directories.
+                string[] paths = pathName.Split(fs.Characteristics.DirSep,
+                    StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < paths.Length; i++) {
                     curEntry = fs.FindFileEntry(curEntry, paths[i]);
                 }

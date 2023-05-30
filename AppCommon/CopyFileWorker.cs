@@ -436,19 +436,21 @@ namespace AppCommon {
             bool doStripPaths = StripPaths || !dstFs.Characteristics.IsHierarchical;
             bool doRawXfer = srcObj is DOS && dstFs is DOS;
 
-            // Fix number of entries to copy, removing directories and MacZip headers.
+            // Fix number of entries to copy, removing directories and MacZip header files.
             int entryCount = entries.Count;
+            bool foundDir = false;
             foreach (IFileEntry entry in entries) {
                 if (entry.IsDirectory) {
                     entryCount--;
+                    foundDir = true;
                 } else if (srcObj is Zip && EnableMacOSZip) {
                     if (entry.IsMacZipHeader()) {
                         entryCount--;
                     }
                 }
             }
-            if (entryCount == 0) {
-                return true;        // must have been nothing but empty directories
+            if (entryCount == 0 && !foundDir) {
+                return true;    // nothing but Zip headers?
             }
 
             IFileEntry targetDirEnt =
@@ -456,11 +458,7 @@ namespace AppCommon {
 
             int doneCount = 0;
             foreach (IFileEntry srcEntry in entries) {
-                if (srcEntry.IsDirectory) {
-                    // We may want to handle this case, so we can copy empty directories from
-                    // place to place.  It's not as straightforward when copying to file
-                    // archives since not all of them have directories.  Consistently ignoring
-                    // empty directories may be better?
+                if (doStripPaths && srcEntry.IsDirectory) {
                     continue;
                 }
                 if (!srcEntry.HasDataFork && srcEntry.HasRsrcFork && !canRsrcFork) {
@@ -505,11 +503,38 @@ namespace AppCommon {
                 }
 
                 string adjFileName = dstFs.AdjustFileName(FileNameOnly(srcObj, srcEntry));
+                FileAttribs srcAttrs = new FileAttribs(srcEntry);
+
+                if (srcEntry.IsDirectory) {
+                    // We don't do a progress update here because directory creation should
+                    // be near-instantaneous.  We don't include them in "entryCount", so the
+                    // progress bar won't show a hiccup.
+                    IFileEntry newDirEnt;
+                    if (dstFs.TryFindFileEntry(subDirEnt, adjFileName, out newDirEnt)) {
+                        // Exists; is it a directory?
+                        if (!newDirEnt.IsDirectory) {
+                            ReportFailure("Error: path component '" + adjFileName +
+                                "' (in '" + subDirEnt.FileName + "') is not a directory");
+                            return false;
+                        }
+                    } else {
+                        // Not found, create new.
+                        try {
+                            newDirEnt = dstFs.CreateFile(subDirEnt, adjFileName,
+                                CreateMode.Directory);
+                        } catch (IOException ex) {
+                            ReportFailure("Error: unable to create directory '" +
+                                adjFileName + "': " + ex.Message);
+                            return false;
+                        }
+                    }
+                    CopyAttributes(srcAttrs, newDirEnt);
+                    newDirEnt.SaveChanges();
+                    continue;
+                }
+
                 int dataPerc = (100 * doneCount) / entryCount;
                 int rsrcPerc = (int)((100 * (doneCount + 0.5)) / entryCount);
-                CompressionFormat fmt =
-                    DoCompress ? CompressionFormat.Default : CompressionFormat.Uncompressed;
-                FileAttribs srcAttrs = new FileAttribs(srcEntry);
 
                 Stream? dataStream = null;
                 Stream? rsrcStream = null;
@@ -540,7 +565,7 @@ namespace AppCommon {
                                 }
                             } catch (Exception ex) {
                                 // Never mind.
-                                ReportFailure("Unable to get ADF attrs for '" +
+                                ReportFailure("Error: unable to get ADF attrs for '" +
                                     srcEntry.FullPathName + "': " + ex.Message);
                                 // keep going
                                 Debug.Assert(rsrcStream == null);

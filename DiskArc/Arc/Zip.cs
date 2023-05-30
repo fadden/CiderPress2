@@ -630,6 +630,7 @@ namespace DiskArc.Arc {
             Zip_FileEntry newEntry = Zip_FileEntry.CreateNew(this);
             newEntry.ChangeObject = newEntry;       // changes are made directly to this object
             newEntry.OrigObject = newEntry;
+            newEntry.CreateWhen = newEntry.ModWhen = DateTime.Now;
             mEditList.Add(newEntry);
             return newEntry;
         }
@@ -655,9 +656,9 @@ namespace DiskArc.Arc {
             if (part != FilePart.DataFork) {
                 throw new ArgumentException("Invalid part: " + part);
             }
-            if (ientry.IsDirectory) {
-                throw new ArgumentException("Can't add data to directory");
-            }
+            //if (ientry.IsDirectory) {
+            //    throw new ArgumentException("Can't add data to directory");
+            //}
             ((Zip_FileEntry)ientry).AddPart(partSource, compressFmt);
         }
 

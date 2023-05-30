@@ -98,7 +98,7 @@ namespace AppCommon {
                 }
             }
             if (entryCount == 0) {
-                return true;        // must have been nothing but empty directories
+                return true;        // must have been nothing but headers and directories
             }
 
             int doneCount = 0;

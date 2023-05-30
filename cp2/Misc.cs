@@ -206,7 +206,7 @@ namespace cp2 {
                         what.FailMessage + ": '" + what.OrigPathName + "'");
                     break;
                 case CallbackFacts.Reasons.Failure:
-                    Console.Error.WriteLine("Failed: " + what.FailMessage);
+                    Console.Error.WriteLine(what.FailMessage);
                     break;
                 default:
                     Console.Error.WriteLine("Unknown callback reason: " + what.Reason);

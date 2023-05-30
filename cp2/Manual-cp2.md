@@ -62,8 +62,9 @@ it's the same size as the original.  Then, copy the contents with
 
 *A*: Create the destination file with `create-disk-image` or
 `create-file-archive`, then use the `copy` command with no arguments.  This
-copies every file from the source to the destination.  Note however that empty
-directories are ignored.
+copies every file from the source to the destination.  Note however that
+directories are not created as separate entities in file archives, so empty
+directories will not be copied to those.
 
 *Q*: How do I perform sector editing on disk images?
 
@@ -417,7 +418,8 @@ independent of the recursion setting.
 
 If a directory is named, the contents of that directory will be copied
 recursively if recursion is enabled.  If recursion is not enabled,
-directories are ignored.  Empty directories are not copied.
+directories are ignored.  Directories are not created as separate entries in
+file archives, so empty directories will not appear in those.
 
 The names of files may contain wildcards, and are matched
 with case-insensitive comparisons.  See
