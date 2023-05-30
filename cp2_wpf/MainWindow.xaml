@@ -60,6 +60,7 @@ limitations under the License.
                     <KeyGesture>Ctrl+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
+            <RoutedUICommand x:Key="CloseSubTreeCmd" Text="Close Sub-Tree"/>
             <RoutedUICommand x:Key="DeleteFilesCmd" Text="_Delete Files">
                 <RoutedUICommand.InputGestures>
                     <KeyGesture>Del</KeyGesture>
@@ -103,6 +104,8 @@ limitations under the License.
                         CanExecute="IsFileAreaShowing" Executed="AddFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource CloseCmd}"
                         CanExecute="IsFileOpen" Executed="CloseCmd_Executed"/>
+        <CommandBinding Command="{StaticResource CloseSubTreeCmd}"
+                        CanExecute="IsSubTreeSelected" Executed="CloseSubTreeCmd_Executed"/>
         <CommandBinding Command="Copy"
                         CanExecute="IsFileOpen" Executed="CopyCmd_Executed"/>
         <CommandBinding Command="Cut"
@@ -417,6 +420,7 @@ limitations under the License.
                                     <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                                     <MenuItem Command="{StaticResource EditBlocksCmd}"/>
                                     <MenuItem Command="{StaticResource EditSectorsCmd}"/>
+                                    <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                         </TreeView>

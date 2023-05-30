@@ -186,7 +186,17 @@ namespace AppCommon {
             }
 
             /// <summary>
-            /// Closes all of the children of the specified node, but leaves the node itself open.
+            /// Closes a specific child of this node.
+            /// </summary>
+            /// <param name="childNode"></param>
+            public void CloseChild(Node childNode) {
+                CloseNode(childNode);
+                bool ok = mChildren.Remove(childNode);
+                Debug.Assert(ok, "failed to remove child node");
+            }
+
+            /// <summary>
+            /// Closes all of the children of this node, but leaves the node itself open.
             /// This is typically called on IDiskImage (which has a DANode) and Partition (which
             /// does not).
             /// </summary>
@@ -207,7 +217,7 @@ namespace AppCommon {
                     CloseNode(child);
                 }
                 node.mChildren.Clear();
-                // Close the corresponding DiskArcNode, and remove it from the tree.
+                // Close the corresponding DiskArcNode, and remove it from the tree, if it has one.
                 if (node.DANode != null) {
                     DiskArcNode? daParent = node.DANode.Parent;
                     if (daParent != null) {

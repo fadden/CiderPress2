@@ -514,7 +514,40 @@ namespace cp2_wpf {
             EditAppSettings dlg = new EditAppSettings(mMainWin);
             dlg.SettingsApplied += ApplyAppSettings;
             dlg.ShowDialog();
-            // Settings are applied via event.
+            // Settings are applied via raised event.
+        }
+
+        /// <summary>
+        /// Handles (context) : Close Sub-Tree.
+        /// </summary>
+        public void CloseSubTree() {
+            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            if (arcTreeSel == null) {
+                return;
+            }
+            CloseSubTree(arcTreeSel);
+        }
+
+        /// <summary>
+        /// Closes a sub-tree of the archive tree.  May only be used for disk images and file
+        /// archives that exist as files inside a filesystem or archive.
+        /// </summary>
+        /// <param name="item">Tree item to close.</param>
+        private void CloseSubTree(ArchiveTreeItem item) {
+            Debug.Assert(item.CanClose);
+            if (item.Parent == null) {
+                Debug.Assert(false, "cannot close root");
+                return;
+            }
+            WorkTree.Node workNode = item.WorkTreeNode;
+            ArchiveTreeItem parentItem = item.Parent;
+            WorkTree.Node parentNode = item.Parent.WorkTreeNode;
+            parentNode.CloseChild(workNode);
+            bool ok = parentItem.RemoveChild(item);
+            Debug.Assert(ok, "failed to remove child tree item");
+
+            // Select the parent tree item.
+            parentItem.IsSelected = true;
         }
 
         /// <summary>
@@ -744,7 +777,7 @@ namespace cp2_wpf {
                     }
                     // Repopulate the archive tree.
                     foreach (WorkTree.Node childNode in workNode) {
-                        ArchiveTreeItem.ConstructTree(childNode, arcTreeSel.Items);
+                        ArchiveTreeItem.ConstructTree(arcTreeSel, childNode);
                     }
                 } finally {
                     Mouse.OverrideCursor = null;
@@ -821,7 +854,7 @@ namespace cp2_wpf {
         /// Handles Actions : View Files.
         /// </summary>
         public void ViewFiles() {
-            // TODO: if only one file is selected, select all files in the same directory, to
+            // TODO: if only one file is selected, select all files in the file list, to
             //   enable the forward/backward buttons in the viewer.
             if (!GetFileSelection(true, true, false, out object? archiveOrFileSystem,
                     out IFileEntry selectionDir, out List<IFileEntry>? selected)) {

@@ -81,6 +81,17 @@ namespace cp2_wpf {
         /// </summary>
         public bool IsFileSystemSelected { get { return CurrentWorkObject is IFileSystem; } }
 
+        /// <summary>
+        /// True if the item is a closable sub-tree.
+        /// </summary>
+        public bool IsClosableTreeSelected { get {
+                ArchiveTreeItem? arcSel = (ArchiveTreeItem?)mMainWin.archiveTree.SelectedItem;
+                if (arcSel == null) {
+                    return false;
+                }
+                return arcSel.CanClose;
+            }
+        }
 
         /// <summary>
         /// Clears the contents of the archive tree.
@@ -105,7 +116,7 @@ namespace cp2_wpf {
             mAppHook.LogI("Constructing content trees...");
             DateTime startWhen = DateTime.Now;
 
-            ArchiveTreeItem.ConstructTree(mWorkTree.RootNode, tvRoot);
+            ArchiveTreeItem.ConstructTree(tvRoot, mWorkTree.RootNode);
 
             mAppHook.LogI("Finished tree element construction in " +
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
@@ -203,7 +214,7 @@ namespace cp2_wpf {
             if (newNode != null) {
                 // Successfully opened.  Update the TreeView and select the multipart.
                 ArchiveTreeItem newItem =
-                    ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
+                    ArchiveTreeItem.ConstructTree(arcTreeSel, newNode);
                 newItem.IsSelected = true;
             }
         }
@@ -437,7 +448,7 @@ namespace cp2_wpf {
                     if (newNode != null) {
                         // Successfully opened.  Update the TreeView.
                         ArchiveTreeItem newItem =
-                            ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
+                            ArchiveTreeItem.ConstructTree(arcTreeSel, newNode);
                         // Select something in what we just added.  If it was a disk image, we want
                         // to select the first filesystem, not the disk image itself.
                         ArchiveTreeItem.SelectBestFrom(newItem);
@@ -472,7 +483,7 @@ namespace cp2_wpf {
                 if (newNode != null) {
                     // Successfully opened.  Update the TreeView.
                     ArchiveTreeItem newItem =
-                        ArchiveTreeItem.ConstructTree(newNode, arcTreeSel.Items);
+                        ArchiveTreeItem.ConstructTree(arcTreeSel, newNode);
                     // Select something in what we just added.  If it was a disk image, we want
                     // to select the first filesystem, not the disk image itself.
                     ArchiveTreeItem.SelectBestFrom(newItem);

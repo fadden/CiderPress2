@@ -35,6 +35,11 @@ namespace cp2_wpf {
     /// </summary>
     public class ArchiveTreeItem : INotifyPropertyChanged {
         /// <summary>
+        /// Reference to parent node.  Will be null at root of tree.
+        /// </summary>
+        public ArchiveTreeItem? Parent { get; private set; }
+
+        /// <summary>
         /// Type string to show in the GUI.
         /// </summary>
         public string TypeStr { get; set; }
@@ -63,6 +68,29 @@ namespace cp2_wpf {
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "") {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// True if this item can be closed.  This will be set for disk images and file archives
+        /// that are children of IFileSystem or IArchive.
+        /// </summary>
+        public bool CanClose {
+            get {
+                if (Parent == null) {
+                    return false;
+                }
+                WorkTree.Node workNode = WorkTreeNode;
+                object daObject = workNode.DAObject;
+                if (!(daObject is IDiskImage || daObject is IArchive)) {
+                    return false;
+                }
+                WorkTree.Node parentNode = Parent.WorkTreeNode;
+                object daParent = parentNode.DAObject;
+                if (!(daParent is IFileSystem || daParent is IArchive)) {
+                    return false;
+                }
+                return true;
+            }
         }
 
         /// <summary>
@@ -101,7 +129,8 @@ namespace cp2_wpf {
         /// Constructor.
         /// </summary>
         /// <param name="workNode">Reference to corresponding work tree node.</param>
-        public ArchiveTreeItem(WorkTree.Node workNode) {
+        public ArchiveTreeItem(ArchiveTreeItem? parent, WorkTree.Node workNode) {
+            Parent = parent;
             WorkTreeNode = workNode;
 
             TypeStr = workNode.TypeStr;
@@ -136,6 +165,19 @@ namespace cp2_wpf {
             Items = new ObservableCollection<ArchiveTreeItem>();
         }
 
+        /// <summary>
+        /// Removes the specified child from the tree.
+        /// </summary>
+        public bool RemoveChild(ArchiveTreeItem child) {
+            return Items.Remove(child);
+        }
+
+        /// <summary>
+        /// Finds a tree item with a matching file entry object.
+        /// </summary>
+        /// <param name="tvRoot">Items list of root object.</param>
+        /// <param name="fileEntry">File entry to search for.</param>
+        /// <returns>Item found, or null if not found.</returns>
         public static ArchiveTreeItem? FindItemByEntry(ObservableCollection<ArchiveTreeItem> tvRoot,
                 IFileEntry fileEntry) {
             foreach (ArchiveTreeItem treeItem in tvRoot) {
@@ -177,47 +219,82 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Constructs a section of the archive tree.  This is called recursively.
+        /// Constructs the archive tree, starting from the root.
         /// </summary>
+        /// <param name="tvItems">Items list at root of tree.</param>
         /// <param name="workNode">Work tree node.</param>
-        /// <param name="tvRoot">Root of sub-tree.</param>
         /// <returns>Item created.</returns>
-        public static ArchiveTreeItem ConstructTree(WorkTree.Node workNode,
-                ObservableCollection<ArchiveTreeItem> tvRoot) {
-            // Create a new tree item for workNode, and add it to tvRoot's child list.
-            ArchiveTreeItem newItem = new ArchiveTreeItem(workNode);
-            tvRoot.Add(newItem);
+        public static ArchiveTreeItem ConstructTree(ObservableCollection<ArchiveTreeItem> tvItems,
+                WorkTree.Node workNode) {
+            ArchiveTreeItem newItem = new ArchiveTreeItem(null, workNode);
+            tvItems.Add(newItem);
             // Descend into workNode's children.
             foreach (WorkTree.Node child in workNode) {
-                ConstructTree(child, newItem.Items);
+                ConstructTree(newItem, child);
+            }
+            return newItem;
+        }
+
+        /// <summary>
+        /// Constructs a section of the archive tree.  This is called recursively.
+        /// </summary>
+        /// <param name="parent">Parent item.</param>
+        /// <param name="workNode">Work tree node.</param>
+        /// <returns>Item created.</returns>
+        public static ArchiveTreeItem ConstructTree(ArchiveTreeItem parent,
+                WorkTree.Node workNode) {
+            // Create a new tree item for workNode, and add it to the parent's child list.
+            ArchiveTreeItem newItem = new ArchiveTreeItem(parent, workNode);
+            parent.Items.Add(newItem);
+            // Descend into workNode's children.
+            foreach (WorkTree.Node child in workNode) {
+                ConstructTree(newItem, child);
             }
             return newItem;
         }
 
         /// <summary>
         /// Selects the "best" thing in the specified tree.  For example, we prefer to select
-        /// filesystems rather than the disk image that contains them.
+        /// filesystems rather than the disk image that contains them.  If nothing interesting
+        /// is found, the root will be selected.
         /// </summary>
         /// <param name="root">Starting point.</param>
         public static void SelectBestFrom(ArchiveTreeItem root) {
-            ArchiveTreeItem item = root;
-            while (item.Items.Count > 0) {
-                // More items farther down.  Do we need to go deeper?
+            if (!SelectBestFromR(root)) {
+                root.IsSelected = true;
+            }
+        }
+        private static bool SelectBestFromR(ArchiveTreeItem root) {
+            foreach (ArchiveTreeItem item in root.Items) {
                 if (item.WorkTreeNode.DAObject is GZip) {
-                    // we need to go deeper
+                    // Go deeper.
+                    if (SelectBestFromR(item)) {
+                        return true;
+                    }
                 } else if (item.WorkTreeNode.DAObject is NuFX) {
                     IFileEntry firstEntry = ((NuFX)item.WorkTreeNode.DAObject).GetFirstEntry();
                     if (!firstEntry.IsDiskImage) {
-                        break;
+                        // Non-disk archive, select it.
+                        item.IsSelected = true;
+                        return true;
                     }
-                    // first entry is disk image, go deeper
+                    // Disk archive, go deeper.
+                    if (SelectBestFromR(item)) {
+                        return true;
+                    }
                 } else if (item.WorkTreeNode.DAObject is IFileSystem ||
                            item.WorkTreeNode.DAObject is IArchive) {
-                    break;      // no, stop here
+                    // These are good.
+                    item.IsSelected = true;
+                    return true;
+                } else {
+                    // IMultiPart, IDiskImage, or Partition; go deeper.
+                    if (SelectBestFromR(item)) {
+                        return true;
+                    }
                 }
-                item = item.Items[0];
             }
-            item.IsSelected = true;
+            return false;
         }
 
         public override string ToString() {

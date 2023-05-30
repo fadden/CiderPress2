@@ -308,6 +308,10 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList &&
                 mMainCtrl.AreFilesSelected);
         }
+        private void IsSubTreeSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsClosableTreeSelected);
+        }
 
         private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
@@ -340,6 +344,9 @@ namespace cp2_wpf {
             if (!mMainCtrl.CloseWorkFile()) {
                 Debug.WriteLine("Close cancelled");
             }
+        }
+        private void CloseSubTreeCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.CloseSubTree();
         }
         private void CopyCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Copy!");
@@ -452,7 +459,7 @@ namespace cp2_wpf {
         //internal readonly ControlTemplate ICON_STATUS_DAMAGE;
 
         /// <summary>
-        /// Data for archive tree TreeView control.
+        /// Data for archive tree TreeView control.  This is a list of items, not a single item.
         /// </summary>
         public ObservableCollection<ArchiveTreeItem> ArchiveTreeRoot { get; private set; } =
             new ObservableCollection<ArchiveTreeItem>();
