@@ -274,7 +274,7 @@ namespace AppCommon {
                 }
                 string adfName = AppleSingle.ADF_PREFIX + fileName;
                 string checkPath = Path.Combine(Path.GetDirectoryName(fullPath)!, adfName);
-                if (File.Exists(checkPath)) {
+                if (File.Exists(checkPath)) {       // File.Exists() will not find directories
                     ProcessPath(checkPath);
                 }
             }
@@ -285,6 +285,10 @@ namespace AppCommon {
         /// </summary>
         private void ScanForHostAttr() {
             foreach (AddFileEntry ent in mFiles.Values) {
+                if (ent.IsDirectory) {
+                    continue;
+                }
+
                 // Check for values, but don't override what we got from NAPS or AppleDouble.
                 if (mAddOpts.CheckFinderInfo && ent.HFSFileType == 0 && ent.HFSCreator == 0 &&
                         ent.HasDataFork) {
@@ -323,6 +327,16 @@ namespace AppCommon {
         private void ProcessPath(string fullPath) {
             if (Directory.Exists(fullPath)) {
                 if (mAddOpts.Recurse) {
+                    // Add an entry for the directory.  This is really only necessary if the
+                    // directory is empty, but it does allow us to capture the timestamps.
+                    AddFileEntry dirEntry = new AddFileEntry();
+                    mFiles.Add(fullPath, dirEntry);
+                    dirEntry.IsDirectory = true;
+                    DirectoryInfo info = new DirectoryInfo(fullPath);
+                    dirEntry.CreateWhen = info.CreationTime;
+                    dirEntry.ModWhen = info.LastWriteTime;
+                    SetStoragePath(dirEntry, fullPath, string.Empty, false);
+
                     ProcessDirectory(fullPath);
                 }
                 return;

@@ -137,6 +137,10 @@ namespace AppCommon {
 
             for (int idx = 0; idx < addEntries.Length; idx++) {
                 AddFileEntry addEnt = addEntries[idx];
+                if (addEnt.IsDirectory) {
+                    // This will cause a bump in the progress meter.
+                    continue;
+                }
 
                 if (!addEnt.HasDataFork && addEnt.HasRsrcFork && !canRsrcFork) {
                     // Nothing but a resource fork, and we can't store those.  Report that
@@ -377,6 +381,9 @@ namespace AppCommon {
 
             for (int i = 0; i < addEntries.Length; i++) {
                 AddFileEntry addEnt = addEntries[i];
+                if (doStripPaths && addEnt.IsDirectory) {
+                    continue;
+                }
 
                 if (!addEnt.HasDataFork && addEnt.HasRsrcFork && !canRsrcFork) {
                     // Nothing but a resource fork, and we can't store those.  Report that
@@ -402,52 +409,67 @@ namespace AppCommon {
                 // Add the new file to subDirEnt.  See if it already exists.
                 string adjName = fileSystem.AdjustFileName(addEnt.StorageName);
                 if (fileSystem.TryFindFileEntry(subDirEnt, adjName, out IFileEntry newEntry)) {
-                    // File exists.  Skip or overwrite.
-                    bool doSkip = false;
-                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
-                        newEntry.FullPathName, newEntry.DirectorySeparatorChar);
-                    CallbackFacts.Results result = mFunc(facts);
-                    switch (result) {
-                        case CallbackFacts.Results.Cancel:
-                            isCancelled = true;
-                            return;
-                        case CallbackFacts.Results.Skip:
-                            doSkip = true;
-                            break;
-                        case CallbackFacts.Results.Overwrite:
-                            break;
-                        default:
-                            Debug.Assert(false);
-                            break;
-                    }
-                    if (doSkip) {
-                        continue;
-                    }
+                    if (addEnt.IsDirectory && !newEntry.IsDirectory) {
+                        throw new Exception("Cannot replace non-directory '" + newEntry.FileName +
+                            "' with directory");
+                    } else if (!addEnt.IsDirectory && newEntry.IsDirectory) {
+                        throw new Exception("Cannot replace directory '" + newEntry.FileName +
+                            "' with non-directory");
+                    } else if (!addEnt.IsDirectory && !newEntry.IsDirectory) {
+                        // File exists.  Skip or overwrite.
+                        bool doSkip = false;
+                        CallbackFacts facts =
+                            new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
+                                newEntry.FullPathName, newEntry.DirectorySeparatorChar);
+                        CallbackFacts.Results result = mFunc(facts);
+                        switch (result) {
+                            case CallbackFacts.Results.Cancel:
+                                isCancelled = true;
+                                return;
+                            case CallbackFacts.Results.Skip:
+                                doSkip = true;
+                                break;
+                            case CallbackFacts.Results.Overwrite:
+                                break;
+                            default:
+                                Debug.Assert(false);
+                                break;
+                        }
+                        if (doSkip) {
+                            continue;
+                        }
 
-                    if (newEntry.IsDubious || newEntry.IsDamaged) {
-                        throw new Exception("cannot overwrite damaged file: " +
-                            newEntry.FullPathName);
-                    }
+                        if (newEntry.IsDubious || newEntry.IsDamaged) {
+                            throw new Exception("cannot overwrite damaged file: " +
+                                newEntry.FullPathName);
+                        }
 
-                    // We can either delete the existing entry and create a new one, or merge
-                    // with the current contents, which might be helpful if the file on disk is
-                    // extended and we're only adding one fork.  The merge would retain the
-                    // current file attributes, so that adding a data fork wouldn't change the
-                    // file type.  (I think somebody asked about this once for CiderPress, but
-                    // I never did anything about it.  I can't find the request.)
-                    //
-                    // For now, just delete and recreate the entry.
-                    fileSystem.DeleteFile(newEntry);
-                    newEntry = IFileEntry.NO_ENTRY;
+                        // We can either delete the existing entry and create a new one, or merge
+                        // with the current contents, which might be helpful if the file on disk is
+                        // extended and we're only adding one fork.  The merge would retain the
+                        // current file attributes, so that adding a data fork wouldn't change the
+                        // file type.  (I think somebody asked about this once for CiderPress, but
+                        // I never did anything about it.  I can't find the request.)
+                        //
+                        // For now, just delete and recreate the entry.
+                        fileSystem.DeleteFile(newEntry);
+                        newEntry = IFileEntry.NO_ENTRY;
+                    }
                 }
 
                 if (newEntry == IFileEntry.NO_ENTRY) {
                     CreateMode mode = CreateMode.File;
                     if (addEnt.HasRsrcFork && canRsrcFork) {
                         mode = CreateMode.Extended;
+                    } else if (addEnt.IsDirectory) {
+                        mode = CreateMode.Directory;
                     }
                     // Create file and set file type, so DOS "cooked" mode works.
                     newEntry = fileSystem.CreateFile(subDirEnt, adjName, mode, addEnt.FileType);
+                }
+
+                if (addEnt.IsDirectory) {
+                    continue;
                 }
 
                 // add data fork

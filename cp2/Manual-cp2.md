@@ -327,11 +327,11 @@ archive name that ends in a recognized multi-file archive extension
 (i.e. not a disk image or a single-file archive format like AppleSingle),
 a new archive will be created.
 
-Empty directories will be ignored.
-
 If a file with the same (case-insensitive) name is found in the archive,
 the file will be either be skipped, or allowed to replace the existing entry.
 In interactive mode, the user will be prompted for the desired behavior.
+Plain files are not allowed to replace directories, and directories are not
+allowed to replace plain files.
 
 Resource forks and file attributes will be located according to the enabled
 `--from-*` options.  If the target archive does not support resource forks,

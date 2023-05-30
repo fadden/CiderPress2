@@ -33,6 +33,12 @@ namespace AppCommon {
         }
 
         /// <summary>
+        /// True if this is a directory.  The data/rsrc fork data fields should be blank.  Only
+        /// the storage path needs to be set.
+        /// </summary>
+        public bool IsDirectory { get; set; } = false;
+
+        /// <summary>
         /// True if this file has a data fork.
         /// </summary>
         public bool HasDataFork { get; set; } = false;

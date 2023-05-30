@@ -509,6 +509,7 @@ namespace cp2.Tests {
         private static void TestRecurse(ParamsBag parms) {
             string RECURSE_DIR = Path.Combine(SAMPLE_DIR, "Recurse");
             string RECURSE_SUBDIR = Path.Combine(RECURSE_DIR, "SubDir");
+            string RECURSE_EMPTYDIR = Path.Combine(RECURSE_DIR, "EmptyDir");
 
             // Create TestTmp/Samples/Recurse/Subdir
             Directory.CreateDirectory(RECURSE_SUBDIR);
@@ -521,10 +522,13 @@ namespace cp2.Tests {
                 }
             }
 
+            // Create empty TestTmp/Samples/Recurse/EmptyDir
+            Directory.CreateDirectory(RECURSE_EMPTYDIR);
+
             string arcName = "test-recurse.zip";
             string arcFileName = Path.Combine(Controller.TEST_TMP, arcName);
             if (!ArcUtil.HandleCreateFileArchive("cfa", new string[] { arcFileName }, parms)) {
-                throw new Exception("cfa " + arcFileName + " failed");
+                throw new Exception("Error: cfa " + arcFileName + " failed");
             }
 
             // Add a directory without recursion.  Should have no effect, and return false.
@@ -541,9 +545,44 @@ namespace cp2.Tests {
                     "' failed");
             }
 
-            // Probably no need to check actual file contents for this trivial test.
+            // Verify.  The empty directory should not be part of the Zip archive.
+            MemoryStream stdout = Controller.CaptureConsoleOut();
+            if (!Catalog.HandleList("list", new string[] { arcFileName }, parms)) {
+                throw new Exception("Error: list '" + arcFileName + "' failed");
+            }
+            string[] expected = new string[] {
+                testFileName1.Replace(Path.DirectorySeparatorChar,
+                    Zip.SCharacteristics.DefaultDirSep)
+            };
+            Controller.CompareLines(expected, stdout);
 
-            // Everything is in Recurse dir; no need to fuss over cleanup.
+            string diskName = "test-recurse.woz";
+            string diskFileName = Path.Combine(Controller.TEST_TMP, diskName);
+            if (!DiskUtil.HandleCreateDiskImage("cdi",
+                    new string[] { diskFileName, "140k", "PROdos" }, parms)) {
+                throw new Exception("Error: cdi " + diskFileName + " failed");
+            }
+            if (!Add.HandleAdd("add", new string[] { diskFileName, RECURSE_DIR }, parms)) {
+                throw new Exception("Error: add '" + diskFileName + "' '" + RECURSE_DIR +
+                    "' failed");
+            }
+
+            // Verify.  The empty directory should be present.
+            stdout = Controller.CaptureConsoleOut();
+            if (!Catalog.HandleList("list", new string[] { diskFileName }, parms)) {
+                throw new Exception("Error: list '" + diskFileName + "' failed");
+            }
+            char sep = Catalog.PATH_SEP_CHAR;
+            expected = new string[] {
+                Controller.TEST_TMP,
+                Controller.TEST_TMP + sep + SAMPLE_NAME,
+                Controller.TEST_TMP + sep + SAMPLE_NAME + sep + "Recurse",
+                Controller.TEST_TMP + sep + SAMPLE_NAME + sep + "Recurse" + sep + "EmptyDir",
+                Controller.TEST_TMP + sep + SAMPLE_NAME + sep + "Recurse" + sep + "SubDir",
+                Controller.TEST_TMP + sep + SAMPLE_NAME + sep + "Recurse" + sep + "SubDir" + sep +
+                    "TestFile",
+            };
+            Controller.CompareLines(expected, stdout);
         }
 
         private static void TestNAPSUnescape(ParamsBag parms) {
