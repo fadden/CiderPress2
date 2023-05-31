@@ -156,10 +156,11 @@ namespace cp2_wpf {
                 string title = "Information";
                 if (CurrentWorkObject is IArchive) {
                     IArchive arc = (IArchive)CurrentWorkObject;
-                    title = "File List";
+                    title = "File Archive Entry List";
                     mMainWin.SetNotesList(arc.Notes);
                 } else if (CurrentWorkObject is IDiskImage) {
                     IDiskImage disk = (IDiskImage)CurrentWorkObject;
+                    title = "Disk Image Information";
                     mMainWin.SetNotesList(disk.Notes);
 
                     if (CurrentWorkObject is IMetadata) {
@@ -167,10 +168,12 @@ namespace cp2_wpf {
                     }
                 } else if (CurrentWorkObject is IMultiPart) {
                     IMultiPart parts = (IMultiPart)CurrentWorkObject;
+                    title = "Multi-Partition Information";
                     mMainWin.SetNotesList(parts.Notes);
                     mMainWin.SetPartitionList(parts);
                 } else if (CurrentWorkObject is Partition) {
                     Partition part = (Partition)CurrentWorkObject;
+                    title = "Partition Information";
                     // no notes
                 }
                 DirectoryTreeItem newItem = new DirectoryTreeItem(title, IFileEntry.NO_ENTRY);
@@ -452,6 +455,7 @@ namespace cp2_wpf {
                         // Select something in what we just added.  If it was a disk image, we want
                         // to select the first filesystem, not the disk image itself.
                         ArchiveTreeItem.SelectBestFrom(newItem);
+                        return;
                     }
                 } finally {
                     Mouse.OverrideCursor = null;

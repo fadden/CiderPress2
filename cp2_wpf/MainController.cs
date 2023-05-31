@@ -591,16 +591,19 @@ namespace cp2_wpf {
         /// <summary>
         /// Obtains the current file list selection.
         /// </summary>
-        /// <param name="skipDir">True if directories should be skipped.</param>
-        /// <param name="skipOpenArc">True if open archives should be skipped.</param>
-        /// <param name="closeOpenArc">True if open archives should be closed.</param>
+        /// <param name="omitDir">True if directories should be omitted from the list.  This also
+        ///   prevents recursive descent.  Set when viewing entries.</param>
+        /// <param name="omitOpenArc">True if open archives should be omitted.  Set when
+        ///   viewing entries.</param>
+        /// <param name="closeOpenArc">True if open archives should be closed.  Set when
+        ///   extracting or deleting entries.</param>
         /// <param name="archiveOrFileSystem">Result: IArchive or IFileSystem object selected
         ///   in the archive tree, or null if no such object is selected.</param>
         /// <param name="selectionDir">Result: directory file entry selected in the directory
         ///   tree, or NO_ENTRY if no directory is selected (e.g. IArchive).</param>
         /// <param name="selected">Result: list of selected entries.</param>
         /// <returns>True if a non-empty list of selected items was found.</returns>
-        public bool GetFileSelection(bool skipDir, bool skipOpenArc, bool closeOpenArc,
+        public bool GetFileSelection(bool omitDir, bool omitOpenArc, bool closeOpenArc,
                 [NotNullWhen(true)] out object? archiveOrFileSystem,
                 out IFileEntry selectionDir,
                 [NotNullWhen(true)] out List<IFileEntry>? selected) {
@@ -608,6 +611,16 @@ namespace cp2_wpf {
             if (!GetSelectedArcDir(out archiveOrFileSystem, out DiskArcNode? unused,
                     out selectionDir)) {
                 return false;
+            }
+
+            // We don't need to check for open archives if nothing is open below this level,
+            // or if we don't feel the need to handle them specially.
+            bool doCheckOpen = false;
+            if (omitOpenArc || closeOpenArc) {
+                ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+                if (arcTreeSel != null) {
+                    doCheckOpen = arcTreeSel.Items.Count != 0;
+                }
             }
 
             DataGrid dg = mMainWin.fileListDataGrid;
@@ -620,34 +633,49 @@ namespace cp2_wpf {
             selected = new List<IFileEntry>(treeSel.Count);
             foreach (FileListItem listItem in treeSel) {
                 IFileEntry entry = listItem.FileEntry;
-                if (skipDir && entry.IsDirectory) {
-                    Debug.WriteLine("Selection skip dir: " + entry);
-                    continue;
+                if (entry.IsDirectory) {
+                    if (!omitDir) {
+                        selected.Add(listItem.FileEntry);
+                        AddDirEntries(listItem.FileEntry, selected);
+                    }
+                } else {
+                    selected.Add(listItem.FileEntry);
                 }
-                ArchiveTreeItem? treeItem =
-                    ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);
-                if (treeItem != null) {
-                    if (skipOpenArc) {
-                        Debug.WriteLine("Selection skip open arc: " + entry);
-                        continue;
-                    } else if (closeOpenArc) {
-                        // TODO - close open archive and remove from arc tree
+            }
+
+            // Handle open archives.
+            if (doCheckOpen) {
+                Debug.Assert(omitOpenArc || closeOpenArc);
+                for (int i = 0; i < selected.Count; i++) {
+                    IFileEntry entry = selected[i];
+                    if (entry.IsDirectory) {
                         continue;
                     }
+                    ArchiveTreeItem? treeItem =
+                        ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);
+                    if (treeItem != null) {
+                        if (omitOpenArc) {
+                            Debug.WriteLine("Selection skip open arc: " + entry);
+                            // Remove from list.
+                            selected.RemoveAt(i--);
+                        } else if (closeOpenArc) {
+                            Debug.WriteLine("Selection close open arc: " + entry);
+                            // Leave it in the list.
+                            CloseSubTree(treeItem);
+                        }
+                    }
                 }
-                selected.Add(listItem.FileEntry);
-            }
-
-            if (selected.Count == 0) {
-                Debug.WriteLine("Nothing viewable selected");
-                return false;
-            }
-
-            Debug.WriteLine("Current selection:");
-            foreach (IFileEntry entry in selected) {
-                Debug.WriteLine("  " + entry);
             }
             return true;
+        }
+
+        private void AddDirEntries(IFileEntry entry, List<IFileEntry> list) {
+            foreach (IFileEntry child in entry) {
+                list.Add(child);
+                if (child.IsDirectory) {
+                    AddDirEntries(child, list);
+                }
+            }
         }
 
         /// <summary>
@@ -801,8 +829,14 @@ namespace cp2_wpf {
                 return;
             }
 
-            if (!GetFileSelection(false, false, true, out archiveOrFileSystem,
-                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
+            if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
+                    out archiveOrFileSystem, out IFileEntry selectionDir,
+                    out List<IFileEntry>? selected)) {
+                return;
+            }
+            if (selected.Count == 0) {
+                MessageBox.Show(mMainWin, "No files selected.", "Empty", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
             DeleteProgress prog = new DeleteProgress(archiveOrFileSystem, daNode, selected,
@@ -825,8 +859,14 @@ namespace cp2_wpf {
         /// Handles Actions : Extract Files
         /// </summary>
         public void ExtractFiles() {
-            if (!GetFileSelection(false, false, true, out object? archiveOrFileSystem,
-                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
+            if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
+                    out object? archiveOrFileSystem, out IFileEntry selectionDir,
+                    out List<IFileEntry>? selected)) {
+                return;
+            }
+            if (selected.Count == 0) {
+                MessageBox.Show(mMainWin, "No files selected.", "Empty", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
@@ -856,8 +896,15 @@ namespace cp2_wpf {
         public void ViewFiles() {
             // TODO: if only one file is selected, select all files in the file list, to
             //   enable the forward/backward buttons in the viewer.
-            if (!GetFileSelection(true, true, false, out object? archiveOrFileSystem,
-                    out IFileEntry selectionDir, out List<IFileEntry>? selected)) {
+            if (!GetFileSelection(omitDir:true, omitOpenArc:true, closeOpenArc:false,
+                    out object? archiveOrFileSystem, out IFileEntry selectionDir,
+                    out List<IFileEntry>? selected)) {
+                return;
+            }
+            if (selected.Count == 0) {
+                MessageBox.Show(mMainWin, "No viewable files selected (can't view directories " +
+                    "or open disks/archives).", "Empty", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
