@@ -702,7 +702,7 @@ namespace cp2.Tests {
                     using (Stream arcStream = fs.OpenFile(arcEntry, FileAccessMode.ReadOnly,
                             FilePart.DataFork)) {
                         using (IArchive checkArc = Zip.OpenArchive(arcStream, parms.AppHook)) {
-                            int count = checkArc.ToList().Count;
+                            int count = checkArc.Count;
                             if (count != 1) {
                                 throw new Exception("Unexpected number of files: " + count);
                             }

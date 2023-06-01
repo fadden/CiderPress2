@@ -105,7 +105,7 @@ namespace DiskArcTests {
 
         private static void TestSingleFile(IArchive archive, AppHook appHook) {
             Debug.Assert(archive.Characteristics.HasSingleEntry);
-            if (archive.ToList().Count != 1) {
+            if (archive.Count != 1) {
                 throw new Exception("Empty archive is empty");
             }
 
@@ -171,7 +171,7 @@ namespace DiskArcTests {
             MemoryStream newStream;
 
             Debug.Assert(!archive.Characteristics.HasSingleEntry);
-            if (archive.ToList().Count != 0) {
+            if (archive.Count != 0) {
                 throw new Exception("Empty archive isn't empty");
             }
 
@@ -195,7 +195,7 @@ namespace DiskArcTests {
                 throw new Exception("Deleted record from other archive");
             } catch (FileNotFoundException) { /*expected*/ }
             archive.CommitTransaction(newStream = new MemoryStream());
-            if (archive.ToList().Count != 0) {
+            if (archive.Count != 0) {
                 throw new Exception("Deleted record didn't go away");
             }
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -23,42 +24,56 @@ using DiskArc.FS;
 using DiskArc;
 using static DiskArc.Defs;
 
+//
+// TODO (maybe): we might be able to improve latency when switching between large file lists by
+// caching FileListItem objects, perhaps in a Dictionary<IFileEntry, FileListItem>.  The cache
+// would be attached to the ArchiveTreeItem.
+//
+// Data virtualization would be better, but that's hard to do in WPF.
+//
+
 namespace cp2_wpf {
     /// <summary>
     /// Data object for the file list.  This is used for both file archives and disk images.
     /// Some of the fields are only relevant for one.
     /// </summary>
     public class FileListItem {
-        public IFileEntry FileEntry { get; set; }
+        private static readonly ControlTemplate sInvalidIcon =
+            (ControlTemplate)Application.Current.FindResource("icon_StatusInvalid");
+        private static readonly ControlTemplate sErrorIcon =
+            (ControlTemplate)Application.Current.FindResource("icon_StatusError");
 
-        public ControlTemplate? StatusIcon { get; set; }
-        public string FileName { get; set; }
-        public string PathName { get; set; }
-        public string Type { get; set; }
-        public string AuxType { get; set; }
-        //public string HFSType { get; set; }
-        //public string HFSCreator { get; set; }
-        public string CreateDate { get; set; }
-        public string ModDate { get; set; }
-        public string Access { get; set; }
-        public string DataLength { get; set; }
-        public string DataSize { get; set; }
-        public string DataFormat { get; set; }
-        public string RawDataLength { get; set; }
-        public string RsrcLength { get; set; }
-        public string RsrcSize { get; set; }
-        public string RsrcFormat { get; set; }
-        public string TotalSize { get; set; }
+        public IFileEntry FileEntry { get; private set; }
 
+        public ControlTemplate? StatusIcon { get; private set; }
+        public string FileName { get; private set; }
+        public string PathName { get; private set; }
+        public string Type { get; private set; }
+        public string AuxType { get; private set; }
+        //public string HFSType { get; private set; }
+        //public string HFSCreator { get; private set; }
+        public string CreateDate { get; private set; }
+        public string ModDate { get; private set; }
+        public string Access { get; private set; }
+        public string DataLength { get; private set; }
+        public string DataSize { get; private set; }
+        public string DataFormat { get; private set; }
+        public string RawDataLength { get; private set; }
+        public string RsrcLength { get; private set; }
+        public string RsrcSize { get; private set; }
+        public string RsrcFormat { get; private set; }
+        public string TotalSize { get; private set; }
+
+        /// <summary>
+        /// Constructor.  Fills out all properties from the file entry object.
+        /// </summary>
         public FileListItem(IFileEntry entry, Formatter fmt) {
             FileEntry = entry;
 
             if (entry.IsDubious) {
-                StatusIcon =
-                    (ControlTemplate)Application.Current.FindResource("icon_StatusInvalid");
+                StatusIcon = sInvalidIcon;
             } else if (entry.IsDamaged) {
-                StatusIcon =
-                    (ControlTemplate)Application.Current.FindResource("icon_StatusError");
+                StatusIcon = sErrorIcon;
             } else {
                 StatusIcon = null;
             }
@@ -170,7 +185,23 @@ namespace cp2_wpf {
                 RsrcLength = RsrcSize = RsrcFormat = string.Empty;
             }
 
-            TotalSize = totalSize.ToString();
+            if (entry is DOS_FileEntry) {
+                TotalSize = fmt.FormatSizeOnDisk(totalSize, SECTOR_SIZE);
+            } else if (entry is ProDOS_FileEntry || entry is HFS_FileEntry) {
+                TotalSize = fmt.FormatSizeOnDisk(totalSize, BLOCK_SIZE);
+            } else {
+                TotalSize = totalSize.ToString();
+            }
+        }
+
+        public static FileListItem? FindItemByEntry(ObservableCollection<FileListItem> tvRoot,
+                IFileEntry entry) {
+            foreach (FileListItem item in tvRoot) {
+                if (item.FileEntry == entry) {
+                    return item;
+                }
+            }
+            return null;
         }
 
         public override string ToString() {

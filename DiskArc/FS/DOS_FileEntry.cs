@@ -67,7 +67,7 @@ namespace DiskArc.FS {
 
         public IFileEntry ContainingDir { get; private set; }
 
-        public int ChildCount { get { return ChildList.Count; } }       // fake vol dir only
+        public int Count { get { return ChildList.Count; } }       // fake vol dir only
 
         public string FileName {
             get { return mFileName; }

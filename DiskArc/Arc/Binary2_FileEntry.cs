@@ -52,7 +52,7 @@ namespace DiskArc.Arc {
         public bool IsDiskImage => false;
 
         public IFileEntry ContainingDir => IFileEntry.NO_ENTRY;
-        public int ChildCount => 0;
+        public int Count => 0;
 
         public string FileName {
             get {

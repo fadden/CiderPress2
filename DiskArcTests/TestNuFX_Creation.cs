@@ -166,13 +166,13 @@ namespace DiskArcTests {
 
                 // Create an entry with a long name, then delete it before committing.
                 archive.StartTransaction();
-                int beforeCount = archive.ToList().Count;
+                int beforeCount = archive.Count;
                 IFileEntry newEntry3 = archive.CreateRecord();
                 newEntry3.FileName = "VERY/LONG/BUT/VALID/ENTRY/NAME";
                 newEntry3.DirectorySeparatorChar = '/';
                 archive.DeleteRecord(newEntry3);
                 archive.CommitTransaction(newStream = new MemoryStream());
-                if (archive.ToList().Count != beforeCount) {
+                if (archive.Count != beforeCount) {
                     throw new Exception("Archive grew even with deleted entry");
                 }
 

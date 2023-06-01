@@ -98,6 +98,7 @@ namespace DiskArc.Arc {
         IEnumerator IEnumerable.GetEnumerator() {
             return RecordList.GetEnumerator();
         }
+        public int Count => RecordList.Count;
 
         //
         // Internal interfaces.

@@ -164,7 +164,7 @@ namespace DiskArc {
         /// return zero.</para>
         /// <para>File archives: always zero.</para>
         /// </remarks>
-        int ChildCount { get; }
+        int Count { get; }
 
         /// <summary>
         /// Filename, converted to printable Unicode (Basic Multilingual Plane only).  For
@@ -468,7 +468,7 @@ namespace DiskArc {
         public bool IsDiskImage => throw new NotImplementedException();
 
         public IFileEntry ContainingDir => throw new NotImplementedException();
-        public int ChildCount => throw new NotImplementedException();
+        public int Count => throw new NotImplementedException();
 
         public string FileName {
             get => throw new NotImplementedException();

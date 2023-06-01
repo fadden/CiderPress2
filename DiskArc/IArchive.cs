@@ -102,6 +102,11 @@ namespace DiskArc {
         /// </remarks>
         string Comment { get; set; }
 
+        /// <summary>
+        /// Number of entries in archive.
+        /// </summary>
+        int Count { get; }
+
 
         /// <summary>
         /// Provides a re-opened stream to the archive object.  Useful if the underlying file

@@ -101,44 +101,6 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Refreshes the contents of the directory tree and file list.  Call this after a
-        /// change has been made, such as adding or deleting files, or when the file list mode
-        /// has been toggled from single-directory to full list.
-        /// </summary>
-        /// <remarks>
-        /// <para>All of the file information from filesystems and archives is cached in
-        /// memory, so re-scanning the existing contents is very fast, especially when compared
-        /// to WPF repopulating the control.  HFS and ProDOS are effectively limited to 64K
-        /// files per volume, but file archives can be much larger.</para>
-        /// </remarks>
-        internal void RefreshDirAndFileList() {
-            // TODO:
-            // - get IFileEntry for selected directory and file entry (which may be invalid)
-            // - scan directory list to see if it has changed
-            //   - if it has, discard it, reconstruct it, and try to mark the previously-selected
-            //     directory as selected; this will cause the file list to be regenerated
-            //   - if it hasn't, we need to explicitly regenerate the file list
-            // - regenerating the file list every time makes sense, because we only call here
-            //   after an operation that makes a change, and the user can only change things that
-            //   are in the file list
-            // - we could try to "diff" the file list, inserting items that were added and
-            //   removing items that were deleted, but that's trouble-prone
-            // - we shouldn't call here for file attribute editing; just update the file entry
-            //   properties (and, for a dir rename, dir entry properties) and raise the
-            //   "updated" flag
-            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? unused1,
-                    out IFileEntry unused2)) {
-                return;
-            }
-            if (archiveOrFileSystem is IArchive) {
-                AddArchiveItems((IArchive)archiveOrFileSystem);
-            } else {
-                AddDiskItems(((IFileSystem)archiveOrFileSystem).GetVolDirEntry());
-            }
-
-        }
-
-        /// <summary>
         /// Prepares a work file for use.
         /// </summary>
         /// <param name="pathName">File pathname.</param>
@@ -187,7 +149,7 @@ namespace cp2_wpf {
             if (CurrentWorkObject is IFileSystem) {
                 ObservableCollection<DirectoryTreeItem> tvRoot = mMainWin.DirectoryTreeRoot;
                 IFileSystem fs = (IFileSystem)CurrentWorkObject;
-                DirectoryTreeItem.PopulateDirectoryTree(tvRoot, fs, fs.GetVolDirEntry(), mAppHook);
+                PopulateDirectoryTree(tvRoot, fs.GetVolDirEntry());
                 tvRoot[0].IsSelected = true;
                 mMainWin.SetNotesList(fs.Notes);
             } else {
@@ -332,79 +294,342 @@ namespace cp2_wpf {
                 return;
             }
 
-            bool usingFileList = true;
             if (CurrentWorkObject is IArchive) {
-                AddArchiveItems((IArchive)CurrentWorkObject);
-                mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.FullList);
+                // There isn't really any content in the directory tree, but we'll get this event
+                // when the entry representing the entire archive is selected.
                 bool hasRsrc = ((IArchive)CurrentWorkObject).Characteristics.HasResourceForks;
                 if (CurrentWorkObject is Zip) {
                     // TODO: follow MacZip setting
                     hasRsrc = true;
                 }
-                mMainWin.SetColumnConfig(isArchive:true, hasRsrc:hasRsrc, hasRaw:false);
+                mMainWin.ConfigureCenterPanel(isInfoOnly:false, isArchive:true,
+                    isHierarchic:true, hasRsrc:hasRsrc, hasRaw:false);
+                //RefreshDirAndFileList();
             } else if (CurrentWorkObject is IFileSystem) {
-                AddDiskItems(newSel.FileEntry);
-                if (((IFileSystem)CurrentWorkObject).Characteristics.IsHierarchical) {
-                    mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.DirList);
-                } else {
-                    mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.FullList);
-                }
                 bool hasRsrc = ((IFileSystem)CurrentWorkObject).Characteristics.HasResourceForks;
-                mMainWin.SetColumnConfig(isArchive:false, hasRsrc:hasRsrc,
-                    hasRaw:CurrentWorkObject is DOS);
+                bool isHier = ((IFileSystem)CurrentWorkObject).Characteristics.IsHierarchical;
+                mMainWin.ConfigureCenterPanel(isInfoOnly:false, isArchive:false,
+                    isHierarchic:isHier, hasRsrc:hasRsrc, hasRaw:CurrentWorkObject is DOS);
+                if (mMainWin.ShowSingleDirFileList) {
+                    RefreshDirAndFileList();
+                } else {
+                    RefreshDirAndFileList();
+
+                    // Find the directory entry in the full file list.  This will fail for the
+                    // volume dir.  We need to select by item, not index, because the file list
+                    // uses the DataGrid header sorting.
+                    FileListItem? dirItem =
+                        FileListItem.FindItemByEntry(mMainWin.FileList, newSel.FileEntry);
+                    if (dirItem != null) {
+                        mMainWin.fileListDataGrid.SelectedItem = dirItem;
+                        mMainWin.fileListDataGrid.ScrollIntoView(dirItem);
+                    }
+                }
             } else {
-                mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.InfoOnly);
-                usingFileList = false;
-            }
-
-            SetEntryCounts(usingFileList, CurrentWorkObject as IFileSystem);
-
-            if (usingFileList && mMainWin.FileList.Count > 0) {
-                // Set selection to first item, and scroll up if needed.
-                mMainWin.fileListDataGrid.SelectedIndex = 0;
-                mMainWin.fileListDataGrid.ScrollIntoView(mMainWin.fileListDataGrid.SelectedItem);
+                mMainWin.ConfigureCenterPanel(isInfoOnly:true, isArchive:false,
+                    isHierarchic:false, hasRsrc:false, hasRaw:false);
+                ClearEntryCounts();
             }
         }
 
-        private void AddArchiveItems(IArchive arc) {
-            mMainWin.FileList.Clear();
-            foreach (IFileEntry entry in arc) {
-                mMainWin.FileList.Add(new FileListItem(entry, mFormatter));
+        /// <summary>
+        /// Refreshes the contents of the directory tree and file list.  Call this after a
+        /// change has been made, such as adding or deleting files, or when the file list mode
+        /// has been toggled from single-directory to full list.
+        /// </summary>
+        /// <remarks>
+        /// <para>All of the file information from filesystems and archives is cached in
+        /// memory, so re-scanning the existing contents is very fast, especially when compared
+        /// to re-rendering the strings and having WPF repopulate the control.  HFS and ProDOS
+        /// are effectively limited to 64K files per volume, but file archives can be much
+        /// larger.  This means we can do a quick "should we re-render" check here instead of
+        /// trying to keep track of whether the contents are dirty.</para>
+        /// </remarks>
+        internal void RefreshDirAndFileList() {
+            if (CurrentWorkObject is IFileSystem) {
+                IFileSystem fs = (IFileSystem)CurrentWorkObject;
+
+                // Get currently selected item in directory tree.  May be null.
+                IFileEntry curSel = IFileEntry.NO_ENTRY;
+                DirectoryTreeItem? dirTreeSel =
+                    mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+                if (dirTreeSel != null) {
+                    curSel = dirTreeSel.FileEntry;
+                }
+
+                // Walk through population of the directory tree to see if it matches what
+                // we currently have.
+                ObservableCollection<DirectoryTreeItem> rootList = mMainWin.DirectoryTreeRoot;
+                IFileEntry volDir = fs.GetVolDirEntry();
+                if (!VerifyDirectoryTree(rootList, volDir, 0)) {
+                    Debug.WriteLine("Re-populate directory tree");
+                    rootList.Clear();
+                    PopulateDirectoryTree(rootList, volDir);
+
+                    // Try to restore the previous selection.  If there wasn't a selection, or
+                    // the previous selection no longer exists, select the root node.
+                    if (curSel == IFileEntry.NO_ENTRY ||
+                            !DirectoryTreeItem.SelectItemByEntry(rootList, curSel)) {
+                        rootList[0].IsSelected = true;
+                    }
+                } else {
+                    Debug.WriteLine("Not repopulating directory tree");
+                }
+            }
+
+            if (!VerifyFileList()) {
+                PopulateFileList();
+            } else {
+                Debug.WriteLine("Not repopulating file list");
             }
         }
 
-        private void AddDiskItems(IFileEntry dirEntry) {
-            DateTime startWhen = DateTime.Now;
-            mMainWin.FileList.Clear();
+        /// <summary>
+        /// Recursively populates the directory tree view from an IFileSystem object.
+        /// </summary>
+        /// <param name="tvRoot">Level where the directory should be added.</param>
+        /// <param name="dirEntry">Directory entry object to add.</param>
+        private static void PopulateDirectoryTree(ObservableCollection<DirectoryTreeItem> tvRoot,
+                IFileEntry dirEntry) {
+            DirectoryTreeItem newItem = new DirectoryTreeItem(dirEntry.FileName, dirEntry);
+            tvRoot.Add(newItem);
             foreach (IFileEntry entry in dirEntry) {
-                mMainWin.FileList.Add(new FileListItem(entry, mFormatter));
+                if (entry.IsDirectory) {
+                    PopulateDirectoryTree(newItem.Items, entry);
+                }
             }
-            Debug.WriteLine("Added disk items for " + dirEntry + " in " +
-                (DateTime.Now - startWhen).TotalMilliseconds + " ms");
+        }
+
+        /// <summary>
+        /// Verifies that the directory tree matches the current filesystem layout.
+        /// </summary>
+        /// <param name="tvRoot">Level to check.</param>
+        /// <param name="dirEntry">Directory entry we expect to find here.</param>
+        /// <param name="index">Index of entry in tvRoot.</param>
+        /// <returns>True if all is well, false if a mismatch was found.</returns>
+        private static bool VerifyDirectoryTree(ObservableCollection<DirectoryTreeItem> tvRoot,
+                IFileEntry dirEntry, int index) {
+            if (index >= tvRoot.Count) {
+                // Filesystem has more directories; we added one, or the list got cleared.
+                return false;
+            }
+            DirectoryTreeItem item = tvRoot[index];
+            int childIndex = 0;
+            foreach (IFileEntry entry in dirEntry) {
+                if (entry.IsDirectory) {
+                    if (!VerifyDirectoryTree(item.Items, entry, childIndex++)) {
+                        return false;
+                    }
+                }
+            }
+            if (childIndex != item.Items.Count) {
+                // Filesystem has fewer directories.
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Verifies that the file list matches the current configuration.
+        /// </summary>
+        /// <returns>True if all is well, false if a mismatch was found.</returns>
+        private bool VerifyFileList() {
+            if (CurrentWorkObject is IArchive) {
+                return VerifyFileList(mMainWin.FileList, (IArchive)CurrentWorkObject);
+            } else if (CurrentWorkObject is IFileSystem) {
+                if (mMainWin.ShowSingleDirFileList) {
+                    DirectoryTreeItem? dirTreeSel =
+                        mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+                    if (dirTreeSel == null) {
+                        return false;
+                    }
+                    return VerifyFileList(mMainWin.FileList, dirTreeSel.FileEntry);
+                } else {
+                    return VerifyFileList(mMainWin.FileList, (IFileSystem)CurrentWorkObject);
+                }
+            } else {
+                Debug.Assert(false, "can't verify " + CurrentWorkObject);
+                return false;
+            }
+        }
+
+        internal void PopulateFileList() {
+            IFileEntry selEntry = IFileEntry.NO_ENTRY;
+            FileListItem? selectedItem = (FileListItem?)mMainWin.fileListDataGrid.SelectedItem;
+            if (selectedItem != null) {
+                selEntry = selectedItem.FileEntry;
+            }
+            ObservableCollection<FileListItem> fileList = mMainWin.FileList;
+
+            DateTime clearWhen = DateTime.Now;
+            fileList.Clear();
+            DateTime startWhen = DateTime.Now;
+
+            int dirCount = 0;
+            int fileCount = 0;
+            if (CurrentWorkObject is IArchive) {
+                PopulateEntriesFromArchive((IArchive)CurrentWorkObject,
+                    ref dirCount, ref fileCount, fileList);
+            } else if (CurrentWorkObject is IFileSystem) {
+                if (mMainWin.ShowSingleDirFileList) {
+                    DirectoryTreeItem? dirTreeSel =
+                        mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+                    if (dirTreeSel != null) {
+                        PopulateEntriesFromSingleDir(dirTreeSel.FileEntry,
+                            ref dirCount, ref fileCount, fileList);
+                    }
+                } else {
+                    PopulateEntriesFromFullDisk(((IFileSystem)CurrentWorkObject!).GetVolDirEntry(),
+                        ref dirCount, ref fileCount, fileList);
+                }
+            } else {
+                Debug.Assert(false, "work object is " + CurrentWorkObject);
+            }
+
+            DateTime endWhen = DateTime.Now;
+            Debug.WriteLine("File list refresh done in " +
+                (endWhen - startWhen).TotalMilliseconds + " ms (clear took " +
+                (startWhen - clearWhen).TotalMilliseconds + " ms)");
+
+            // If the list isn't empty, select something, preferrably whatever was selected before.
+            if (fileList.Count != 0) {
+                FileListItem? reselItem = null;
+                if (selEntry != IFileEntry.NO_ENTRY) {
+                    reselItem = FileListItem.FindItemByEntry(fileList, selEntry);
+                }
+                if (reselItem != null) {
+                    mMainWin.fileListDataGrid.SelectedItem = reselItem;
+                    mMainWin.fileListDataGrid.ScrollIntoView(reselItem);
+                } else {
+                    // Select the first item in the list.
+                    mMainWin.fileListDataGrid.SelectedIndex = 0;
+                    mMainWin.fileListDataGrid.ScrollIntoView(
+                        mMainWin.fileListDataGrid.SelectedItem);
+                }
+            }
+
+            SetEntryCounts(CurrentWorkObject as IFileSystem, dirCount, fileCount);
+        }
+
+        private void PopulateEntriesFromArchive(IArchive arc, ref int dirCount,
+                ref int fileCount, ObservableCollection<FileListItem> fileList) {
+            foreach (IFileEntry entry in arc) {
+                if (entry.IsDirectory) {
+                    dirCount++;
+                } else {
+                    fileCount++;
+                }
+                fileList.Add(new FileListItem(entry, mFormatter));
+            }
+        }
+
+        private void PopulateEntriesFromSingleDir(IFileEntry dirEntry, ref int dirCount,
+                ref int fileCount, ObservableCollection<FileListItem> fileList) {
+            foreach (IFileEntry entry in dirEntry) {
+                if (entry.IsDirectory) {
+                    dirCount++;
+                } else {
+                    fileCount++;
+                }
+                fileList.Add(new FileListItem(entry, mFormatter));
+            }
+        }
+
+        private void PopulateEntriesFromFullDisk(IFileEntry curDirEntry, ref int dirCount,
+                ref int fileCount, ObservableCollection<FileListItem> fileList) {
+            foreach (IFileEntry entry in curDirEntry) {
+                fileList.Add(new FileListItem(entry, mFormatter));
+                if (entry.IsDirectory) {
+                    dirCount++;
+                    PopulateEntriesFromFullDisk(entry, ref dirCount, ref fileCount, fileList);
+                } else {
+                    fileCount++;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that the file list matches the contents of an archive.
+        /// </summary>
+        /// <param name="fileList">List of files to compare to.</param>
+        /// <param name="arc">Archive reference.</param>
+        /// <returns>True if all is well.</returns>
+        private static bool VerifyFileList(ObservableCollection<FileListItem> fileList,
+                IArchive arc) {
+            if (fileList.Count != arc.Count) {
+                return false;
+            }
+            int index = 0;
+            foreach (IFileEntry entry in arc) {
+                if (fileList[index].FileEntry != entry) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Verifies that the file list matches the contents of a single directory.
+        /// </summary>
+        private static bool VerifyFileList(ObservableCollection<FileListItem> fileList,
+                IFileEntry dirEntry) {
+            int index = 0;
+            bool ok = VerifyFileList(fileList, ref index, dirEntry, false);
+            return (ok && index == fileList.Count);
+        }
+
+        /// <summary>
+        /// Verifies that the file list matches the contents of a full filesystem.
+        /// </summary>
+        private static bool VerifyFileList(ObservableCollection<FileListItem> fileList,
+                IFileSystem fs) {
+            int index = 0;
+            bool ok = VerifyFileList(fileList, ref index, fs.GetVolDirEntry(), true);
+            return (ok && index == fileList.Count);
+        }
+
+        /// <summary>
+        /// Recursively verifies disk contents.
+        /// </summary>
+        private static bool VerifyFileList(ObservableCollection<FileListItem> fileList,
+                ref int index, IFileEntry dirEntry, bool doRecurse) {
+            if (index >= fileList.Count) {
+                return false;
+            }
+            foreach (IFileEntry entry in dirEntry) {
+                if (fileList[index].FileEntry != entry) {
+                    return false;
+                }
+                index++;
+                if (doRecurse && entry.IsDirectory) {
+                    if (!VerifyFileList(fileList, ref index, entry, doRecurse)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>
         /// Sets the file/directory counts for the status bar.
         /// </summary>
-        private void SetEntryCounts(bool usingFileList, IFileSystem? fs) {
-            if (!usingFileList) {
-                mMainWin.CenterStatusText = string.Empty;
-                return;
-            }
-            int dirCount = 0;
-            int fileCount = 0;
-            foreach (FileListItem item in mMainWin.FileList) {
-                if (item.FileEntry.IsDirectory) {
-                    dirCount++;
-                } else {
-                    fileCount++;
-                }
-            }
+        /// <param name="fs">Filesystem reference, or null if this is an IArchive.</param>
+        /// <param name="dirCount">Number of directories.</param>
+        /// <param name="fileCount">Number of files.</param>
+        private void SetEntryCounts(IFileSystem? fs, int dirCount, int fileCount) {
             StringBuilder sb = new StringBuilder();
             sb.Append(fileCount);
-            sb.Append(" files, ");
+            if (fileCount == 1) {
+                sb.Append(" file, ");
+            } else {
+                sb.Append(" files, ");
+            }
             sb.Append(dirCount);
-            sb.Append(" directories");
+            if (dirCount == 1) {
+                sb.Append(" directory");
+            } else {
+                sb.Append(" directories");
+            }
             if (fs != null) {
                 int baseUnit;
                 if (fs is DOS) {
@@ -422,6 +647,9 @@ namespace cp2_wpf {
             mMainWin.CenterStatusText = sb.ToString();
         }
 
+        /// <summary>
+        /// Clears the file/directory count text.
+        /// </summary>
         private void ClearEntryCounts() {
             mMainWin.CenterStatusText = string.Empty;
         }

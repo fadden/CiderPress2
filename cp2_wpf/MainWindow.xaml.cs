@@ -415,13 +415,19 @@ namespace cp2_wpf {
             mMainCtrl.ScanForSubVol();
         }
         private void ShowDirListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            ShowSingleDirFileList = true;
-            mMainCtrl.RefreshDirAndFileList();
+            PreferSingleDirList = true;
+            if (!ShowSingleDirFileList) {
+                ShowSingleDirFileList = true;
+                mMainCtrl.PopulateFileList();
+            }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
         private void ShowFullListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            ShowSingleDirFileList = false;
-            mMainCtrl.RefreshDirAndFileList();
+            PreferSingleDirList = false;
+            if (ShowSingleDirFileList) {
+                ShowSingleDirFileList = false;
+                mMainCtrl.PopulateFileList();
+            }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
         private void ShowInfoCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
@@ -502,37 +508,13 @@ namespace cp2_wpf {
 
         #region Center Panel
 
-        // The type of data available for the center panel.  This tells us if it's
-        // files+info or just info.
-        public enum CenterPanelContents { Unknown = 0, InfoOnly, FullList, DirList }
-        public void SetCenterPanelContents(CenterPanelContents cont) {
-            mCenterPanelContents = cont;
-            switch (cont) {
-                case CenterPanelContents.InfoOnly:
-                    SetShowCenterInfo(CenterPanelChange.Info);
-                    IsFullListEnabled = IsDirListEnabled = false;
-                    break;
-                case CenterPanelContents.FullList:
-                    SetShowCenterInfo(CenterPanelChange.Files);
-                    IsFullListEnabled = true;
-                    IsDirListEnabled = false;
-                    break;
-                case CenterPanelContents.DirList:
-                    SetShowCenterInfo(CenterPanelChange.Files);
-                    IsFullListEnabled = IsDirListEnabled = true;
-                    break;
-            }
-        }
-        private CenterPanelContents mCenterPanelContents = CenterPanelContents.Unknown;
-
         // This determines whether we're showing a file list or the info panel.  It does not
         // affect the contents of the file list (full or dir).
         public enum CenterPanelChange { Unknown = 0, Files, Info, Toggle }
         public bool ShowCenterFileList { get { return !mShowCenterInfo; } }
         public bool ShowCenterInfoPanel { get { return mShowCenterInfo; } }
         private void SetShowCenterInfo(CenterPanelChange req) {
-            if (mCenterPanelContents == CenterPanelContents.InfoOnly &&
-                    req != CenterPanelChange.Info) {
+            if (HasInfoOnly && req != CenterPanelChange.Info) {
                 Debug.WriteLine("Ignoring attempt to switch to file list");
                 return;
             }
@@ -566,24 +548,60 @@ namespace cp2_wpf {
 
         /// <summary>
         /// <para>This determines whether we populate the file list with the full set of files
-        /// or just those in the current directory.  For IArchive and non-hierarchical
-        /// filesystems, the value is ignored.</para>
+        /// or just those in the current directory.</para>
         /// </summary>
         public bool ShowSingleDirFileList {
             get { return mShowSingleDirFileList; }
             set { mShowSingleDirFileList = ShowCol_FileName = value; ShowCol_PathName = !value; }
         }
-        private bool mShowSingleDirFileList = true;
+        private bool mShowSingleDirFileList;
 
         /// <summary>
-        /// Configures column visibility based on what kind of data we're showing.
+        /// Remember if we prefer single-dir or full-file view for hierarchical filesystems.
         /// </summary>
+        private bool PreferSingleDirList { get; set; } = true;
+
+        /// <summary>
+        /// True if the current display doesn't have a file list.
+        /// </summary>
+        private bool HasInfoOnly { get; set; }
+
+        /// <summary>
+        /// Configures column visibility based on what kind of data we're showing.  Call this
+        /// after <see cref="SetCenterPanelContents"/>.
+        /// </summary>
+        /// <param name="isInfoOnly">Are there no files to display?</param>
         /// <param name="isArchive">Is this a file archive?</param>
+        /// <param name="isHierarchic">Is the file list hierarchical?</param>
         /// <param name="hasRsrc">Does this have resource forks?</param>
         /// <param name="hasRaw">Does this have "raw" files (DOS 3.x)?</param>
-        public void SetColumnConfig(bool isArchive, bool hasRsrc, bool hasRaw) {
-            ShowCol_FileName = mShowSingleDirFileList;
-            ShowCol_PathName = !mShowSingleDirFileList;
+        public void ConfigureCenterPanel(bool isInfoOnly, bool isArchive, bool isHierarchic,
+                bool hasRsrc, bool hasRaw) {
+            // We show the PathName column for file archives, and for hierarchical filesystems
+            // if the user has requested a full-file list.  Show FileName for non-hierarchical
+            // filesystems and for the directory list.
+            ShowSingleDirFileList = !(isArchive || (isHierarchic && !PreferSingleDirList));
+            HasInfoOnly = isInfoOnly;
+            if (HasInfoOnly) {
+                SetShowCenterInfo(CenterPanelChange.Info);
+            } else {
+                SetShowCenterInfo(CenterPanelChange.Files);
+            }
+
+            if (isInfoOnly) {
+                IsFullListEnabled = IsDirListEnabled = false;
+            } else if (isArchive) {
+                IsFullListEnabled = true;
+                IsDirListEnabled = false;
+                Debug.Assert(!ShowSingleDirFileList);
+            } else if (isHierarchic) {
+                IsFullListEnabled = IsDirListEnabled = true;
+                Debug.Assert(ShowSingleDirFileList == PreferSingleDirList);
+            } else {
+                IsFullListEnabled = false;
+                IsDirListEnabled = true;
+                Debug.Assert(ShowSingleDirFileList);
+            }
 
             ShowCol_Format = isArchive;
             ShowCol_RawLen = hasRaw;
@@ -639,6 +657,19 @@ namespace cp2_wpf {
             set { mCenterInfoText2 = value; OnPropertyChanged(); }
         }
         private string mCenterInfoText2 = string.Empty;
+
+        /// <summary>
+        /// Clears the partition, notes, and metadata lists displayed on the center panel.
+        /// </summary>
+        public void ClearCenterInfo() {
+            PartitionList.Clear();
+            ShowPartitionLayout = false;
+            NotesList.Clear();
+            ShowNotes = false;
+
+            MetadataList.Clear();
+            ShowMetadata = false;
+        }
 
         public bool ShowPartitionLayout {
             get { return mShowPartitionLayout; }
@@ -744,19 +775,6 @@ namespace cp2_wpf {
                 NotesList.Add(note);
             }
             ShowNotes = (notes.Count > 0);
-        }
-
-        /// <summary>
-        /// Clears the partition list and notes list displayed on the center panel.
-        /// </summary>
-        public void ClearCenterInfo() {
-            PartitionList.Clear();
-            ShowPartitionLayout = false;
-            NotesList.Clear();
-            ShowNotes = false;
-
-            MetadataList.Clear();
-            ShowMetadata = false;
         }
 
         private void FileList_MouseDoubleClick(object sender, MouseButtonEventArgs e) {

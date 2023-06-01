@@ -49,7 +49,7 @@ namespace DiskArc.FS {
 
         public IFileEntry ContainingDir { get; private set; }
 
-        public int ChildCount { get { return mChildList.Count; } }
+        public int Count { get { return mChildList.Count; } }
 
         public string FullPathName {
             get {

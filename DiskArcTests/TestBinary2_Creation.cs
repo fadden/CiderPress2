@@ -180,7 +180,7 @@ namespace DiskArcTests {
 
                 // Play with very long file names.
                 archive.StartTransaction();
-                int beforeCount = archive.ToList().Count;
+                int beforeCount = archive.Count;
                 IFileEntry newEntry3 = archive.CreateRecord();
                 newEntry3.FileName = "VERY/LONG/BUT/VALID/ENTRY/NAME";
                 try {
@@ -196,7 +196,7 @@ namespace DiskArcTests {
                 // Now delete it before committing.
                 archive.DeleteRecord(newEntry3);
                 archive.CommitTransaction(newStream = new MemoryStream());
-                if (archive.ToList().Count != beforeCount) {
+                if (archive.Count != beforeCount) {
                     throw new Exception("Archive grew even with deleted entry");
                 }
 
@@ -351,7 +351,7 @@ namespace DiskArcTests {
         public static void TestBigSmall(AppHook appHook) {
             MemoryStream empty = new MemoryStream(0);
             using (Binary2 archive = Binary2.OpenArchive(empty, appHook)) {
-                if (archive.ToList().Count != 0) {
+                if (archive.Count != 0) {
                     throw new Exception("Should have been empty");
                 }
 
@@ -366,7 +366,7 @@ namespace DiskArcTests {
                 }
                 MemoryStream newStream = new MemoryStream();
                 archive.CommitTransaction(newStream);
-                if (archive.ToList().Count != Binary2.MAX_RECORDS) {
+                if (archive.Count != Binary2.MAX_RECORDS) {
                     throw new Exception("Should be full");
                 }
 

@@ -34,7 +34,14 @@ namespace cp2_wpf {
         /// </summary>
         public string Name { get; set; }
 
+        /// <summary>
+        /// Directory file entry for this item.
+        /// </summary>
         public IFileEntry FileEntry { get; set; }
+
+        /// <summary>
+        /// List of child items.
+        /// </summary>
         public ObservableCollection<DirectoryTreeItem> Items { get; set; }
 
         // INotifyPropertyChanged
@@ -83,24 +90,6 @@ namespace cp2_wpf {
 
         public override string ToString() {
             return "[DirectoryTreeItem: name='" + Name + "' entry=" + FileEntry + "]";
-        }
-
-        /// <summary>
-        /// Recursively populates the directory tree view from an IFileSystem object.
-        /// </summary>
-        /// <param name="tvRoot">Level where new items should be added.</param>
-        /// <param name="fs">Filesystem object.</param>
-        /// <param name="dirEntry">Directory entry object.</param>
-        /// <param name="appHook">Application hook reference.</param>
-        public static void PopulateDirectoryTree(ObservableCollection<DirectoryTreeItem> tvRoot,
-                IFileSystem fs, IFileEntry dirEntry, AppHook appHook) {
-            DirectoryTreeItem newItem = new DirectoryTreeItem(dirEntry.FileName, dirEntry);
-            tvRoot.Add(newItem);
-            foreach (IFileEntry entry in dirEntry) {
-                if (entry.IsDirectory) {
-                    PopulateDirectoryTree(newItem.Items, fs, entry, appHook);
-                }
-            }
         }
 
         public static bool SelectItemByEntry(ObservableCollection<DirectoryTreeItem> tvRoot,

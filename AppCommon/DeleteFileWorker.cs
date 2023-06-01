@@ -86,7 +86,7 @@ namespace AppCommon {
         /// Deletes a list of files from a disk image.
         /// </summary>
         /// <remarks>
-        /// <para>The list of files must be in sorted order.  Any descending sort should work.
+        /// <para>The list of files must be in sorted order.  Any ascending sort should work.
         /// We just need the contents of each subdirectory to appear after the entry for
         /// the subdirectory itself.</para>
         /// </remarks>

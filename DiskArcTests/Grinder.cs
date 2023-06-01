@@ -238,7 +238,7 @@ namespace DiskArcTests {
 
         private void DeleteEmptyDirs(IFileEntry dirEntry) {
             // Recursively check all children.
-            if (dirEntry.ChildCount != 0) {
+            if (dirEntry.Count != 0) {
                 // Get a copy of the directory's child list, so we're not iterating over
                 // the list that gets modified when we delete a dir.
                 List<IFileEntry> kids = dirEntry.ToList();
@@ -250,7 +250,7 @@ namespace DiskArcTests {
             }
 
             // If we're now empty, delete ourselves.
-            if (dirEntry.ChildCount == 0 && dirEntry.ContainingDir != IFileEntry.NO_ENTRY) {
+            if (dirEntry.Count == 0 && dirEntry.ContainingDir != IFileEntry.NO_ENTRY) {
                 mFileSystem.DeleteFile(dirEntry);
                 if (!mDirs.Remove(dirEntry)) {
                     throw new Exception("Failed to discard deleted directory entry");
@@ -327,7 +327,7 @@ namespace DiskArcTests {
             mFiles.RemoveAt(fileIndex);
 
             // Walk up the tree, removing empty directories.
-            while (parent.ChildCount == 0) {
+            while (parent.Count == 0) {
                 if (parent.ContainingDir == IFileEntry.NO_ENTRY) {
                     // This is the volume dir, which we can't remove.  (This means we're done
                     // with the contraction phase; that'll get noticed later.)

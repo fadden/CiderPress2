@@ -54,7 +54,7 @@ namespace DiskArcTests {
                                 // One warning, for DOS MASTER embedded volume.
                                 Helper.CheckNotes(fs1, 1, 0);
                                 IFileEntry rootDir1 = fs1.GetVolDirEntry();
-                                if (rootDir1.ChildCount != 3) {
+                                if (rootDir1.Count != 3) {
                                     throw new Exception("Unexpected number of files");
                                 }
                                 break;
@@ -67,7 +67,7 @@ namespace DiskArcTests {
                                 fs2.PrepareFileAccess(true);
                                 Helper.CheckNotes(fs2, 0, 0);
                                 IFileEntry rootDir2 = fs2.GetVolDirEntry();
-                                if (rootDir2.ChildCount != 1) {
+                                if (rootDir2.Count != 1) {
                                     throw new Exception("Unexpected number of files");
                                 }
                                 break;
