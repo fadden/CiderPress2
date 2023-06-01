@@ -106,6 +106,10 @@ namespace cp2_wpf {
             }
         }
 
+        //
+        // Recent-used file tracking.
+        //
+
         public bool ShowRecentFile1 {
             get { return !string.IsNullOrEmpty(mRecentFileName1); }
         }
@@ -411,11 +415,13 @@ namespace cp2_wpf {
             mMainCtrl.ScanForSubVol();
         }
         private void ShowDirListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            // TODO: reconfigure file list
+            ShowSingleDirFileList = true;
+            mMainCtrl.RefreshDirAndFileList();
             SetShowCenterInfo(CenterPanelChange.Files);
         }
         private void ShowFullListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            // TODO: reconfigure file list
+            ShowSingleDirFileList = false;
+            mMainCtrl.RefreshDirAndFileList();
             SetShowCenterInfo(CenterPanelChange.Files);
         }
         private void ShowInfoCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
@@ -496,17 +502,31 @@ namespace cp2_wpf {
 
         #region Center Panel
 
-        public enum CenterPanelContents { Unknown = 0, FileArchive, DiskImage, InfoOnly }
+        // The type of data available for the center panel.  This tells us if it's
+        // files+info or just info.
+        public enum CenterPanelContents { Unknown = 0, InfoOnly, FullList, DirList }
         public void SetCenterPanelContents(CenterPanelContents cont) {
             mCenterPanelContents = cont;
-            if (cont == CenterPanelContents.InfoOnly) {
-                SetShowCenterInfo(CenterPanelChange.Info);
-            } else {
-                SetShowCenterInfo(CenterPanelChange.Files);
+            switch (cont) {
+                case CenterPanelContents.InfoOnly:
+                    SetShowCenterInfo(CenterPanelChange.Info);
+                    IsFullListEnabled = IsDirListEnabled = false;
+                    break;
+                case CenterPanelContents.FullList:
+                    SetShowCenterInfo(CenterPanelChange.Files);
+                    IsFullListEnabled = true;
+                    IsDirListEnabled = false;
+                    break;
+                case CenterPanelContents.DirList:
+                    SetShowCenterInfo(CenterPanelChange.Files);
+                    IsFullListEnabled = IsDirListEnabled = true;
+                    break;
             }
         }
         private CenterPanelContents mCenterPanelContents = CenterPanelContents.Unknown;
 
+        // This determines whether we're showing a file list or the info panel.  It does not
+        // affect the contents of the file list (full or dir).
         public enum CenterPanelChange { Unknown = 0, Files, Info, Toggle }
         public bool ShowCenterFileList { get { return !mShowCenterInfo; } }
         public bool ShowCenterInfoPanel { get { return mShowCenterInfo; } }
@@ -532,36 +552,74 @@ namespace cp2_wpf {
         }
         private bool mShowCenterInfo;
 
-        // These control which columns are visible in the file list.  Some columns are always
-        // visible, some are only shown for file archives or disks.  We want to set one
-        // to Visible and one to Collapsed.
-        public Visibility ArchiveColVis { get; internal set; } = Visibility.Collapsed;
-        public Visibility DiskColVis { get; internal set; } = Visibility.Collapsed;
-        public Visibility DOSDiskColVis { get; internal set; } = Visibility.Collapsed;
-        public enum ColumnMode { Unknown = 0, FileArchive, DiskImage, DOSDiskImage };
-        public void SetColumnConfig(ColumnMode mode) {
-            switch (mode) {
-                case ColumnMode.FileArchive:
-                    ArchiveColVis = Visibility.Visible;
-                    DiskColVis = Visibility.Collapsed;
-                    DOSDiskColVis = Visibility.Collapsed;
-                    break;
-                case ColumnMode.DOSDiskImage:
-                    ArchiveColVis = Visibility.Collapsed;
-                    DiskColVis = Visibility.Visible;
-                    DOSDiskColVis = Visibility.Visible;
-                    break;
-                case ColumnMode.DiskImage:
-                default:
-                    ArchiveColVis = Visibility.Collapsed;
-                    DiskColVis = Visibility.Visible;
-                    DOSDiskColVis = Visibility.Collapsed;
-                    break;
-            }
-            OnPropertyChanged("ArchiveColVis");
-            OnPropertyChanged("DiskColVis");
-            OnPropertyChanged("DOSDiskColVis");
+        // Enable or disable the toolbar buttons.
+        public bool IsFullListEnabled {
+            get { return mIsFullListEnabled; }
+            set { mIsFullListEnabled = value; OnPropertyChanged(); }
         }
+        private bool mIsFullListEnabled;
+        public bool IsDirListEnabled {
+            get { return mIsDirListEnabled; }
+            set { mIsDirListEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsDirListEnabled;
+
+        /// <summary>
+        /// <para>This determines whether we populate the file list with the full set of files
+        /// or just those in the current directory.  For IArchive and non-hierarchical
+        /// filesystems, the value is ignored.</para>
+        /// </summary>
+        public bool ShowSingleDirFileList {
+            get { return mShowSingleDirFileList; }
+            set { mShowSingleDirFileList = ShowCol_FileName = value; ShowCol_PathName = !value; }
+        }
+        private bool mShowSingleDirFileList = true;
+
+        /// <summary>
+        /// Configures column visibility based on what kind of data we're showing.
+        /// </summary>
+        /// <param name="isArchive">Is this a file archive?</param>
+        /// <param name="hasRsrc">Does this have resource forks?</param>
+        /// <param name="hasRaw">Does this have "raw" files (DOS 3.x)?</param>
+        public void SetColumnConfig(bool isArchive, bool hasRsrc, bool hasRaw) {
+            ShowCol_FileName = mShowSingleDirFileList;
+            ShowCol_PathName = !mShowSingleDirFileList;
+
+            ShowCol_Format = isArchive;
+            ShowCol_RawLen = hasRaw;
+            ShowCol_RsrcLen = hasRsrc;
+            ShowCol_TotalSize = !isArchive;
+        }
+        public bool ShowCol_FileName {
+            get { return mShowCol_FileName; }
+            set { mShowCol_FileName = value; OnPropertyChanged(); }
+        }
+        private bool mShowCol_FileName;
+        public bool ShowCol_Format {
+            get { return mShowCol_Format; }
+            set { mShowCol_Format = value; OnPropertyChanged(); }
+        }
+        private bool mShowCol_Format;
+        public bool ShowCol_PathName {
+            get { return mShowCol_PathName; }
+            set { mShowCol_PathName = value; OnPropertyChanged(); }
+        }
+        private bool mShowCol_PathName;
+        public bool ShowCol_RawLen {
+            get { return mShowCol_RawLen; }
+            set { mShowCol_RawLen = value; OnPropertyChanged(); }
+        }
+        private bool mShowCol_RawLen;
+        public bool ShowCol_RsrcLen {
+            get { return mShowCol_RsrcLen; }
+            set { mShowCol_RsrcLen = value; OnPropertyChanged(); }
+        }
+        private bool mShowCol_RsrcLen;
+        public bool ShowCol_TotalSize {
+            get { return mShowCol_TotalSize; }
+            set { mShowCol_TotalSize = value; OnPropertyChanged(); }
+        }
+        private bool mShowCol_TotalSize;
 
         public ObservableCollection<FileListItem> FileList {
             get { return mFileList; }
@@ -716,6 +774,18 @@ namespace cp2_wpf {
                 return;
             }
             mMainCtrl.HandleFileListDoubleClick(fli, row, col, arcTreeSel, dirTreeSel);
+        }
+
+        // This is necessary because DataGrid eats the Delete key.
+        private void FileListDataGrid_PreviewKeyDown(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Delete) {
+                Debug.WriteLine("Caught Delete in the center datagrid");
+                // This event comes from the center DataGrid, so we can safely assume that a file
+                // is open and the file list is visible.
+                if (mMainCtrl.AreFilesSelected) {
+                    mMainCtrl.DeleteFiles();
+                }
+            }
         }
 
         private void FileListDataGrid_Drop(object sender, DragEventArgs e) {

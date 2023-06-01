@@ -729,13 +729,9 @@ namespace cp2_wpf {
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             workDialog.ShowDialog();
 
-            // Refresh the contents of the file list.
-            // TODO: if we added directories we also need to refresh the directory list
-            if (archiveOrFileSystem is IArchive) {
-                AddArchiveItems((IArchive)archiveOrFileSystem);
-            } else {
-                AddDiskItems(targetDir);
-            }
+            // Refresh the contents of the file list.  Do this even if the operation was
+            // cancelled, because it might have completed partially.
+            RefreshDirAndFileList();
         }
 
         /// <summary>
@@ -817,12 +813,6 @@ namespace cp2_wpf {
         /// Handles Actions : Delete Files
         /// </summary>
         public void DeleteFiles() {
-            Debug.WriteLine("Delete!");
-
-            // TODO: convert the selection list into a full list, with the contents of
-            //   subdirectories listed explicitly.
-            //   --> need to do that for Extract as well
-
             if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
                     out IFileEntry unused)) {
                 // We don't have an archive and (optionally) directory target selected.
@@ -839,6 +829,15 @@ namespace cp2_wpf {
                     MessageBoxImage.Information);
                 return;
             }
+
+            // We can't undo it, so get confirmation first.
+            string msg = string.Format("Delete {0} file {1}?", selected.Count,
+                selected.Count == 1 ? "entry" : "entries");
+            MessageBoxResult res = MessageBox.Show(mMainWin, msg, "Confirm Delete",
+                MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            if (res != MessageBoxResult.OK) {
+                return;
+            }
             DeleteProgress prog = new DeleteProgress(archiveOrFileSystem, daNode, selected,
                 mAppHook);
 
@@ -846,13 +845,8 @@ namespace cp2_wpf {
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             workDialog.ShowDialog();
 
-            // Refresh the contents of the file list.
-            // TODO: if we added directories we also need to refresh the directory list
-            if (archiveOrFileSystem is IArchive) {
-                AddArchiveItems((IArchive)archiveOrFileSystem);
-            } else {
-                AddDiskItems(((IFileSystem)archiveOrFileSystem).GetVolDirEntry());
-            }
+            // Refresh the controls.
+            RefreshDirAndFileList();
         }
 
         /// <summary>

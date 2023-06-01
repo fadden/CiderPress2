@@ -60,10 +60,15 @@ limitations under the License.
                     <KeyGesture>Ctrl+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
-            <RoutedUICommand x:Key="CloseSubTreeCmd" Text="Close Sub-Tree"/>
+            <RoutedUICommand x:Key="CloseSubTreeCmd" Text="Close Sub-Tree">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+W</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
+            <!-- DataGrids eat Delete, TreeViews don't; see PreviewKeyDown handler -->
             <RoutedUICommand x:Key="DeleteFilesCmd" Text="_Delete Files">
                 <RoutedUICommand.InputGestures>
-                    <KeyGesture>Del</KeyGesture>
+                    <KeyGesture>Delete</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
@@ -191,9 +196,10 @@ limitations under the License.
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
                 <Separator/>
+                <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                 <MenuItem Command="{StaticResource EditBlocksCmd}"/>
                 <MenuItem Command="{StaticResource EditSectorsCmd}"/>
-                <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
+                <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Command="{StaticResource ShowFullListCmd}"/>
@@ -216,12 +222,12 @@ limitations under the License.
         </Menu>
 
         <ToolBarTray DockPanel.Dock="Top">
-            <ToolBar RenderOptions.BitmapScalingMode="NearestNeighbor" Height="32">
-                <Button Command="{StaticResource ShowFullListCmd}"
+            <ToolBar Height="32">
+                <Button Command="{StaticResource ShowFullListCmd}" IsEnabled="{Binding IsFullListEnabled}"
                         ToolTip="Show full file list">
                     <ContentControl Template="{StaticResource icon_ListView}"/>
                 </Button>
-                <Button Command="{StaticResource ShowDirListCmd}"
+                <Button Command="{StaticResource ShowDirListCmd}" IsEnabled="{Binding IsDirListEnabled}"
                         ToolTip="Show individual directory contents">
                     <ContentControl Template="{StaticResource icon_MeasureTree}"/>
                 </Button>
@@ -496,6 +502,7 @@ limitations under the License.
                               EnableRowVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
                               MouseDoubleClick="FileList_MouseDoubleClick"
+                              PreviewKeyDown="FileListDataGrid_PreviewKeyDown"
                               AllowDrop="True"
                               Drop="FileListDataGrid_Drop">
                               <!--FontFamily="{StaticResource GeneralMonoFont}"-->
@@ -515,11 +522,20 @@ limitations under the License.
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="Filename" SortMemberPath="FileName" Width="240">
+                            <DataGridTemplateColumn Header="Filename" SortMemberPath="FileName" Width="240"
+                                    Visibility="{Binding DataContext.ShowCol_FileName, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis"/>
                                                    <!--FontFamily="{x:Static SystemFonts.MessageFontFamily}"-->
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Pathname" SortMemberPath="PathName" Width="300"
+                                    Visibility="{Binding DataContext.ShowCol_PathName, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding PathName}" TextTrimming="CharacterEllipsis"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -528,14 +544,15 @@ limitations under the License.
                             <DataGridTextColumn Header="Mod Date" Width="106" Binding="{Binding ModDate}"/>
                             <DataGridTextColumn Header="Data Len" Width="65" Binding="{Binding DataLength}"/>
                             <DataGridTextColumn Header="Raw Len" Width="65" Binding="{Binding RawDataLength}"
-                                Visibility="{Binding DataContext.DOSDiskColVis, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding DataContext.ShowCol_RawLen, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
                             <DataGridTextColumn Header="Format" Width="54" Binding="{Binding DataFormat}"
-                                Visibility="{Binding DataContext.ArchiveColVis, Source={x:Reference dummyElement}}"/>
-                            <DataGridTextColumn Header="Rsrc Len" Width="65" Binding="{Binding RsrcLength}"/>
+                                Visibility="{Binding DataContext.ShowCol_Format, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
+                            <DataGridTextColumn Header="Rsrc Len" Width="65" Binding="{Binding RsrcLength}"
+                                Visibility="{Binding DataContext.ShowCol_RsrcLen, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
                             <DataGridTextColumn Header="Format" Width="54" Binding="{Binding RsrcFormat}"
-                                Visibility="{Binding DataContext.ArchiveColVis, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding DataContext.ShowCol_Format, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
                             <DataGridTextColumn Header="Total Size" Width="76" Binding="{Binding TotalSize}"
-                                Visibility="{Binding DataContext.DiskColVis, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding DataContext.ShowCol_TotalSize, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
                             <DataGridTextColumn Header="Access" Width="50" Binding="{Binding Access}"/>
                         </DataGrid.Columns>
                         <DataGrid.ContextMenu>

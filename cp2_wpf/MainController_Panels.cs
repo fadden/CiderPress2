@@ -101,6 +101,44 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Refreshes the contents of the directory tree and file list.  Call this after a
+        /// change has been made, such as adding or deleting files, or when the file list mode
+        /// has been toggled from single-directory to full list.
+        /// </summary>
+        /// <remarks>
+        /// <para>All of the file information from filesystems and archives is cached in
+        /// memory, so re-scanning the existing contents is very fast, especially when compared
+        /// to WPF repopulating the control.  HFS and ProDOS are effectively limited to 64K
+        /// files per volume, but file archives can be much larger.</para>
+        /// </remarks>
+        internal void RefreshDirAndFileList() {
+            // TODO:
+            // - get IFileEntry for selected directory and file entry (which may be invalid)
+            // - scan directory list to see if it has changed
+            //   - if it has, discard it, reconstruct it, and try to mark the previously-selected
+            //     directory as selected; this will cause the file list to be regenerated
+            //   - if it hasn't, we need to explicitly regenerate the file list
+            // - regenerating the file list every time makes sense, because we only call here
+            //   after an operation that makes a change, and the user can only change things that
+            //   are in the file list
+            // - we could try to "diff" the file list, inserting items that were added and
+            //   removing items that were deleted, but that's trouble-prone
+            // - we shouldn't call here for file attribute editing; just update the file entry
+            //   properties (and, for a dir rename, dir entry properties) and raise the
+            //   "updated" flag
+            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? unused1,
+                    out IFileEntry unused2)) {
+                return;
+            }
+            if (archiveOrFileSystem is IArchive) {
+                AddArchiveItems((IArchive)archiveOrFileSystem);
+            } else {
+                AddDiskItems(((IFileSystem)archiveOrFileSystem).GetVolDirEntry());
+            }
+
+        }
+
+        /// <summary>
         /// Prepares a work file for use.
         /// </summary>
         /// <param name="pathName">File pathname.</param>
@@ -297,13 +335,23 @@ namespace cp2_wpf {
             bool usingFileList = true;
             if (CurrentWorkObject is IArchive) {
                 AddArchiveItems((IArchive)CurrentWorkObject);
-                mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.FileArchive);
-                mMainWin.SetColumnConfig(MainWindow.ColumnMode.FileArchive);
+                mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.FullList);
+                bool hasRsrc = ((IArchive)CurrentWorkObject).Characteristics.HasResourceForks;
+                if (CurrentWorkObject is Zip) {
+                    // TODO: follow MacZip setting
+                    hasRsrc = true;
+                }
+                mMainWin.SetColumnConfig(isArchive:true, hasRsrc:hasRsrc, hasRaw:false);
             } else if (CurrentWorkObject is IFileSystem) {
                 AddDiskItems(newSel.FileEntry);
-                mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.DiskImage);
-                mMainWin.SetColumnConfig(CurrentWorkObject is DOS ?
-                    MainWindow.ColumnMode.DOSDiskImage : MainWindow.ColumnMode.DiskImage);
+                if (((IFileSystem)CurrentWorkObject).Characteristics.IsHierarchical) {
+                    mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.DirList);
+                } else {
+                    mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.FullList);
+                }
+                bool hasRsrc = ((IFileSystem)CurrentWorkObject).Characteristics.HasResourceForks;
+                mMainWin.SetColumnConfig(isArchive:false, hasRsrc:hasRsrc,
+                    hasRaw:CurrentWorkObject is DOS);
             } else {
                 mMainWin.SetCenterPanelContents(MainWindow.CenterPanelContents.InfoOnly);
                 usingFileList = false;

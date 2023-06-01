@@ -33,6 +33,7 @@ namespace cp2_wpf {
 
         public ControlTemplate? StatusIcon { get; set; }
         public string FileName { get; set; }
+        public string PathName { get; set; }
         public string Type { get; set; }
         public string AuxType { get; set; }
         //public string HFSType { get; set; }
@@ -62,6 +63,7 @@ namespace cp2_wpf {
                 StatusIcon = null;
             }
             FileName = entry.FileName;
+            PathName = entry.FullPathName;
             CreateDate = fmt.FormatDateTime(entry.CreateWhen);
             ModDate = fmt.FormatDateTime(entry.ModWhen);
             Access = fmt.FormatAccessFlags(entry.Access);
