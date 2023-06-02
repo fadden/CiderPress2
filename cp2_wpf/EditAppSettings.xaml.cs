@@ -105,9 +105,8 @@ namespace cp2_wpf {
         #region General
 
         private void Loaded_General() {
-            mAutoOpenDepth =
-                (MainController.AutoOpenDepth)mSettings.GetEnum(AppSettings.AUTO_OPEN_DEPTH,
-                    typeof(MainController.AutoOpenDepth), (int)MainController.AutoOpenDepth.SubVol);
+            mAutoOpenDepth = mSettings.GetEnum(AppSettings.AUTO_OPEN_DEPTH,
+                MainController.AutoOpenDepth.SubVol);
             SetAutoOpenDepth();
         }
 
@@ -134,8 +133,7 @@ namespace cp2_wpf {
             }
         }
         private void SetAutoOpenDepth() {
-            mSettings.SetEnum(AppSettings.AUTO_OPEN_DEPTH,
-                typeof(MainController.AutoOpenDepth), (int)mAutoOpenDepth);
+            mSettings.SetEnum(AppSettings.AUTO_OPEN_DEPTH, mAutoOpenDepth);
             OnPropertyChanged("AutoOpenDepth_Shallow");
             OnPropertyChanged("AutoOpenDepth_SubVol");
             OnPropertyChanged("AutoOpenDepth_Max");

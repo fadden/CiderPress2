@@ -31,8 +31,11 @@ namespace cp2_wpf.Actions {
         private object mArchiveOrFileSystem;
         private DiskArcNode mLeafNode;
         private List<IFileEntry> mSelected;
-        private bool mDoCompress = true;        // TODO: configure
         private AppHook mAppHook;
+
+        public bool DoCompress { get; set; }
+        public bool EnableMacOSZip { get; set; }
+
 
         public DeleteProgress(object archiveOrFileSystem, DiskArcNode leafNode,
                 List<IFileEntry> selected, AppHook appHook) {
@@ -51,12 +54,11 @@ namespace cp2_wpf.Actions {
         /// <param name="bkWorker">Background worker object.</param>
         /// <returns>Operation results.</returns>
         public object DoWork(BackgroundWorker bkWorker) {
-            DeleteFileWorker worker = new DeleteFileWorker(
-                delegate (CallbackFacts what) {
-                        return ProgressUtil.HandleCallback(what, "deleting", bkWorker);
-                    },
+            DeleteFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                return ProgressUtil.HandleCallback(what, "deleting", bkWorker);
+            };
+            DeleteFileWorker worker = new DeleteFileWorker(cbFunc, macZip: EnableMacOSZip,
                     mAppHook);
-            worker.IsMacZipEnabled = true;      // TODO: get from settings
 
             if (mArchiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)mArchiveOrFileSystem;
@@ -66,7 +68,7 @@ namespace cp2_wpf.Actions {
                     if (!worker.DeleteFromArchive(arc, mSelected)) {
                         return false;
                     }
-                    mLeafNode.SaveUpdates(mDoCompress);
+                    mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
                     ProgressUtil.ShowMessage("Error: " + ex.Message, true, bkWorker);
                     return false;
@@ -79,7 +81,7 @@ namespace cp2_wpf.Actions {
                 bool success = worker.DeleteFromDisk(fs, mSelected);
                 try {
                     // Save the deletions we managed to handle.
-                    mLeafNode.SaveUpdates(mDoCompress);
+                    mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
                     ProgressUtil.ShowMessage("Error: update failed: " + ex.Message, true, bkWorker);
                     return false;

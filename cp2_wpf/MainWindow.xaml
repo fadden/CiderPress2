@@ -672,27 +672,48 @@ limitations under the License.
                                 <TextBlock Text="Add/Import Options" HorizontalAlignment="Center"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="1" Margin="2,6,0,0">
-                                <CheckBox Content="Recursive"/>
-                                <CheckBox Content="Use Compression"/>
-                                <CheckBox Content="Strip Paths"/>
-                                <CheckBox Content="Strip Redundant Extensions"/>
-                                <CheckBox Content="Raw (for DOS 3.x)"/>
+                            <StackPanel Grid.Row="1" Margin="2,6,2,0">
+                                <CheckBox Content="Recurse Into Directories"
+                                          IsChecked="{Binding IsChecked_AddRecurse}"/>
+                                <CheckBox Content="Use Compression"
+                                          IsChecked="{Binding IsChecked_AddCompress}"/>
+                                <CheckBox Content="Strip Paths"
+                                          IsChecked="{Binding IsChecked_AddStripPaths}"/>
+                                <CheckBox Content="Strip Redundant Extensions"
+                                          IsChecked="{Binding IsChecked_AddStripExt}"/>
+                                <CheckBox Content="Raw (for DOS 3.x)"
+                                          IsChecked="{Binding IsChecked_AddRaw}"/>
+                                <GroupBox Header="Preservation Handling" Padding="0,2,0,0">
+                                    <StackPanel>
+                                        <CheckBox Content="AppleSingle"
+                                                  IsChecked="{Binding IsChecked_AddPreserveAS}"/>
+                                        <CheckBox Name="addPreserveADF" Content="AppleDouble"
+                                                  IsChecked="{Binding IsChecked_AddPreserveADF}"/>
+                                        <CheckBox Name="addPreserveNAPS" Content="NAPS"
+                                                  IsChecked="{Binding IsChecked_AddPreserveNAPS}"/>
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="2" Background="LightBlue">
+                            <StackPanel Grid.Row="2" Background="LightBlue" Margin="0,20,0,0">
                                 <TextBlock Text="Extract/Export Options" HorizontalAlignment="Center"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="3" Margin="2,6,0,0">
-                                <CheckBox Content="Strip Paths"/>
-                                <CheckBox Content="Raw (for DOS 3.x)"/>
-                                <GroupBox Header="Preservation Mode">
+                            <StackPanel Grid.Row="3" Margin="2,6,2,0">
+                                <CheckBox Content="Strip Paths"
+                                          IsChecked="{Binding IsChecked_ExtStripPaths}"/>
+                                <CheckBox Content="Raw (for DOS 3.x)"
+                                          IsChecked="{Binding IsChecked_ExtRaw}"/>
+                                <GroupBox Header="Preservation Mode" Padding="0,2,0,0">
                                     <StackPanel>
-                                        <RadioButton Content="None"/>
-                                        <RadioButton Content="AppleSingle"/>
-                                        <RadioButton Content="AppleDouble"/>
-                                        <RadioButton Content="NAPS" IsChecked="True"/>
+                                        <RadioButton Content="None" GroupName="ExtPreserve"
+                                                     IsChecked="{Binding IsChecked_ExtPreserveNone}"/>
+                                        <RadioButton Content="AppleSingle" GroupName="ExtPreserve"
+                                                     IsChecked="{Binding IsChecked_ExtPreserveAS}"/>
+                                        <RadioButton Content="AppleDouble" GroupName="ExtPreserve"
+                                                     IsChecked="{Binding IsChecked_ExtPreserveADF}"/>
+                                        <RadioButton Content="NAPS" GroupName="ExtPreserve"
+                                                     IsChecked="{Binding IsChecked_ExtPreserveNAPS}"/>
                                     </StackPanel>
                                 </GroupBox>
                             </StackPanel>

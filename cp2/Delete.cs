@@ -44,12 +44,11 @@ namespace cp2 {
                 return false;
             }
 
-            DeleteFileWorker worker = new DeleteFileWorker(
-                delegate (CallbackFacts what) {
-                    return Misc.HandleCallback(what, "deleting", parms);
-                },
+            DeleteFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                return Misc.HandleCallback(what, "deleting", parms);
+            };
+            DeleteFileWorker worker = new DeleteFileWorker(cbFunc, macZip: parms.MacZip,
                 parms.AppHook);
-            worker.IsMacZipEnabled = parms.MacZip;
 
             if (!ExtArchive.OpenExtArc(args[0], true, false, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {

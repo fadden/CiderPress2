@@ -185,9 +185,22 @@ namespace cp2_wpf {
         /// </summary>
         private void LoadAppSettings() {
             // Configure defaults.
-            AppSettings.Global.SetBool(AppSettings.MAC_ZIP_ENABLED, true);
-            AppSettings.Global.SetEnum(AppSettings.AUTO_OPEN_DEPTH, typeof(AutoOpenDepth),
-                (int)AutoOpenDepth.SubVol);
+            SettingsHolder settings = AppSettings.Global;
+            settings.SetBool(AppSettings.MAC_ZIP_ENABLED, true);
+            settings.SetEnum(AppSettings.AUTO_OPEN_DEPTH, AutoOpenDepth.SubVol);
+
+            settings.SetBool(AppSettings.ADD_RECURSE_ENABLED, true);
+            settings.SetBool(AppSettings.ADD_COMPRESS_ENABLED, true);
+            settings.SetBool(AppSettings.ADD_STRIP_PATHS_ENABLED, false);
+            settings.SetBool(AppSettings.ADD_STRIP_EXT_ENABLED, true);
+            settings.SetBool(AppSettings.ADD_RAW_ENABLED, false);
+            settings.SetBool(AppSettings.ADD_PRESERVE_ADF, true);
+            settings.SetBool(AppSettings.ADD_PRESERVE_AS, true);
+            settings.SetBool(AppSettings.ADD_PRESERVE_NAPS, true);
+            settings.SetEnum(AppSettings.EXT_PRESERVE_MODE,
+                ExtractFileWorker.PreserveMode.NAPS);
+            settings.SetBool(AppSettings.EXT_RAW_ENABLED, false);
+            settings.SetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false);
 
             // Load settings from file and merge them in.
             string settingsPath =
@@ -202,6 +215,9 @@ namespace cp2_wpf {
             } catch (Exception ex) {
                 Debug.WriteLine("Unable to read settings file: " + ex.Message);
             }
+
+            // Trigger OnPropertyChanged for the new values.
+            mMainWin.PublishSideOptions();
         }
 
         /// <summary>
@@ -245,14 +261,14 @@ namespace cp2_wpf {
         /// </summary>
         private void ApplyAppSettings() {
             Debug.WriteLine("Applying app settings...");
+            SettingsHolder settings = AppSettings.Global;
 
             // Enable the DEBUG menu if configured.
-            mMainWin.ShowDebugMenu =
-                AppSettings.Global.GetBool(AppSettings.DEBUG_MENU_ENABLED, false);
+            mMainWin.ShowDebugMenu = settings.GetBool(AppSettings.DEBUG_MENU_ENABLED, false);
 
             if (mWorkTree != null) {
-                AutoOpenDepth depth = (AutoOpenDepth)AppSettings.Global.GetEnum(
-                    AppSettings.AUTO_OPEN_DEPTH, typeof(AutoOpenDepth), (int)AutoOpenDepth.SubVol);
+                AutoOpenDepth depth = settings.GetEnum(AppSettings.AUTO_OPEN_DEPTH,
+                    AutoOpenDepth.SubVol);
                 WorkTree.DepthLimiter limiter =
                     delegate (WorkTree.DepthParentKind parentKind,
                             WorkTree.DepthChildKind childKind) {
@@ -262,6 +278,9 @@ namespace cp2_wpf {
             }
 
             UnpackRecentFileList();
+
+            // If a setting like MacZip changed state, we need to recompute the file list.
+            RefreshDirAndFileList();
         }
 
         public void NewDiskImage() {
@@ -296,8 +315,8 @@ namespace cp2_wpf {
                 return;
             }
 
-            AutoOpenDepth depth = (AutoOpenDepth)AppSettings.Global.GetEnum(
-                AppSettings.AUTO_OPEN_DEPTH, typeof(AutoOpenDepth), (int)AutoOpenDepth.SubVol);
+            AutoOpenDepth depth =
+                AppSettings.Global.GetEnum(AppSettings.AUTO_OPEN_DEPTH, AutoOpenDepth.SubVol);
             WorkTree.DepthLimiter limiter =
                 delegate (WorkTree.DepthParentKind parentKind, WorkTree.DepthChildKind childKind) {
                     return DepthLimit(parentKind, childKind, depth);
@@ -709,7 +728,7 @@ namespace cp2_wpf {
             string basePath = Path.GetDirectoryName(pathNames[0])!;
 
             // TODO: configure add opts from settings
-            AddFileSet.AddOpts addOpts = new AddFileSet.AddOpts();
+            AddFileSet.AddOpts addOpts = ConfigureAddOpts(false);
             AddFileSet fileSet;
             try {
                 fileSet = new AddFileSet(basePath, pathNames, addOpts, null, mAppHook);
@@ -722,8 +741,14 @@ namespace cp2_wpf {
                 return;
             }
 
+            SettingsHolder settings = AppSettings.Global;
             AddProgress prog =
-                new AddProgress(archiveOrFileSystem, daNode, fileSet, targetDir, mAppHook);
+                new AddProgress(archiveOrFileSystem, daNode, fileSet, targetDir, mAppHook) {
+                    DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
+                    EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
+                    StripPaths = settings.GetBool(AppSettings.ADD_STRIP_PATHS_ENABLED, false),
+                    RawMode = settings.GetBool(AppSettings.ADD_RAW_ENABLED, false),
+                };
 
             // Do the extraction on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
@@ -732,6 +757,24 @@ namespace cp2_wpf {
             // Refresh the contents of the file list.  Do this even if the operation was
             // cancelled, because it might have completed partially.
             RefreshDirAndFileList();
+        }
+
+        private AddFileSet.AddOpts ConfigureAddOpts(bool isImport) {
+            SettingsHolder settings = AppSettings.Global;
+            AddFileSet.AddOpts addOpts = new AddFileSet.AddOpts();
+            if (isImport) {
+                addOpts.ParseADF = addOpts.ParseAS = addOpts.ParseNAPS = addOpts.CheckNamed =
+                    addOpts.CheckFinderInfo = false;
+            } else {
+                addOpts.ParseADF = settings.GetBool(AppSettings.ADD_PRESERVE_ADF, true);
+                addOpts.ParseAS = settings.GetBool(AppSettings.ADD_PRESERVE_AS, true);
+                addOpts.ParseNAPS = settings.GetBool(AppSettings.ADD_PRESERVE_NAPS, true);
+                addOpts.CheckNamed = false;
+                addOpts.CheckFinderInfo = false;
+            }
+            addOpts.Recurse = settings.GetBool(AppSettings.ADD_RECURSE_ENABLED, true);
+            addOpts.StripExt = settings.GetBool(AppSettings.ADD_STRIP_EXT_ENABLED, true);
+            return addOpts;
         }
 
         /// <summary>
@@ -838,8 +881,12 @@ namespace cp2_wpf {
             if (res != MessageBoxResult.OK) {
                 return;
             }
+            SettingsHolder settings = AppSettings.Global;
             DeleteProgress prog = new DeleteProgress(archiveOrFileSystem, daNode, selected,
-                mAppHook);
+                    mAppHook) {
+                DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
+                EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
+            };
 
             // Do the deletion on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
@@ -872,10 +919,18 @@ namespace cp2_wpf {
             if (outputDir == null) {
                 return;
             }
-            AppSettings.Global.SetString(AppSettings.LAST_EXTRACT_DIR, outputDir);
+
+            SettingsHolder settings = AppSettings.Global;
+            settings.SetString(AppSettings.LAST_EXTRACT_DIR, outputDir);
 
             ExtractProgress prog = new ExtractProgress(archiveOrFileSystem, selectionDir,
-                selected, outputDir, mAppHook);
+                    selected, outputDir, mAppHook) {
+                Preserve = settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                    ExtractFileWorker.PreserveMode.None),
+                EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
+                StripPaths = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false),
+                RawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false),
+            };
             Debug.WriteLine("Extract: outputDir='" + outputDir +
                 "', selectionDir='" + selectionDir + "'");
 

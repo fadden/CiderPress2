@@ -167,15 +167,38 @@ namespace CommonUtil {
         /// <returns>The value found, or the default value if no setting with the specified
         ///   name exists, or the stored value is not a member of the specified enumerated
         ///   type.</returns>
-        public int GetEnum(string name, Type enumType, int defaultValue) {
+        //public int GetEnum(string name, Type enumType, int defaultValue) {
+        //    if (!mSettings.TryGetValue(name, out string? valueStr)) {
+        //        return defaultValue;
+        //    }
+        //    try {
+        //        object o = Enum.Parse(enumType, valueStr);
+        //        return (int)o;
+        //    } catch (ArgumentException ae) {
+        //        Debug.WriteLine("Failed to parse " + valueStr + " (enum " + enumType + "): " +
+        //            ae.Message);
+        //        return defaultValue;
+        //    }
+        //}
+
+        /// <summary>
+        /// Retrieves an enumerated value setting.
+        /// </summary>
+        /// <typeparam name="T">Enumerated type.</typeparam>
+        /// <param name="name">Setting name.</param>
+        /// <param name="defaultValue">Setting default value.</param>
+        /// <returns>The value found, or the default value if no setting with the specified
+        ///   name exists, or the stored value is not a member of the specified enumerated
+        ///   type.</returns>
+        public T GetEnum<T>(string name, T defaultValue) {
             if (!mSettings.TryGetValue(name, out string? valueStr)) {
                 return defaultValue;
             }
             try {
-                object o = Enum.Parse(enumType, valueStr);
-                return (int)o;
+                object o = Enum.Parse(typeof(T), valueStr);
+                return (T)o;
             } catch (ArgumentException ae) {
-                Debug.WriteLine("Failed to parse " + valueStr + " (enum " + enumType + "): " +
+                Debug.WriteLine("Failed to parse " + valueStr + " (enum " + typeof(T) + "): " +
                     ae.Message);
                 return defaultValue;
             }
@@ -191,10 +214,35 @@ namespace CommonUtil {
         /// <param name="name">Setting name.</param>
         /// <param name="enumType">Enum type.</param>
         /// <param name="value">Setting value (integer enum index).</param>
-        public void SetEnum(string name, Type enumType, int value) {
-            string? newVal = Enum.GetName(enumType, value);
+        //public void SetEnum(string name, Type enumType, int value) {
+        //    string? newVal = Enum.GetName(enumType, value);
+        //    if (newVal == null) {
+        //        Debug.WriteLine("Unable to get enum name type=" + enumType + " value=" + value);
+        //        return;
+        //    }
+        //    if (!mSettings.TryGetValue(name, out string? oldValue) || oldValue != newVal) {
+        //        mSettings[name] = newVal;
+        //        IsDirty = true;
+        //    }
+        //}
+
+        /// <summary>
+        /// Sets an enumerated setting.
+        /// </summary>
+        /// <remarks>
+        /// The value is output to the settings file as a string, rather than an integer, allowing
+        /// the correct handling even if the enumerated values are renumbered.
+        /// </remarks>
+        /// <typeparam name="T">Enumerated type.</typeparam>
+        /// <param name="name">Setting name.</param>
+        /// <param name="value">Setting value (integer enum index).</param>
+        public void SetEnum<T>(string name, T value) {
+            if (value == null) {
+                throw new NotImplementedException("Can't handle a null-valued enum type");
+            }
+            string? newVal = Enum.GetName(typeof(T), value);
             if (newVal == null) {
-                Debug.WriteLine("Unable to get enum name type=" + enumType + " value=" + value);
+                Debug.WriteLine("Unable to get enum name type=" + typeof(T) + " value=" + value);
                 return;
             }
             if (!mSettings.TryGetValue(name, out string? oldValue) || oldValue != newVal) {

@@ -32,8 +32,13 @@ namespace cp2_wpf.Actions {
         private DiskArcNode mLeafNode;
         private AddFileSet mAddFileSet;
         private IFileEntry mTargetDir;
-        private bool mDoCompress = true;        // TODO: configure
         private AppHook mAppHook;
+
+        public bool DoCompress { get; set; }
+        public bool EnableMacOSZip { get; set; }
+        public bool StripPaths { get; set; }
+        public bool RawMode { get; set; }
+
 
         public AddProgress(object archiveOrFileSystem, DiskArcNode leafNode, AddFileSet addSet,
                 IFileEntry targetDir, AppHook appHook) {
@@ -55,10 +60,12 @@ namespace cp2_wpf.Actions {
         public object DoWork(BackgroundWorker bkWorker) {
             string curDir = Environment.CurrentDirectory;
 
-            AddFileWorker addWorker = new AddFileWorker(mAddFileSet,
-                delegate (CallbackFacts what) {
-                    return ProgressUtil.HandleCallback(what, "add", bkWorker);
-                }, mAppHook);
+            AddFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                return ProgressUtil.HandleCallback(what, "add", bkWorker);
+            };
+            AddFileWorker addWorker = new AddFileWorker(mAddFileSet, cbFunc,
+                doCompress: DoCompress, macZip: EnableMacOSZip, stripPaths: StripPaths,
+                rawMode: RawMode, mAppHook);
 
             if (mArchiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)mArchiveOrFileSystem;
@@ -70,7 +77,7 @@ namespace cp2_wpf.Actions {
                         ProgressUtil.ShowCancelled(bkWorker);
                         return false;
                     }
-                    mLeafNode.SaveUpdates(mDoCompress);
+                    mLeafNode.SaveUpdates(DoCompress);
                 } catch (ConversionException ex) {
                     ProgressUtil.ShowMessage("Import error: " + ex.Message, true, bkWorker);
                     return false;
@@ -99,7 +106,7 @@ namespace cp2_wpf.Actions {
                     success = false;
                 }
                 try {
-                    mLeafNode.SaveUpdates(mDoCompress);
+                    mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
                     ProgressUtil.ShowMessage("Error: update failed: " + ex.Message, true, bkWorker);
                     return false;

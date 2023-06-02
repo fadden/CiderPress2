@@ -34,6 +34,12 @@ namespace cp2_wpf.Actions {
         private string mOutputDir;
         private AppHook mAppHook;
 
+        public ExtractFileWorker.PreserveMode Preserve { get; set; }
+        public bool EnableMacOSZip { get; set; }
+        public bool StripPaths { get; set; }
+        public bool RawMode { get; set; }
+
+
         public ExtractProgress(object archiveOrFileSystem, IFileEntry selectionDir,
                 List<IFileEntry> selected, string outputDir, AppHook appHook) {
             mArchiveOrFileSystem = archiveOrFileSystem;
@@ -54,15 +60,11 @@ namespace cp2_wpf.Actions {
         public object DoWork(BackgroundWorker bkWorker) {
             string curDir = Environment.CurrentDirectory;
             try {
-                ExtractFileWorker extWorker = new ExtractFileWorker(
-                    delegate (CallbackFacts what) {
-                        return ProgressUtil.HandleCallback(what, "extract", bkWorker);
-                    }, mAppHook);
-                // TODO: get these from settings
-                extWorker.IsMacZipEnabled = true;
-                extWorker.Preserve = ExtractFileWorker.PreserveMode.NAPS;
-                extWorker.RawMode = false;
-                extWorker.StripPaths = false;
+                ExtractFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                    return ProgressUtil.HandleCallback(what, "extract", bkWorker);
+                };
+                ExtractFileWorker extWorker = new ExtractFileWorker(cbFunc, macZip: EnableMacOSZip,
+                    preserve: Preserve, rawMode: RawMode, stripPaths: StripPaths, mAppHook);
 
                 // Switch to output directory.
                 Environment.CurrentDirectory = mOutputDir;

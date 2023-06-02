@@ -66,7 +66,7 @@ limitations under the License.
                             </StackPanel>
                         </GroupBox>
 
-                        <CheckBox Content="Enable MacZip handling" Margin="4,4,0,0" IsEnabled="false"
+                        <CheckBox Content="Enable MacZip handling" Margin="4,4,0,0"
                                   ToolTip="Combine __MACOSX pairs automatically"
                                   IsChecked="{Binding EnableMacZip}"/>
                     </StackPanel>

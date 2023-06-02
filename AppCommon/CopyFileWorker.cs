@@ -48,11 +48,6 @@ namespace AppCommon {
         public bool EnableMacOSZip { get; set; } = false;
 
         /// <summary>
-        /// If set, don't do a full scan on filesystems.
-        /// </summary>
-        public bool FastScan { get; set; } = false;
-
-        /// <summary>
         /// If set, strip pathnames off of files before adding them.  For a filesystem, all
         /// files will be added to the target directory.
         /// </summary>
@@ -74,8 +69,13 @@ namespace AppCommon {
         /// <param name="func">Callback function, for progress messages and file overwrite
         ///   queries.</param>
         /// <param name="appHook">Application hook reference.</param>
-        public CopyFileWorker(CallbackFunc func, AppHook appHook) {
+        public CopyFileWorker(CallbackFunc func, bool convertDOSText, bool doCompress, bool macZip,
+                bool stripPaths, AppHook appHook) {
             mFunc = func;
+            ConvertDOSText = convertDOSText;
+            DoCompress = doCompress;
+            EnableMacOSZip = macZip;
+            StripPaths = stripPaths;
             mAppHook = appHook;
         }
 

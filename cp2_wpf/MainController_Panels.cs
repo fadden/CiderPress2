@@ -346,6 +346,9 @@ namespace cp2_wpf {
         /// trying to keep track of whether the contents are dirty.</para>
         /// </remarks>
         internal void RefreshDirAndFileList() {
+            if (CurrentWorkObject == null) {
+                return;
+            }
             if (CurrentWorkObject is IFileSystem) {
                 IFileSystem fs = (IFileSystem)CurrentWorkObject;
 

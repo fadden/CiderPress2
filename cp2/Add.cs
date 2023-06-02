@@ -146,16 +146,12 @@ namespace cp2 {
                 }
 
                 opStr = (importSpec == null) ? "adding" : "importing";
-                AddFileWorker worker = new AddFileWorker(addSet,
-                    delegate(CallbackFacts what) {
-                        return Misc.HandleCallback(what, opStr, parms);
-                    },
-                    parms.AppHook);
-                worker.DoCompress = parms.Compress;
-                worker.EnableMacOSZip = parms.MacZip;
-                worker.FastScan = parms.FastScan;
-                worker.StripPaths = parms.StripPaths;
-                worker.RawMode = parms.Raw;
+                AddFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                    return Misc.HandleCallback(what, opStr, parms);
+                };
+                AddFileWorker worker = new AddFileWorker(addSet, cbFunc,
+                    doCompress: parms.Compress, macZip: parms.MacZip, stripPaths: parms.StripPaths,
+                    rawMode: parms.Raw, parms.AppHook);
 
                 if (leaf is IArchive) {
                     IArchive arc = (IArchive)leaf;

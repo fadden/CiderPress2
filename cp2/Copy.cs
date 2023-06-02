@@ -96,16 +96,12 @@ namespace cp2 {
                 return false;
             }
 
-            CopyFileWorker worker = new CopyFileWorker(
-                delegate (CallbackFacts what, object? obj) {
-                    return Misc.HandleCallback(what, "copying", parms);
-                },
+            CopyFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what, object? obj) {
+                return Misc.HandleCallback(what, "copying", parms);
+            };
+            CopyFileWorker worker = new CopyFileWorker(cbFunc, convertDOSText: parms.ConvertDOSText,
+                doCompress: parms.Compress, macZip: parms.MacZip, stripPaths: parms.StripPaths,
                 parms.AppHook);
-            worker.ConvertDOSText = parms.ConvertDOSText;
-            worker.DoCompress = parms.Compress;
-            worker.EnableMacOSZip = parms.MacZip;
-            worker.FastScan = parms.FastScan;
-            worker.StripPaths = parms.StripPaths;
 
             DiskArcNode? srcRootNode = null;
             DiskArcNode? dstRootNode = null;

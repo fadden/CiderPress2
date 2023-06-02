@@ -47,6 +47,20 @@ namespace cp2_wpf {
         public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";
 
+        // Add/extract/import/export
+        public const string ADD_RECURSE_ENABLED = "add-recurse-enabled";
+        public const string ADD_COMPRESS_ENABLED = "add-compress-enabled";
+        public const string ADD_STRIP_PATHS_ENABLED = "add-strip-paths-enabled";
+        public const string ADD_STRIP_EXT_ENABLED = "add-strip-ext-enabled";
+        public const string ADD_RAW_ENABLED = "add-raw-enabled";
+        public const string ADD_PRESERVE_ADF = "add-preserve-adf";
+        public const string ADD_PRESERVE_AS = "add-preserve-as";
+        public const string ADD_PRESERVE_NAPS = "add-preserve-naps";
+
+        public const string EXT_RAW_ENABLED = "ext-raw-enabled";
+        public const string EXT_STRIP_PATHS_ENABLED = "ext-strip-paths-enabled";
+        public const string EXT_PRESERVE_MODE = "ext-preserve-mode";
+
         public const string DEBUG_MENU_ENABLED = "debug-menu-enabled";
     }
 }

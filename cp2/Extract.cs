@@ -129,15 +129,12 @@ namespace cp2 {
             }
 
             string opStr = (exportSpec == null) ? "extracting" : "exporting";
-            ExtractFileWorker worker = new ExtractFileWorker(
-                delegate (CallbackFacts what) {
-                    return Misc.HandleCallback(what, opStr, parms);
-                },
+            ExtractFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                return Misc.HandleCallback(what, opStr, parms);
+            };
+            ExtractFileWorker worker = new ExtractFileWorker(cbFunc, macZip: parms.MacZip,
+                preserve: parms.Preserve, rawMode: parms.Raw, stripPaths: parms.StripPaths,
                 parms.AppHook);
-            worker.IsMacZipEnabled = parms.MacZip;
-            worker.Preserve = parms.Preserve;
-            worker.RawMode = parms.Raw;
-            worker.StripPaths = parms.StripPaths;
 
             if (!ExtArchive.OpenExtArc(extArchive, true, true, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {

@@ -74,8 +74,13 @@ namespace AppCommon {
         /// <param name="func">Callback function, for progress messages and file overwrite
         ///   queries.</param>
         /// <param name="appHook">Application hook reference.</param>
-        public ExtractFileWorker(CallbackFunc func, AppHook appHook) {
+        public ExtractFileWorker(CallbackFunc func, bool macZip, PreserveMode preserve,
+                bool rawMode, bool stripPaths, AppHook appHook) {
             mFunc = func;
+            IsMacZipEnabled = macZip;
+            Preserve = preserve;
+            RawMode = rawMode;
+            StripPaths = stripPaths;
             mAppHook = appHook;
         }
 

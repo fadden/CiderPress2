@@ -66,11 +66,6 @@ namespace AppCommon {
         public bool EnableMacOSZip { get; set; } = false;
 
         /// <summary>
-        /// If set, don't do a full scan on filesystems.
-        /// </summary>
-        public bool FastScan { get; set; } = false;
-
-        /// <summary>
         /// If set, strip pathnames off of files before adding them.  For a filesystem, all
         /// files will be added to the target directory.
         /// </summary>
@@ -97,9 +92,14 @@ namespace AppCommon {
         /// Constructor.
         /// </summary>
         /// <param name="fileSet">Set of files to add.</param>
-        public AddFileWorker(AddFileSet fileSet, CallbackFunc func, AppHook appHook) {
+        public AddFileWorker(AddFileSet fileSet, CallbackFunc func, bool doCompress, bool macZip,
+                bool stripPaths, bool rawMode, AppHook appHook) {
             mFileSet = fileSet;
             mFunc = func;
+            DoCompress = doCompress;
+            EnableMacOSZip = macZip;
+            StripPaths = stripPaths;
+            RawMode = rawMode;
             mAppHook = appHook;
         }
 

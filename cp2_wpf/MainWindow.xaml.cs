@@ -455,14 +455,6 @@ namespace cp2_wpf {
 
         #endregion Command handlers
 
-        #region Misc
-
-        private void DebugMenu_SubmenuOpened(object sender, RoutedEventArgs e) {
-            debugShowDebugLogMenuItem.IsChecked = mMainCtrl.IsDebugLogOpen;
-        }
-
-        #endregion Misc
-
         #region Archive Tree
 
         //internal readonly ControlTemplate ICON_STATUS_OK;
@@ -853,6 +845,168 @@ namespace cp2_wpf {
             ShowOptionsPanel = !ShowOptionsPanel;
         }
 
+        public bool IsChecked_AddCompress {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_COMPRESS_ENABLED, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_AddRaw {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_RAW_ENABLED, false); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_RAW_ENABLED, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_AddRecurse {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_RECURSE_ENABLED, true); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_RECURSE_ENABLED, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_AddStripExt {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_STRIP_EXT_ENABLED, true); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_STRIP_EXT_ENABLED, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_AddStripPaths {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_STRIP_PATHS_ENABLED, false); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_STRIP_PATHS_ENABLED, value);
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsChecked_AddPreserveADF {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_PRESERVE_ADF, true); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_PRESERVE_ADF, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_AddPreserveAS {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_PRESERVE_AS, true); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_PRESERVE_AS, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_AddPreserveNAPS {
+            get { return AppSettings.Global.GetBool(AppSettings.ADD_PRESERVE_NAPS, true); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.ADD_PRESERVE_NAPS, value);
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsChecked_ExtRaw {
+            get { return AppSettings.Global.GetBool(AppSettings.EXT_RAW_ENABLED, false); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.EXT_RAW_ENABLED, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_ExtStripPaths {
+            get { return AppSettings.Global.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, value);
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_ExtPreserveADF {
+            get {
+                return (AppSettings.Global.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                    ExtractFileWorker.PreserveMode.None) == ExtractFileWorker.PreserveMode.ADF);
+            }
+            set {
+                if (value == true) {
+                    AppSettings.Global.SetEnum(AppSettings.EXT_PRESERVE_MODE,
+                        ExtractFileWorker.PreserveMode.ADF);
+                }
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_ExtPreserveAS {
+            get {
+                return (AppSettings.Global.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                    ExtractFileWorker.PreserveMode.None) == ExtractFileWorker.PreserveMode.AS);
+            }
+            set {
+                if (value == true) {
+                    AppSettings.Global.SetEnum(AppSettings.EXT_PRESERVE_MODE,
+                        ExtractFileWorker.PreserveMode.AS);
+                }
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_ExtPreserveNAPS {
+            get {
+                return (AppSettings.Global.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                    ExtractFileWorker.PreserveMode.None) == ExtractFileWorker.PreserveMode.NAPS);
+            }
+            set {
+                if (value == true) {
+                    AppSettings.Global.SetEnum(AppSettings.EXT_PRESERVE_MODE,
+                        ExtractFileWorker.PreserveMode.NAPS);
+                }
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_ExtPreserveNone {
+            get {
+                return (AppSettings.Global.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                    ExtractFileWorker.PreserveMode.None) == ExtractFileWorker.PreserveMode.None);
+            }
+            set {
+                if (value == true) {
+                    AppSettings.Global.SetEnum(AppSettings.EXT_PRESERVE_MODE,
+                        ExtractFileWorker.PreserveMode.None);
+                }
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Triggers OnPropertyChanged for all of the side-panel options.  Call this after the
+        /// settings object is loaded or updated.
+        /// </summary>
+        public void PublishSideOptions() {
+            IsChecked_AddCompress = IsChecked_AddCompress;
+            IsChecked_AddRaw = IsChecked_AddRaw;
+            IsChecked_AddRecurse = IsChecked_AddRecurse;
+            IsChecked_AddStripExt = IsChecked_AddStripExt;
+            IsChecked_AddStripPaths = IsChecked_AddStripPaths;
+            IsChecked_AddPreserveADF = IsChecked_AddPreserveADF;
+            IsChecked_AddPreserveAS = IsChecked_AddPreserveAS;
+            IsChecked_AddPreserveNAPS = IsChecked_AddPreserveNAPS;
+            IsChecked_ExtRaw = IsChecked_ExtRaw;
+            IsChecked_ExtStripPaths = IsChecked_ExtStripPaths;
+
+            ExtractFileWorker.PreserveMode preserve =
+                AppSettings.Global.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                    ExtractFileWorker.PreserveMode.None);
+            switch (preserve) {
+                case ExtractFileWorker.PreserveMode.ADF:
+                    IsChecked_ExtPreserveADF = true;
+                    break;
+                case ExtractFileWorker.PreserveMode.AS:
+                    IsChecked_ExtPreserveAS = true;
+                    break;
+                case ExtractFileWorker.PreserveMode.NAPS:
+                    IsChecked_ExtPreserveNAPS = true;
+                    break;
+                case ExtractFileWorker.PreserveMode.Host:
+                case ExtractFileWorker.PreserveMode.None:
+                default:
+                    IsChecked_ExtPreserveNone = true;
+                    break;
+            }
+        }
+
         #endregion Options Panel
 
         #region Status Bar
@@ -867,5 +1021,13 @@ namespace cp2_wpf {
         private string mCenterStatusText = string.Empty;
 
         #endregion Status Bar
+
+        #region Misc
+
+        private void DebugMenu_SubmenuOpened(object sender, RoutedEventArgs e) {
+            debugShowDebugLogMenuItem.IsChecked = mMainCtrl.IsDebugLogOpen;
+        }
+
+        #endregion Misc
     }
 }
