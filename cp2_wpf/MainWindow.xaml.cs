@@ -600,6 +600,9 @@ namespace cp2_wpf {
             ShowCol_RsrcLen = hasRsrc;
             ShowCol_TotalSize = !isArchive;
         }
+        public void ReconfigureCenterPanel(bool hasRsrc) {
+            ShowCol_RsrcLen = hasRsrc;
+        }
         public bool ShowCol_FileName {
             get { return mShowCol_FileName; }
             set { mShowCol_FileName = value; OnPropertyChanged(); }

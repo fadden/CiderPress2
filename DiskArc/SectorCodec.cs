@@ -28,6 +28,8 @@ namespace DiskArc {
     /// and can override methods for completely non-standard formats.</para>
     /// </remarks>
     public abstract class SectorCodec {
+        private static readonly bool VERBOSE = false;
+
         // Max number of tracks on a 5.25" floppy disk.
         public const int MAX_TRACK_525 = 40;
 
@@ -329,7 +331,7 @@ namespace DiskArc {
 
             // Verify the epilog.
             if (!trkData.ExpectLatchSequence(mAddressEpilog, AddrEpilogReadCount)) {
-                Debug.WriteLine("Address field epilog not found");
+                if (VERBOSE) Debug.WriteLine("Address field epilog not found");
                 newPtr.IsAddrDamaged = true;
             }
 
@@ -365,7 +367,7 @@ namespace DiskArc {
 
                 // Verify the epilog, if configured.
                 if (!trkData.ExpectLatchSequence(mDataEpilog, DataEpilogReadCount)) {
-                    Debug.WriteLine("Data field epilog not found");
+                    if (VERBOSE) Debug.WriteLine("Data field epilog not found");
                     newPtr.IsDataDamaged = true;
                 }
             } else {
@@ -429,7 +431,7 @@ namespace DiskArc {
 
             // Verify the epilog.
             if (!trkData.ExpectLatchSequence(mAddressEpilog, AddrEpilogReadCount)) {
-                Debug.WriteLine("Address field epilog not found");
+                if (VERBOSE) Debug.WriteLine("Address field epilog not found");
                 newPtr.IsAddrDamaged = true;
             }
 
@@ -451,7 +453,7 @@ namespace DiskArc {
 
                 // Verify the epilog, if configured.
                 if (!trkData.ExpectLatchSequence(mDataEpilog, DataEpilogReadCount)) {
-                    Debug.WriteLine("Data field epilog not found");
+                    if (VERBOSE) Debug.WriteLine("Data field epilog not found");
                     newPtr.IsDataDamaged = true;
                 }
             } else {
@@ -1150,7 +1152,7 @@ namespace DiskArc {
             // If debugging, double-check it to make sure we ended up in the right place.
             int savedPosn = trkData.BitPosition;
             if (!trkData.ExpectLatchSequence(mDataEpilog, DataEpilogReadCount)) {
-                Debug.Assert(false, "Data field epilog not found");
+                if (VERBOSE) Debug.Assert(false, "Data field epilog not found");
             }
             trkData.BitPosition = savedPosn;
 #endif

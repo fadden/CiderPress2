@@ -560,10 +560,32 @@ namespace DiskArc {
         /// Determines whether the entry is a MacZip "header" entry.  These are ZIP archive
         /// entries with filenames that start with "__MACOSX/".
         /// </summary>
-        /// <returns>True if the entry matches.</returns>
+        /// <returns>True if the entry is a MacZip header file.</returns>
         public static bool IsMacZipHeader(this IFileEntry entry) {
-            return entry is Zip_FileEntry && !entry.IsDirectory &&
-                entry.FullPathName.StartsWith(Zip.MAC_ZIP_RSRC_PREFIX_DIR);
+            // Directory entries *can* have MacZip headers.  I'm not sure what that's useful
+            // for, but I don't want to filter them out here.  Note that directory headers are
+            // not directories, and so don't end with '/'.
+            if (entry is Zip_FileEntry &&
+                    entry.FullPathName.StartsWith(Zip.MAC_ZIP_RSRC_PREFIX_DIR)) {
+                // Find the filename and verify that it starts with "._" (AppleDouble).  This
+                // probably isn't necessary, as there shouldn't be anything else in __MACOSX,
+                // but this is commonly used to filter out files, and we don't want to hide
+                // anything we shouldn't.
+                int fnIndex = entry.FileName.LastIndexOf(Zip.SCharacteristics.DefaultDirSep);
+                if (fnIndex < 0) {
+                    Debug.Assert(false);    // should be impossible; name has "__MACOSX/" prefix
+                    fnIndex = 0;
+                } else {
+                    fnIndex++;
+                }
+                if (entry.FileName.Length > fnIndex + 1 &&
+                        entry.FileName[fnIndex] == AppleSingle.ADF_PREFIX[0] &&
+                        entry.FileName[fnIndex + 1] == AppleSingle.ADF_PREFIX[1]) {
+                    return true;
+                }
+                return false;
+            }
+            return false;
         }
 
         #endregion

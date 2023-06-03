@@ -30,6 +30,7 @@ using CommonUtil;
 using cp2_wpf.Actions;
 using cp2_wpf.WPFCommon;
 using DiskArc;
+using DiskArc.Arc;
 using DiskArc.FS;
 using DiskArc.Multi;
 
@@ -281,6 +282,12 @@ namespace cp2_wpf {
 
             // If a setting like MacZip changed state, we need to recompute the file list.
             RefreshDirAndFileList();
+
+            // Hack to make the resource length column toggle when MacZip updated.
+            if (CurrentWorkObject is Zip) {
+                mMainWin.ReconfigureCenterPanel(
+                    settings.GetBool(AppSettings.MAC_ZIP_ENABLED, false));
+            }
         }
 
         public void NewDiskImage() {

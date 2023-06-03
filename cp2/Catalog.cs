@@ -301,10 +301,11 @@ namespace cp2 {
                             dataFmt = CompressionFormat.Unknown;
                         }
                         // Use the length/format of the ADF header file in the ZIP archive as
-                        // the compressed length/format.
-                        if (!adfEntry.GetPartInfo(FilePart.DataFork, out long adfHdrLen,
+                        // the compressed length/format, since that's the part that's Deflated.
+                        if (!adfEntry.GetPartInfo(FilePart.DataFork, out long unused,
                                 out rsrcSize, out rsrcFmt)) {
                             // not expected
+                            rsrcSize = 0;
                             rsrcFmt = CompressionFormat.Unknown;
                         }
                         rsrcLen = attrs.RsrcLength;      // ADF is not compressed

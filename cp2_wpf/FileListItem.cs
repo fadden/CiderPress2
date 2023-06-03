@@ -64,10 +64,24 @@ namespace cp2_wpf {
         public string RsrcFormat { get; private set; }
         public string TotalSize { get; private set; }
 
+
         /// <summary>
-        /// Constructor.  Fills out all properties from the file entry object.
+        /// Constructor.  Fills out properties from file attributes object.
         /// </summary>
-        public FileListItem(IFileEntry entry, Formatter fmt) {
+        /// <param name="entry">File entry object.</param>
+        /// <param name="fmt">Formatter.</param>
+        public FileListItem(IFileEntry entry, Formatter fmt)
+            : this(entry, IFileEntry.NO_ENTRY, null, fmt) { }
+
+        /// <summary>
+        /// Constructor for archive entries that might be a MacZip pair.
+        /// </summary>
+        /// <param name="entry">File entry object.</param>
+        /// <param name="adfEntry">File entry object for MacZip header, or NO_ENTRY.</param>
+        /// <param name="attrs">File attributes, from entry or from MacZip header.</param>
+        /// <param name="fmt">Formatter.</param>
+        public FileListItem(IFileEntry entry, IFileEntry adfEntry, FileAttribs? adfAttrs,
+                Formatter fmt) {
             FileEntry = entry;
 
             if (entry.IsDubious) {
@@ -81,7 +95,11 @@ namespace cp2_wpf {
             PathName = entry.FullPathName;
             CreateDate = fmt.FormatDateTime(entry.CreateWhen);
             ModDate = fmt.FormatDateTime(entry.ModWhen);
-            Access = fmt.FormatAccessFlags(entry.Access);
+            if (adfAttrs != null) {
+                Access = fmt.FormatAccessFlags(adfAttrs.Access);
+            } else {
+                Access = fmt.FormatAccessFlags(entry.Access);
+            }
 
             if (entry.IsDiskImage) {
                 Type = "Disk";
@@ -127,30 +145,45 @@ namespace cp2_wpf {
                     Type = FileTypes.GetFileTypeAbbrev(proType) +
                         (entry.RsrcLength > 0 ? '+' : ' ');
                     AuxType = string.Format("${0:X4}", proAux);
-                } else if (entry.HFSCreator == 0 && entry.HFSFileType == 0) {
-                    if (entry.HasProDOSTypes) {
-                        // Use the ProDOS types instead.  GSHK does this for ProDOS files.
-                        Type = FileTypes.GetFileTypeAbbrev(entry.FileType) +
-                            (entry.HasRsrcFork ? '+' : ' ');
-                        AuxType = string.Format("${0:X4}", entry.AuxType);
-                    } else {
-                        Type = FileTypes.GetFileTypeAbbrev(0x00) +
-                            (entry.RsrcLength > 0 ? '+' : ' ');
-                        AuxType = "$0000";
-                    }
-                } else {
+                } else if (entry.HFSCreator != 0 || entry.HFSFileType != 0) {
                     // Stringify the HFS types.  No need to show as hex.
                     // All HFS files have a resource fork, so only show a '+' if it has data in it.
                     Type = MacChar.StringifyMacConstant(entry.HFSFileType) +
                         (entry.RsrcLength > 0 ? '+' : ' ');
                     AuxType = ' ' + MacChar.StringifyMacConstant(entry.HFSCreator);
+                } else if (entry.HasProDOSTypes) {
+                    // Use the ProDOS types instead.  GSHK does this for ProDOS files.
+                    Type = FileTypes.GetFileTypeAbbrev(entry.FileType) +
+                        (entry.HasRsrcFork ? '+' : ' ');
+                    AuxType = string.Format("${0:X4}", entry.AuxType);
+                } else {
+                    // HFS types are zero, ProDOS types are zero or not available; give up.
+                    Type = AuxType = "-----";
                 }
             } else if (entry.HasProDOSTypes) {
                 // Show a '+' if a resource fork is present, whether or not it has data.
                 Type = FileTypes.GetFileTypeAbbrev(entry.FileType) +
                     (entry.HasRsrcFork ? '+' : ' ');
                 AuxType = string.Format("${0:X4}", entry.AuxType);
+            } else if (adfAttrs != null) {
+                // Use the contents of the MacZip header file.
+                if (FileAttribs.ProDOSFromHFS(adfAttrs.HFSFileType, adfAttrs.HFSCreator,
+                        out byte proType, out ushort proAux)) {
+                    Type = FileTypes.GetFileTypeAbbrev(proType) +
+                        (adfAttrs.RsrcLength > 0 ? '+' : ' ');
+                    AuxType = string.Format("${0:X4}", proAux);
+                } else if (adfAttrs.HFSCreator != 0 || adfAttrs.HFSFileType != 0) {
+                    Type = MacChar.StringifyMacConstant(adfAttrs.HFSFileType) +
+                        (adfAttrs.RsrcLength > 0 ? '+' : ' ');
+                    AuxType = ' ' + MacChar.StringifyMacConstant(adfAttrs.HFSCreator);
+                } else {
+                    // Use the ProDOS types instead.  GSHK does this for ProDOS files.
+                    Type = FileTypes.GetFileTypeAbbrev(adfAttrs.FileType) +
+                        (adfAttrs.RsrcLength > 0 ? '+' : ' ');
+                    AuxType = string.Format("${0:X4}", adfAttrs.AuxType);
+                }
             } else {
+                // No type information available (e.g. ZIP without MacZip).
                 Type = AuxType = "----";
             }
 
@@ -176,14 +209,31 @@ namespace cp2_wpf {
             } else {
                 DataLength = DataSize = DataFormat = string.Empty;
             }
-            if (entry.GetPartInfo(FilePart.RsrcFork, out length, out storageSize, out format)) {
-                RsrcLength = length.ToString();
-                RsrcSize = storageSize.ToString();
-                RsrcFormat = ThingString.CompressionFormat(format);
-                totalSize += storageSize;
+
+            bool hasRsrc = true;
+            long rsrcLen, rsrcSize;
+            CompressionFormat rsrcFmt;
+            if (adfAttrs != null) {
+                // Use the length/format of the ADF header file in the ZIP archive as
+                // the compressed length/format, since that's the part that's Deflated.
+                if (!adfEntry.GetPartInfo(FilePart.DataFork, out long unused,
+                        out rsrcSize, out rsrcFmt)) {
+                    // not expected
+                    hasRsrc = false;
+                }
+                rsrcLen = adfAttrs.RsrcLength;      // ADF is not compressed
+            } else if (!entry.GetPartInfo(FilePart.RsrcFork, out rsrcLen, out rsrcSize, 
+                    out rsrcFmt)) {
+                hasRsrc = false;
+            }
+            if (hasRsrc) {
+                RsrcLength = rsrcLen.ToString();
+                RsrcSize = rsrcSize.ToString();
+                RsrcFormat = ThingString.CompressionFormat(rsrcFmt);
             } else {
                 RsrcLength = RsrcSize = RsrcFormat = string.Empty;
             }
+            totalSize += rsrcSize;
 
             if (entry is DOS_FileEntry) {
                 TotalSize = fmt.FormatSizeOnDisk(totalSize, SECTOR_SIZE);

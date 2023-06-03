@@ -113,12 +113,12 @@ namespace cp2_wpf {
             ObservableCollection<ArchiveTreeItem> tvRoot = mMainWin.ArchiveTreeRoot;
             Debug.Assert(tvRoot.Count == 0);
 
-            mAppHook.LogI("Constructing content trees...");
+            mAppHook.LogI("Constructing archive trees...");
             DateTime startWhen = DateTime.Now;
 
             ArchiveTreeItem.ConstructTree(tvRoot, mWorkTree.RootNode);
 
-            mAppHook.LogI("Finished tree element construction in " +
+            mAppHook.LogI("Finished archive tree construction in " +
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
 
             // Select the first filesystem or archive we encounter while chasing the first child.
@@ -299,12 +299,12 @@ namespace cp2_wpf {
                 // when the entry representing the entire archive is selected.
                 bool hasRsrc = ((IArchive)CurrentWorkObject).Characteristics.HasResourceForks;
                 if (CurrentWorkObject is Zip) {
-                    // TODO: follow MacZip setting
-                    hasRsrc = true;
+                    // TODO: should reconfigure columns when settings are applied.
+                    hasRsrc = AppSettings.Global.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
                 }
                 mMainWin.ConfigureCenterPanel(isInfoOnly:false, isArchive:true,
                     isHierarchic:true, hasRsrc:hasRsrc, hasRaw:false);
-                //RefreshDirAndFileList();
+                RefreshDirAndFileList();
             } else if (CurrentWorkObject is IFileSystem) {
                 bool hasRsrc = ((IFileSystem)CurrentWorkObject).Characteristics.HasResourceForks;
                 bool isHier = ((IFileSystem)CurrentWorkObject).Characteristics.IsHierarchical;
@@ -516,13 +516,40 @@ namespace cp2_wpf {
 
         private void PopulateEntriesFromArchive(IArchive arc, ref int dirCount,
                 ref int fileCount, ObservableCollection<FileListItem> fileList) {
+            bool macZipMode = AppSettings.Global.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
             foreach (IFileEntry entry in arc) {
+                IFileEntry adfEntry = IFileEntry.NO_ENTRY;
+                FileAttribs? adfAttrs = null;
+                if (arc is Zip && macZipMode) {
+                    if (entry.IsMacZipHeader()) {
+                        // Ignore headers we don't explicitly look for.
+                        continue;
+                    }
+                    // Look for paired entry.
+                    string macZipName = Zip.GenerateMacZipName(entry.FullPathName);
+                    if (!string.IsNullOrEmpty(macZipName) &&
+                            arc.TryFindFileEntry(macZipName, out adfEntry)) {
+                        try {
+                            // Can't use un-seekable archive stream as archive source.
+                            using (Stream adfStream = ArcTemp.ExtractToTemp(arc,
+                                    adfEntry, FilePart.DataFork)) {
+                                adfAttrs = new FileAttribs(entry);
+                                adfAttrs.GetFromAppleSingle(adfStream, mAppHook);
+                            }
+                        } catch (Exception ex) {
+                            // Never mind.
+                            Debug.WriteLine("Unable to get ADF attrs for '" +
+                                entry.FullPathName + "': " + ex.Message);
+                            adfAttrs = null;
+                        }
+                    }
+                }
                 if (entry.IsDirectory) {
                     dirCount++;
                 } else {
                     fileCount++;
                 }
-                fileList.Add(new FileListItem(entry, mFormatter));
+                fileList.Add(new FileListItem(entry, adfEntry, adfAttrs, mFormatter));
             }
         }
 

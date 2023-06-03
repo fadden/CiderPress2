@@ -600,8 +600,8 @@ namespace AppCommon {
                     Node? newNode = ProcessStream(tmpStream, ext, entry.FullPathName, arcNode,
                         arcDANode, entry, out string errorMsg);
                     if (newNode == null) {
-                        // Nothing was recognized.
-                        return;
+                        // Not recognized.
+                        continue;
                     }
                     arcNode.AddChild(newNode);
                 } catch (InvalidDataException ex) {
@@ -821,6 +821,10 @@ namespace AppCommon {
                 childKind = DepthChildKind.DiskPart;
                 // For .SDK we always want to treat it as a ProDOS-ordered image.
                 ext = ".po";
+            } else if (entry.IsMacZipHeader()) {
+                // Ignore MacZip headers, regardless of MacZip mode.
+                ext = string.Empty;
+                return DepthChildKind.Unknown;
             } else {
                 if (FileIdentifier.HasDiskImageAttribs(entry, out ext)) {
                     childKind = DepthChildKind.DiskImage;
