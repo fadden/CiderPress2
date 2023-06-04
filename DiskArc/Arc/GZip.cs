@@ -368,5 +368,16 @@ namespace DiskArc.Arc {
                 Debug.Assert(entry.ChangeObject != null);
             }
         }
+
+        /// <summary>
+        /// Strips the ".gz" extension off of <paramref name="pathName"/>, if present.
+        /// </summary>
+        public static string StripGZExtension(string pathName) {
+            if (pathName.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase)) {
+                return pathName.Substring(0, pathName.Length - 3);
+            } else {
+                return pathName;
+            }
+        }
     }
 }

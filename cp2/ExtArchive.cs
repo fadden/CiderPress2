@@ -367,10 +367,8 @@ namespace cp2 {
                 // treated as disks rather than file archives.  Use the first and only entry.
                 entry = archive.GetFirstEntry();
                 if (archive is GZip) {
-                    if (name.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase)) {
-                        name = name.Substring(0, name.Length - 3);
-                    }
-                    ext = Path.GetExtension(name);
+                    name = GZip.StripGZExtension(name);
+                    ext = Path.GetExtension(ext);
                 } else if (archive is NuFX) {
                     // Must be a disk image in a .SDK.
                     Debug.Assert(entry.IsDiskImage);

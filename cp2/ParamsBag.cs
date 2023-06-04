@@ -468,7 +468,7 @@ namespace cp2 {
                         }
                         break;
                     default:
-                        Console.Error.WriteLine("Unknown option: -" + optStr);
+                        Console.Error.WriteLine("Unknown option: -" + optStr[i]);
                         return false;
                 }
             }

@@ -30,6 +30,10 @@ namespace cp2_wpf {
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;" +
             "*.gz;*.zip;*.as;*.acu";
+        public const string FILE_FILTER_CSV = "Comma-separated values (*.csv)|*.csv";
+        public const string FILE_FILTER_PNG = "PNG images (*.png)|*.png";
+        public const string FILE_FILTER_RTF = "RTF documents (*.rtf)|*.rtf";
+        public const string FILE_FILTER_TXT = "Text documents (*.txt)|*.txt";
 
         /// <summary>
         /// Asks the user to select a file to open.

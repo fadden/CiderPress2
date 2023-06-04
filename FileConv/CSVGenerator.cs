@@ -45,10 +45,12 @@ namespace FileConv {
         /// Generates a CSV document in a string.
         /// </summary>
         /// <param name="cells">Cell source.</param>
+        /// <param name="showRowNum">Prefix each row with the row number.  Useful for display
+        ///   but yields an incorrect CSV file.</param>
         /// <param name="sb">Output StringBuilder.</param>
-        public static void GenerateString(CellGrid cells, bool showIndex, StringBuilder sb) {
+        public static void GenerateString(CellGrid cells, bool showRowNum, StringBuilder sb) {
             for (int row = 0; row < cells.NumRows; row++) {
-                if (showIndex) {
+                if (showRowNum) {
                     sb.Append(row).Append(':');
                 }
                 AppendRow(cells, row, sb);
@@ -56,6 +58,12 @@ namespace FileConv {
             }
         }
 
+        /// <summary>
+        /// Appends a row of cells.
+        /// </summary>
+        /// <param name="cells">Cell grid object.</param>
+        /// <param name="row">Row index.</param>
+        /// <param name="sb">StringBuilder to append the output to.</param>
         private static void AppendRow(CellGrid cells, int row, StringBuilder sb) {
             for (int col = 0; col < cells.NumCols; col++) {
                 if (col != 0) {

@@ -214,7 +214,8 @@ limitations under the License.
                     <Button DockPanel.Dock="Left" Width="100" Content="Save as _Defaults"/>
                     <Button DockPanel.Dock="Right" Width="70" Margin="8,0,0,0"
                         Content="Done" IsCancel="True"/>
-                    <Button DockPanel.Dock="Right" Content="_Export..." Width="70"/>
+                    <Button DockPanel.Dock="Right" Content="_Export..." Width="70"
+                            IsEnabled="{Binding IsExportEnabled}" Click="ExportButton_Click"/>
                 </DockPanel>
             </DockPanel>
         </Grid>

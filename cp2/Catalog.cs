@@ -127,6 +127,8 @@ namespace cp2 {
 
         #region Catalog
 
+        private const string INDENT_START = "";
+
         /// <summary>
         /// Indentation level.
         /// </summary>
@@ -154,11 +156,11 @@ namespace cp2 {
             using (rootNode) {
                 Console.WriteLine("File: " + extArcName);
                 if (leaf is IArchive) {
-                    CatalogArchive((IArchive)leaf, string.Empty, parms);
+                    CatalogArchive((IArchive)leaf, extArcName, INDENT_START, parms);
                 } else if (leaf is IDiskImage) {
-                    CatalogDiskImage((IDiskImage)leaf, string.Empty, parms);
+                    CatalogDiskImage((IDiskImage)leaf, INDENT_START, parms);
                 } else if (leaf is Partition) {
-                    CatalogPartition((Partition)leaf, string.Empty, "Partition", parms);
+                    CatalogPartition((Partition)leaf, INDENT_START, "Partition", parms);
                 } else {
                     Console.Error.WriteLine("Internal issue: what is " + leaf);
                     Debug.Assert(false);
@@ -192,7 +194,8 @@ namespace cp2 {
         /// <summary>
         /// Formats the contents of a file archive.
         /// </summary>
-        private static void CatalogArchive(IArchive archive, string indent, ParamsBag parms) {
+        private static void CatalogArchive(IArchive archive, string gzipName, string indent,
+                ParamsBag parms) {
             if (parms.ShowNotes) {
                 if (archive.Notes.Count != 0) {
                     Console.WriteLine(indent + "  Archive notes:");
@@ -382,10 +385,10 @@ namespace cp2 {
                 string newIndent =
                     (archive is GZip && parms.SkipSimple) ? indent : indent + INDENT_MORE;
                 foreach (IFileEntry entry in archive) {
-                    if (!TryAsDiskImage(archive, entry, newIndent, parms)) {
+                    if (!TryAsDiskImage(archive, entry, gzipName, newIndent, parms)) {
                         if (parms.Depth > ParamsBag.ScanDepth.SubVol) {
                             // Max depth, find archives inside archives.
-                            if (!TryAsArchive(archive, entry, newIndent, parms)) {
+                            if (!TryAsArchive(archive, entry, gzipName, newIndent, parms)) {
                                 if (parms.Debug) {
                                     Console.WriteLine("+++ not recognized as disk or archive");
                                 }
@@ -405,13 +408,13 @@ namespace cp2 {
         /// <param name="indent">Indentation level.</param>
         /// <param name="parms">Parameter set.</param>
         /// <returns>True on success.</returns>
-        private static bool TryAsArchive(object arcOrFs, IFileEntry entry, string indent,
-                ParamsBag parms) {
+        private static bool TryAsArchive(object arcOrFs, IFileEntry entry, string gzipName,
+                string indent, ParamsBag parms) {
             if (entry.IsDubious || entry.IsDamaged) {
                 Console.WriteLine("+++ rejected as archive (damage): " + entry.FullPathName);
                 return false;
             }
-            if (!FileIdentifier.HasFileArchiveAttribs(entry, out string ext)) {
+            if (!FileIdentifier.HasFileArchiveAttribs(entry, gzipName, out string ext)) {
                 if (parms.Debug) {
                     Console.WriteLine("+++ rejected as archive (attribs): " + entry.FullPathName);
                 }
@@ -438,10 +441,15 @@ namespace cp2 {
                         // images here.
                         if (obj is IArchive) {
                             if (obj is not GZip) {
-                                Console.WriteLine(indent + "Catalog of \"" +
-                                    entry.FullPathName + "\"");
+                                if (arcOrFs is GZip) {
+                                    Console.WriteLine(indent + "Catalog of \"" +
+                                        GZip.StripGZExtension(gzipName) + "\"");
+                                } else {
+                                    Console.WriteLine(indent + "Catalog of \"" +
+                                        entry.FullPathName + "\"");
+                                }
                             }
-                            CatalogArchive((IArchive)obj, indent, parms);
+                            CatalogArchive((IArchive)obj, entry.FileName, indent, parms);
                         }
                     }
                 }
@@ -461,15 +469,15 @@ namespace cp2 {
         /// <param name="indent">Indentation level.</param>
         /// <param name="parms">Parameter set.</param>
         /// <returns>True on success.</returns>
-        private static bool TryAsDiskImage(object arcOrFs, IFileEntry entry, string indent,
-                ParamsBag parms) {
+        private static bool TryAsDiskImage(object arcOrFs, IFileEntry entry, string gzipName,
+                string indent, ParamsBag parms) {
             if (entry.IsDubious || entry.IsDamaged) {
                 if (parms.Debug) {
                     Console.WriteLine("+++ rejected as disk (damage): " + entry.FullPathName);
                 }
                 return false;
             }
-            if (!FileIdentifier.HasDiskImageAttribs(entry, out string ext)) {
+            if (!FileIdentifier.HasDiskImageAttribs(entry, gzipName, out string ext)) {
                 if (parms.Debug) {
                     Console.WriteLine("+++ rejected as disk (attribs): " + entry.FullPathName);
                 }
@@ -494,8 +502,13 @@ namespace cp2 {
                     using (IDisposable? obj = WorkTree.IdentifyStreamContents(stream, ext,
                             parms.AppHook)) {
                         if (obj is IDiskImage) {
-                            Console.WriteLine(indent + "Catalog of \"" +
-                                entry.FullPathName + "\"");
+                            if (arcOrFs is GZip) {
+                                Console.WriteLine(indent + "Catalog of \"" +
+                                    GZip.StripGZExtension(gzipName) + "\"");
+                            } else {
+                                Console.WriteLine(indent + "Catalog of \"" +
+                                    entry.FullPathName + "\"");
+                            }
                             CatalogDiskImage((IDiskImage)obj, indent, parms);
                         } else if (obj is NuFX) {
                             if (!parms.SkipSimple) {
@@ -768,9 +781,9 @@ namespace cp2 {
             Debug.Assert(dirEntry.IsDirectory);
             foreach (IFileEntry entry in dirEntry) {
                 if (!entry.IsDirectory) {
-                    if (!TryAsDiskImage(fs, entry, indent, parms)) {
+                    if (!TryAsDiskImage(fs, entry, string.Empty, indent, parms)) {
                         if (parms.Depth > ParamsBag.ScanDepth.SubVol) {
-                            TryAsArchive(fs, entry, indent, parms);
+                            TryAsArchive(fs, entry, string.Empty, indent, parms);
                         }
                     }
                 } else {
@@ -877,6 +890,19 @@ namespace cp2 {
             DateTime startWhen = DateTime.Now;
             Console.WriteLine("CiderPress II v" + CP2Main.APP_VERSION + " Multi-Disk Catalog (" +
                 RuntimeInformation.RuntimeIdentifier + ")");
+            string nonStdOpts = string.Empty;
+            if (parms.Depth != ParamsBag.ScanDepth.SubVol) {
+                nonStdOpts += " --depth=" + parms.Depth;
+            }
+            if (parms.Wide) {
+                nonStdOpts += " --wide" + parms.Depth;
+            }
+            if (!parms.SkipSimple) {
+                nonStdOpts += " --no-skip-simple";
+            }
+            if (!string.IsNullOrEmpty(nonStdOpts)) {
+                Console.WriteLine("Extra options:" + nonStdOpts);
+            }
             Console.WriteLine();
             foreach (string fileName in args) {
                 ProcessFile(fileName, parms);
@@ -927,7 +953,7 @@ namespace cp2 {
                                 Console.WriteLine("ERROR: unknown failure");
                                 break;
                         }
-                        Console.WriteLine(string.Empty);
+                        Console.WriteLine();
                     } else {
                         PrintCatalog(arcFile, pathName, ext, parms);
                     }
@@ -984,11 +1010,11 @@ namespace cp2 {
                     Console.WriteLine("  File not recognized");
                     Console.WriteLine();
                 } else if (thing is IArchive) {
-                    CatalogArchive((IArchive)thing, string.Empty, parms);
+                    CatalogArchive((IArchive)thing, pathName, INDENT_START, parms);
                 } else if (thing is IDiskImage) {
-                    CatalogDiskImage((IDiskImage)thing, string.Empty, parms);
+                    CatalogDiskImage((IDiskImage)thing, INDENT_START, parms);
                 } else if (thing is Partition) {
-                    CatalogPartition((Partition)thing, string.Empty, "Partition", parms);
+                    CatalogPartition((Partition)thing, INDENT_START, "Partition", parms);
                 } else {
                     Console.Error.WriteLine("Internal issue: what is " + thing);
                     Debug.Assert(false);
@@ -1007,9 +1033,7 @@ namespace cp2 {
             FilePart part = FilePart.DataFork;
             string ext;
             if (archive is GZip) {
-                if (pathName.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase)) {
-                    pathName = pathName.Substring(0, pathName.Length - 3);
-                }
+                pathName = GZip.StripGZExtension(pathName);
                 ext = Path.GetExtension(pathName);
             } else if (archive is NuFX) {
                 Debug.Assert(entry.IsDiskImage);
@@ -1112,10 +1136,7 @@ namespace cp2 {
                             FileKind.UnadornedSector, SectorOrder.ProDOS_Block, parms);
                     } else if (archive is GZip) {
                         // Strip the ".gz" off so we can find the "inner" filename extension.
-                        string newPathName = pathName;
-                        if (pathName.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase)) {
-                            newPathName = pathName.Substring(0, pathName.Length - 3);
-                        }
+                        string newPathName = GZip.StripGZExtension(pathName);
                         return PrintCatalogClassic(tmpStream, pathName,
                             Path.GetExtension(newPathName), parms);
                     } else {
@@ -1259,7 +1280,6 @@ namespace cp2 {
 
         private static void PrintFileEntryClassic(IFileSystem fs, IFileEntry entry,
                 string prefix, ParamsBag parms) {
-            string indent = string.Empty;
             char lck = (entry.Access == 0x01 || entry.Access == 0x21) ? '*' : ' ';
 
             //string name = prefix +

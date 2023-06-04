@@ -835,22 +835,13 @@ namespace AppCommon {
                 ext = string.Empty;
                 return DepthChildKind.Unknown;
             } else {
-                if (FileIdentifier.HasDiskImageAttribs(entry, out ext)) {
+                if (FileIdentifier.HasDiskImageAttribs(entry, arcPathName, out ext)) {
                     childKind = DepthChildKind.DiskImage;
-                } else if (FileIdentifier.HasFileArchiveAttribs(entry, out ext)) {
+                } else if (FileIdentifier.HasFileArchiveAttribs(entry, arcPathName, out ext)) {
                     childKind = DepthChildKind.FileArchive;
                 } else {
                     // Doesn't look like disk image or file archive.
                     return DepthChildKind.Unknown;
-                }
-
-                // For gzip we want to use the name of the gzip archive without the ".gz".
-                // The name stored inside the archive may be out of date.
-                if (arc is GZip) {
-                    if (arcPathName.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase)) {
-                        ext = Path.GetExtension(arcPathName.Substring(0, arcPathName.Length - 3));
-                    }
-                    // If it doesn't end with ".gz", use whatever we found earlier.
                 }
             }
             return childKind;
@@ -859,9 +850,9 @@ namespace AppCommon {
         private static DepthChildKind ExamineFileSystemEntry(IFileSystem fs, IFileEntry entry,
                 out string ext) {
             DepthChildKind childKind;
-            if (FileIdentifier.HasDiskImageAttribs(entry, out ext)) {
+            if (FileIdentifier.HasDiskImageAttribs(entry, string.Empty, out ext)) {
                 childKind = DepthChildKind.DiskImage;
-            } else if (FileIdentifier.HasFileArchiveAttribs(entry, out ext)) {
+            } else if (FileIdentifier.HasFileArchiveAttribs(entry, string.Empty, out ext)) {
                 childKind = DepthChildKind.FileArchive;
             } else {
                 childKind = DepthChildKind.Unknown;

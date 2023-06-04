@@ -232,7 +232,7 @@ namespace FileConv {
         public abstract IConvOutput ConvertFile(Dictionary<string, string> options);
 
         /// <summary>
-        /// Formats the resource fork.
+        /// Formats the resource fork, if present.
         /// </summary>
         public IConvOutput? FormatResources(Dictionary<string, string> options) {
             if (RsrcStream == null || RsrcStream.Length == 0) {

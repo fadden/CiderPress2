@@ -16,6 +16,7 @@
 using System;
 
 using DiskArc;
+using DiskArc.Arc;
 
 namespace AppCommon {
     /// <summary>
@@ -39,20 +40,23 @@ namespace AppCommon {
         /// Filename extensions used on file archives.
         /// </summary>
         private static string[] sArchiveExts = {
-            // Not including ".as", which only has a single file that shouldn't be a disk image
-            // or archive, so there's no real value in pulling it out.  With ".gz" we only need
-            // to dig into them if the extension suggests they hold something interesting, e.g.
-            // ".woz.gz", though this is only beneficial to our caller if the .gz itself is stored
-            // in an archive.
+            // Uncertain about ".as", which only has a single file that shouldn't be a disk image
+            // or archive, so there's no real value in pulling it out.  Useful for viewing the
+            // contents of ".as.gz" though.
+            //
+            // With ".gz" we only need  to dig into them if the extension suggests they hold
+            // something interesting, e.g. ".woz.gz", though this is only beneficial to our caller
+            // if the .gz itself is stored in an archive.
             //
             // NuFX disk images require special exclusion handling by the caller.
-            ".zip", ".bny", ".bqy", ".shk", ".bxy", ".bse", ".sea", ".acu", ".gz"
+            ".zip", ".bny", ".bqy", ".shk", ".bxy", ".bse", ".sea", ".acu", ".gz", ".as"
         };
 
         /// <summary>
         /// Returns true if the file attributes (type, extension) match those of a file archive.
         /// </summary>
-        public static bool HasFileArchiveAttribs(IFileEntry entry, out string ext) {
+        public static bool HasFileArchiveAttribs(IFileEntry entry, string gzipName,
+                out string ext) {
             bool looksGood = false;
             bool hasProType = false;
             byte proType = 0;
@@ -73,9 +77,13 @@ namespace AppCommon {
                 }
             }
 
-            ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
-            if (string.IsNullOrEmpty(ext)) {
-                return false;
+            if (entry is GZip_FileEntry) {
+                ext = Path.GetExtension(GZip.StripGZExtension(gzipName));
+            } else {
+                ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
+                if (string.IsNullOrEmpty(ext)) {
+                    return false;
+                }
             }
 
             if (!looksGood) {
@@ -94,9 +102,9 @@ namespace AppCommon {
         /// <summary>
         /// Returns true if the file attributes (type, extension) match those of a disk image.
         /// </summary>
-        public static bool HasDiskImageAttribs(IFileEntry entry, out string ext) {
+        public static bool HasDiskImageAttribs(IFileEntry entry, string gzipName, out string ext) {
             if (entry.IsDiskImage) {
-                ext = "po";
+                ext = ".po";        // assume ProDOS image, e.g. in NuFX
                 return true;
             }
             bool looksGood = false;
@@ -124,9 +132,13 @@ namespace AppCommon {
                 }
             }
 
-            ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
-            if (string.IsNullOrEmpty(ext)) {
-                return false;
+            if (entry is GZip_FileEntry) {
+                ext = Path.GetExtension(GZip.StripGZExtension(gzipName));
+            } else {
+                ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
+                if (string.IsNullOrEmpty(ext)) {
+                    return false;
+                }
             }
 
             if (!looksGood) {

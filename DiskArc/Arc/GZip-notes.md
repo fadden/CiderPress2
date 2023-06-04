@@ -73,7 +73,8 @@ linefeed (0x0a).
 
 The stored name is just the filename, not a partial path.  In practice, the embedded filename
 is rarely used, as most people expect the extracted file to simply lose the ".gz" extension from
-the archive name.
+the archive name.  Similarly, using the modification date of the ".gz" file may make more sense
+than using the stored value.
 
 ## gzip Utility ##
 
@@ -87,4 +88,4 @@ The program performs minimal manipulation of the filename, so on systems that us
 
 The file modification date stored in the archive is not used when extracting files.  Instead,
 the modification date is copied from the input file to the output file, when compressing or
-decompressing.
+decompressing.  When compressing data from a stream, the stored date is set to zero.

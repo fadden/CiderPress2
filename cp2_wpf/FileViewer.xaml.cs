@@ -30,6 +30,7 @@ using CommonUtil;
 using DiskArc;
 using DiskArc.FS;
 using FileConv;
+using Microsoft.Win32;
 using static FileConv.Converter;
 
 namespace cp2_wpf {
@@ -140,6 +141,12 @@ namespace cp2_wpf {
             set { mIsDOSRawEnabled = value; OnPropertyChanged(); }
         }
         private bool mIsDOSRawEnabled;
+
+        public bool IsExportEnabled {
+            get { return mIsExportEnabled; }
+            set { mIsExportEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsExportEnabled;
 
         public bool HasPrevFile {
             get { return mHasPrevFile; }
@@ -356,6 +363,7 @@ namespace cp2_wpf {
 
             PrepareOptions(item.Converter);
             ConfigureControls(item.Converter);
+            IsExportEnabled = false;
 
             FormatFile();
         }
@@ -389,7 +397,7 @@ namespace cp2_wpf {
             //   tab is enabled, or when we switch to the resource fork tab
             mCurRsrcOutput = item.Converter.FormatResources(mConvOptions);
             DateTime rsrcDoneWhen = DateTime.Now;
-            Debug.WriteLine(item.Converter.Label + " conv took " +
+            mAppHook.LogD(item.Converter.Label + " conv took " +
                 (dataDoneWhen - startWhen).TotalMilliseconds + " ms (data fork) / " +
                 (rsrcDoneWhen - dataDoneWhen).TotalMilliseconds + " ms (rsrc fork)");
 
@@ -418,6 +426,7 @@ namespace cp2_wpf {
                     dataRichTextBox.Document.ContentEnd);
                 range.Load(rtfStream, DataFormats.Rtf);
                 SetDisplayType(DisplayItemType.FancyText);
+                IsExportEnabled = true;
 
                 //using (FileStream stream =
                 //        new FileStream(@"C:\src\ciderpress2\test.rtf", FileMode.Create)) {
@@ -435,6 +444,7 @@ namespace cp2_wpf {
                 }
                 DataPlainText = ((SimpleText)mCurDataOutput).Text.ToString();
                 SetDisplayType(DisplayItemType.SimpleText);
+                IsExportEnabled = true;
             } else if (mCurDataOutput is CellGrid) {
                 StringBuilder sb = new StringBuilder();
                 CSVGenerator.GenerateString((CellGrid)mCurDataOutput, false, sb);
@@ -447,6 +457,7 @@ namespace cp2_wpf {
                 }
                 DataPlainText = sb.ToString();
                 SetDisplayType(DisplayItemType.SimpleText);
+                IsExportEnabled = true;
             } else if (mCurDataOutput is IBitmap) {
                 IBitmap bitmap = (IBitmap)mCurDataOutput;
                 previewImage.Source = WinUtil.ConvertToBitmapSource(bitmap);
@@ -457,6 +468,7 @@ namespace cp2_wpf {
                 //        new FileStream(@"C:\src\ciderpress2\TEST.png", FileMode.Create)) {
                 //    PNGGenerator.Generate(bitmap, tmpStream);
                 //}
+                IsExportEnabled = true;
             } else if (mCurDataOutput is HostConv) {
                 DataPlainText = "TODO: host-convert " + ((HostConv)mCurDataOutput).Kind;
                 SetDisplayType(DisplayItemType.SimpleText);
@@ -507,6 +519,81 @@ namespace cp2_wpf {
                 ShowTab(Tab.Rsrc);
             } else {
                 ShowTab(Tab.Note);
+            }
+        }
+
+        /// <summary>
+        /// Handles the Export button.
+        /// </summary>
+        private void ExportButton_Click(object sender, RoutedEventArgs e) {
+            string filter, ext;
+            if (mCurDataOutput is FancyText && !((FancyText)mCurDataOutput).PreferSimple) {
+                filter = WinUtil.FILE_FILTER_RTF;
+                ext = ".rtf";
+            } else if (mCurDataOutput is SimpleText) {
+                filter = WinUtil.FILE_FILTER_TXT;
+                ext = ".txt";
+            } else if (mCurDataOutput is CellGrid) {
+                filter = WinUtil.FILE_FILTER_CSV;
+                ext = ".csv";
+            } else if (mCurDataOutput is IBitmap) {
+                filter = WinUtil.FILE_FILTER_PNG;
+                ext = ".png";
+            } else {
+                Debug.Assert(false, "not handling " + mCurDataOutput.GetType().Name);
+                return;
+            }
+
+            // We'd like to use the FileDialog "AddExtension" property to automatically add the
+            // extension if it's not present, but this doesn't work correctly if the file appears
+            // to have some other extension.  For example, it won't add ".png" to a filename that
+            // ends with ".pic".
+            string fileName = mSelected[mCurIndex].FileName;
+            if (!fileName.ToLowerInvariant().EndsWith(ext)) {
+                fileName += ext;
+            }
+
+            // AddExtension, ValidateNames, CheckPathExists, OverwritePrompt are enabled by default
+            SaveFileDialog fileDlg = new SaveFileDialog() {
+                Title = "Export File...",
+                Filter = filter + "|" + WinUtil.FILE_FILTER_ALL,
+                FilterIndex = 1,
+                FileName = fileName
+            };
+            if (fileDlg.ShowDialog() != true) {
+                return;
+            }
+            string pathName = Path.GetFullPath(fileDlg.FileName);
+            if (!pathName.ToLowerInvariant().EndsWith(ext)) {
+                pathName += ext;
+            }
+
+            try {
+                using (Stream outStream = new FileStream(pathName, FileMode.Create)) {
+                    if (mCurDataOutput is FancyText && !((FancyText)mCurDataOutput).PreferSimple) {
+                        StringBuilder sb = ((FancyText)mCurDataOutput).Text;
+                        RTFGenerator.Generate((FancyText)mCurDataOutput, outStream);
+                    } else if (mCurDataOutput is SimpleText) {
+                        StringBuilder sb = ((SimpleText)mCurDataOutput).Text;
+                        using (StreamWriter sw = new StreamWriter(outStream)) {
+                            sw.Write(sb);
+                        }
+                    } else if (mCurDataOutput is CellGrid) {
+                        StringBuilder sb = new StringBuilder();
+                        CSVGenerator.GenerateString((CellGrid)mCurDataOutput, false, sb);
+                        using (StreamWriter sw = new StreamWriter(outStream)) {
+                            sw.Write(sb);
+                        }
+                    } else if (mCurDataOutput is IBitmap) {
+                        PNGGenerator.Generate((IBitmap)mCurDataOutput, outStream);
+                    } else {
+                        Debug.Assert(false, "not handling " + mCurDataOutput.GetType().Name);
+                        return;
+                    }
+                }
+            } catch (Exception ex) {
+                MessageBox.Show(this, "Export failed: " + ex.Message, "Export Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -958,6 +1045,5 @@ namespace cp2_wpf {
         }
 
         #endregion Configure
-
     }
 }

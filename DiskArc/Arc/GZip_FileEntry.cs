@@ -338,18 +338,24 @@ namespace DiskArc.Arc {
             }
 
             byte flags = hdrBuf[3];
-            lastModWhen = (int)RawData.GetU32LE(hdrBuf, 4);
-            // ignore XFL and OS
+            int timeStamp = (int)RawData.GetU32LE(hdrBuf, 4);
+            if (timeStamp != 0) {
+                lastModWhen = timeStamp;
+            }
+            // ignore XFL (+8) and OS (+9)
 
             // If "extra field" is present, skip past it.
             if ((flags & (byte)HeaderFlags.FEXTRA) != 0) {
                 int len1 = stream.ReadByte();
                 int len2 = stream.ReadByte();
                 if (len2 < 0) {
-                    return false;
+                    return false;   // early EOF
                 }
                 ushort xlen = (ushort)(len1 | (len2 << 8));
                 stream.Position += xlen;
+                if (stream.Position > stream.Length) {
+                    return false;   // early EOF
+                }
             }
 
             // If a null-terminated filename is present, read it.
