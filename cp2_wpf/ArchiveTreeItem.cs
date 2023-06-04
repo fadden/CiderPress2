@@ -157,7 +157,7 @@ namespace cp2_wpf {
                     Debug.Assert(false);
                     break;
             }
-            if (workNode.IsReadOnly) {
+            if (workNode.IsNodeReadOnly) {
                 ReadOnlyIcon =
                     (ControlTemplate)Application.Current.FindResource("icon_StatusNoNoColor");
             }

@@ -94,22 +94,22 @@ namespace cp2_wpf {
         public Visibility SimpleTextVisibility { get; set; }
         public Visibility FancyTextVisibility { get; set; }
         public Visibility BitmapVisibility { get; set; }
-        private enum DisplayItem {
+        private enum DisplayItemType {
             Unknown = 0, SimpleText, FancyText, Bitmap
         }
-        private void SetDisplay(DisplayItem item) {
+        private void SetDisplayType(DisplayItemType item) {
             switch (item) {
-                case DisplayItem.SimpleText:
+                case DisplayItemType.SimpleText:
                     SimpleTextVisibility = Visibility.Visible;
                     FancyTextVisibility = Visibility.Collapsed;
                     BitmapVisibility = Visibility.Collapsed;
                     break;
-                case DisplayItem.FancyText:
+                case DisplayItemType.FancyText:
                     SimpleTextVisibility = Visibility.Collapsed;
                     FancyTextVisibility = Visibility.Visible;
                     BitmapVisibility = Visibility.Collapsed;
                     break;
-                case DisplayItem.Bitmap:
+                case DisplayItemType.Bitmap:
                     SimpleTextVisibility = Visibility.Collapsed;
                     FancyTextVisibility = Visibility.Collapsed;
                     BitmapVisibility = Visibility.Visible;
@@ -337,7 +337,7 @@ namespace cp2_wpf {
         /// </summary>
         private void ShowErrorMessage(string msg) {
             DataPlainText = "Viewer error: " + msg;
-            SetDisplay(DisplayItem.SimpleText);
+            SetDisplayType(DisplayItemType.SimpleText);
             ShowTab(Tab.Data);
         }
 
@@ -401,7 +401,7 @@ namespace cp2_wpf {
                 DataPlainText = ((SimpleText)mCurDataOutput).Text.ToString();
                 dataForkTextBox.HorizontalContentAlignment = HorizontalAlignment.Center;
                 dataForkTextBox.VerticalContentAlignment = VerticalAlignment.Center;
-                SetDisplay(DisplayItem.SimpleText);
+                SetDisplayType(DisplayItemType.SimpleText);
             } else if (mCurDataOutput is FancyText && !((FancyText)mCurDataOutput).PreferSimple) {
                 StringBuilder sb = ((FancyText)mCurDataOutput).Text;
                 if (sb.Length > MAX_FANCY_TEXT) {
@@ -417,7 +417,7 @@ namespace cp2_wpf {
                 TextRange range = new TextRange(dataRichTextBox.Document.ContentStart,
                     dataRichTextBox.Document.ContentEnd);
                 range.Load(rtfStream, DataFormats.Rtf);
-                SetDisplay(DisplayItem.FancyText);
+                SetDisplayType(DisplayItemType.FancyText);
 
                 //using (FileStream stream =
                 //        new FileStream(@"C:\src\ciderpress2\test.rtf", FileMode.Create)) {
@@ -434,7 +434,7 @@ namespace cp2_wpf {
                     sb.Append(") ]");
                 }
                 DataPlainText = ((SimpleText)mCurDataOutput).Text.ToString();
-                SetDisplay(DisplayItem.SimpleText);
+                SetDisplayType(DisplayItemType.SimpleText);
             } else if (mCurDataOutput is CellGrid) {
                 StringBuilder sb = new StringBuilder();
                 CSVGenerator.GenerateString((CellGrid)mCurDataOutput, false, sb);
@@ -446,12 +446,12 @@ namespace cp2_wpf {
                     sb.Append(") ]");
                 }
                 DataPlainText = sb.ToString();
-                SetDisplay(DisplayItem.SimpleText);
+                SetDisplayType(DisplayItemType.SimpleText);
             } else if (mCurDataOutput is IBitmap) {
                 IBitmap bitmap = (IBitmap)mCurDataOutput;
                 previewImage.Source = WinUtil.ConvertToBitmapSource(bitmap);
                 ConfigureMagnification();
-                SetDisplay(DisplayItem.Bitmap);
+                SetDisplayType(DisplayItemType.Bitmap);
 
                 //using (FileStream tmpStream =
                 //        new FileStream(@"C:\src\ciderpress2\TEST.png", FileMode.Create)) {
@@ -459,7 +459,7 @@ namespace cp2_wpf {
                 //}
             } else if (mCurDataOutput is HostConv) {
                 DataPlainText = "TODO: host-convert " + ((HostConv)mCurDataOutput).Kind;
-                SetDisplay(DisplayItem.SimpleText);
+                SetDisplayType(DisplayItemType.SimpleText);
             } else {
                 Debug.Assert(false, "unknown IConvOutput impl " + mCurDataOutput);
             }

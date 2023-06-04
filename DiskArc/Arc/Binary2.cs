@@ -52,6 +52,7 @@ namespace DiskArc.Arc {
         public ArcCharacteristics Characteristics => sCharacteristics;
         public static ArcCharacteristics SCharacteristics => sCharacteristics;
 
+        public bool IsReadOnly => IsDubious;
         public bool IsDubious { get; internal set; }
 
         public Notes Notes { get; } = new Notes();

@@ -43,6 +43,7 @@ namespace DiskArc.Arc {
 
         public Stream? DataStream { get; internal set; }
 
+        public bool IsReadOnly => IsDubious;
         public bool IsDubious { get; internal set; }
 
         public Notes Notes { get; } = new Notes();

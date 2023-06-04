@@ -356,7 +356,6 @@ limitations under the License.
                 </Grid.ColumnDefinitions>
 
                 <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center"/>
-                <!--<GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Center"/>-->
 
                 <!-- left panel -->
                 <Grid Name="leftPanel" Grid.Column="0">
@@ -492,7 +491,7 @@ limitations under the License.
                               CanUserReorderColumns="False"
                               VerticalScrollBarVisibility="Visible"
                               SelectionMode="Extended"
-                              Background="{x:Static SystemColors.WindowBrush}"
+                              Background="{DynamicResource {x:Static SystemColors.WindowBrush}}"
                               EnableRowVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
                               MouseDoubleClick="FileList_MouseDoubleClick"
@@ -674,7 +673,8 @@ limitations under the License.
                                 <RowDefinition Height="Auto" MinHeight="120"/>
                             </Grid.RowDefinitions>
 
-                            <StackPanel Grid.Row="0" Background="LightBlue">
+                            <StackPanel Grid.Row="0"
+                                        Background="{DynamicResource {x:Static SystemColors.GradientInactiveCaptionBrushKey}}">
                                 <TextBlock Text="Add/Import Options" HorizontalAlignment="Center"/>
                             </StackPanel>
 
@@ -701,7 +701,8 @@ limitations under the License.
                                 </GroupBox>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="2" Background="LightBlue" Margin="0,20,0,0">
+                            <StackPanel Grid.Row="2" Margin="0,20,0,0"
+                                        Background="{DynamicResource {x:Static SystemColors.GradientInactiveCaptionBrushKey}}">
                                 <TextBlock Text="Extract/Export Options" HorizontalAlignment="Center"/>
                             </StackPanel>
 

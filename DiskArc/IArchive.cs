@@ -64,6 +64,17 @@ namespace DiskArc {
         Arc.ArcCharacteristics Characteristics { get; }
 
         /// <summary>
+        /// True if this archive may not be written to.
+        /// </summary>
+        /// <remarks>
+        /// <para>Archives are fundamentally writable, since they're always written to a new
+        /// stream, but they can be marked read-only if the contents are dubious (because
+        /// generating a new one could lose something) or we simply don't know how to generate
+        /// that type of archive.</para>
+        /// </remarks>
+        bool IsReadOnly { get; }
+
+        /// <summary>
         /// True if the archive structure is dubious.
         /// </summary>
         /// <remarks>

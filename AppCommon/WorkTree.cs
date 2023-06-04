@@ -76,14 +76,18 @@ namespace AppCommon {
             public enum Status { Unknown = 0, OK, Dubious, Warning, Error };
 
             /// <summary>
+            /// True if DAObject or any of its parents are read-only.
+            /// </summary>
+            public bool IsReadOnly { get; set; } = false;
+
+            /// <summary>
             /// True if DAObject is read-only.
             /// </summary>
             /// <remarks>
-            /// This is meant for display, e.g. via status icon, and may be set to an
-            /// "incorrect" value to reduce clutter in the visuals.  Do not rely on this as an
-            /// indicator of whether the referenced objects are writable.
+            /// In some cases, such as a disk image child of a multi-part image, the read-only
+            /// status of the parent is carried over because they share the same underlying stream.
             /// </remarks>
-            public bool IsReadOnly { get; set; } = false;
+            public bool IsNodeReadOnly { get; set; } = false;
 
             /// <summary>
             /// Place to stash the order hint for IDiskImage nodes, in case we need to
@@ -526,7 +530,8 @@ namespace AppCommon {
                     Label = pathName,
                     TypeStr = typeStr,
                     NodeStatus = status,
-                    IsReadOnly = arc.IsDubious
+                    IsReadOnly = !leafNode.CanWrite,
+                    IsNodeReadOnly = arc.IsReadOnly,
                 };
 
                 HandleFileArchive((IArchive)leafObj, newNode, leafNode, pathName);
@@ -546,7 +551,8 @@ namespace AppCommon {
                     Label = pathName,
                     TypeStr = typeStr,
                     NodeStatus = status,
-                    IsReadOnly = disk.IsReadOnly,
+                    IsReadOnly = !leafNode.CanWrite,
+                    IsNodeReadOnly = disk.IsReadOnly,
                     OrderHint = orderHint
                 };
 
@@ -658,7 +664,8 @@ namespace AppCommon {
                 Label = "partitions",
                 TypeStr = typeStr,
                 NodeStatus = status,
-                IsReadOnly = false
+                IsReadOnly = !daParent.CanWrite,
+                IsNodeReadOnly = false
             };
             parentNode.AddChild(multiNode);
 
@@ -688,7 +695,8 @@ namespace AppCommon {
                 Label = label,
                 TypeStr = typeStr,
                 NodeStatus = Node.Status.OK,
-                IsReadOnly = false
+                IsReadOnly = !daParent.CanWrite,
+                IsNodeReadOnly = false
             };
             parentNode.AddChild(partNode);
 
@@ -744,7 +752,8 @@ namespace AppCommon {
                 Label = label,
                 TypeStr = typeStr,
                 NodeStatus = status,
-                IsReadOnly = fs.IsReadOnly
+                IsReadOnly = !daParent.CanWrite || fs.IsReadOnly,
+                IsNodeReadOnly = fs.IsReadOnly
             };
             diskImageNode.AddChild(fsNode);
 

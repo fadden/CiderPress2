@@ -104,6 +104,33 @@ namespace AppCommon {
         protected Stream NodeStream { get; set; }
 
         /// <summary>
+        /// True if the object in this node can be modified.  This is determined by the
+        /// writability of NodeStream and the IArchive or IDiskImage characteristics.  This
+        /// does not reflect the writability of the parents.
+        /// </summary>
+        /// <remarks>
+        /// The NodeStream will always be writable if this was extracted to a temp file, even
+        /// if the parent isn't writable.
+        /// </remarks>
+        public bool CanWriteNode { get; set; }
+
+        /// <summary>
+        /// Returns true if this node and all of its parents are writable.
+        /// </summary>
+        public bool CanWrite {
+            get {
+                DiskArcNode? node = this;
+                while (node != null) {
+                    if (!node.CanWriteNode) {
+                        return false;
+                    }
+                    node = node.Parent;
+                }
+                return true;
+            }
+        }
+
+        /// <summary>
         /// List of child nodes.
         /// </summary>
         protected List<DiskArcNode> Children { get; } = new List<DiskArcNode>();
@@ -335,6 +362,7 @@ namespace AppCommon {
                 base(parent, nodeStream, entryInParent, appHook) {
             Archive = archive;
 
+            CanWriteNode = nodeStream.CanWrite && !archive.IsReadOnly;
             DebugIdentifier = ((parent != null) ? parent.DebugIdentifier + "/" : "") +
                 "Archive";
         }
@@ -350,6 +378,8 @@ namespace AppCommon {
         // Save updates to a file archive.
         public override void SaveUpdates(bool doCompress) {
             Debug.Assert(Parent != null);
+            Debug.Assert(CanWrite);
+
             // Create a new file on disk, or a temp file on the host filesystem.
             Stream outputStream = Parent.CreateArchiveOutputFile(EntryInParent);
             try {
@@ -515,6 +545,7 @@ namespace AppCommon {
                 base(parent, nodeStream, entryInParent, appHook) {
             DiskImage = diskImage;
 
+            CanWriteNode = nodeStream.CanWrite && !diskImage.IsReadOnly;
             DebugIdentifier = ((parent != null) ? parent.DebugIdentifier + "/" : "") +
                 "DiskImage";
         }
@@ -531,6 +562,8 @@ namespace AppCommon {
         public override void SaveUpdates(bool doCompress) {
             AppHook.LogI("Disk image updated");
             Debug.Assert(Parent != null);
+            Debug.Assert(CanWrite);
+
             DiskImage.Flush();
             // Tell our parent that we've been updated.
             Parent.DiskUpdated(NodeStream, EntryInParent, doCompress);
@@ -629,10 +662,18 @@ namespace AppCommon {
         private string mTmpPathName = string.Empty;
         private Stream? mTmpStream = null;
 
+        /// <summary>
+        /// Constructor.  Note this does not take a stream, and we do not open the file; the
+        /// stream is associated with our first (and only) child.  The pathname is only used as
+        /// the location for archive output files.
+        /// </summary>
+        /// <param name="pathName">Path to host file.</param>
+        /// <param name="appHook">Application hook reference.</param>
         public HostFileNode(string pathName, AppHook appHook) :
                 base(null, new MemoryStream(new byte[0]), IFileEntry.NO_ENTRY, appHook) {
             PathName = pathName;
 
+            CanWriteNode = true;
             DebugIdentifier = "Host(" + pathName + ")";
         }
 
@@ -649,7 +690,6 @@ namespace AppCommon {
         }
 
         public override void SaveUpdates(bool doCompress) {
-            // nothing to do here
             throw new NotImplementedException("should not call here");
         }
 
