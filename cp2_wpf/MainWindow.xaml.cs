@@ -23,6 +23,8 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 using AppCommon;
 using CommonUtil;
@@ -789,7 +791,7 @@ namespace cp2_wpf {
             mMainCtrl.HandleFileListDoubleClick(fli, row, col, arcTreeSel, dirTreeSel);
         }
 
-        // This is necessary because DataGrid eats the Delete key.
+        // This is necessary because DataGrid eats the Delete key.  Usually.
         private void FileListDataGrid_PreviewKeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Delete) {
                 Debug.WriteLine("Caught Delete in the center datagrid");
@@ -798,6 +800,7 @@ namespace cp2_wpf {
                 if (mMainCtrl.AreFilesSelected) {
                     mMainCtrl.DeleteFiles();
                 }
+                e.Handled = true;       // consume
             }
         }
 
@@ -829,6 +832,34 @@ namespace cp2_wpf {
                 return;
             }
             mMainCtrl.HandlePartitionLayoutDoubleClick(pli, row, col, arcTreeSel);
+        }
+
+        /// <summary>
+        /// Posts a notification that fades out after a few seconds.
+        /// </summary>
+        /// <param name="msg">Message to show.</param>
+        public void PostNotification(string msg, bool success) {
+            const int DURATION_SEC = 3;
+
+            toastTextBlock.Text = msg;
+            if (success) {
+                toastBorder.BorderBrush = Brushes.Green;
+            } else {
+                toastBorder.BorderBrush = Brushes.Red;
+            }
+
+            // We could do this in XAML, but something this simple is easier to do here.
+            //
+            // It's unclear whether changing the Visibility is actually useful, and it's
+            // mildly wrong: if you do two quick operations, the message gets hidden when
+            // the first animation completes.
+            //toastMessage.Visibility = Visibility.Visible;
+            DoubleAnimation doubAnim =
+                new DoubleAnimation(1.0, 0.0, new Duration(TimeSpan.FromSeconds(DURATION_SEC)));
+            //doubAnim.Completed += (sender, e) => {
+            //    toastMessage.Visibility = Visibility.Hidden;
+            //};
+            toastMessage.BeginAnimation(UIElement.OpacityProperty, doubAnim);
         }
 
         #endregion Center Panel

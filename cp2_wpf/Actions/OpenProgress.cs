@@ -80,8 +80,9 @@ namespace cp2_wpf.Actions {
         /// Called on GUI thread after completion, to report results.
         /// </summary>
         /// <param name="results">Result object returned by work thread.</param>
-        public void RunWorkerCompleted(object? results) {
+        public bool RunWorkerCompleted(object? results) {
             Results = (Result)results!;
+            return (Results.mWorkTree != null);
         }
     }
 }

@@ -23,6 +23,10 @@ namespace cp2_wpf.WPFCommon {
     /// <summary>
     /// Cancellable progress dialog.
     /// </summary>
+    /// <remarks>
+    /// The dialog will return True if the operation ran to completion, False if it was cancelled
+    /// or halted early with an error.
+    /// </remarks>
     public partial class WorkProgress : Window {
         /// <summary>
         /// Task-specific stuff.
@@ -39,7 +43,8 @@ namespace cp2_wpf.WPFCommon {
             /// Called on successful completion of the work.  Executes on main thread.
             /// </summary>
             /// <param name="results">Results of work.</param>
-            void RunWorkerCompleted(object? results);
+            /// <returns>Value to return from dialog (usually true on success).</returns>
+            bool RunWorkerCompleted(object? results);
         }
 
         /// <summary>
@@ -200,8 +205,8 @@ namespace cp2_wpf.WPFCommon {
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 DialogResult = false;
             } else {
-                mCallbacks.RunWorkerCompleted(e.Result);
-                DialogResult = true;
+                // On success, return "true" from the dialog.
+                DialogResult = mCallbacks.RunWorkerCompleted(e.Result);
             }
         }
     }

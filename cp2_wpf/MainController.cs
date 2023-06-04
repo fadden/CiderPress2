@@ -734,7 +734,6 @@ namespace cp2_wpf {
             // same directory name.
             string basePath = Path.GetDirectoryName(pathNames[0])!;
 
-            // TODO: configure add opts from settings
             AddFileSet.AddOpts addOpts = ConfigureAddOpts(false);
             AddFileSet fileSet;
             try {
@@ -759,7 +758,9 @@ namespace cp2_wpf {
 
             // Do the extraction on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
-            workDialog.ShowDialog();
+            if (workDialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Files added", true);
+            }
 
             // Refresh the contents of the file list.  Do this even if the operation was
             // cancelled, because it might have completed partially.
@@ -897,9 +898,11 @@ namespace cp2_wpf {
 
             // Do the deletion on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
-            workDialog.ShowDialog();
+            if (workDialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Deletion successful", true);
+            }
 
-            // Refresh the controls.
+            // Refresh the directory and file lists.
             RefreshDirAndFileList();
         }
 
@@ -943,7 +946,9 @@ namespace cp2_wpf {
 
             // Do the extraction on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
-            workDialog.ShowDialog();
+            if (workDialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Extraction successful", true);
+            }
         }
 
         /// <summary>

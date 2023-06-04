@@ -21,7 +21,8 @@ limitations under the License.
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:cp2_wpf"
         mc:Ignorable="d"
-        Title="CiderPress II" Width="1200" Height="800" ResizeMode="CanResizeWithGrip"
+        Title="CiderPress II"
+        Width="1200" Height="800" MinWidth="640" MinHeight="480" ResizeMode="CanResizeWithGrip"
         SourceInitialized="Window_SourceInitialized"
         Loaded="Window_Loaded"
         LocationChanged="Window_LocationChanged"
@@ -281,12 +282,12 @@ limitations under the License.
                   Visibility="{Binding Path=LaunchPanelVisibility}" d:IsHidden="True">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="4*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="4*"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -338,13 +339,6 @@ limitations under the License.
                         </Button.Content>
                     </Button>
                 </StackPanel>
-
-                <!-- remove before ship -->
-                <StackPanel Grid.Column="1" Grid.Row="3" HorizontalAlignment="Center" Margin="0,20,0,20">
-                    <TextBlock Text="It's not ready yet" FontSize="20" HorizontalAlignment="Center"/>
-                    <TextBlock Text="GO AWAY" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
-                </StackPanel>
-
             </Grid>
 
             <!-- Active UI ("main" screen).  Three side-by-side panels, only the middle of which
@@ -648,6 +642,18 @@ limitations under the License.
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>
+
+                    <!-- fade-out notification, used when events complete -->
+                    <Grid Name="toastMessage" Opacity="0" Visibility="Visible">
+                        <Border Name="toastBorder" Width="200" Height="40" Margin="0,0,0,20"
+                                BorderBrush="Blue" BorderThickness="0,2,0,2"
+                                Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+                                HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                            <TextBlock Name="toastTextBlock" Margin="4,0"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                                       TextWrapping="Wrap" Text="This is a test of the emergency opacity system"/>
+                        </Border>
+                    </Grid>
                 </Grid>
 
                 <!-- right panel -->

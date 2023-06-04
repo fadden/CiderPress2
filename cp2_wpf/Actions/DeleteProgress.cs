@@ -93,9 +93,10 @@ namespace cp2_wpf.Actions {
             return true;
         }
 
-        public void RunWorkerCompleted(object? results) {
+        public bool RunWorkerCompleted(object? results) {
             bool success = (results is true);
             Debug.WriteLine("Operation completed, success=" + success);
+            return success;
         }
     }
 }

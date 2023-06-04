@@ -358,6 +358,8 @@ namespace cp2_wpf {
                     mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
                 if (dirTreeSel != null) {
                     curSel = dirTreeSel.FileEntry;
+                } else {
+                    Debug.WriteLine("Refresh: no dir tree sel");
                 }
 
                 // Walk through population of the directory tree to see if it matches what
@@ -444,6 +446,7 @@ namespace cp2_wpf {
                     DirectoryTreeItem? dirTreeSel =
                         mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
                     if (dirTreeSel == null) {
+                        Debug.WriteLine("Can't verify file list, no dir tree sel");
                         return false;
                     }
                     return VerifyFileList(mMainWin.FileList, dirTreeSel.FileEntry);
@@ -480,6 +483,8 @@ namespace cp2_wpf {
                     if (dirTreeSel != null) {
                         PopulateEntriesFromSingleDir(dirTreeSel.FileEntry,
                             ref dirCount, ref fileCount, fileList);
+                    } else {
+                        Debug.WriteLine("Can't repopulate file list, no dir tree sel");
                     }
                 } else {
                     PopulateEntriesFromFullDisk(((IFileSystem)CurrentWorkObject!).GetVolDirEntry(),
@@ -490,7 +495,7 @@ namespace cp2_wpf {
             }
 
             DateTime endWhen = DateTime.Now;
-            Debug.WriteLine("File list refresh done in " +
+            mAppHook.LogD("File list refresh done in " +
                 (endWhen - startWhen).TotalMilliseconds + " ms (clear took " +
                 (startWhen - clearWhen).TotalMilliseconds + " ms)");
 
@@ -627,7 +632,7 @@ namespace cp2_wpf {
                 return false;
             }
             foreach (IFileEntry entry in dirEntry) {
-                if (fileList[index].FileEntry != entry) {
+                if (index >= fileList.Count || fileList[index].FileEntry != entry) {
                     return false;
                 }
                 index++;

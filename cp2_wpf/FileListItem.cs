@@ -38,6 +38,13 @@ namespace cp2_wpf {
     /// Some of the fields are only relevant for one.
     /// </summary>
     public class FileListItem {
+        /// <summary>
+        /// String to show when no type information is available.  We want this to be something
+        /// that isn't available in the Mac OS Roman character set, and that looks nicer than
+        /// four NUL control picture glyphs.
+        /// </summary>
+        private const string NO_TYPE = "\u23af\u23af\u23af\u23af";
+
         private static readonly ControlTemplate sInvalidIcon =
             (ControlTemplate)Application.Current.FindResource("icon_StatusInvalid");
         private static readonly ControlTemplate sErrorIcon =
@@ -158,7 +165,7 @@ namespace cp2_wpf {
                     AuxType = string.Format("${0:X4}", entry.AuxType);
                 } else {
                     // HFS types are zero, ProDOS types are zero or not available; give up.
-                    Type = AuxType = "-----";
+                    Type = AuxType = NO_TYPE;
                 }
             } else if (entry.HasProDOSTypes) {
                 // Show a '+' if a resource fork is present, whether or not it has data.
@@ -184,7 +191,7 @@ namespace cp2_wpf {
                 }
             } else {
                 // No type information available (e.g. ZIP without MacZip).
-                Type = AuxType = "----";
+                Type = AuxType = NO_TYPE;
             }
 
             RawDataLength = string.Empty;
