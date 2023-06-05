@@ -205,8 +205,18 @@ namespace cp2_wpf {
             }
         }
 
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="owner">Parent window.</param>
+        /// <param name="archiveOrFileSystem">IArchive or IFileSystem object reference.</param>
+        /// <param name="selected">List of selected file entries.</param>
+        /// <param name="firstSel">Index of first selection.  Useful when a single selection is
+        ///   converted into a full dir selection.</param>
+        /// <param name="appHook">Application hook reference.</param>
         public FileViewer(Window owner, object archiveOrFileSystem, List<IFileEntry> selected,
-                AppHook appHook) {
+                int firstSel, AppHook appHook) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
@@ -214,6 +224,7 @@ namespace cp2_wpf {
             Debug.Assert(selected.Count > 0);
             mArchiveOrFileSystem = archiveOrFileSystem;
             mSelected = selected;
+            mCurIndex = firstSel;
             mAppHook = appHook;
 
             mConvOptions = new Dictionary<string, string>();
@@ -227,7 +238,6 @@ namespace cp2_wpf {
         /// for the first item in the selection.
         /// </summary>
         private void Window_SourceInitialized(object sender, EventArgs e) {
-            mCurIndex = 0;
             magnificationSlider.Value = 1;      // TODO: get from settings
             UpdatePrevNextControls();
             ShowFile(true);
@@ -526,21 +536,31 @@ namespace cp2_wpf {
         /// Handles the Export button.
         /// </summary>
         private void ExportButton_Click(object sender, RoutedEventArgs e) {
-            string filter, ext;
-            if (mCurDataOutput is FancyText && !((FancyText)mCurDataOutput).PreferSimple) {
-                filter = WinUtil.FILE_FILTER_RTF;
-                ext = ".rtf";
-            } else if (mCurDataOutput is SimpleText) {
-                filter = WinUtil.FILE_FILTER_TXT;
-                ext = ".txt";
-            } else if (mCurDataOutput is CellGrid) {
-                filter = WinUtil.FILE_FILTER_CSV;
-                ext = ".csv";
-            } else if (mCurDataOutput is IBitmap) {
-                filter = WinUtil.FILE_FILTER_PNG;
-                ext = ".png";
+            IConvOutput? convOut;
+            string prefix;
+            if (mCurRsrcOutput != null && tabControl.SelectedItem == rsrcTabItem) {
+                convOut = mCurRsrcOutput;
+                prefix = ".r";
             } else {
-                Debug.Assert(false, "not handling " + mCurDataOutput.GetType().Name);
+                convOut = mCurDataOutput;
+                prefix = "";
+            }
+
+            string filter, ext;
+            if (convOut is FancyText && !((FancyText)convOut).PreferSimple) {
+                filter = WinUtil.FILE_FILTER_RTF;
+                ext = prefix + ".rtf";
+            } else if (convOut is SimpleText) {
+                filter = WinUtil.FILE_FILTER_TXT;
+                ext = prefix + ".txt";
+            } else if (convOut is CellGrid) {
+                filter = WinUtil.FILE_FILTER_CSV;
+                ext = prefix + ".csv";
+            } else if (convOut is IBitmap) {
+                filter = WinUtil.FILE_FILTER_PNG;
+                ext = prefix + ".png";
+            } else {
+                Debug.Assert(false, "not handling " + convOut.GetType().Name);
                 return;
             }
 
@@ -570,24 +590,24 @@ namespace cp2_wpf {
 
             try {
                 using (Stream outStream = new FileStream(pathName, FileMode.Create)) {
-                    if (mCurDataOutput is FancyText && !((FancyText)mCurDataOutput).PreferSimple) {
-                        StringBuilder sb = ((FancyText)mCurDataOutput).Text;
-                        RTFGenerator.Generate((FancyText)mCurDataOutput, outStream);
-                    } else if (mCurDataOutput is SimpleText) {
-                        StringBuilder sb = ((SimpleText)mCurDataOutput).Text;
+                    if (convOut is FancyText && !((FancyText)convOut).PreferSimple) {
+                        StringBuilder sb = ((FancyText)convOut).Text;
+                        RTFGenerator.Generate((FancyText)convOut, outStream);
+                    } else if (convOut is SimpleText) {
+                        StringBuilder sb = ((SimpleText)convOut).Text;
                         using (StreamWriter sw = new StreamWriter(outStream)) {
                             sw.Write(sb);
                         }
-                    } else if (mCurDataOutput is CellGrid) {
+                    } else if (convOut is CellGrid) {
                         StringBuilder sb = new StringBuilder();
-                        CSVGenerator.GenerateString((CellGrid)mCurDataOutput, false, sb);
+                        CSVGenerator.GenerateString((CellGrid)convOut, false, sb);
                         using (StreamWriter sw = new StreamWriter(outStream)) {
                             sw.Write(sb);
                         }
-                    } else if (mCurDataOutput is IBitmap) {
-                        PNGGenerator.Generate((IBitmap)mCurDataOutput, outStream);
+                    } else if (convOut is IBitmap) {
+                        PNGGenerator.Generate((IBitmap)convOut, outStream);
                     } else {
-                        Debug.Assert(false, "not handling " + mCurDataOutput.GetType().Name);
+                        Debug.Assert(false, "not handling " + convOut.GetType().Name);
                         return;
                     }
                 }
@@ -651,7 +671,7 @@ namespace cp2_wpf {
             /// <summary>
             /// Configures visibility.
             /// </summary>
-            public Visibility Visibility {
+            public Visibility ItemVis {
                 get { return mVisibility; }
                 set {
                     if (mVisibility != value) {
@@ -666,13 +686,13 @@ namespace cp2_wpf {
             /// <summary>
             /// True if this item is available for assignment.
             /// </summary>
-            public bool IsAvailable { get { return Visibility != Visibility.Visible; } }
+            public bool IsAvailable { get { return ItemVis != Visibility.Visible; } }
 
             public ControlMapItem(UpdateOption updater, FrameworkElement visElem) {
                 Updater = updater;
                 VisElem = visElem;
 
-                Binding binding = new Binding("Visibility") { Source = this };
+                Binding binding = new Binding("ItemVis") { Source = this };
                 visElem.SetBinding(FrameworkElement.VisibilityProperty, binding);
             }
 
@@ -680,7 +700,7 @@ namespace cp2_wpf {
                 string? radioVal = null);
 
             public void HideControl() {
-                Visibility = Visibility.Collapsed;
+                ItemVis = Visibility.Collapsed;
             }
 
             public override string ToString() {
@@ -751,7 +771,7 @@ namespace cp2_wpf {
                 UIString = uiString;
                 RadioVal = radioVal;
 
-                Visibility = Visibility.Visible;
+                ItemVis = Visibility.Visible;
                 if (bool.TryParse(defVal, out bool value)) {
                     BoolValue = value;
                 }
@@ -822,7 +842,7 @@ namespace cp2_wpf {
                     string? unused = null) {
                 OptTag = tag;
                 UIString = uiString;
-                Visibility = Visibility.Visible;
+                ItemVis = Visibility.Visible;
                 StringValue = defVal;
             }
 
@@ -887,7 +907,7 @@ namespace cp2_wpf {
                     string? unused = null) {
                 OptTag = tag;
                 UIString = uiString;
-                Visibility = Visibility.Visible;
+                ItemVis = Visibility.Visible;
             }
 
             public override string ToString() {

@@ -630,10 +630,13 @@ namespace cp2_wpf {
         /// <param name="selected">Result: list of selected entries.</param>
         /// <returns>True if a non-empty list of selected items was found.</returns>
         public bool GetFileSelection(bool omitDir, bool omitOpenArc, bool closeOpenArc,
+                bool oneMeansAll,
                 [NotNullWhen(true)] out object? archiveOrFileSystem,
                 out IFileEntry selectionDir,
-                [NotNullWhen(true)] out List<IFileEntry>? selected) {
+                [NotNullWhen(true)] out List<IFileEntry>? selected,
+                out int firstSel) {
             selected = null;
+            firstSel = 0;
             if (!GetSelectedArcDir(out archiveOrFileSystem, out DiskArcNode? unused,
                     out selectionDir)) {
                 return false;
@@ -654,8 +657,15 @@ namespace cp2_wpf {
             if (treeSel.Count == 0) {
                 return false;
             }
+            if (oneMeansAll && dg.SelectedItems.Count == 1) {
+                treeSel = dg.Items;
+                firstSel = dg.SelectedIndex;
+            }
 
-            // Generate a selection set for the viewer.
+            // Generate a selection set.  We want to collect the full set here so we can
+            // present the user with dialogs like, "are you sure you want to delete 57 files?",
+            // which will be wrong if we don't descend into subdirs.  The various workers will
+            // do the recursion themselves if enabled.
             selected = new List<IFileEntry>(treeSel.Count);
             foreach (FileListItem listItem in treeSel) {
                 IFileEntry entry = listItem.FileEntry;
@@ -871,8 +881,8 @@ namespace cp2_wpf {
             }
 
             if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
-                    out archiveOrFileSystem, out IFileEntry selectionDir,
-                    out List<IFileEntry>? selected)) {
+                    oneMeansAll:false, out archiveOrFileSystem, out IFileEntry selectionDir,
+                    out List<IFileEntry>? selected, out int unused1)) {
                 return;
             }
             if (selected.Count == 0) {
@@ -911,8 +921,8 @@ namespace cp2_wpf {
         /// </summary>
         public void ExtractFiles() {
             if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
-                    out object? archiveOrFileSystem, out IFileEntry selectionDir,
-                    out List<IFileEntry>? selected)) {
+                    oneMeansAll:false, out object? archiveOrFileSystem, out IFileEntry selectionDir,
+                    out List<IFileEntry>? selected, out int firstSel)) {
                 return;
             }
             if (selected.Count == 0) {
@@ -955,11 +965,9 @@ namespace cp2_wpf {
         /// Handles Actions : View Files.
         /// </summary>
         public void ViewFiles() {
-            // TODO: if only one file is selected, select all files in the file list, to
-            //   enable the forward/backward buttons in the viewer.
             if (!GetFileSelection(omitDir:true, omitOpenArc:true, closeOpenArc:false,
-                    out object? archiveOrFileSystem, out IFileEntry selectionDir,
-                    out List<IFileEntry>? selected)) {
+                    oneMeansAll:true, out object? archiveOrFileSystem, out IFileEntry selectionDir,
+                    out List<IFileEntry>? selected, out int firstSel)) {
                 return;
             }
             if (selected.Count == 0) {
@@ -969,7 +977,8 @@ namespace cp2_wpf {
                 return;
             }
 
-            FileViewer dialog = new FileViewer(mMainWin, archiveOrFileSystem, selected, mAppHook);
+            FileViewer dialog = new FileViewer(mMainWin, archiveOrFileSystem, selected,
+                firstSel, mAppHook);
             dialog.ShowDialog();
         }
 

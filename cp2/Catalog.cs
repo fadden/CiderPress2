@@ -405,6 +405,7 @@ namespace cp2 {
         /// </summary>
         /// <param name="arcOrFs">IArchive or IFileSystem instance.</param>
         /// <param name="entry">File entry.</param>
+        /// <param name="gzipName">Filename of enclosing archive, required for gzip.</param>
         /// <param name="indent">Indentation level.</param>
         /// <param name="parms">Parameter set.</param>
         /// <returns>True on success.</returns>
@@ -466,6 +467,7 @@ namespace cp2 {
         /// </summary>
         /// <param name="arcOrFs">IArchive or IFileSystem instance.</param>
         /// <param name="entry">File entry.</param>
+        /// <param name="gzipName">Filename of enclosing archive, required for gzip.</param>
         /// <param name="indent">Indentation level.</param>
         /// <param name="parms">Parameter set.</param>
         /// <returns>True on success.</returns>
