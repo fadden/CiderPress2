@@ -510,7 +510,17 @@ namespace AppCommon {
                         fileEntry.FullRsrcPath = fullPath;
                         fileEntry.RsrcSource = AddFileEntry.SourceType.AppleSingle;
                     }
-                    SetStoragePath(fileEntry, fullPath, asEnt.FileName, false);
+
+                    string storedName = asEnt.FileName;
+                    if (string.IsNullOrEmpty(storedName)) {
+                        // Use the filename portion of the pathname, without the ".as".
+                        storedName = Path.GetFileName(fullPath);
+                        if (storedName.EndsWith(".as", StringComparison.InvariantCultureIgnoreCase)) {
+                            storedName = storedName.Substring(0, storedName.Length - 3);
+                        }
+                    }
+
+                    SetStoragePath(fileEntry, fullPath, storedName, false);
                 }
             }
             return true;

@@ -220,6 +220,7 @@ namespace cp2.Tests {
             TestAddToDir(parms);
             TestRecurse(parms);
             TestNAPSUnescape(parms);
+            TestASNoName(parms);
             TestTurducken(parms);
 
             //throw new Exception("CHECK IT");
@@ -622,6 +623,44 @@ namespace cp2.Tests {
                 "%%sub%7cdir:test?this/%!"
             };
             Controller.CompareLines(expected, stdout);
+        }
+
+        private static void TestASNoName(ParamsBag parms) {
+            // Name of test AppleSingle file that has no stored filename.
+            string testFileName = Path.Join(Controller.TEST_DATA, "as", "MacIP.RES.as");
+            testFileName = Path.GetFullPath(testFileName);
+            string diskFileName = Path.Combine(Controller.TEST_TMP, "test-as-noname.po");
+            diskFileName = Path.GetFullPath(diskFileName);
+            parms.FromAS = true;
+            parms.StripPaths = true;
+
+            string oldCurrentDir = Environment.CurrentDirectory;
+            try {
+                Environment.CurrentDirectory = SAMPLE_DIR;
+
+                if (!DiskUtil.HandleCreateDiskImage("cdi",
+                        new string[] { diskFileName, "140KiB", "ProDOS" }, parms)) {
+                    throw new Exception("Error: cdi failed");
+                }
+                if (!Add.HandleAdd("add", new string[] { diskFileName, testFileName }, parms)) {
+                    throw new Exception("Error: add " + diskFileName + " '" + testFileName +
+                        "' failed");
+                }
+            } finally {
+                Environment.CurrentDirectory = oldCurrentDir;
+            }
+
+            // Verify.  Should be the name of the file on disk, without the ".as" extension.
+            MemoryStream stdout = Controller.CaptureConsoleOut();
+            if (!Catalog.HandleList("list", new string[] { diskFileName }, parms)) {
+                throw new Exception("Error: list '" + diskFileName + "' failed");
+            }
+            string[] expected = new string[] {
+                "MacIP.RES",
+            };
+            Controller.CompareLines(expected, stdout);
+
+            parms.StripPaths = false;
         }
 
         private static void TestTurducken(ParamsBag parms) {
