@@ -88,7 +88,7 @@ namespace AppCommon {
         /// Extracts a list of files from a file archive to the current directory.
         /// </summary>
         public bool ExtractFromArchive(IArchive archive, List<IFileEntry> entries,
-                ConvHelper.FileConvSpec? exportSpec, out bool wasCancelled) {
+                ConvConfig.FileConvSpec? exportSpec, out bool wasCancelled) {
             wasCancelled = false;
 
             // Fix number of entries to extract, removing directories and MacZip headers.
@@ -219,7 +219,7 @@ namespace AppCommon {
         /// Extracts a list of files from a filesystem to the current directory.
         /// </summary>
         public bool ExtractFromDisk(IFileSystem fs, List<IFileEntry> entries,
-                IFileEntry startDirEntry, ConvHelper.FileConvSpec? exportSpec,
+                IFileEntry startDirEntry, ConvConfig.FileConvSpec? exportSpec,
                 out bool wasCancelled) {
             wasCancelled = false;
 
@@ -590,7 +590,7 @@ namespace AppCommon {
         /// <returns>True if we should continue, false if we should cancel.</returns>
         /// <exception cref="IOException">Error creating or writing to file.</exception>
         private bool DoExport(string extractPath, FileAttribs attrs, Stream? dataStream,
-                Stream? rsrcStream, int dataPercent, ConvHelper.FileConvSpec exportSpec) {
+                Stream? rsrcStream, int dataPercent, ConvConfig.FileConvSpec exportSpec) {
             // Cleanup list, in case we fail partway through.
             string? cleanPath1 = null;
             Stream? dataCopy = null;
@@ -612,7 +612,7 @@ namespace AppCommon {
 
                 // Find the converter.
                 Converter? conv;
-                if (exportSpec.Tag == ConvHelper.BEST) {
+                if (exportSpec.Tag == ConvConfig.BEST) {
                     List<Converter> applics = ExportFoundry.GetApplicableConverters(attrs,
                         dataCopy, rsrcCopy, mAppHook);
                     conv = applics[0];

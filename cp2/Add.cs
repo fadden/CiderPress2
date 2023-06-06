@@ -54,12 +54,12 @@ namespace cp2 {
                 return false;
             }
 
-            ConvHelper.FileConvSpec? spec = ConvHelper.CreateSpec(args[1]);
+            ConvConfig.FileConvSpec? spec = ConvConfig.CreateSpec(args[1]);
             if (spec == null) {
                 Console.Error.WriteLine("Error: invalid import spec '" + args[1] + "'");
                 return false;
             }
-            ConvHelper.FileConvSpec? cfgSpec = parms.GetImportSpec(args[1]);
+            ConvConfig.FileConvSpec? cfgSpec = parms.GetImportSpec(args[1]);
             if (cfgSpec != null) {
                 spec.MergeSpec(cfgSpec);    // merge items from config file
             }
@@ -93,7 +93,7 @@ namespace cp2 {
         }
 
         private static bool HandleAddImport(string extArchive, string[] paths,
-                ConvHelper.FileConvSpec? importSpec, ParamsBag parms) {
+                ConvConfig.FileConvSpec? importSpec, ParamsBag parms) {
             bool isSimple = false;
             int lastPosn = extArchive.LastIndexOf(ExtArchive.SPLIT_CHAR);
             if (lastPosn < 0 || lastPosn == 1) {

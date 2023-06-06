@@ -158,6 +158,7 @@ namespace CommonUtil {
             }
         }
 
+#if false
         /// <summary>
         /// Retrieves an enumerated value setting.
         /// </summary>
@@ -167,19 +168,20 @@ namespace CommonUtil {
         /// <returns>The value found, or the default value if no setting with the specified
         ///   name exists, or the stored value is not a member of the specified enumerated
         ///   type.</returns>
-        //public int GetEnum(string name, Type enumType, int defaultValue) {
-        //    if (!mSettings.TryGetValue(name, out string? valueStr)) {
-        //        return defaultValue;
-        //    }
-        //    try {
-        //        object o = Enum.Parse(enumType, valueStr);
-        //        return (int)o;
-        //    } catch (ArgumentException ae) {
-        //        Debug.WriteLine("Failed to parse " + valueStr + " (enum " + enumType + "): " +
-        //            ae.Message);
-        //        return defaultValue;
-        //    }
-        //}
+        public int GetEnum(string name, Type enumType, int defaultValue) {
+            if (!mSettings.TryGetValue(name, out string? valueStr)) {
+                return defaultValue;
+            }
+            try {
+                object o = Enum.Parse(enumType, valueStr);
+                return (int)o;
+            } catch (ArgumentException ae) {
+                Debug.WriteLine("Failed to parse " + valueStr + " (enum " + enumType + "): " +
+                    ae.Message);
+                return defaultValue;
+            }
+        }
+#endif
 
         /// <summary>
         /// Retrieves an enumerated value setting.
@@ -204,6 +206,7 @@ namespace CommonUtil {
             }
         }
 
+#if false
         /// <summary>
         /// Sets an enumerated setting.
         /// </summary>
@@ -214,17 +217,18 @@ namespace CommonUtil {
         /// <param name="name">Setting name.</param>
         /// <param name="enumType">Enum type.</param>
         /// <param name="value">Setting value (integer enum index).</param>
-        //public void SetEnum(string name, Type enumType, int value) {
-        //    string? newVal = Enum.GetName(enumType, value);
-        //    if (newVal == null) {
-        //        Debug.WriteLine("Unable to get enum name type=" + enumType + " value=" + value);
-        //        return;
-        //    }
-        //    if (!mSettings.TryGetValue(name, out string? oldValue) || oldValue != newVal) {
-        //        mSettings[name] = newVal;
-        //        IsDirty = true;
-        //    }
-        //}
+        public void SetEnum(string name, Type enumType, int value) {
+            string? newVal = Enum.GetName(enumType, value);
+            if (newVal == null) {
+                Debug.WriteLine("Unable to get enum name type=" + enumType + " value=" + value);
+                return;
+            }
+            if (!mSettings.TryGetValue(name, out string? oldValue) || oldValue != newVal) {
+                mSettings[name] = newVal;
+                IsDirty = true;
+            }
+        }
+#endif
 
         /// <summary>
         /// Sets an enumerated setting.

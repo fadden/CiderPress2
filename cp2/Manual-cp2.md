@@ -1353,7 +1353,7 @@ Extensions not supported for file creation:
 
  - ".dsk" - unadorned ambiguously-ordered disk image
  - ".nb2" - variant of ".nib" that is no longer used
- - ".raw" - unadorned sector or unadorned nibble
+ - ".raw" - unadorned sector or unadorned nibble (ambiguous)
  - ".gz" - gzip file (just use "gzip" utility)
  - ".as" - AppleSingle file (extract a file as AppleSingle instead)
  - ".bxy", ".sea", ".bse" - ShrinkIt archive with a Binary II header,

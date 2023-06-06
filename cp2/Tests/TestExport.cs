@@ -17,6 +17,7 @@ using System;
 
 using AppCommon;
 using CommonUtil;
+using FileConv;
 
 namespace cp2.Tests {
     /// <summary>
@@ -76,7 +77,7 @@ namespace cp2.Tests {
             try {
                 Environment.CurrentDirectory = OUTPUT_DIR;
                 // Do several in one go to ensure that multiple args are handled.
-                List<string> argList = new List<string>() { arcPath, ConvHelper.BEST };
+                List<string> argList = new List<string>() { arcPath, ConvConfig.BEST };
                 foreach (string name in SAMPLE_LIST) {
                     argList.Add(name);
                 }

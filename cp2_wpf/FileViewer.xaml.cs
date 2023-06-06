@@ -186,8 +186,6 @@ namespace cp2_wpf {
         private IConvOutput? mCurRsrcOutput;
         private AppHook mAppHook;
 
-        private SettingsHolder mLocalSettings = new SettingsHolder();
-
         /// <summary>
         /// Holds an item for the conversion selection combo box.
         /// </summary>
@@ -371,7 +369,6 @@ namespace cp2_wpf {
                 return;
             }
 
-            PrepareOptions(item.Converter);
             ConfigureControls(item.Converter);
             IsExportEnabled = false;
 
@@ -387,6 +384,11 @@ namespace cp2_wpf {
         private void SelectBest_Click(object sender, RoutedEventArgs e) {
             convComboBox.SelectedIndex = 0;
         }
+
+        /// <summary>
+        /// Selects the converter combo box item for the specified conversion type.  Used for
+        /// the text/hex/best buttons.
+        /// </summary>
         private void SelectConversion(Type convType) {
             foreach (ConverterComboItem item in convComboBox.Items) {
                 if (item.Converter.GetType() == convType) {
@@ -396,13 +398,18 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// Formats the current file with the selected converter.
+        /// </summary>
         private void FormatFile() {
             ConverterComboItem? item = (ConverterComboItem)convComboBox.SelectedItem;
             Debug.Assert(item != null);
 
+            // Do the conversion.
             DateTime startWhen = DateTime.Now;
             mCurDataOutput = item.Converter.ConvertFile(mConvOptions);
             DateTime dataDoneWhen = DateTime.Now;
+
             // TODO: make the resource fork formatting on-demand: only do it if the resource
             //   tab is enabled, or when we switch to the resource fork tab
             mCurRsrcOutput = item.Converter.FormatResources(mConvOptions);
@@ -650,6 +657,8 @@ namespace cp2_wpf {
         }
 
         #region Configure
+
+        private const string EXPORT_CONFIG_PREFIX = "export-conv-";
 
         /// <summary>
         /// Base class for mappable control items.
@@ -933,18 +942,21 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Configures the converter option dictionary.
+        /// Loads the option dictionary with default values and values from the app settings.
         /// </summary>
         /// <param name="conv">Converter to configure for.</param>
-        private void PrepareOptions(Converter conv) {
-            mConvOptions.Clear();
+        private void LoadExportOptions(Converter conv, Dictionary<string, string> dict) {
             foreach (OptionDefinition optDef in conv.OptionDefs) {
                 string optTag = optDef.OptTag;
-                string cfgKey = MakeConfigKey(conv.Tag, optTag);
-                if (mLocalSettings.Exists(cfgKey)) {
-                    mConvOptions[optTag] = mLocalSettings.GetString(cfgKey, string.Empty);
-                } else {
-                    mConvOptions[optTag] = optDef.DefaultVal;
+                dict[optTag] = optDef.DefaultVal;
+            }
+
+            string optStr = AppSettings.Global.GetString(EXPORT_CONFIG_PREFIX + conv.Tag,
+                string.Empty);
+            if (!string.IsNullOrEmpty(optStr)) {
+                if (!ConvConfig.ParseOptString(optStr, dict)) {
+                    Debug.Assert(false, "failed to parse option string for " + conv.Tag + ": '" +
+                        optStr + "'");
                 }
             }
         }
@@ -958,8 +970,14 @@ namespace cp2_wpf {
         /// </remarks>
         /// <param name="conv">Converter to configure for.</param>
         private void ConfigureControls(Converter conv) {
-            mIsConfiguring = true;
             Debug.WriteLine("Configure controls for " + conv);
+            mIsConfiguring = true;
+
+            // Configure options for every control.  If not present in the config file, set
+            // the control's default.
+            mConvOptions.Clear();
+            LoadExportOptions(conv, mConvOptions);
+
             foreach (ControlMapItem item in mCustomCtrls) {
                 item.HideControl();
 
@@ -979,13 +997,7 @@ namespace cp2_wpf {
             }
 
             foreach (OptionDefinition optDef in conv.OptionDefs) {
-                string cfgKey = MakeConfigKey(conv.Tag, optDef.OptTag);
-                string defaultVal;
-                if (mLocalSettings.Exists(cfgKey)) {
-                    defaultVal = mLocalSettings.GetString(cfgKey, string.Empty);
-                } else {
-                    defaultVal = optDef.DefaultVal;
-                }
+                string defaultVal = mConvOptions[optDef.OptTag];
 
                 ControlMapItem item;
                 switch (optDef.Type) {
@@ -1030,16 +1042,6 @@ namespace cp2_wpf {
             throw new NotImplementedException("Not enough instances of " + ctrlType);
         }
 
-        /// <summary>
-        /// Makes a key into the settings dictionary.
-        /// </summary>
-        /// <param name="convTag">Converter tag.</param>
-        /// <param name="optTag">Option tag.</param>
-        /// <returns>Key.</returns>
-        private static string MakeConfigKey(string convTag, string optTag) {
-            return "FileExport-" + convTag + ":" + optTag;
-        }
-
         private bool mIsConfiguring;
 
         /// <summary>
@@ -1049,7 +1051,7 @@ namespace cp2_wpf {
         /// <param name="newValue">New value.</param>
         private void UpdateOption(string tag, string newValue) {
             if (mIsConfiguring) {
-                Debug.WriteLine("IGNORING set '" + tag + "' = '" + newValue + "'");
+                Debug.WriteLine("Ignoring initial set '" + tag + "' = '" + newValue + "'");
                 return;
             }
 
@@ -1057,11 +1059,37 @@ namespace cp2_wpf {
 
             ConverterComboItem? item = (ConverterComboItem)convComboBox.SelectedItem;
             Debug.Assert(item != null);
-            string cfgKey = MakeConfigKey(item.Converter.Tag, tag);
-            Debug.WriteLine("Set option '" + cfgKey + "' = '" + newValue + "'");
-            mLocalSettings.SetString(cfgKey, newValue);
+            mConvOptions[tag] = newValue;
+
+            string optStr = ConvConfig.GenerateOptString(mConvOptions);
+            string settingKey = EXPORT_CONFIG_PREFIX + item.Converter.Tag;
+
+            // Enable the button if the config string doesn't match what's in the app settings.
+            IsSaveDefaultsEnabled =
+                (AppSettings.Global.GetString(settingKey, string.Empty) != optStr);
+            //Debug.WriteLine("CMP '" + AppSettings.Global.GetString(settingKey, string.Empty) +
+            //    "' vs '" + optStr + "'");
 
             FormatFile();
+        }
+
+        public bool IsSaveDefaultsEnabled {
+            get { return mIsSaveDefaultsEnabled; }
+            set { mIsSaveDefaultsEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsSaveDefaultsEnabled;
+
+        /// <summary>
+        /// Handles a click on the "save as defaults" button.
+        /// </summary>
+        private void SaveDefaultsButton_Click(object sender, RoutedEventArgs e) {
+            ConverterComboItem? item = (ConverterComboItem)convComboBox.SelectedItem;
+            Debug.Assert(item != null);
+
+            string optStr = ConvConfig.GenerateOptString(mConvOptions);
+            string settingKey = EXPORT_CONFIG_PREFIX + item.Converter.Tag;
+            AppSettings.Global.SetString(settingKey, optStr);
+            IsSaveDefaultsEnabled = false;
         }
 
         #endregion Configure

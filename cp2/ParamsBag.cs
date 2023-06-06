@@ -19,7 +19,7 @@ using System.Text;
 
 using AppCommon;
 using CommonUtil;
-using DiskArc;
+using FileConv;
 
 namespace cp2 {
     /// <summary>
@@ -536,10 +536,10 @@ namespace cp2 {
 
         #region Import/Export
 
-        internal Dictionary<string, ConvHelper.FileConvSpec> sImportSpecs =
-            new Dictionary<string, ConvHelper.FileConvSpec>();
-        internal Dictionary<string, ConvHelper.FileConvSpec> sExportSpecs =
-            new Dictionary<string, ConvHelper.FileConvSpec>();
+        internal Dictionary<string, ConvConfig.FileConvSpec> sImportSpecs =
+            new Dictionary<string, ConvConfig.FileConvSpec>();
+        internal Dictionary<string, ConvConfig.FileConvSpec> sExportSpecs =
+            new Dictionary<string, ConvConfig.FileConvSpec>();
 
         /// <summary>
         /// Processes an import/export config file line.
@@ -550,7 +550,7 @@ namespace cp2 {
         /// <returns>True if parsing was successful.</returns>
         internal bool ProcessImportExport(string line, bool isExport) {
             string trim = line.Trim();
-            ConvHelper.FileConvSpec? spec = ConvHelper.CreateSpec(trim);
+            ConvConfig.FileConvSpec? spec = ConvConfig.CreateSpec(trim);
             if (spec == null) {
                 Console.Error.WriteLine("Error: bad import/export spec in config file: " + trim);
                 return false;
@@ -563,13 +563,13 @@ namespace cp2 {
             return true;
         }
 
-        internal ConvHelper.FileConvSpec? GetImportSpec(string tag) {
-            sImportSpecs.TryGetValue(tag, out ConvHelper.FileConvSpec? spec);
+        internal ConvConfig.FileConvSpec? GetImportSpec(string tag) {
+            sImportSpecs.TryGetValue(tag, out ConvConfig.FileConvSpec? spec);
             return spec;
         }
 
-        internal ConvHelper.FileConvSpec? GetExportSpec(string tag) {
-            sExportSpecs.TryGetValue(tag, out ConvHelper.FileConvSpec? spec);
+        internal ConvConfig.FileConvSpec? GetExportSpec(string tag) {
+            sExportSpecs.TryGetValue(tag, out ConvConfig.FileConvSpec? spec);
             return spec;
         }
 

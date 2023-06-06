@@ -59,12 +59,12 @@ namespace cp2 {
                 return false;
             }
 
-            ConvHelper.FileConvSpec? spec = ConvHelper.CreateSpec(args[1]);
+            ConvConfig.FileConvSpec? spec = ConvConfig.CreateSpec(args[1]);
             if (spec == null) {
                 Console.Error.WriteLine("Error: invalid export spec '" + args[1] + "'");
                 return false;
             }
-            ConvHelper.FileConvSpec? cfgSpec = parms.GetExportSpec(args[1]);
+            ConvConfig.FileConvSpec? cfgSpec = parms.GetExportSpec(args[1]);
             if (cfgSpec != null) {
                 spec.MergeSpec(cfgSpec);    // merge items from config file
             }
@@ -72,10 +72,10 @@ namespace cp2 {
             // Check options against what the exporter lists.  Requires instantiation.  Also
             // provides an early exit if they're requesting an unknown exporter.  We don't
             // try to validate the value, just the tag.
-            if (spec.Tag == ConvHelper.BEST) {
+            if (spec.Tag == ConvConfig.BEST) {
                 if (spec.Options.Count > 0) {
                     Console.Error.WriteLine("Warning: providing export options with '" +
-                        ConvHelper.BEST + "' is not recommended");
+                        ConvConfig.BEST + "' is not recommended");
                     // allow it?
                 }
             } else {
@@ -118,7 +118,7 @@ namespace cp2 {
         /// Common code for extracting and exporting.
         /// </summary>
         private static bool HandleExtractExport(string extArchive, string[] paths,
-                ConvHelper.FileConvSpec? exportSpec, ParamsBag parms) {
+                ConvConfig.FileConvSpec? exportSpec, ParamsBag parms) {
             // Allow slash or colon as separators.  Ignore case.
             List<Glob> globList;
             try {
