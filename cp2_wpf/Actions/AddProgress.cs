@@ -77,6 +77,7 @@ namespace cp2_wpf.Actions {
                         ProgressUtil.ShowCancelled(bkWorker);
                         return false;
                     }
+                    bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
                     mLeafNode.SaveUpdates(DoCompress);
                 } catch (ConversionException ex) {
                     ProgressUtil.ShowMessage("Import error: " + ex.Message, true, bkWorker);
@@ -106,6 +107,7 @@ namespace cp2_wpf.Actions {
                     success = false;
                 }
                 try {
+                    bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
                     mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
                     ProgressUtil.ShowMessage("Error: update failed: " + ex.Message, true, bkWorker);

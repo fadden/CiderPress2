@@ -479,7 +479,7 @@ limitations under the License.
 
                 <Grid Name="centerPanelGrid" Grid.Column="2">
                     <!-- center panel, option #1: file list -->
-                    <DataGrid Name="fileListDataGrid" d:IsHidden="True"
+                    <DataGrid Name="fileListDataGrid" d:IsHidden="False"
                               Visibility="{Binding ShowCenterFileList, Converter={StaticResource BoolToVis}}"
                               ItemsSource="{Binding FileList}"
                               IsReadOnly="True"
@@ -559,7 +559,7 @@ limitations under the License.
                     </DataGrid>
 
                     <!-- center panel, option #2: information -->
-                    <ScrollViewer d:IsHidden="False"
+                    <ScrollViewer d:IsHidden="True"
                         Visibility="{Binding ShowCenterInfoPanel, Converter={StaticResource BoolToVis}}">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -641,6 +641,11 @@ limitations under the License.
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>
+
+                    <Border Width="150" Height="70" Visibility="Collapsed"
+                            HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <Button Content="Insert FIND dialog here"/>
+                    </Border>
 
                     <!-- fade-out notification, used when events complete -->
                     <Grid Name="toastMessage" Opacity="0" Visibility="Visible">

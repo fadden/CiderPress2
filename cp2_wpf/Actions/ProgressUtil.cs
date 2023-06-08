@@ -21,18 +21,18 @@ using System.Windows;
 using AppCommon;
 using CommonUtil;
 using cp2_wpf.WPFCommon;
-using DiskArc;
-using FileConv;
 
 namespace cp2_wpf.Actions {
     public static class ProgressUtil {
+        public const string FINISHING_MSG = "Saving changes...";
+
         /// <summary>
         /// Handles a callback from the library code.
         /// </summary>
         /// <param name="what">What happened.</param>
         /// <param name="actionStr">Verb that describes the action being performed.</param>
         /// <param name="bkWorker">Background worker that receives progress updates.</param>
-        /// <returns></returns>
+        /// <returns>Result code from user query, if any.</returns>
         public static CallbackFacts.Results HandleCallback(CallbackFacts what, string actionStr,
                 BackgroundWorker bkWorker) {
             CallbackFacts.Results result = CallbackFacts.Results.Unknown;

@@ -361,6 +361,12 @@ namespace cp2_wpf {
             UpdateTitle();
             UpdateRecentFilesList(pathName);
             mMainWin.ShowLaunchPanel = false;
+
+            // In theory this puts the focus on the file list.  In practice it does do this, but
+            // the first time you hit a key, the menu steals it back.
+            mMainWin.fileListDataGrid.Focus();
+            IInputElement newFocus = Keyboard.Focus(mMainWin.fileListDataGrid);
+            Debug.Assert(newFocus == mMainWin.fileListDataGrid);
         }
 
         private static bool DepthLimit(WorkTree.DepthParentKind parentKind,

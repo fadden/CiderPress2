@@ -68,6 +68,7 @@ namespace cp2_wpf.Actions {
                     if (!worker.DeleteFromArchive(arc, mSelected)) {
                         return false;
                     }
+                    bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
                     mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
                     ProgressUtil.ShowMessage("Error: " + ex.Message, true, bkWorker);
@@ -81,6 +82,7 @@ namespace cp2_wpf.Actions {
                 bool success = worker.DeleteFromDisk(fs, mSelected);
                 try {
                     // Save the deletions we managed to handle.
+                    bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
                     mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
                     ProgressUtil.ShowMessage("Error: update failed: " + ex.Message, true, bkWorker);

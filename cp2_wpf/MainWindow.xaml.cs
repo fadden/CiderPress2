@@ -857,7 +857,7 @@ namespace cp2_wpf {
             DoubleAnimation doubAnim =
                 new DoubleAnimation(1.0, 0.0, new Duration(TimeSpan.FromSeconds(DURATION_SEC)));
             //doubAnim.Completed += (sender, e) => {
-            //    toastMessage.Visibility = Visibility.Hidden;
+            //    toastMessage.Visibility = Visibility.Collapsed;
             //};
             toastMessage.BeginAnimation(UIElement.OpacityProperty, doubAnim);
         }

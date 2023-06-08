@@ -25,6 +25,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 using AppCommon;
+using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Arc;
 using DiskArc.Disk;
