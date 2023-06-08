@@ -66,6 +66,7 @@ limitations under the License.
                     <KeyGesture>Ctrl+Shift+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
+            <RoutedUICommand x:Key="CreateDirectoryCmd" Text="Create Directory..."/>
             <!-- DataGrids eat Delete, TreeViews don't; see PreviewKeyDown handler -->
             <RoutedUICommand x:Key="DeleteFilesCmd" Text="_Delete Files">
                 <RoutedUICommand.InputGestures>
@@ -114,6 +115,8 @@ limitations under the License.
                         CanExecute="IsSubTreeSelected" Executed="CloseSubTreeCmd_Executed"/>
         <CommandBinding Command="Copy"
                         CanExecute="IsFileOpen" Executed="CopyCmd_Executed"/>
+        <CommandBinding Command="{StaticResource CreateDirectoryCmd}"
+                        CanExecute="CanCreateDirectory" Executed="CreateDirectoryCmd_Executed"/>
         <CommandBinding Command="Cut"
                         CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
         <CommandBinding Command="{StaticResource DeleteFilesCmd}"
@@ -196,6 +199,7 @@ limitations under the License.
                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
+                <MenuItem Command="{StaticResource CreateDirectoryCmd}"/>
                 <Separator/>
                 <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                 <MenuItem Command="{StaticResource EditBlocksCmd}"/>
@@ -554,6 +558,7 @@ limitations under the License.
                                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
+                                <MenuItem Command="{StaticResource CreateDirectoryCmd}"/>
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                     </DataGrid>

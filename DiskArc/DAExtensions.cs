@@ -308,7 +308,6 @@ namespace DiskArc {
         /// <summary>
         /// Returns the FileSystemType value for a filesystem.
         /// </summary>
-        /// <param name="fs">Filesystem to get the type of.</param>
         /// <returns>FileSystemType enumerated value, or Unknown if not known.</returns>
         public static Defs.FileSystemType GetFileSystemType(this IFileSystem fs) {
             if (fs is DOS) {
@@ -318,8 +317,42 @@ namespace DiskArc {
             } else if (fs is HFS) {
                 return Defs.FileSystemType.HFS;
             } else {
-                Debug.Assert(false);
+                Debug.Assert(false, "Unhandled fs type: " + fs.GetType().Name);
                 return Defs.FileSystemType.Unknown;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether a string is a valid filename.
+        /// </summary>
+        /// <param name="fileName">Filename to test.</param>
+        /// <returns>True if the filename is valid.</returns>
+        public static bool IsValidFileName(this IFileSystem fs, string fileName) {
+            if (fs is DOS) {
+                return DOS_FileEntry.IsFileNameValid(fileName);
+            } else if (fs is HFS) {
+                return HFS_FileEntry.IsFileNameValid(fileName, false);
+            } else if (fs is ProDOS) {
+                return ProDOS_FileEntry.IsFileNameValid(fileName);
+            } else {
+                throw new NotImplementedException("Not handled IVFN: " + fs.GetType().Name);
+            }
+        }
+
+        /// <summary>
+        /// Determines whether a string is a valid volume name.
+        /// </summary>
+        /// <param name="volName">Volume name to test.</param>
+        /// <returns>True if the volume name is valid.</returns>
+        public static bool IsValidVolumeName(this IFileSystem fs, string volName) {
+            if (fs is DOS) {
+                return DOS_FileEntry.IsVolumeNameValid(volName);
+            } else if (fs is HFS) {
+                return HFS_FileEntry.IsFileNameValid(volName, true);
+            } else if (fs is ProDOS) {
+                return ProDOS_FileEntry.IsFileNameValid(volName);
+            } else {
+                throw new NotImplementedException("Not handled IVVN: " + fs.GetType().Name);
             }
         }
 

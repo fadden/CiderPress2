@@ -49,13 +49,26 @@ namespace DiskArc.FS {
         /// </summary>
         public bool HasResourceForks { get; }
 
+        /// <summary>
+        /// Human-readable filename syntax rules.
+        /// </summary>
+        public string FileNameSyntaxRules { get; }
+
+        /// <summary>
+        /// Human-readable volume name syntax rules.
+        /// </summary>
+        public string VolumeNameSyntaxRules { get; }
+
+
         public FSCharacteristics(string name, bool canWrite, bool isHierarchical,
-                char dirSep, bool hasResourceForks) {
+                char dirSep, bool hasResourceForks, string fnSyntax, string vnSyntax) {
             Name = name;
             CanWrite = canWrite;
             IsHierarchical = isHierarchical;
             DirSep = dirSep;
             HasResourceForks = hasResourceForks;
+            FileNameSyntaxRules = fnSyntax;
+            VolumeNameSyntaxRules = vnSyntax;
         }
     }
 }

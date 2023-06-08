@@ -802,6 +802,84 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Actions : Create Directory
+        /// </summary>
+        public void CreateDirectory() {
+            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
+                    out IFileEntry targetDir)) {
+                return;
+            }
+            IFileSystem? fs = archiveOrFileSystem as IFileSystem;
+            if (fs == null) {
+                Debug.Assert(false);
+                return;
+            }
+
+            string rules = "\u2022 " + fs.Characteristics.FileNameSyntaxRules;
+            CreateDirectory dialog = new CreateDirectory(mMainWin, fs, targetDir,
+                fs.IsValidFileName, rules);
+            if (dialog.ShowDialog() != true) {
+                return;
+            }
+
+            try {
+                fs.CreateFile(targetDir, dialog.NewFileName, IFileSystem.CreateMode.Directory);
+                // Refresh the directory and file lists.
+                RefreshDirAndFileList();
+                mMainWin.PostNotification("Directory created", true);
+            } catch (Exception ex) {
+                MessageBox.Show(mMainWin, "Failed: " + ex.Message, "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Handles Actions : Delete Files
+        /// </summary>
+        public void DeleteFiles() {
+            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
+                    out IFileEntry unused)) {
+                // We don't have an archive and (optionally) directory target selected.
+                return;
+            }
+
+            if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
+                    oneMeansAll:false, out archiveOrFileSystem, out IFileEntry selectionDir,
+                    out List<IFileEntry>? selected, out int unused1)) {
+                return;
+            }
+            if (selected.Count == 0) {
+                MessageBox.Show(mMainWin, "No files selected.", "Empty", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            // We can't undo it, so get confirmation first.
+            string msg = string.Format("Delete {0} file {1}?", selected.Count,
+                selected.Count == 1 ? "entry" : "entries");
+            MessageBoxResult res = MessageBox.Show(mMainWin, msg, "Confirm Delete",
+                MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            if (res != MessageBoxResult.OK) {
+                return;
+            }
+            SettingsHolder settings = AppSettings.Global;
+            DeleteProgress prog = new DeleteProgress(archiveOrFileSystem, daNode, selected,
+                    mAppHook) {
+                DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
+                EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
+            };
+
+            // Do the deletion on a background thread so we can show progress.
+            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
+            if (workDialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Deletion successful", true);
+            }
+
+            // Refresh the directory and file lists.
+            RefreshDirAndFileList();
+        }
+
+        /// <summary>
         /// Handles Actions : Edit Blocks / Sectors
         /// </summary>
         public void EditBlocksSectors(bool asSectors) {
@@ -874,52 +952,6 @@ namespace cp2_wpf {
                     Mouse.OverrideCursor = null;
                 }
             }
-        }
-
-        /// <summary>
-        /// Handles Actions : Delete Files
-        /// </summary>
-        public void DeleteFiles() {
-            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
-                    out IFileEntry unused)) {
-                // We don't have an archive and (optionally) directory target selected.
-                return;
-            }
-
-            if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
-                    oneMeansAll:false, out archiveOrFileSystem, out IFileEntry selectionDir,
-                    out List<IFileEntry>? selected, out int unused1)) {
-                return;
-            }
-            if (selected.Count == 0) {
-                MessageBox.Show(mMainWin, "No files selected.", "Empty", MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            // We can't undo it, so get confirmation first.
-            string msg = string.Format("Delete {0} file {1}?", selected.Count,
-                selected.Count == 1 ? "entry" : "entries");
-            MessageBoxResult res = MessageBox.Show(mMainWin, msg, "Confirm Delete",
-                MessageBoxButton.OKCancel, MessageBoxImage.Question);
-            if (res != MessageBoxResult.OK) {
-                return;
-            }
-            SettingsHolder settings = AppSettings.Global;
-            DeleteProgress prog = new DeleteProgress(archiveOrFileSystem, daNode, selected,
-                    mAppHook) {
-                DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
-                EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
-            };
-
-            // Do the deletion on a background thread so we can show progress.
-            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
-            if (workDialog.ShowDialog() == true) {
-                mMainWin.PostNotification("Deletion successful", true);
-            }
-
-            // Refresh the directory and file lists.
-            RefreshDirAndFileList();
         }
 
         /// <summary>

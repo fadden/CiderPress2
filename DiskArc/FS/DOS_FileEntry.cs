@@ -74,7 +74,10 @@ namespace DiskArc.FS {
             set {
                 CheckChangeAllowed();
                 if (IsVolumeDirectory) {
-                    // TODO: accept a 1-3 char decimal string to set the disk volume number?
+                    if (!int.TryParse(value, out int val) || val < 0 || val >= 255) {
+                        throw new ArgumentException("Invalid volume number");
+                    }
+                    Debug.WriteLine("TODO: set VTOC vol num to " + val);
                     return;
                 }
                 byte[]? rawName = GenerateRawName(value);   // this tests validity
@@ -1010,6 +1013,7 @@ namespace DiskArc.FS {
         /// <para>DOS implicitly removes trailing spaces, so we reject any filename that has them
         /// (since they can't actually be part of the filename).</para>
         /// </remarks>
+        /// <returns>True if valid.</returns>
         public static bool IsFileNameValid(string fileName) {
             if (fileName.Length > DOS.MAX_FILE_NAME_LEN) {
                 return false;
@@ -1034,6 +1038,15 @@ namespace DiskArc.FS {
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Determines whether the string is a valid DOS "volume name".
+        /// </summary>
+        /// <param name="volName">Volume number (0-254) in string form.</param>
+        /// <returns>True if valid.</returns>
+        public static bool IsVolumeNameValid(string volName) {
+            return int.TryParse(volName, out int val) && val >= 0 && val < 255;
         }
 
         /// <summary>

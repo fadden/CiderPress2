@@ -65,12 +65,18 @@ namespace DiskArc.FS {
 
         public static readonly long FILE_MAGIC = 6838401457417744033;
 
+        private const string FILENAME_RULES =
+            "1-31 characters.  Must not include ':'.";
+        private const string VOLNAME_RULES =
+            "1-27 characters.  Must not include ':'.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
                 name: "HFS",
                 canWrite: true,
                 isHierarchical: true,
                 dirSep: SEP_CHAR,
-                hasResourceForks: true
+                hasResourceForks: true,
+                fnSyntax: FILENAME_RULES,
+                vnSyntax: VOLNAME_RULES
             );
 
         //

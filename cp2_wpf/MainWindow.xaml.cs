@@ -318,6 +318,10 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsClosableTreeSelected);
         }
+        private void CanCreateDirectory(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsHierarchicalFileSystemSelected);
+        }
 
         private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
@@ -356,6 +360,9 @@ namespace cp2_wpf {
         }
         private void CopyCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Copy!");
+        }
+        private void CreateDirectoryCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.CreateDirectory();
         }
         private void CutCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Cut!");

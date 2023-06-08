@@ -1,0 +1,56 @@
+﻿<!--
+Copyright 2023 faddenSoft
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_wpf.CreateDirectory"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_wpf"
+        mc:Ignorable="d"
+        Title="Create Directory"
+        Width="500" SizeToContent="Height" ResizeMode="NoResize"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        Loaded="Window_Loaded">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Enter directory name:"/>
+        <TextBox Grid.Row="1" Name="newFileNameTextBox"
+                 Text="{Binding NewFileName, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Grid.Row="2" Margin="0,8,0,0" TextWrapping="Wrap"
+                   Text="{Binding SyntaxRulesText, FallbackValue=Syntax rules here.}"
+                   Foreground="{Binding SyntaxRulesForeground}"/>
+        <TextBlock Grid.Row="3" Margin="0,4,0,0"
+                   Text="&#x2022; Name must be unique."
+                   Foreground="{Binding UniqueNameForeground}"/>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+            <Button Name="okButton" Content="OK" IsDefault="True" Width="70"
+                    IsEnabled="{Binding IsValid}" Click="OkButton_Click"/>
+            <Button Name="cancelButton" Content="Cancel" IsCancel="True"
+                    Width="70" Margin="4,0,0,0"/>
+        </StackPanel>
+
+    </Grid>
+</Window>

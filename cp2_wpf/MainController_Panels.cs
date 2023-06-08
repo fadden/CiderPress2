@@ -82,6 +82,16 @@ namespace cp2_wpf {
         /// </summary>
         public bool IsFileSystemSelected { get { return CurrentWorkObject is IFileSystem; } }
 
+        public bool IsHierarchicalFileSystemSelected {
+            get {
+                IFileSystem? fs = CurrentWorkObject as IFileSystem;
+                if (fs != null) {
+                    return fs.Characteristics.IsHierarchical;
+                }
+                return false;
+            }
+        }
+
         /// <summary>
         /// True if the item is a closable sub-tree.
         /// </summary>

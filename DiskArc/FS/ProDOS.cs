@@ -52,12 +52,16 @@ namespace DiskArc.FS {
         internal const int EXPECT_DIR_ENTRY_LENGTH = 0x27;
         internal const int EXPECT_DIR_PER_BLOCK = 0x0d;
 
+        private const string FILENAME_RULES =
+            "1-15 letters, numbers, or '.'.  Must start with a letter.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
             name: "ProDOS/SOS",
             canWrite: true,
             isHierarchical: true,
             dirSep: SEP_CHAR,
-            hasResourceForks: true
+            hasResourceForks: true,
+            fnSyntax: FILENAME_RULES,
+            vnSyntax: FILENAME_RULES
         );
 
         //

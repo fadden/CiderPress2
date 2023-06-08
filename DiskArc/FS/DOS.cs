@@ -66,12 +66,19 @@ namespace DiskArc.FS {
         internal const int MAX_CATALOG_SECTORS = 31;    // two tracks, or one 32-sector track
         internal const int MAX_TS_CHAIN = 540;          // 16-bit TS sector offset would roll over
 
+        private const string FILENAME_RULES =
+            "1-30 upper-case letters, numbers, and symbols.  Must start with a letter, and must " +
+            "not include ','.";
+        private const string VOLNAME_RULES =
+            "Volume number, 0-254.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
                 name: "DOS 3.2/3.3",
                 canWrite: true,
                 isHierarchical: false,
                 dirSep: IFileEntry.NO_DIR_SEP,
-                hasResourceForks: false
+                hasResourceForks: false,
+                fnSyntax: FILENAME_RULES,
+                vnSyntax:VOLNAME_RULES
             );
 
         //
