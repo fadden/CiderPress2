@@ -499,6 +499,7 @@ limitations under the License.
                               EnableRowVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
                               MouseDoubleClick="FileList_MouseDoubleClick"
+                              ContextMenuOpening="FileListContextMenu_ContextMenuOpening"
                               PreviewKeyDown="FileListDataGrid_PreviewKeyDown"
                               AllowDrop="True"
                               Drop="FileListDataGrid_Drop">
@@ -506,10 +507,10 @@ limitations under the License.
                               <!-- use RowBackground to set area to right of last cell -->
                         <DataGrid.Resources>
                             <!-- make the no-focus color the same as the in-focus color -->
-                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                            <!--<SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
                                              Color="{x:Static SystemColors.HighlightColor}"/>
                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
-                                             Color="{x:Static SystemColors.HighlightTextColor}"/>
+                                             Color="{x:Static SystemColors.HighlightTextColor}"/>-->
                         </DataGrid.Resources>
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Header="?" Width="SizeToCells">

@@ -22,6 +22,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -232,6 +233,10 @@ namespace cp2_wpf {
             PropertyDescriptor pd = DependencyPropertyDescriptor.FromProperty(
                 DataGridColumn.ActualWidthProperty, typeof(DataGridColumn));
             AddColumnWidthChangeCallback(pd, fileListDataGrid);
+
+            // Hack to put the focus on the selected item in the file list DataGrid.
+            fileListDataGrid.ItemContainerGenerator.StatusChanged +=
+                ItemContainerGenerator_StatusChanged;
         }
 
         private void AddColumnWidthChangeCallback(PropertyDescriptor pd, DataGrid dg) {
@@ -867,6 +872,71 @@ namespace cp2_wpf {
             //    toastMessage.Visibility = Visibility.Collapsed;
             //};
             toastMessage.BeginAnimation(UIElement.OpacityProperty, doubAnim);
+        }
+
+        /// <summary>
+        /// Sets the file list DataGrid's focus to the selected item.
+        /// </summary>
+        /// <param name="count">Number of events to handle before disabling.</param>
+        public void FileList_SetSelectionFocus() {
+            mFileListRefocusNeeded = true;
+            //ItemContainerGenerator_StatusChanged(null, new EventArgs());
+        }
+
+        private bool mFileListRefocusNeeded;
+
+        /// <summary>
+        /// Handles a status change in the file list DataGrid item container generator.  This
+        /// is a hack to put the focus on the selected item.
+        /// </summary>
+        private void ItemContainerGenerator_StatusChanged(object? sender, EventArgs e) {
+            if (!mFileListRefocusNeeded) {
+                return;
+            }
+            //Debug.WriteLine("+ Status changed, refocus needed");
+            if (fileListDataGrid.ItemContainerGenerator.Status ==
+                    GeneratorStatus.ContainersGenerated) {
+                int index = fileListDataGrid.SelectedIndex;
+                if (fileListDataGrid.SelectRowColAndFocus(index, 0)) {
+                    // Sometimes this appears to work but actually doesn't.  The difference
+                    // appears to be whether we were called as the result of ScrollIntoView()
+                    // or as part of the framework layout code.  Only the latter works.  We
+                    // should stop after 10 frames to avoid false-positives.
+                    StackFrame[] frames = new StackTrace().GetFrames();
+                    for (int i = 0; i < 10 && i < frames.Length; i++) {
+                        System.Reflection.MethodBase? method = frames[i].GetMethod();
+                        if (method != null && method.Name == "Measure" &&
+                                method.DeclaringType == typeof(UIElement)) {
+                            mFileListRefocusNeeded = false;
+                            break;
+                        }
+                    }
+                    if (mFileListRefocusNeeded) {
+                        Debug.WriteLine("+ refocus successful, but wrong call trace");
+                    } else {
+                        Debug.WriteLine("+ refocus successful, index=" + index);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles the event that fires when the file list's context menu is opened.  We use
+        /// this to detect the situation where focus has been lost entirely.
+        /// </summary>
+        /// <remarks>
+        /// To test: create a disk image with one entry, then delete the entry.  The hack we
+        /// use elsewhere won't work because there are no items, and hence no item container
+        /// status changes.  The app focus ends up set to null, and the first keyboard event
+        /// gets sent to the topmost element in the main window, which happens to be Menu.
+        /// </remarks>
+        private void FileListContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
+            IInputElement? curFocus = FocusManager.GetFocusedElement(this);
+            if (curFocus == null) {
+                Debug.WriteLine("+ no focus found, shifting to file list (refocusNeeded=" +
+                    mFileListRefocusNeeded + ")");
+                fileListDataGrid.Focus();
+            }
         }
 
         #endregion Center Panel

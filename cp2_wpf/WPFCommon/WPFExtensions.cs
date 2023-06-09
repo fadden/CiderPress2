@@ -240,17 +240,15 @@ namespace cp2_wpf.WPFCommon {
             return true;
         }
 
-#if false
         /// <summary>
-        /// https://stackoverflow.com/a/29081353/294248
+        /// Used by SelectRowColAndFocus(); see
+        /// <see href="https://stackoverflow.com/a/29081353/294248"/>.
         /// </summary>
-        /// <param name="dataGrid"></param>
-        /// <param name="rowContainer"></param>
-        /// <param name="column"></param>
-        /// <returns></returns>
-        public static DataGridCell? GetCell(DataGrid dataGrid, DataGridRow rowContainer, int column) {
+        public static DataGridCell? GetCell(DataGrid dataGrid, DataGridRow rowContainer,
+                int column) {
             if (rowContainer != null) {
-                DataGridCellsPresenter? presenter = rowContainer.GetVisualChild<DataGridCellsPresenter>();
+                DataGridCellsPresenter? presenter =
+                        rowContainer.GetVisualChild<DataGridCellsPresenter>();
                 if (presenter == null) {
                     /* if the row has been virtualized away, call its ApplyTemplate() method
                      * to build its visual tree in order for the DataGridCellsPresenter
@@ -259,38 +257,46 @@ namespace cp2_wpf.WPFCommon {
                     presenter = rowContainer.GetVisualChild<DataGridCellsPresenter>();
                 }
                 if (presenter != null) {
-                    DataGridCell? cell = presenter.ItemContainerGenerator.ContainerFromIndex(column) as DataGridCell;
+                    DataGridCell? cell =
+                        presenter.ItemContainerGenerator.ContainerFromIndex(column) as DataGridCell;
                     if (cell == null) {
                         /* bring the column into view
                          * in case it has been virtualized away */
                         dataGrid.ScrollIntoView(rowContainer, dataGrid.Columns[column]);
-                        cell = presenter.ItemContainerGenerator.ContainerFromIndex(column) as DataGridCell;
+                        cell = presenter.ItemContainerGenerator.ContainerFromIndex(column)
+                            as DataGridCell;
                     }
                     return cell;
                 }
             }
             return null;
         }
-        public static void SelectRowAndSetFocus(this DataGrid dataGrid, int rowIndex) {
-            if (true) {
-                // From https://stackoverflow.com/a/14551197/294248 ; doesn't help
-                Debug.Assert(rowIndex < dataGrid.Items.Count);
-                dataGrid.UpdateLayout();
-                dataGrid.ScrollIntoView(dataGrid.Items[rowIndex]);
+
+        /// <summary>
+        /// Sets the selection to a specific row and column, and gives it focus.
+        /// </summary>
+        /// <param name="rowIndex">Row index.</param>
+        /// <param name="colIndex">Column index.</param>
+        public static bool SelectRowColAndFocus(this DataGrid dataGrid, int rowIndex,
+                int colIndex) {
+            if (rowIndex < 0 || rowIndex >= dataGrid.Items.Count) {
+                Debug.Assert(false, "bad rowIndex " + rowIndex);
+                return false;
             }
-            DataGridRow? row = dataGrid.ItemContainerGenerator.ContainerFromIndex(rowIndex) as DataGridRow;
-            if (row != null) {
-                DataGridCell? cell = GetCell(dataGrid, row, 0);
-                if (cell != null) {
-                    Debug.WriteLine("SelectRowAndSetFocus: setting focus");
-                    cell.Focus();
-                    Keyboard.Focus(cell);
-                }
-            } else {
-                Debug.WriteLine("SelectRowAndSetFocus: row is null");
+            DataGridRow? row =
+                dataGrid.ItemContainerGenerator.ContainerFromIndex(rowIndex) as DataGridRow;
+            if (row == null) {
+                //Debug.WriteLine("+ SelectRowColAndFocus: row is null");
+                return false;
             }
+            DataGridCell? cell = GetCell(dataGrid, row, colIndex);
+            if (cell != null) {
+                //Debug.WriteLine("+ SelectRowColAndFocus: setting focus");
+                cell.Focus();
+                //Keyboard.Focus(cell);
+            }
+            return true;
         }
-#endif
 
 #if false
         public static DataGridRow GetRow(this DataGrid grid, int index) {

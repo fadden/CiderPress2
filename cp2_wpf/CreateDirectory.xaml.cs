@@ -111,9 +111,9 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// When window finishes loading, put the focus on the text box.
+        /// When window finishes rendering, put the focus on the text box.
         /// </summary>
-        private void Window_Loaded(object sender, RoutedEventArgs e) {
+        private void Window_ContentRendered(object sender, EventArgs e) {
             newFileNameTextBox.SelectAll();
             newFileNameTextBox.Focus();
         }

@@ -25,7 +25,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 using AppCommon;
-using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Arc;
 using DiskArc.Disk;
@@ -35,6 +34,8 @@ using static DiskArc.Defs;
 
 namespace cp2_wpf {
     public partial class MainController {
+        private bool mSwitchFocusToFileList = false;
+
         /// <summary>
         /// Currently-selected DiskArc library object in the archive tree (i.e.
         /// WorkTreeNode.DAObject).  May be IDiskImage, IArchive, IMultiPart, IFileSystem, or
@@ -315,16 +316,16 @@ namespace cp2_wpf {
                 }
                 mMainWin.ConfigureCenterPanel(isInfoOnly:false, isArchive:true,
                     isHierarchic:true, hasRsrc:hasRsrc, hasRaw:false);
-                RefreshDirAndFileList();
+                RefreshDirAndFileList(false);
             } else if (CurrentWorkObject is IFileSystem) {
                 bool hasRsrc = ((IFileSystem)CurrentWorkObject).Characteristics.HasResourceForks;
                 bool isHier = ((IFileSystem)CurrentWorkObject).Characteristics.IsHierarchical;
                 mMainWin.ConfigureCenterPanel(isInfoOnly:false, isArchive:false,
                     isHierarchic:isHier, hasRsrc:hasRsrc, hasRaw:CurrentWorkObject is DOS);
                 if (mMainWin.ShowSingleDirFileList) {
-                    RefreshDirAndFileList();
+                    RefreshDirAndFileList(false);
                 } else {
-                    RefreshDirAndFileList();
+                    RefreshDirAndFileList(false);
 
                     // Find the directory entry in the full file list.  This will fail for the
                     // volume dir.  We need to select by item, not index, because the file list
@@ -356,7 +357,11 @@ namespace cp2_wpf {
         /// larger.  This means we can do a quick "should we re-render" check here instead of
         /// trying to keep track of whether the contents are dirty.</para>
         /// </remarks>
-        internal void RefreshDirAndFileList() {
+        /// <param name="needRefocus">If true, put the focus on the file list when done.  This
+        ///   should be set for all file operations, but not during archive or directory
+        ///   tree traversal.</param>
+        internal void RefreshDirAndFileList(bool needRefocus = true) {
+            mSwitchFocusToFileList = needRefocus;
             if (CurrentWorkObject == null) {
                 return;
             }
@@ -472,9 +477,16 @@ namespace cp2_wpf {
 
         internal void PopulateFileList() {
             IFileEntry selEntry = IFileEntry.NO_ENTRY;
-            FileListItem? selectedItem = (FileListItem?)mMainWin.fileListDataGrid.SelectedItem;
+            DataGrid fldg = mMainWin.fileListDataGrid;
+            // TODO: this doesn't work when an operation changes the directory tree hierarchy,
+            //   because when the tree gets torn down the directory selection changes and
+            //   the file list gets wiped
+            FileListItem? selectedItem = (FileListItem?)fldg.SelectedItem;
             if (selectedItem != null) {
                 selEntry = selectedItem.FileEntry;
+                Debug.WriteLine("Populate: current item is " + selEntry.FileName);
+            } else {
+                Debug.WriteLine("Populate: no selected item");
             }
             ObservableCollection<FileListItem> fileList = mMainWin.FileList;
 
@@ -509,6 +521,12 @@ namespace cp2_wpf {
             mAppHook.LogD("File list refresh done in " +
                 (endWhen - startWhen).TotalMilliseconds + " ms (clear took " +
                 (startWhen - clearWhen).TotalMilliseconds + " ms)");
+
+            if (mSwitchFocusToFileList) {
+                Debug.WriteLine("+ focus to file list requested");
+                mMainWin.FileList_SetSelectionFocus();
+                mSwitchFocusToFileList = false;
+            }
 
             // If the list isn't empty, select something, preferrably whatever was selected before.
             if (fileList.Count != 0) {
@@ -761,6 +779,7 @@ namespace cp2_wpf {
                     ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);
                 if (ati != null) {
                     ArchiveTreeItem.SelectBestFrom(ati);
+                    mSwitchFocusToFileList = true;
                     return;
                 }
 
@@ -777,6 +796,7 @@ namespace cp2_wpf {
                         // Select something in what we just added.  If it was a disk image, we want
                         // to select the first filesystem, not the disk image itself.
                         ArchiveTreeItem.SelectBestFrom(newItem);
+                        mSwitchFocusToFileList = true;
                         return;
                     }
                 } finally {

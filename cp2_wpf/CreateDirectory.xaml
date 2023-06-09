@@ -24,7 +24,7 @@ limitations under the License.
         Title="Create Directory"
         Width="500" SizeToContent="Height" ResizeMode="NoResize"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
-        Loaded="Window_Loaded">
+        ContentRendered="Window_ContentRendered">
 
     <Grid Margin="8">
         <Grid.RowDefinitions>
