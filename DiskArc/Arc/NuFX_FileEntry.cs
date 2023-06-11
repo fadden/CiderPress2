@@ -317,7 +317,8 @@ namespace DiskArc.Arc {
                 format = (CompressionFormat)thread.mThreadFormat;
                 return true;
             } else {
-                length = storageSize = -1;
+                length = -1;
+                storageSize = 0;
                 format = CompressionFormat.Unknown;
                 return false;
             }

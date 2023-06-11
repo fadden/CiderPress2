@@ -391,8 +391,10 @@ namespace DiskArc {
         /// "extended file info" block that is not part of either fork.</para>
         /// </remarks>
         /// <param name="part">Which part to query.</param>
-        /// <param name="length">Result: length of part, in bytes.</param>
-        /// <param name="storageLength">Result: storage size of part, in bytes.</param>
+        /// <param name="length">Result: length of part, in bytes.  Will be -1 if the part does
+        ///   not exist.</param>
+        /// <param name="storageLength">Result: storage size of part, in bytes.  Will be zero
+        ///   if the part does not exist.</param>
         /// <param name="format">Result: compression format used to store part.</param>
         /// <returns>True if part exists.  If this returns false, the other result values
         ///   are invalid.</returns>

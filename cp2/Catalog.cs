@@ -865,11 +865,14 @@ namespace cp2 {
             } else {
                 long dataLen;
                 FilePart dataPart = parms.Raw ? FilePart.RawData : FilePart.DataFork;
-                if (!entry.GetPartInfo(dataPart, out dataLen, out long unusedSize,
+                string len;
+                if (entry.GetPartInfo(dataPart, out dataLen, out long unusedSize,
                         out CompressionFormat unusedFmtD)) {
+                    len = (dataLen + entry.RsrcLength).ToString();
+                } else {
                     dataLen = -1;
+                    len = entry.RsrcLength.ToString();
                 }
-                string len = (dataLen + entry.RsrcLength).ToString();
                 string stor = entry.StorageSize.ToString();
 
                 outStr = string.Format(FS_FMT, lck, name, type, aux, mod, len, stor);

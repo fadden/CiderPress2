@@ -92,21 +92,47 @@ namespace cp2_wpf {
             return "[DirectoryTreeItem: name='" + Name + "' entry=" + FileEntry + "]";
         }
 
+
+        /// <summary>
+        /// Finds an item in the directory tree, and marks it as selected.
+        /// </summary>
+        /// <param name="tvRoot">Start point of search.</param>
+        /// <param name="dirEntry">Directory file entry to search for.</param>
+        /// <returns>True if found.</returns>
         public static bool SelectItemByEntry(ObservableCollection<DirectoryTreeItem> tvRoot,
                 IFileEntry dirEntry) {
+            DirectoryTreeItem? item = FindItemByEntry(tvRoot, dirEntry);
+            if (item != null) {
+                item.IsSelected = true;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Recursively finds an item in the directory tree.  Expands the nodes leading to
+        /// the found item.
+        /// </summary>
+        /// <param name="tvRoot">Start point of search.</param>
+        /// <param name="dirEntry">Directory file entry to search for.</param>
+        /// <returns>Item found, or null.</returns>
+        public static DirectoryTreeItem? FindItemByEntry(
+                ObservableCollection<DirectoryTreeItem> tvRoot, IFileEntry dirEntry) {
             Debug.Assert(dirEntry.IsDirectory);
             // Currently no way to select the root dir from the list, so no need to test root.
             foreach (DirectoryTreeItem treeItem in tvRoot) {
                 if (treeItem.FileEntry == dirEntry) {
-                    treeItem.IsSelected = true;
-                    return true;
+                    return treeItem;
                 }
-                if (SelectItemByEntry(treeItem.Items, dirEntry)) {
+                DirectoryTreeItem? found = FindItemByEntry(treeItem.Items, dirEntry);
+                if (found != null) {
+                    // Was found in sub-tree, so expand this part.
                     treeItem.IsExpanded = true;
-                    return true;
+                    return found;
                 }
             }
-            return false;
+            return null;
         }
     }
 }

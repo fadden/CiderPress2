@@ -93,7 +93,7 @@ namespace cp2 {
                     }
 
                     if (parms.MacZip && arc is Zip &&
-                            HasMacZipHeader(arc, entry, out IFileEntry adfEntry)) {
+                            Zip.HasMacZipHeader(arc, entry, out IFileEntry adfEntry)) {
                         try {
                             if (!HandleMacZip(arc, adfEntry, editList, doViewOnly, parms,
                                     out IFileEntry adfArchiveEntry)) {
@@ -178,32 +178,6 @@ namespace cp2 {
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Looks for a MacZip header that pairs with the current file.
-        /// </summary>
-        /// <param name="arc">Archive object.</param>
-        /// <param name="entry">Primary entry.</param>
-        /// <param name="adfEntry">Result: AppleDouble header file entry, or NO_ENTRY if one
-        ///   wasn't found.</param>
-        /// <returns>True if an entry was found.</returns>
-        private static bool HasMacZipHeader(IArchive arc, IFileEntry entry,
-                out IFileEntry adfEntry) {
-            adfEntry = IFileEntry.NO_ENTRY;
-            if (arc is not Zip) {
-                return false;
-            }
-            if (entry.IsMacZipHeader()) {
-                // This is the header entry for a different record.
-                return false;
-            }
-            // Generate header entry name and do a lookup.
-            string macZipName = Zip.GenerateMacZipName(entry.FullPathName);
-            if (string.IsNullOrEmpty(macZipName)) {
-                return false;
-            }
-            return arc.TryFindFileEntry(macZipName, out adfEntry);
         }
 
         /// <summary>

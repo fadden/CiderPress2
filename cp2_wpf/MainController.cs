@@ -635,6 +635,9 @@ namespace cp2_wpf {
         /// <param name="selectionDir">Result: directory file entry selected in the directory
         ///   tree, or NO_ENTRY if no directory is selected (e.g. IArchive).</param>
         /// <param name="selected">Result: list of selected entries.</param>
+        /// <param name="firstSel">Result: index of first selected item.  Will be zero unless
+        ///   <paramref name="oneMeansAll"/> is set.  If the selected item was omitted (e.g.
+        ///   because it's a directory), this will be -1.</param>
         /// <returns>True if a non-empty list of selected items was found.</returns>
         public bool GetFileSelection(bool omitDir, bool omitOpenArc, bool closeOpenArc,
                 bool oneMeansAll,
@@ -664,14 +667,19 @@ namespace cp2_wpf {
             if (treeSel.Count == 0) {
                 return false;
             }
+
+            // If we have a single selection, we want to track that selection so we show it
+            // first in the file viewer.  This won't work if we select a single directory and then
+            // view files from the Actions menu.
+            object? selItem = null;
             if (oneMeansAll && dg.SelectedItems.Count == 1) {
                 treeSel = dg.Items;
-                firstSel = dg.SelectedIndex;
+                selItem = dg.SelectedItem;
             }
 
             // Generate a selection set.  We want to collect the full set here so we can
             // present the user with dialogs like, "are you sure you want to delete 57 files?",
-            // which will be wrong if we don't descend into subdirs.  The various workers will
+            // which will be wrong if we don't descend into subdirs.  The various workers can
             // do the recursion themselves if enabled.
             selected = new List<IFileEntry>(treeSel.Count);
             foreach (FileListItem listItem in treeSel) {
@@ -684,7 +692,11 @@ namespace cp2_wpf {
                 } else {
                     selected.Add(listItem.FileEntry);
                 }
+                if (listItem == selItem) {
+                    firstSel = selected.Count - 1;
+                }
             }
+            // Selection set may be empty at this point.
 
             // Handle open archives.
             if (doCheckOpen) {
@@ -881,6 +893,92 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Actions : Edit Attributes
+        /// </summary>
+        public void EditAttributes() {
+            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.Assert(false);
+                return;
+            }
+            FileListItem? fileItem = mMainWin.fileListDataGrid.SelectedItem as FileListItem;
+            if (fileItem == null) {
+                Debug.Assert(false);
+                return;
+            }
+            DirectoryTreeItem? dirTreeItem = null;
+            if (fileItem.FileEntry.IsDirectory) {
+                dirTreeItem = DirectoryTreeItem.FindItemByEntry(mMainWin.DirectoryTreeRoot,
+                    fileItem.FileEntry);
+            }
+            Debug.WriteLine("Editing " + fileItem.FileEntry + " in " +
+                arcTreeSel.WorkTreeNode.DAObject);
+
+            EditAttributes(arcTreeSel.WorkTreeNode, fileItem.FileEntry, dirTreeItem, fileItem);
+        }
+
+        public void EditDirAttributes() {
+            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.Assert(false);
+                return;
+            }
+            DirectoryTreeItem? dirTreeSel =
+                mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+            if (dirTreeSel == null) {
+                Debug.Assert(false);
+                return;
+            }
+
+            // The file list item will also be available if we're in full-list mode.
+            FileListItem? fileItem =
+                FileListItem.FindItemByEntry(mMainWin.FileList, dirTreeSel.FileEntry);
+            EditAttributes(arcTreeSel.WorkTreeNode, dirTreeSel.FileEntry, dirTreeSel, fileItem);
+        }
+
+        private void EditAttributes(WorkTree.Node workNode, IFileEntry entry,
+                DirectoryTreeItem? dirItem, FileListItem? fileItem) {
+            object archiveOrFileSystem = workNode.DAObject;
+
+            // TODO:
+            // - if MacZip, look for header.  If found, use that as IFileEntry, set isMacZip,
+            //   and extract attributes from AppleDouble
+            bool isMacZip = false;
+            bool isMacZipEnabled = AppSettings.Global.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
+            IFileEntry adfEntry = IFileEntry.NO_ENTRY;
+            if (isMacZipEnabled && workNode.DAObject is Zip &&
+                    Zip.HasMacZipHeader((IArchive)workNode.DAObject, entry, out adfEntry)) {
+                // TODO: stuff
+                isMacZip = true;
+            }
+            FileAttribs curAttribs = new FileAttribs(entry);
+
+            EditAttributes dialog =
+                new EditAttributes(mMainWin, archiveOrFileSystem, entry, curAttribs);
+            if (dialog.ShowDialog() != true) {
+                return;
+            }
+
+            // TODO:
+            // - discard and recreate FileListItem, insert into same spot in list
+            //   - use FileListItem ctor for MacZip if needed
+            // - if directory, discard and recreate DirectoryTreeItem, insert in same spot in tree
+            // - call RefreshDirAndFileList to update the list and dir tree
+            // - unless sort order changed, should not be necessary to regenerate lists; change
+            //   to Item object should cause Observable stuff to pick up difference
+
+            SettingsHolder settings = AppSettings.Global;
+            EditAttributesProgress prog = new EditAttributesProgress(mMainWin, workNode.DAObject,
+                    workNode.FindDANode(), entry, adfEntry, dialog.NewAttribs, mAppHook) {
+                DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
+                EnableMacOSZip = isMacZipEnabled,
+            };
+
+            // Currently doing updates on GUI thread.  Errors are reported to user.
+            prog.DoUpdate(isMacZip);
+        }
+
+        /// <summary>
         /// Handles Actions : Edit Blocks / Sectors
         /// </summary>
         public void EditBlocksSectors(bool asSectors) {
@@ -961,7 +1059,7 @@ namespace cp2_wpf {
         public void ExtractFiles() {
             if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
                     oneMeansAll:false, out object? archiveOrFileSystem, out IFileEntry selectionDir,
-                    out List<IFileEntry>? selected, out int firstSel)) {
+                    out List<IFileEntry>? selected, out int unused)) {
                 return;
             }
             if (selected.Count == 0) {
@@ -1005,11 +1103,11 @@ namespace cp2_wpf {
         /// </summary>
         public void ViewFiles() {
             if (!GetFileSelection(omitDir:true, omitOpenArc:true, closeOpenArc:false,
-                    oneMeansAll:true, out object? archiveOrFileSystem, out IFileEntry selectionDir,
+                    oneMeansAll:true, out object? archiveOrFileSystem, out IFileEntry unusedDir,
                     out List<IFileEntry>? selected, out int firstSel)) {
                 return;
             }
-            if (selected.Count == 0) {
+            if (selected.Count == 0 || firstSel < 0) {
                 MessageBox.Show(mMainWin, "No viewable files selected (can't view directories " +
                     "or open disks/archives).", "Empty", MessageBoxButton.OK,
                     MessageBoxImage.Information);

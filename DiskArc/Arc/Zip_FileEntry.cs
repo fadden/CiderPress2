@@ -722,7 +722,8 @@ namespace DiskArc.Arc {
                 format = mCDFH.Format;
                 return true;
             } else {
-                length = storageSize = -1;
+                length = -1;
+                storageSize = 0;
                 format = CompressionFormat.Uncompressed;
                 return false;
             }

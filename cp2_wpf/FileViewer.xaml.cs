@@ -356,8 +356,8 @@ namespace cp2_wpf {
             ShowTab(Tab.Data);
         }
 
-        private const int MAX_FANCY_TEXT = 1024 * 1024 * 16;     // 16MB
-        private const int MAX_SIMPLE_TEXT = 1024 * 1024 * 16;    // 16MB
+        private const int MAX_FANCY_TEXT = 1024 * 1024 * 2;     // 2MB
+        private const int MAX_SIMPLE_TEXT = 1024 * 1024 * 2;    // 2MB
 
         /// <summary>
         /// Reformats the file when the conversion combo box selection changes.

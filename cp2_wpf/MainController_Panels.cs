@@ -48,10 +48,14 @@ namespace cp2_wpf {
 
         /// <summary>
         /// Determines whether the current work object can be sector-edited by blocks or sectors.
-        /// This only works for IDiskImage and Partition.  IFileSystem and IMultiPart also have
-        /// chunk access objects, but filesystems have to be closed before they can be edited,
-        /// and the multi-part chunks are really just meant to be carved up into smaller pieces.
+        /// This only works for IDiskImage and Partition.
         /// </summary>
+        /// <remarks>
+        /// <para>IFileSystem and IMultiPart also have chunk access objects, but filesystems have
+        /// to be closed before they can be edited, and the multi-part chunks are really just
+        /// meant to be carved up into smaller pieces.</para>
+        /// <para>A "True" result does not indicate that the storage is writable.</para>
+        /// </remarks>
         private bool CanEditChunk(bool asSectors) {
             IChunkAccess? chunks = null;
             if (CurrentWorkObject is IDiskImage) {
@@ -69,8 +73,28 @@ namespace cp2_wpf {
             return false;
         }
 
-        public bool AreFilesSelected {
+        public bool CanWrite {
+            get {
+                ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+                if (arcTreeSel != null) {
+                    return !arcTreeSel.WorkTreeNode.IsReadOnly;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// True if one or more entries are selected.
+        /// </summary>
+        public bool AreFileEntriesSelected {
             get { return mMainWin.fileListDataGrid.SelectedIndex >= 0; }
+        }
+
+        /// <summary>
+        /// True if exactly one entry is selected in the file list.
+        /// </summary>
+        public bool IsSingleEntrySelected {
+            get { return mMainWin.fileListDataGrid.SelectedItems.Count == 1; }
         }
 
         /// <summary>
@@ -353,9 +377,11 @@ namespace cp2_wpf {
         /// <para>All of the file information from filesystems and archives is cached in
         /// memory, so re-scanning the existing contents is very fast, especially when compared
         /// to re-rendering the strings and having WPF repopulate the control.  HFS and ProDOS
-        /// are effectively limited to 64K files per volume, but file archives can be much
-        /// larger.  This means we can do a quick "should we re-render" check here instead of
-        /// trying to keep track of whether the contents are dirty.</para>
+        /// are effectively limited to 64K files per volume, though file archives can be much
+        /// larger (but rarely are).  The small size and fast access means we can do a quick
+        /// "should we re-render" check here instead of trying to keep track of whether the
+        /// contents are dirty.  (It also correctly identifies the list as dirty when a file
+        /// is renamed on a sorted filesystem like HFS.)</para>
         /// </remarks>
         /// <param name="needRefocus">If true, put the focus on the file list when done.  This
         ///   should be set for all file operations, but not during archive or directory
@@ -422,7 +448,7 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Verifies that the directory tree matches the current filesystem layout.
+        /// Recursively verifies that the directory tree matches the current filesystem layout.
         /// </summary>
         /// <param name="tvRoot">Level to check.</param>
         /// <param name="dirEntry">Directory entry we expect to find here.</param>
@@ -435,6 +461,9 @@ namespace cp2_wpf {
                 return false;
             }
             DirectoryTreeItem item = tvRoot[index];
+            if (item.FileEntry != dirEntry) {
+                return false;
+            }
             int childIndex = 0;
             foreach (IFileEntry entry in dirEntry) {
                 if (entry.IsDirectory) {
@@ -554,15 +583,13 @@ namespace cp2_wpf {
             foreach (IFileEntry entry in arc) {
                 IFileEntry adfEntry = IFileEntry.NO_ENTRY;
                 FileAttribs? adfAttrs = null;
-                if (arc is Zip && macZipMode) {
+                if (macZipMode && arc is Zip) {
                     if (entry.IsMacZipHeader()) {
                         // Ignore headers we don't explicitly look for.
                         continue;
                     }
                     // Look for paired entry.
-                    string macZipName = Zip.GenerateMacZipName(entry.FullPathName);
-                    if (!string.IsNullOrEmpty(macZipName) &&
-                            arc.TryFindFileEntry(macZipName, out adfEntry)) {
+                    if (Zip.HasMacZipHeader(arc, entry, out adfEntry)) {
                         try {
                             // Can't use un-seekable archive stream as archive source.
                             using (Stream adfStream = ArcTemp.ExtractToTemp(arc,
@@ -653,7 +680,7 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Recursively verifies disk contents.
+        /// Recursively verifies that disk contents match.
         /// </summary>
         private static bool VerifyFileList(ObservableCollection<FileListItem> fileList,
                 ref int index, IFileEntry dirEntry, bool doRecurse) {

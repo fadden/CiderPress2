@@ -315,16 +315,24 @@ namespace cp2_wpf {
         private void IsFileAreaShowing(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList);
         }
-        private void AreFilesSelected(object sender, CanExecuteRoutedEventArgs e) {
+        private void IsWritableSingleEntrySelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+                mMainCtrl.IsSingleEntrySelected);
+        }
+        private void AreFileEntriesSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList &&
-                mMainCtrl.AreFilesSelected);
+                mMainCtrl.AreFileEntriesSelected);
+        }
+        private void AreWritableFileEntriesSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+                ShowCenterFileList && mMainCtrl.AreFileEntriesSelected);
         }
         private void IsSubTreeSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsClosableTreeSelected);
         }
         private void CanCreateDirectory(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
                 mMainCtrl.IsHierarchicalFileSystemSelected);
         }
 
@@ -343,6 +351,10 @@ namespace cp2_wpf {
         private void IsFileSystemSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsFileSystemSelected);
+        }
+        private void IsEditableFileSystemSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsFileSystemSelected && mMainCtrl.CanWrite);
         }
 
         #endregion Can-execute handlers
@@ -378,8 +390,14 @@ namespace cp2_wpf {
         private void EditAppSettingsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.EditAppSettings();
         }
+        private void EditAttributesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.EditAttributes();
+        }
         private void EditBlocksCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.EditBlocksSectors(false);
+        }
+        private void EditDirAttributesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.EditDirAttributes();
         }
         private void EditSectorsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.EditBlocksSectors(true);
@@ -809,7 +827,7 @@ namespace cp2_wpf {
                 Debug.WriteLine("Caught Delete in the center datagrid");
                 // This event comes from the center DataGrid, so we can safely assume that a file
                 // is open and the file list is visible.
-                if (mMainCtrl.AreFilesSelected) {
+                if (mMainCtrl.AreFileEntriesSelected) {
                     mMainCtrl.DeleteFiles();
                 }
                 e.Handled = true;       // consume

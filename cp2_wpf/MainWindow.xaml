@@ -74,7 +74,9 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
+            <RoutedUICommand x:Key="EditAttributesCmd" Text="Edit Attributes..."/>
             <RoutedUICommand x:Key="EditBlocksCmd" Text="Edit Blocks..."/>
+            <RoutedUICommand x:Key="EditDirAttributesCmd" Text="Edit Directory Attributes..."/>
             <RoutedUICommand x:Key="EditSectorsCmd" Text="Edit Sectors..."/>
             <RoutedUICommand x:Key="ExitCmd" Text="E_xit"/>
             <RoutedUICommand x:Key="ExtractFilesCmd" Text="_Extract Files..."/>
@@ -120,17 +122,21 @@ limitations under the License.
         <CommandBinding Command="Cut"
                         CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
         <CommandBinding Command="{StaticResource DeleteFilesCmd}"
-                        CanExecute="AreFilesSelected" Executed="DeleteFilesCmd_Executed"/>
+                        CanExecute="AreWritableFileEntriesSelected" Executed="DeleteFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
                         Executed="EditAppSettingsCmd_Executed"/>
+        <CommandBinding Command="{StaticResource EditAttributesCmd}"
+                        CanExecute="IsWritableSingleEntrySelected" Executed="EditAttributesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditBlocksCmd}"
                         CanExecute="CanEditBlocks" Executed="EditBlocksCmd_Executed"/>
+        <CommandBinding Command="{StaticResource EditDirAttributesCmd}"
+                        CanExecute="IsEditableFileSystemSelected" Executed="EditDirAttributesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditSectorsCmd}"
                         CanExecute="CanEditSectors" Executed="EditSectorsCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExitCmd}"
                         Executed="ExitCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExtractFilesCmd}"
-                        CanExecute="AreFilesSelected" Executed="ExtractFilesCmd_Executed"/>
+                        CanExecute="AreFileEntriesSelected" Executed="ExtractFilesCmd_Executed"/>
         <CommandBinding Command="Help"
                         Executed="HelpCmd_Executed"/>
         <CommandBinding Command="{StaticResource NewDiskImageCmd}"
@@ -156,7 +162,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource ToggleInfoCmd}"
                         CanExecute="IsFileOpen" Executed="ToggleInfoCmd_Executed"/>
         <CommandBinding Command="{StaticResource ViewFilesCmd}"
-                        CanExecute="AreFilesSelected" Executed="ViewFilesCmd_Executed"/>
+                        CanExecute="AreFileEntriesSelected" Executed="ViewFilesCmd_Executed"/>
 
         <CommandBinding Command="{StaticResource Debug_BulkCompressTestCmd}"
                         Executed="Debug_BulkCompressTestCmd_Executed"/>
@@ -199,7 +205,10 @@ limitations under the License.
                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
+                <MenuItem Command="{StaticResource EditAttributesCmd}"/>
                 <MenuItem Command="{StaticResource CreateDirectoryCmd}"/>
+                <Separator/>
+                <MenuItem Command="{StaticResource EditDirAttributesCmd}"/>
                 <Separator/>
                 <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                 <MenuItem Command="{StaticResource EditBlocksCmd}"/>
@@ -465,11 +474,11 @@ limitations under the License.
                                     <!--<Setter Property="Background" Value="Blue"/>-->
                                 </Style>
                             </TreeView.ItemContainerStyle>
-                            <!--<TreeView.ContextMenu>
+                            <TreeView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="TO DO"/>
+                                    <MenuItem Command="{StaticResource EditDirAttributesCmd}"/>
                                 </ContextMenu>
-                            </TreeView.ContextMenu>-->
+                            </TreeView.ContextMenu>
                         </TreeView>
                     </Grid>
 
@@ -559,6 +568,7 @@ limitations under the License.
                                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
+                                <MenuItem Command="{StaticResource EditAttributesCmd}"/>
                                 <MenuItem Command="{StaticResource CreateDirectoryCmd}"/>
                             </ContextMenu>
                         </DataGrid.ContextMenu>

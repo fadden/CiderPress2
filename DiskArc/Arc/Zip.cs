@@ -712,6 +712,8 @@ namespace DiskArc.Arc {
             return fileName.Replace(Zip_FileEntry.SEP_CHAR, '?');
         }
 
+        #region Mac ZIP Utilities
+
         /// <summary>
         /// Generates the __MACOSX/ AppleDouble filename.
         /// </summary>
@@ -747,5 +749,33 @@ namespace DiskArc.Arc {
             sb.Append(fullName.Substring(lastSlash + 1));
             return sb.ToString();
         }
+
+        /// <summary>
+        /// Looks for a MacZip header that pairs with the specified entry.
+        /// </summary>
+        /// <param name="arc">Archive object.  It's okay for this not to be ZIP.</param>
+        /// <param name="entry">Primary entry.</param>
+        /// <param name="adfEntry">Result: AppleDouble header file entry, or NO_ENTRY if one
+        ///   wasn't found.</param>
+        /// <returns>True if an entry was found.</returns>
+        public static bool HasMacZipHeader(IArchive arc, IFileEntry entry,
+                out IFileEntry adfEntry) {
+            adfEntry = IFileEntry.NO_ENTRY;
+            if (arc is not Zip) {
+                return false;
+            }
+            if (entry.IsMacZipHeader()) {
+                // This is the header entry for a different record.
+                return false;
+            }
+            // Generate header entry name and do a lookup.
+            string macZipName = GenerateMacZipName(entry.FullPathName);
+            if (string.IsNullOrEmpty(macZipName)) {
+                return false;
+            }
+            return arc.TryFindFileEntry(macZipName, out adfEntry);
+        }
+
+        #endregion Mac ZIP Utilities
     }
 }

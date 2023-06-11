@@ -185,7 +185,8 @@ namespace DiskArc.FS {
                 storageSize = RsrcPhyLength;
                 return true;
             } else {
-                length = storageSize = -1;
+                length = -1;
+                storageSize = 0;
                 return false;
             }
         }

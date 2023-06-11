@@ -681,7 +681,8 @@ namespace DiskArc.Arc {
                     length = storageSize = mRsrcForkLength;
                     return HasRsrcFork;
                 default:
-                    length = storageSize = -1;
+                    length = -1;
+                    storageSize = 0;
                     format = CompressionFormat.Unknown;
                     return false;
             }

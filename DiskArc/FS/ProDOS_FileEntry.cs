@@ -220,11 +220,13 @@ namespace DiskArc.FS {
                     storageSize = ExtInfo.RsrcBlocksUsed * BLOCK_SIZE;
                     return true;
                 } else {
-                    length = storageSize = -1;
+                    length = -1;
+                    storageSize = 0;
                     return false;
                 }
             } else {
-                length = storageSize = -1;
+                length = -1;
+                storageSize = 0;
                 return false;
             }
         }
