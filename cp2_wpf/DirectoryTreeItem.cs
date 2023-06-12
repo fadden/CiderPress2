@@ -162,7 +162,7 @@ namespace cp2_wpf {
         /// </remarks>
         /// <param name="treeView">TreeView that holds the item.</param>
         /// <param name="item">Item to view.</param>
-        public static void BringItemIntoView(TreeView treeView, DirectoryTreeItem item) {
+        internal static void BringItemIntoView(TreeView treeView, DirectoryTreeItem item) {
             //Debug.WriteLine("Bring into view: " + item);
 
             // We're passing in a leaf node, but we need to work from the root out.
@@ -187,7 +187,7 @@ namespace cp2_wpf {
                         // Unexpected.
                         Debug.WriteLine("Item not found!");
                     } else {
-                        CallBringIndexIntoView(virtPanel, index);
+                        virtPanel.BringIndexIntoView_Public(index);
                     }
                     treeView.Focus();
                 }
@@ -195,15 +195,6 @@ namespace cp2_wpf {
                 containerControl = (ItemsControl)tvItem;
                 Debug.Assert(containerControl != null || stack.Count == 0);
             }
-        }
-
-        private static readonly MethodInfo BringIndexIntoViewMethodInfo =
-            typeof(VirtualizingPanel).GetMethod("BringIndexIntoView",
-                BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-        private static void CallBringIndexIntoView(VirtualizingPanel virtualizingPanel, int index) {
-            Debug.Assert(virtualizingPanel != null);
-            BringIndexIntoViewMethodInfo.Invoke(virtualizingPanel, new object[] { index });
         }
     }
 }

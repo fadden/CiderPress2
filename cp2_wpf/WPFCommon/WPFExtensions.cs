@@ -17,6 +17,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -387,6 +388,23 @@ namespace cp2_wpf.WPFCommon {
             target.Render(targetVisual);
             var targetFrame = BitmapFrame.Create(target);
             return targetFrame;
+        }
+    }
+
+    /// <summary>
+    /// VirtualizingPanel extensions.
+    /// </summary>
+    public static class VirtualizingPanelExtensions {
+        private static readonly MethodInfo BringIndexIntoViewMethodInfo =
+            typeof(VirtualizingPanel).GetMethod("BringIndexIntoView",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        /// <summary>
+        /// Invokes VirtualizingPanel.BringIndexIntoView(int).
+        /// </summary>
+        public static void BringIndexIntoView_Public(this VirtualizingPanel virtPanel, int index) {
+            Debug.Assert(virtPanel != null);
+            BringIndexIntoViewMethodInfo.Invoke(virtPanel, new object[] { index });
         }
     }
 }

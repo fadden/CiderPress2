@@ -158,7 +158,7 @@ namespace cp2_wpf {
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
 
             // Select the first filesystem or archive we encounter while chasing the first child.
-            ArchiveTreeItem.SelectBestFrom(tvRoot[0]);
+            ArchiveTreeItem.SelectBestFrom(mMainWin.archiveTree, tvRoot[0]);
 
             return true;
         }
@@ -804,7 +804,7 @@ namespace cp2_wpf {
                 ArchiveTreeItem? ati =
                     ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);
                 if (ati != null) {
-                    ArchiveTreeItem.SelectBestFrom(ati);
+                    ArchiveTreeItem.SelectBestFrom(mMainWin.archiveTree, ati);
                     mSwitchFocusToFileList = true;
                     return;
                 }
@@ -821,7 +821,7 @@ namespace cp2_wpf {
                             ArchiveTreeItem.ConstructTree(arcTreeSel, newNode);
                         // Select something in what we just added.  If it was a disk image, we want
                         // to select the first filesystem, not the disk image itself.
-                        ArchiveTreeItem.SelectBestFrom(newItem);
+                        ArchiveTreeItem.SelectBestFrom(mMainWin.archiveTree, newItem);
                         mSwitchFocusToFileList = true;
                         return;
                     }
@@ -843,7 +843,7 @@ namespace cp2_wpf {
             ArchiveTreeItem? ati = ArchiveTreeItem.FindItemByDAObject(mMainWin.ArchiveTreeRoot,
                 item.PartRef);
             if (ati != null) {
-                ArchiveTreeItem.SelectBestFrom(ati);
+                ArchiveTreeItem.SelectBestFrom(mMainWin.archiveTree, ati);
                 return;
             }
 
@@ -858,7 +858,7 @@ namespace cp2_wpf {
                         ArchiveTreeItem.ConstructTree(arcTreeSel, newNode);
                     // Select something in what we just added.  If it was a disk image, we want
                     // to select the first filesystem, not the disk image itself.
-                    ArchiveTreeItem.SelectBestFrom(newItem);
+                    ArchiveTreeItem.SelectBestFrom(mMainWin.archiveTree, newItem);
                 }
             } finally {
                 Mouse.OverrideCursor = null;

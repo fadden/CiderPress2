@@ -19,12 +19,14 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 
 using AppCommon;
 using CommonUtil;
+using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Arc;
 using DiskArc.Multi;
@@ -259,46 +261,103 @@ namespace cp2_wpf {
         /// is found, the root will be selected.
         /// </summary>
         /// <param name="root">Starting point.</param>
-        public static void SelectBestFrom(ArchiveTreeItem root) {
-            if (!SelectBestFromR(root)) {
+        public static void SelectBestFrom(TreeView tv, ArchiveTreeItem root) {
+            ArchiveTreeItem? best = SelectBestFromR(root);
+            if (best == null) {
+                BringItemIntoView(tv, root);
                 root.IsSelected = true;
+            } else {
+                BringItemIntoView(tv, best);
+                best.IsSelected = true;
             }
         }
-        private static bool SelectBestFromR(ArchiveTreeItem root) {
+        private static ArchiveTreeItem? SelectBestFromR(ArchiveTreeItem root) {
+            ArchiveTreeItem? result;
+
             foreach (ArchiveTreeItem item in root.Items) {
                 if (item.WorkTreeNode.DAObject is GZip) {
                     // Go deeper.
-                    if (SelectBestFromR(item)) {
-                        return true;
+                    if ((result = SelectBestFromR(item)) != null) {
+                        return result;
                     }
                 } else if (item.WorkTreeNode.DAObject is NuFX) {
                     IFileEntry firstEntry = ((NuFX)item.WorkTreeNode.DAObject).GetFirstEntry();
                     if (!firstEntry.IsDiskImage) {
                         // Non-disk archive, select it.
-                        item.IsSelected = true;
-                        return true;
+                        return item;
                     }
                     // Disk archive, go deeper.
-                    if (SelectBestFromR(item)) {
-                        return true;
+                    if ((result = SelectBestFromR(item)) != null) {
+                        return result;
                     }
                 } else if (item.WorkTreeNode.DAObject is IFileSystem ||
                            item.WorkTreeNode.DAObject is IArchive) {
                     // These are good.
-                    item.IsSelected = true;
-                    return true;
+                    return item;
                 } else {
                     // IMultiPart, IDiskImage, or Partition; go deeper.
-                    if (SelectBestFromR(item)) {
-                        return true;
+                    if ((result = SelectBestFromR(item)) != null) {
+                        return result;
                     }
                 }
             }
-            return false;
+            return null;
         }
 
         public override string ToString() {
             return "[ArchiveTreeItem: name='" + Name + "' node=" + WorkTreeNode + "]";
+        }
+
+        // TODO: share this with DirectoryTreeItem.  This is awkward because we need Parent
+        // and Items, but if we use an abstract base class we have trouble with all of the
+        // things that want an observable list of a subclass.
+
+        /// <summary>
+        /// Scrolls the TreeView so the specified item is visible.  This works even if the tree
+        /// is virtualized and the item in question hasn't been prepared yet.
+        /// </summary>
+        /// <remarks>
+        /// <para>This simple function took a few hours to figure out.  Big thanks to
+        /// <see href="https://stackoverflow.com/a/17883600/294248"/> and the other
+        /// solutions on that page.</para>
+        /// <para><see href="https://stackoverflow.com/a/9494484/294248"/> seems like it would
+        /// be enough, but TreeViewItem.BringIntoView() doesn't seem to work.</para>
+        /// </remarks>
+        /// <param name="treeView">TreeView that holds the item.</param>
+        /// <param name="item">Item to view.</param>
+        internal static void BringItemIntoView(TreeView treeView, ArchiveTreeItem item) {
+            //Debug.WriteLine("Bring into view: " + item);
+
+            // We're passing in a leaf node, but we need to work from the root out.
+            Stack<ArchiveTreeItem> stack = new Stack<ArchiveTreeItem>();
+            stack.Push(item);
+            while (item.Parent != null) {
+                stack.Push(item.Parent);
+                item = item.Parent;
+            }
+            ItemsControl? containerControl = treeView;
+            while (stack.Count > 0) {
+                Debug.Assert(containerControl != null);
+                ArchiveTreeItem atItem = stack.Pop();
+                VirtualizingStackPanel? virtPanel =
+                    VisualHelper.GetVisualChild<VirtualizingStackPanel>(containerControl);
+                if (virtPanel != null) {
+                    // If we have a parent, find our place in its list of children.  If not,
+                    // we're at the root, so find the index in the TreeView's items list.
+                    int index = atItem.Parent != null ? atItem.Parent.Items.IndexOf(atItem) :
+                        treeView.Items.IndexOf(atItem);
+                    if (index < 0) {
+                        // Unexpected.
+                        Debug.WriteLine("Item not found!");
+                    } else {
+                        virtPanel.BringIndexIntoView_Public(index);
+                    }
+                    treeView.Focus();
+                }
+                var tvItem = containerControl.ItemContainerGenerator.ContainerFromItem(atItem);
+                containerControl = (ItemsControl)tvItem;
+                Debug.Assert(containerControl != null || stack.Count == 0);
+            }
         }
     }
 }
