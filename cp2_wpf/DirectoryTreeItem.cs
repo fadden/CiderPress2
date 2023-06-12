@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Windows.Controls;
 
 using AppCommon;
 using CommonUtil;
+using cp2_wpf.WPFCommon;
 using DiskArc;
 using static DiskArc.Defs;
 
@@ -29,6 +33,11 @@ namespace cp2_wpf {
     /// One entry in the directory tree hierarchy.
     /// </summary>
     public class DirectoryTreeItem : INotifyPropertyChanged {
+        /// <summary>
+        /// Reference to parent node.  Will be null at root of tree.
+        /// </summary>
+        public DirectoryTreeItem? Parent { get; private set; }
+
         /// <summary>
         /// Name to show in the GUI.
         /// </summary>
@@ -72,7 +81,7 @@ namespace cp2_wpf {
         public bool IsSelected {
             get { return mIsSelected; }
             set {
-                //Debug.WriteLine("Tree: selected '" + Name + "'=" + value);
+                //Debug.WriteLine("Tree: " + (value ? "" : "UN") + "selected '" + Name + "'");
                 if (value != mIsSelected) {
                     mIsSelected = value;
                     OnPropertyChanged();
@@ -81,7 +90,9 @@ namespace cp2_wpf {
         }
         private bool mIsSelected;
 
-        public DirectoryTreeItem(string name, IFileEntry fileEntry) {
+
+        public DirectoryTreeItem(DirectoryTreeItem? parent, string name, IFileEntry fileEntry) {
+            Parent = parent;
             Name = name;
             FileEntry = fileEntry;
 
@@ -92,23 +103,6 @@ namespace cp2_wpf {
             return "[DirectoryTreeItem: name='" + Name + "' entry=" + FileEntry + "]";
         }
 
-
-        /// <summary>
-        /// Finds an item in the directory tree, and marks it as selected.
-        /// </summary>
-        /// <param name="tvRoot">Start point of search.</param>
-        /// <param name="dirEntry">Directory file entry to search for.</param>
-        /// <returns>True if found.</returns>
-        public static bool SelectItemByEntry(ObservableCollection<DirectoryTreeItem> tvRoot,
-                IFileEntry dirEntry) {
-            DirectoryTreeItem? item = FindItemByEntry(tvRoot, dirEntry);
-            if (item != null) {
-                item.IsSelected = true;
-                return true;
-            } else {
-                return false;
-            }
-        }
 
         /// <summary>
         /// Recursively finds an item in the directory tree.  Expands the nodes leading to
@@ -133,6 +127,83 @@ namespace cp2_wpf {
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Finds an item in the directory tree, and marks it as selected.
+        /// </summary>
+        /// <param name="mainWin">Main window.</param>
+        /// <param name="dirEntry">Directory file entry to search for.</param>
+        /// <returns>True if found.</returns>
+        public static bool SelectItemByEntry(MainWindow mainWin, IFileEntry dirEntry) {
+            ObservableCollection<DirectoryTreeItem> tvRoot = mainWin.DirectoryTreeRoot;
+            DirectoryTreeItem? item = FindItemByEntry(tvRoot, dirEntry);
+            if (item != null) {
+                // We need to bring the item into view *before* we select it, in case it's
+                // virtual and the TreeViewItem doesn't really exist yet.
+                BringItemIntoView(mainWin.directoryTree, item);
+                item.IsSelected = true;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Scrolls the TreeView so the specified item is visible.  This works even if the tree
+        /// is virtualized and the item in question hasn't been prepared yet.
+        /// </summary>
+        /// <remarks>
+        /// <para>This simple function took a few hours to figure out.  Big thanks to
+        /// <see href="https://stackoverflow.com/a/17883600/294248"/> and the other
+        /// solutions on that page.</para>
+        /// <para><see href="https://stackoverflow.com/a/9494484/294248"/> seems like it would
+        /// be enough, but TreeViewItem.BringIntoView() doesn't seem to work.</para>
+        /// </remarks>
+        /// <param name="treeView">TreeView that holds the item.</param>
+        /// <param name="item">Item to view.</param>
+        public static void BringItemIntoView(TreeView treeView, DirectoryTreeItem item) {
+            //Debug.WriteLine("Bring into view: " + item);
+
+            // We're passing in a leaf node, but we need to work from the root out.
+            Stack<DirectoryTreeItem> stack = new Stack<DirectoryTreeItem>();
+            stack.Push(item);
+            while (item.Parent != null) {
+                stack.Push(item.Parent);
+                item = item.Parent;
+            }
+            ItemsControl? containerControl = treeView;
+            while (stack.Count > 0) {
+                Debug.Assert(containerControl != null);
+                DirectoryTreeItem dtItem = stack.Pop();
+                var virtPanel =
+                    VisualHelper.GetVisualChild<VirtualizingStackPanel>(containerControl);
+                if (virtPanel != null) {
+                    // If we have a parent, find our place in its list of children.  If not,
+                    // we're at the root, so find the index in the TreeView's items list.
+                    int index = dtItem.Parent != null ? dtItem.Parent.Items.IndexOf(dtItem) :
+                        treeView.Items.IndexOf(dtItem);
+                    if (index < 0) {
+                        // Unexpected.
+                        Debug.WriteLine("Item not found!");
+                    } else {
+                        CallBringIndexIntoView(virtPanel, index);
+                    }
+                    treeView.Focus();
+                }
+                var tvItem = containerControl.ItemContainerGenerator.ContainerFromItem(dtItem);
+                containerControl = (ItemsControl)tvItem;
+                Debug.Assert(containerControl != null || stack.Count == 0);
+            }
+        }
+
+        private static readonly MethodInfo BringIndexIntoViewMethodInfo =
+            typeof(VirtualizingPanel).GetMethod("BringIndexIntoView",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        private static void CallBringIndexIntoView(VirtualizingPanel virtualizingPanel, int index) {
+            Debug.Assert(virtualizingPanel != null);
+            BringIndexIntoViewMethodInfo.Invoke(virtualizingPanel, new object[] { index });
         }
     }
 }

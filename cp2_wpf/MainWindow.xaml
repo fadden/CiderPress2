@@ -388,8 +388,8 @@ limitations under the License.
                                    HorizontalAlignment="Center"/>
                         <TreeView Grid.Row="1" Name="archiveTree" BorderThickness="0"
                                   ItemsSource="{Binding ArchiveTreeRoot}"
-                                   VirtualizingStackPanel.IsVirtualizing="True"
-                                   VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                  VirtualizingStackPanel.IsVirtualizing="True"
+                                  VirtualizingStackPanel.VirtualizationMode="Recycling"
                                   SelectedItemChanged="ArchiveTree_SelectedItemChanged">
                             <TreeView.Resources>
                                 <!-- make the no-focus color the same as the in-focus color -->
@@ -449,8 +449,9 @@ limitations under the License.
                                    HorizontalAlignment="Center"/>
                         <TreeView Grid.Row="1" Name="directoryTree" BorderThickness="0"
                                   ItemsSource="{Binding DirectoryTreeRoot}"
-                                   VirtualizingStackPanel.IsVirtualizing="True"
-                                   VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                  VirtualizingStackPanel.IsVirtualizing="True"
+                                  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True"
                                   SelectedItemChanged="DirectoryTree_SelectedItemChanged">
                             <TreeView.Resources>
                                 <!-- make the no-focus color the same as the in-focus color -->

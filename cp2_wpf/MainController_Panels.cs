@@ -185,7 +185,7 @@ namespace cp2_wpf {
             if (CurrentWorkObject is IFileSystem) {
                 ObservableCollection<DirectoryTreeItem> tvRoot = mMainWin.DirectoryTreeRoot;
                 IFileSystem fs = (IFileSystem)CurrentWorkObject;
-                PopulateDirectoryTree(tvRoot, fs.GetVolDirEntry());
+                PopulateDirectoryTree(null, tvRoot, fs.GetVolDirEntry());
                 tvRoot[0].IsSelected = true;
                 mMainWin.SetNotesList(fs.Notes);
             } else {
@@ -212,7 +212,7 @@ namespace cp2_wpf {
                     title = "Partition Information";
                     // no notes
                 }
-                DirectoryTreeItem newItem = new DirectoryTreeItem(title, IFileEntry.NO_ENTRY);
+                DirectoryTreeItem newItem = new DirectoryTreeItem(null, title, IFileEntry.NO_ENTRY);
                 mMainWin.DirectoryTreeRoot.Add(newItem);
                 newItem.IsSelected = true;
             }
@@ -411,12 +411,12 @@ namespace cp2_wpf {
                 if (!VerifyDirectoryTree(rootList, volDir, 0)) {
                     Debug.WriteLine("Re-populate directory tree");
                     rootList.Clear();
-                    PopulateDirectoryTree(rootList, volDir);
+                    PopulateDirectoryTree(null, rootList, volDir);
 
                     // Try to restore the previous selection.  If there wasn't a selection, or
                     // the previous selection no longer exists, select the root node.
                     if (curSel == IFileEntry.NO_ENTRY ||
-                            !DirectoryTreeItem.SelectItemByEntry(rootList, curSel)) {
+                            !DirectoryTreeItem.SelectItemByEntry(mMainWin, curSel)) {
                         rootList[0].IsSelected = true;
                     }
                 } else {
@@ -436,13 +436,13 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="tvRoot">Level where the directory should be added.</param>
         /// <param name="dirEntry">Directory entry object to add.</param>
-        private static void PopulateDirectoryTree(ObservableCollection<DirectoryTreeItem> tvRoot,
-                IFileEntry dirEntry) {
-            DirectoryTreeItem newItem = new DirectoryTreeItem(dirEntry.FileName, dirEntry);
+        private static void PopulateDirectoryTree(DirectoryTreeItem? parent,
+                ObservableCollection<DirectoryTreeItem> tvRoot, IFileEntry dirEntry) {
+            DirectoryTreeItem newItem = new DirectoryTreeItem(parent, dirEntry.FileName, dirEntry);
             tvRoot.Add(newItem);
             foreach (IFileEntry entry in dirEntry) {
                 if (entry.IsDirectory) {
-                    PopulateDirectoryTree(newItem.Items, entry);
+                    PopulateDirectoryTree(newItem, newItem.Items, entry);
                 }
             }
         }
@@ -791,8 +791,7 @@ namespace cp2_wpf {
                 if (entry.IsDirectory) {
                     if (fs != null) {
                         // Select the entry in the dir tree.  This may rewrite the file list.
-                        if (!DirectoryTreeItem.SelectItemByEntry(mMainWin.DirectoryTreeRoot,
-                                entry)) {
+                        if (!DirectoryTreeItem.SelectItemByEntry(mMainWin, entry)) {
                             Debug.WriteLine("Unable to find dir tree entry for " + entry);
                         }
                     } else {
