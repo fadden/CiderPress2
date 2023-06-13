@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 
@@ -81,10 +80,15 @@ namespace cp2_wpf {
         public bool IsSelected {
             get { return mIsSelected; }
             set {
-                //Debug.WriteLine("Tree: " + (value ? "" : "UN") + "selected '" + Name + "'");
+                //Debug.WriteLine("DirTree: " + (value ? "" : "UN") + "selected '" + Name + "'");
                 if (value != mIsSelected) {
                     mIsSelected = value;
                     OnPropertyChanged();
+                }
+                if (value) {
+                    // Setting IsSelected to true on one node is supposed to clear it from other
+                    // nodes, but virtualization can interfere with this.
+                    PurgeSelectionsExcept(this);
                 }
             }
         }
@@ -151,7 +155,8 @@ namespace cp2_wpf {
 
         /// <summary>
         /// Scrolls the TreeView so the specified item is visible.  This works even if the tree
-        /// is virtualized and the item in question hasn't been prepared yet.
+        /// is virtualized and the item in question hasn't been prepared yet.  Call this right
+        /// before setting IsSelected.
         /// </summary>
         /// <remarks>
         /// <para>This simple function took a few hours to figure out.  Big thanks to
@@ -194,6 +199,31 @@ namespace cp2_wpf {
                 var tvItem = containerControl.ItemContainerGenerator.ContainerFromItem(dtItem);
                 containerControl = (ItemsControl)tvItem;
                 Debug.Assert(containerControl != null || stack.Count == 0);
+            }
+        }
+
+        /// <summary>
+        /// Clears the IsSelected flag from all but one item.
+        /// </summary>
+        /// <param name="keep">Item to keep.</param>
+        private static void PurgeSelectionsExcept(DirectoryTreeItem keep) {
+            DirectoryTreeItem top = keep;
+            while (top.Parent != null) {
+                top = top.Parent;
+            }
+            PurgeSelections(top.Items, keep);
+        }
+        private static void PurgeSelections(ObservableCollection<DirectoryTreeItem> items,
+                DirectoryTreeItem keep) {
+            foreach (DirectoryTreeItem item in items) {
+                Debug.Assert(item != keep || item.IsSelected);
+                if (item.IsSelected && item != keep) {
+                    // This should only happen if the TreeViewItem got recycled, so setting
+                    // the selected value to false should have no effect on the UI.
+                    //Debug.WriteLine("Purging selection: " + item);
+                    item.IsSelected = false;
+                }
+                PurgeSelections(item.Items, keep);
             }
         }
     }

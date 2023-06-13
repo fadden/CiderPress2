@@ -18,8 +18,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,7 +27,6 @@ using CommonUtil;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Arc;
-using DiskArc.Multi;
 
 namespace cp2_wpf {
     /// <summary>
@@ -117,10 +114,15 @@ namespace cp2_wpf {
         public bool IsSelected {
             get { return mIsSelected; }
             set {
-                //Debug.WriteLine("Tree: selected '" + Name + "'=" + value);
+                //Debug.WriteLine("ArcTree: " + (value ? "" : "UN") + "selected '" + Name + "'");
                 if (value != mIsSelected) {
                     mIsSelected = value;
                     OnPropertyChanged();
+                }
+                if (value) {
+                    // Setting IsSelected to true on one node is supposed to clear it from other
+                    // nodes, but virtualization can interfere with this.
+                    PurgeSelectionsExcept(this);
                 }
             }
         }
@@ -270,6 +272,7 @@ namespace cp2_wpf {
                 BringItemIntoView(tv, best);
                 best.IsSelected = true;
             }
+            //Debug.WriteLine("GOT: arc=" + CountSelections(root));
         }
         private static ArchiveTreeItem? SelectBestFromR(ArchiveTreeItem root) {
             ArchiveTreeItem? result;
@@ -304,17 +307,38 @@ namespace cp2_wpf {
             return null;
         }
 
+#if false
+        private static int CountSelections(ArchiveTreeItem item) {
+            while (item.Parent != null) {
+                item = item.Parent;
+            }
+            int count = item.IsSelected ? 1 : 0;
+            CountSelections(item.Items, ref count);
+            return count;
+        }
+        private static void CountSelections(ObservableCollection<ArchiveTreeItem> items,
+                ref int count) {
+            foreach (ArchiveTreeItem item in items) {
+                if (item.IsSelected) {
+                    count++;
+                }
+                CountSelections(item.Items, ref count);
+            }
+        }
+#endif
+
         public override string ToString() {
             return "[ArchiveTreeItem: name='" + Name + "' node=" + WorkTreeNode + "]";
         }
 
-        // TODO: share this with DirectoryTreeItem.  This is awkward because we need Parent
-        // and Items, but if we use an abstract base class we have trouble with all of the
-        // things that want an observable list of a subclass.
+        // TODO: share this with DirectoryTreeItem.  We need Parent and Items.  Abstract base
+        // class is awkward because a lot of things want the specific subclass from the
+        // observable lists, but it's probably worth doing at this point.
 
         /// <summary>
         /// Scrolls the TreeView so the specified item is visible.  This works even if the tree
-        /// is virtualized and the item in question hasn't been prepared yet.
+        /// is virtualized and the item in question hasn't been prepared yet.  Call this right
+        /// before setting IsSelected.
         /// </summary>
         /// <remarks>
         /// <para>This simple function took a few hours to figure out.  Big thanks to
@@ -357,6 +381,31 @@ namespace cp2_wpf {
                 var tvItem = containerControl.ItemContainerGenerator.ContainerFromItem(atItem);
                 containerControl = (ItemsControl)tvItem;
                 Debug.Assert(containerControl != null || stack.Count == 0);
+            }
+        }
+
+        /// <summary>
+        /// Clears the IsSelected flag from all but one item.
+        /// </summary>
+        /// <param name="keep">Item to keep.</param>
+        private static void PurgeSelectionsExcept(ArchiveTreeItem keep) {
+            ArchiveTreeItem top = keep;
+            while (top.Parent != null) {
+                top = top.Parent;
+            }
+            PurgeSelections(top.Items, keep);
+        }
+        private static void PurgeSelections(ObservableCollection<ArchiveTreeItem> items,
+                ArchiveTreeItem keep) {
+            foreach (ArchiveTreeItem item in items) {
+                Debug.Assert(item != keep || item.IsSelected);
+                if (item.IsSelected && item != keep) {
+                    // This should only happen if the TreeViewItem got recycled, so setting
+                    // the selected value to false should have no effect on the UI.
+                    //Debug.WriteLine("Purging selection: " + item);
+                    item.IsSelected = false;
+                }
+                PurgeSelections(item.Items, keep);
             }
         }
     }
