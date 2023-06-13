@@ -301,8 +301,9 @@ namespace cp2_wpf {
             FileAttribs attrs = new FileAttribs(entry);
             List<Converter>? applics;
             try {
+                bool macZipEnabled = AppSettings.Global.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
                 applics = ExportFoundry.GetApplicableConverters(mArchiveOrFileSystem,
-                    entry, attrs, IsDOSRaw, out mDataFork, out mRsrcFork, mAppHook);
+                    entry, attrs, IsDOSRaw, macZipEnabled, out mDataFork, out mRsrcFork, mAppHook);
                 // The "generic" converters always apply.
                 Debug.Assert(applics.Count > 0);
             } catch (Exception ex) {

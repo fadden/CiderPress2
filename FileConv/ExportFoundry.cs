@@ -19,6 +19,7 @@ using System.Reflection;
 
 using CommonUtil;
 using DiskArc;
+using DiskArc.Arc;
 using DiskArc.FS;
 using static DiskArc.Defs;
 using static DiskArc.IFileSystem;
@@ -164,12 +165,14 @@ namespace FileConv {
         /// <param name="fileEntry">File entry.</param>
         /// <param name="attrs">File attributes.</param>
         /// <param name="useRawMode">If true, open the data fork in "raw" mode.</param>
+        /// <param name="enableMacZip">If true, this will look for resource forks in MacZip
+        ///   ADF headers.</param>
         /// <param name="dataStream">Result: data fork file stream; may be null.</param>
         /// <param name="rsrcStream">Result: rsrc fork file stream; may be null.</param>
         /// <returns>List of applicable converter objects.</returns>
         /// <exception cref="IOException">Error occurred while opening files.</exception>
         public static List<Converter> GetApplicableConverters(object archiveOrFileSystem,
-                IFileEntry fileEntry, FileAttribs attrs, bool useRawMode,
+                IFileEntry fileEntry, FileAttribs attrs, bool useRawMode, bool enableMacZip,
                 out Stream? dataStream, out Stream? rsrcStream, AppHook appHook) {
             // Create streams for data and resource forks.
             dataStream = null;
@@ -187,6 +190,24 @@ namespace FileConv {
                 }
                 if (fileEntry.HasRsrcFork && fileEntry.RsrcLength > 0) {
                     rsrcStream = ExtractToTemp(arc, fileEntry, FilePart.RsrcFork);
+                } else if (enableMacZip && arc is Zip &&
+                        Zip.HasMacZipHeader(arc, fileEntry, out IFileEntry adfEntry)) {
+                    try {
+                        // Open the AppleDouble header.
+                        using ArcReadStream entryStream = arc.OpenPart(adfEntry, FilePart.DataFork);
+                        Stream adfStream = TempFile.CopyToTemp(entryStream, adfEntry.DataLength);
+                        using AppleSingle adfArc = AppleSingle.OpenArchive(adfStream, appHook);
+                        IFileEntry adfArcEntry = adfArc.GetFirstEntry();
+                        // Get file attributes.  If it has a resource fork, extract that.
+                        attrs.GetFromAppleSingle(adfArcEntry);
+                        if (adfArcEntry.HasRsrcFork && adfArcEntry.RsrcLength > 0) {
+                            rsrcStream = ExtractToTemp(adfArc, adfArcEntry, FilePart.RsrcFork);
+                        }
+                    } catch (Exception ex) {
+                        // Never mind.
+                        Debug.WriteLine("Failed opening ADF header: " + ex.Message);
+                        Debug.Assert(rsrcStream == null);
+                    }
                 }
             } else {
                 IFileSystem fs = (IFileSystem)archiveOrFileSystem;
