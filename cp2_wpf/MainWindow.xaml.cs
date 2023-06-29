@@ -410,7 +410,8 @@ namespace cp2_wpf {
             mMainCtrl.ExtractFiles();
         }
         private void HelpCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            Debug.WriteLine("Help!");
+            // TODO
+            MessageBox.Show(this, "Help is on the way... soon.", "Help");
         }
         private void NewDiskImageCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.NewDiskImage();

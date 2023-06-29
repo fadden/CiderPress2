@@ -419,7 +419,7 @@ namespace DiskArc.FS {
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="fileSystem"></param>
+        /// <param name="fileSystem">Filesystem this file entry is a part of.</param>
         public DOS_FileEntry(DOS fileSystem) {
             ContainingDir = IFileEntry.NO_ENTRY;
             FileSystem = fileSystem;
@@ -481,7 +481,7 @@ namespace DiskArc.FS {
         /// <param name="fileSystem">Filesystem object.</param>
         /// <param name="vtoc">Volume Table of Contents for this disk.</param>
         /// <param name="doDeepScan">(not used)</param>
-        /// <returns>Volume directory object.</returns>
+        /// <returns>Volume directory file entry.</returns>
         /// <exception cref="IOException">Disk access failure.</exception>
         internal static IFileEntry ScanCatalog(DOS fileSystem, DOS_VTOC vtoc, bool doDeepScan) {
             DOS_FileEntry volDir = new DOS_FileEntry(fileSystem);

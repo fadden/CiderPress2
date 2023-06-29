@@ -81,10 +81,10 @@ namespace cp2 {
 
         /// <summary>
         /// Track number format.  This allows "0", "0.", and "0.5", with the integer portion in
-        /// group 1 and the decimal portion in optional group 2.
+        /// group 1 and the fractional portion in optional group 2.  We accept both '.' and ','.
         /// </summary>
         private static readonly Regex sTrackNumRegex = new Regex(TRACK_NUM_PATTERN);
-        private const string TRACK_NUM_PATTERN = @"^(\d+)\.?(\d+)?$";
+        private const string TRACK_NUM_PATTERN = @"^(\d+)[\.,]?(\d+)?$";
 
         /// <summary>
         /// Parses a fractional track number.

@@ -904,13 +904,14 @@ Usage: `cp2 read-sector [options] <ext-archive> <track-num> <sector-num>`
 
 Usage: `cp2 read-block [options] <ext-archive> <block-num>`
 
-Only images of 5.25" floppy disks may be read as sectors.  Only whole
-tracks are supported (no half-tracks).  The sector number is mapped with the
-DOS skew table, so the function works the same way an RWTS call would.
+For read-sector: only images of 5.25" floppy disks may be read as sectors.
+Only whole tracks are supported (no half-tracks).  The sector number is
+mapped with the DOS skew table, so the function works the same way an RWTS
+call would.
 
-Most disk images can be read as blocks, the notable exception being
-13-sector 5.25" disks.  On 5.25" disk images, the block is read the way it
-would be from ProDOS, using the ProDOS/Pascal skew table.
+For read-block: most disk images can be read as blocks, the notable exception
+being 13-sector 5.25" disks.  On 5.25" disk images, the block is read the way
+it would be from ProDOS, using the ProDOS/Pascal skew table.
 
 The ASCII portion of the hex dump is treated as high ASCII, with the high
 bit stripped before display.
@@ -934,8 +935,10 @@ For a 5.25" disk, the track number is 0-39 with quarter-track increments
 For a 3.5" disk, the track number is 0-79, with the side specified as ".0"
 or ".1".
 
+The fractional portion may be specified with '.' or ',', regardless of locale.
+
 The data will be read with an 8-bit latch, unless the `--no-latch` option
-is used.
+is used.  This only matters for bit-oriented image formats like WOZ.
 
 Options:
  - `--latch`, `--no-latch`
@@ -959,7 +962,9 @@ be prefixed with "0x" or "$", though the latter is often a shell
 metacharacter and may need to be escaped.
 
 `type` sets the ProDOS file type.  It may be a type abbreviation, such as
-"TXT", "BIN", or "LBR", or a two-digit hexadecimal value ($00-ff).
+"TXT", "BIN", or "LBR", or a two-digit hexadecimal value ($00-ff).  DOS file
+types are specified as ProDOS equivalents: T=TXT, I=INT, A=BAS, B=BIN,
+S=$F2, R=REL, AA=$F3, BB=$F4.
 
 `aux` sets the ProDOS auxiliary type.  It must be a four-digit hexadecimal
 value ($0000-ffff).
@@ -989,7 +994,7 @@ If the file is specified as ":" or "/", the root directory is selected.
 This can be used to set modification dates on certain filesystems.
 
 If MacZip is enabled, setting the attributes on the main file entry in a
-ZIP archive will cause the "header" file to be updated.
+ZIP archive will cause the "header" file to be updated if it exists.
 
 When verbose mode is enabled, the updated record will be displayed.
 The output will reflect the actual final state.

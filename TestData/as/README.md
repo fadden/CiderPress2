@@ -17,7 +17,7 @@ and 1 (data fork).  Curiously, #10 is 8 bytes long, even though the
 documentation only shows 4.  The Finder Info is zeroed.
 
 "illegal-chars.as":
-Created with Mac OS "applesingle" too".  v2 archive with entry types
+Created with Mac OS "applesingle" tool.  v2 archive with entry types
 3 (filename), 8 (file dates), 9 (Finder info), 10 (Macintosh file info),
 1 (data fork), and 2 (resource fork).  The filename contains '/', '\',
 and ':', and so should should cause problems on any filesystem that

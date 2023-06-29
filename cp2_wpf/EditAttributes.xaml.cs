@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using DiskArc;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -29,6 +28,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+
+using DiskArc;
 
 namespace cp2_wpf {
     /// <summary>

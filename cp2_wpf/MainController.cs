@@ -897,15 +897,13 @@ namespace cp2_wpf {
         /// </summary>
         public void EditAttributes() {
             ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
-            if (arcTreeSel == null) {
-                Debug.Assert(false);
-                return;
-            }
             FileListItem? fileItem = mMainWin.fileListDataGrid.SelectedItem as FileListItem;
-            if (fileItem == null) {
+            if (arcTreeSel == null || fileItem == null) {
                 Debug.Assert(false);
                 return;
             }
+
+            // If this is a directory, find the matching item (no effect on IArchive).
             DirectoryTreeItem? dirTreeItem = null;
             if (fileItem.FileEntry.IsDirectory) {
                 dirTreeItem = DirectoryTreeItem.FindItemByEntry(mMainWin.DirectoryTreeRoot,
@@ -917,20 +915,20 @@ namespace cp2_wpf {
             EditAttributes(arcTreeSel.WorkTreeNode, fileItem.FileEntry, dirTreeItem, fileItem);
         }
 
+        /// <summary>
+        /// Handles Actions : Edit Directory Attributes
+        /// </summary>
         public void EditDirAttributes() {
             ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
-            if (arcTreeSel == null) {
-                Debug.Assert(false);
-                return;
-            }
             DirectoryTreeItem? dirTreeSel =
                 mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
-            if (dirTreeSel == null) {
+            if (arcTreeSel == null || dirTreeSel == null) {
                 Debug.Assert(false);
                 return;
             }
 
-            // The file list item will also be available if we're in full-list mode.
+            // The file list item will also be available if we're in full-list mode.  It will
+            // not necessarily be the item that is selected.
             FileListItem? fileItem =
                 FileListItem.FindItemByEntry(mMainWin.FileList, dirTreeSel.FileEntry);
             EditAttributes(arcTreeSel.WorkTreeNode, dirTreeSel.FileEntry, dirTreeSel, fileItem);
@@ -948,6 +946,7 @@ namespace cp2_wpf {
             IFileEntry adfEntry = IFileEntry.NO_ENTRY;
             if (isMacZipEnabled && workNode.DAObject is Zip &&
                     Zip.HasMacZipHeader((IArchive)workNode.DAObject, entry, out adfEntry)) {
+                Debug.Assert(false, "Add MacZip here");
                 // TODO: stuff
                 isMacZip = true;
             }
@@ -962,10 +961,12 @@ namespace cp2_wpf {
             // TODO:
             // - discard and recreate FileListItem, insert into same spot in list
             //   - use FileListItem ctor for MacZip if needed
-            // - if directory, discard and recreate DirectoryTreeItem, insert in same spot in tree
+            // - if directory (specifically, dirItem != null), discard and recreate
+            //   DirectoryTreeItem, insert in same spot in tree
             // - call RefreshDirAndFileList to update the list and dir tree
             // - unless sort order changed, should not be necessary to regenerate lists; change
             //   to Item object should cause Observable stuff to pick up difference
+            //   (HFS will need to do full referesh if sort order changed)
 
             SettingsHolder settings = AppSettings.Global;
             EditAttributesProgress prog = new EditAttributesProgress(mMainWin, workNode.DAObject,
