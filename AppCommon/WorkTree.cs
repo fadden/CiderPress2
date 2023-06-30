@@ -60,7 +60,7 @@ namespace AppCommon {
         /// </remarks>
         public class Node : IEnumerable<Node> {
             /// <summary>
-            /// Human-readable label.
+            /// Human-readable label.  This may become out of sync if e.g. a volume is renamed.
             /// </summary>
             public string Label { get; set; } = string.Empty;
 

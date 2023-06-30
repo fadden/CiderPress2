@@ -22,8 +22,6 @@ using static DiskArc.Defs;
 using static DiskArc.FileAnalyzer.DiskLayoutEntry;
 using static DiskArc.IFileSystem;
 
-// TODO: define a way to change the catalog volume number.  The code that does so may
-//   want to update the sector volume numbers as well.
 
 namespace DiskArc.FS {
     /// <summary>

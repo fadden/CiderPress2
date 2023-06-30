@@ -40,7 +40,11 @@ namespace cp2_wpf {
         /// <summary>
         /// Name to show in the GUI.
         /// </summary>
-        public string Name { get; set; }
+        public string Name {
+            get { return mName; }
+            set { mName = value; OnPropertyChanged(); }
+        }
+        private string mName = string.Empty;
 
         /// <summary>
         /// Directory file entry for this item.

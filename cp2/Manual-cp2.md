@@ -805,9 +805,13 @@ directories, as well as rename them.
 
 Files are specified as relative paths from the root directory, except for
 the root directory itself, which is specified as ":" or "/".  The root
-directory may be renamed (to change the volume name) but not moved.
-Moving a directory into a subdirectory of itself is not allowed.
-Moving files between file archives or filesystems is not allowed.
+directory may be renamed (to change the volume name) but not moved.  This
+can be used to change the volume number stored in the DOS VTOC, but will not
+affect the volume numbers stored in the sector headers.
+
+Moving a directory into a subdirectory of itself is not allowed.  Moving
+files between file archives or filesystems (e.g. between partitions) is not
+allowed.
 
 If `<new-name>` exists and is a directory, the file is moved into the
 directory, keeping its original name.  If multiple source files are

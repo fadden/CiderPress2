@@ -77,7 +77,10 @@ namespace DiskArc.FS {
                     if (!int.TryParse(value, out int val) || val < 0 || val >= 255) {
                         throw new ArgumentException("Invalid volume number");
                     }
-                    Debug.WriteLine("TODO: set VTOC vol num to " + val);
+                    if (FileSystem.VTOC != null) {
+                        FileSystem.VTOC.VolumeNum = (byte)val;
+                    }
+                    mFileName = string.Format(VOL_NAME_FMT, val);
                     return;
                 }
                 byte[]? rawName = GenerateRawName(value);   // this tests validity
@@ -1199,7 +1202,11 @@ namespace DiskArc.FS {
         /// <returns>Adjusted volume name, or null if this filesystem doesn't support
         ///   volume names.</returns>
         public static string? AdjustVolumeName(string volName) {
-            return null;
+            if (IsVolumeNameValid(volName)) {
+                return volName;
+            } else {
+                return "254";
+            }
         }
 
         #endregion Filenames

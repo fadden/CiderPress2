@@ -22,6 +22,7 @@ using System.Text;
 
 using CommonUtil;
 using DiskArc;
+using DiskArc.FS;
 using static DiskArc.Defs;
 using static DiskArc.IDiskImage;
 using static DiskArc.IFileSystem;
@@ -236,6 +237,19 @@ namespace DiskArcTests {
                 if (entry.FileName != helloWorld) {
                     throw new Exception("Raw filename not accepted; got '" + entry.FileName + "'");
                 }
+            }
+        }
+
+        public static void TestVolRename(AppHook appHook) {
+            using (IFileSystem fs = Make525Floppy(111, appHook)) {
+                Helper.ExpectInt(111, ((DOS)fs).VolumeNum, "wrong vol number");
+                IFileEntry volDir = fs.GetVolDirEntry();
+                volDir.FileName = "222";
+                Helper.ExpectInt(222, ((DOS)fs).VolumeNum, "vol num didn't change");
+                try {
+                    volDir.FileName = "256";
+                    throw new Exception("bad vol num accepted");
+                } catch (ArgumentException) { /*expected*/ }
             }
         }
 

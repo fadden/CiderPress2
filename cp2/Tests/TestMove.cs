@@ -160,8 +160,8 @@ namespace cp2.Tests {
                         new string[] { dosTest, "140k", "dos"}, parms)) {
                     throw new Exception("cdi " + dosTest + " failed");
                 }
-                if (Move.HandleMove("mv", new string[] { dosTest, ":", "123" }, parms)) {
-                    throw new Exception("DOS volume rename succeeded");
+                if (!Move.HandleMove("mv", new string[] { dosTest, ":", "123" }, parms)) {
+                    throw new Exception("DOS volume rename failed");
                 }
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;

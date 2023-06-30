@@ -30,6 +30,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 using DiskArc;
+using DiskArc.FS;
 
 namespace cp2_wpf {
     /// <summary>
@@ -166,7 +167,12 @@ namespace cp2_wpf {
             mFileEntry = entry;
             mOldAttribs = attribs;
 
-            mFileName = entry.FileName;
+            if (entry is DOS_FileEntry && entry.IsDirectory) {
+                // The filename is formatted as "DOS-nnn", but we just want the number.
+                mFileName = ((DOS)archiveOrFileSystem).VolumeNum.ToString("D3");
+            } else {
+                mFileName = entry.FileName;
+            }
 
             if (archiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)archiveOrFileSystem;

@@ -972,6 +972,8 @@ namespace cp2_wpf {
                 mMainWin.PostNotification("File attributes edited", true);
 
                 if (fileItem != null) {
+                    // We may need to update multiple columns, so best to just regenerate the
+                    // entire item.
                     FileListItem newFli;
                     if (isMacZip) {
                         throw new NotImplementedException();
@@ -984,24 +986,30 @@ namespace cp2_wpf {
                         mMainWin.fileListDataGrid.SelectedItem = newFli;
                     }
 
-                    // TODO: if this was an open archive, update the archive tree
+                    ArchiveTreeItem? ati =
+                        ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);
+                    if (ati != null) {
+                        ati.Name = entry.FileName;
+                        // Should we update WorkTree.Node.Label?
+                    }
                 }
 
                 if (dirItem != null) {
-                    DirectoryTreeItem newDti =
-                        new DirectoryTreeItem(dirItem.Parent, entry.FileName, entry);
-                    ObservableCollection<DirectoryTreeItem> dirList;
-                    if (dirItem.Parent != null) {
-                        dirList = dirItem.Parent.Items;
-                    } else {
-                        dirList = mMainWin.DirectoryTreeRoot;
-                    }
-                    int index = dirList.IndexOf(dirItem);
-                    Debug.Assert(index >= 0);
-                    dirList[index] = newDti;
-                    newDti.IsSelected = dirItem.IsSelected;
+                    // Only the name appears in the list, so we just need to update that.
+                    dirItem.Name = entry.FileName;
 
-                    // TODO: if this was a volume directory, update the archive tree
+                    if (entry.IsDirectory && entry.ContainingDir == IFileEntry.NO_ENTRY) {
+                        // Volume dir.  Find the archive entry.
+                        ArchiveTreeItem? ati =
+                            ArchiveTreeItem.FindItemByDAObject(mMainWin.ArchiveTreeRoot,
+                            archiveOrFileSystem);
+                        if (ati != null) {
+                            ati.Name = entry.FileName;
+                            // Should we update WorkTree.Node.Label?
+                        } else {
+                            Debug.Assert(false, "archive tree entry not found for vol dir");
+                        }
+                    }
                 }
             }
 
