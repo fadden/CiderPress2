@@ -73,7 +73,7 @@ namespace cp2_wpf {
 
 
         /// <summary>
-        /// Constructor.  Fills out properties from file attributes object.
+        /// Constructor.  Fills out properties from file entry object.
         /// </summary>
         /// <param name="entry">File entry object.</param>
         /// <param name="fmt">Formatter.</param>
@@ -83,9 +83,10 @@ namespace cp2_wpf {
         /// <summary>
         /// Constructor for archive entries that might be a MacZip pair.
         /// </summary>
-        /// <param name="entry">File entry object.</param>
+        /// <param name="entry">File entry object for main entry.</param>
         /// <param name="adfEntry">File entry object for MacZip header, or NO_ENTRY.</param>
-        /// <param name="attrs">File attributes, from entry or from MacZip header.</param>
+        /// <param name="attrs">File attributes, from MacZip header.  Will be null if the file
+        ///   doesn't have a MacZip header.</param>
         /// <param name="fmt">Formatter.</param>
         public FileListItem(IFileEntry entry, IFileEntry adfEntry, FileAttribs? adfAttrs,
                 Formatter fmt) {

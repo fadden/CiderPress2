@@ -45,6 +45,7 @@ namespace DiskArc.Arc {
         private const int SELF_EXT_SIG_OFF = 55;                // offset to SEGNAME, + 1
         private const string SELF_EXT_SIG = "sea_file_110v1";   // OMF segment name
 
+        private const string FILENAME_RULES = "System-specific partial pathname.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "NuFX (ShrinkIt)",
             canWrite: true,
@@ -53,7 +54,8 @@ namespace DiskArc.Arc {
             hasDiskImages: true,
             hasArchiveComment: false,
             hasRecordComments: true,
-            defaultDirSep: NuFX_FileEntry.DEFAULT_FSSEP);
+            defaultDirSep: NuFX_FileEntry.DEFAULT_FSSEP,
+            fnSyntax: FILENAME_RULES);
 
         //
         // IArchive interfaces.

@@ -382,6 +382,11 @@ namespace cp2_wpf {
         /// "should we re-render" check here instead of trying to keep track of whether the
         /// contents are dirty.  (It also correctly identifies the list as dirty when a file
         /// is renamed on a sorted filesystem like HFS.)</para>
+        /// <para>The test for differences is made by comparing lists of IFileEntry, so this
+        /// will not automatically detect attribute changes.  Those are handled by replacing
+        /// the dir/file tree item object, triggering the ObservableCollection event.  If the
+        /// attribute change didn't rearrange the list (which can happen on an HFS rename),
+        /// there's no need to reload the lists.</para>
         /// </remarks>
         /// <param name="needRefocus">If true, put the focus on the file list when done.  This
         ///   should be set for all file operations, but not during archive or directory
@@ -515,7 +520,7 @@ namespace cp2_wpf {
                 selEntry = selectedItem.FileEntry;
                 Debug.WriteLine("Populate: current item is " + selEntry.FileName);
             } else {
-                Debug.WriteLine("Populate: no selected item");
+                Debug.WriteLine("Populate: no selected item in file list");
             }
             ObservableCollection<FileListItem> fileList = mMainWin.FileList;
 

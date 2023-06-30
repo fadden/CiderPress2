@@ -121,6 +121,24 @@ namespace DiskArc {
         public FileAttribs() { }
 
         /// <summary>
+        /// Copy constructor.
+        /// </summary>
+        public FileAttribs(FileAttribs src) {
+            FullPathName = src.FullPathName;
+            FullPathSep = src.FullPathSep;
+            FileNameOnly = src.FileNameOnly;
+            FileType = src.FileType;
+            AuxType = src.AuxType;
+            HFSFileType = src.HFSFileType;
+            HFSCreator = src.HFSCreator;
+            Access = src.Access;
+            CreateWhen = src.CreateWhen;
+            ModWhen = src.ModWhen;
+            DataLength = src.DataLength;
+            RsrcLength = src.RsrcLength;
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="entry">IFileEntry to draw attributes from.</param>
@@ -192,11 +210,16 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Copies file attributes to an IFileEntry.  We use this when extracting to ADF/AS.
+        /// Copies file attributes to an IFileEntry.  We use this when extracting to ADF/AS,
+        /// and when applying attribute changes.
         /// </summary>
         /// <param name="entry"></param>
-        public void CopyAttrsTo(IFileEntry entry) {
-            entry.FileName = FileNameOnly;
+        public void CopyAttrsTo(IFileEntry entry, bool fileNameOnly) {
+            if (fileNameOnly) {
+                entry.FileName = FileNameOnly;
+            } else {
+                entry.FileName = FullPathName;
+            }
             entry.FileType = FileType;
             entry.AuxType = AuxType;
             entry.HFSFileType = HFSFileType;

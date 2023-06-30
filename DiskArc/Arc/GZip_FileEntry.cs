@@ -79,8 +79,8 @@ namespace DiskArc.Arc {
                 // We're not too picky here, because we don't really use this filename.
                 CheckChangeAllowed();
                 Debug.Assert(ChangeObject != null);
-                if (value.Contains('\0')) {
-                    throw new ArgumentException("Filenames cannot contain NULs");
+                if (!IsFileNameValid(value)) {
+                    throw new ArgumentException("Invalid filename: '" + value + "'");
                 }
                 ChangeObject.mFileName = value;
                 ChangeObject.mRawFileName = Encoding.UTF8.GetBytes(value);
@@ -598,6 +598,20 @@ namespace DiskArc.Arc {
         // IFileEntry
         public int CompareFileName(string fileName, char fileNameSeparator) {
             return CompareFileName(fileName);
+        }
+
+        /// <summary>
+        /// Determines whether the string is a valid gzip filename.
+        /// </summary>
+        /// <param name="fileName">Filename to check.</param>
+        /// <returns>True if all is well.</returns>
+        public static bool IsFileNameValid(string fileName) {
+            // The filename is stored as a null-terminated string, so there's no restriction
+            // on the filename length.  It just can't contain a null byte.
+            if (fileName.Contains('\0')) {
+                return false;
+            }
+            return true;
         }
     }
 }

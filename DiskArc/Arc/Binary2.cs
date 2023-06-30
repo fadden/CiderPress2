@@ -35,6 +35,7 @@ namespace DiskArc.Arc {
         public const byte ID3 = 0x02;
         public const int FILES_TO_FOLLOW_OFFSET = 127;
 
+        private const string FILENAME_RULES = "Partial ProDOS pathname, up to 64 characters long.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "Binary II",
             canWrite: true,
@@ -43,7 +44,8 @@ namespace DiskArc.Arc {
             hasDiskImages: false,
             hasArchiveComment: false,
             hasRecordComments: false,
-            defaultDirSep: '/');
+            defaultDirSep: '/',
+            fnSyntax: FILENAME_RULES);
 
         //
         // IArchive interfaces.

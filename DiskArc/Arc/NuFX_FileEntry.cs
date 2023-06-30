@@ -1801,20 +1801,30 @@ namespace DiskArc.Arc {
         /// <param name="fileName">New filename, which may be a partial path.</param>
         /// <exception cref="ArgumentException">Invalid filename.</exception>
         private void SetFileName(string fileName) {
-            if (string.IsNullOrEmpty(fileName)) {
-                throw new ArgumentException("Filename must be at least one character");
+            if (!IsFileNameValid(fileName)) {
+                throw new ArgumentException("Invalid filename: '" + fileName + "'");
             }
-            if (fileName.Length > BIG_PATHNAME_LEN) {
-                throw new ArgumentException("Filename is excessively long (" +
-                    fileName.Length + ")");
-            }
-            if (!MacChar.IsStringValid(fileName, MacChar.Encoding.RomanShowCtrl)) {
-                throw new ArgumentException("Invalid characters found: " + fileName);
-            }
-
             mFileName = fileName;
             mRawFileName = new byte[fileName.Length];
             MacChar.UnicodeToMac(fileName, mRawFileName, 0, MacChar.Encoding.RomanShowCtrl);
+        }
+
+        /// <summary>
+        /// Determines whether the string is a valid NuFX filename.
+        /// </summary>
+        /// <param name="fileName">Filename to check.</param>
+        /// <returns>True if all is well.</returns>
+        public static bool IsFileNameValid(string fileName) {
+            if (string.IsNullOrEmpty(fileName)) {
+                return false;       // must be at least one char
+            }
+            if (fileName.Length > BIG_PATHNAME_LEN) {
+                return false;       // too long
+            }
+            if (!MacChar.IsStringValid(fileName, MacChar.Encoding.RomanShowCtrl)) {
+                return false;       // invalid chars found
+            }
+            return true;
         }
 
         /// <summary>

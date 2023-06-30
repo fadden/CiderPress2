@@ -1116,12 +1116,8 @@ namespace DiskArc.Arc {
         /// Sets the "raw" and "cooked" filenames.
         /// </summary>
         private void SetFileName(string fileName) {
-            // No restrictions on the length of the name or its contents.  UNIX names aren't
-            // allowed to have '/', '\0', or '%' without escaping, but there's nothing in the v2
-            // archive that indicates that a filename comes from a UNIX system.
-            if (fileName.Length > MAX_FILENAME_LENGTH) {
-                throw new ArgumentException("Filename is excessively long (" +
-                    fileName.Length + ")");
+            if (!IsFileNameValid(fileName)) {
+                throw new ArgumentException("Invalid filename: '" + fileName + "'");
             }
             mFileName = fileName;
 
@@ -1132,6 +1128,21 @@ namespace DiskArc.Arc {
             } else {
                 mRawFileName = Encoding.UTF8.GetBytes(mFileName);
             }
+        }
+
+        /// <summary>
+        /// Determines whether the string is a valid AppleSingle filename.
+        /// </summary>
+        /// <param name="fileName">Filename to check.</param>
+        /// <returns>True if all is well.</returns>
+        public static bool IsFileNameValid(string fileName) {
+            // No restriction on the min length of the name or its contents.  UNIX names aren't
+            // allowed to have '/', '\0', or '%' without escaping, but there's nothing in the v2
+            // archive that indicates that a filename comes from a UNIX system.
+            if (fileName.Length > MAX_FILENAME_LENGTH) {
+                return false;       // too long
+            }
+            return true;
         }
 
         #endregion Filenames

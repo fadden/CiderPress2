@@ -95,6 +95,27 @@ namespace DiskArc {
         }
 
         /// <summary>
+        /// Determines whether a string is a valid filename.
+        /// </summary>
+        /// <param name="fileName">Filename to test.</param>
+        /// <returns>True if the filename is valid.</returns>
+        public static bool IsValidFileName(this IArchive archive, string fileName) {
+            if (archive is AppleSingle) {
+                return AppleSingle_FileEntry.IsFileNameValid(fileName);
+            } else if (archive is Binary2) {
+                return Binary2_FileEntry.IsFileNameValid(fileName);
+            } else if (archive is GZip) {
+                return GZip_FileEntry.IsFileNameValid(fileName);
+            } else if (archive is NuFX) {
+                return NuFX_FileEntry.IsFileNameValid(fileName);
+            } else if (archive is Zip) {
+                return Zip_FileEntry.IsFileNameValid(fileName);
+            } else {
+                throw new NotImplementedException("Not handled: " + archive.GetType().Name);
+            }
+        }
+
+        /// <summary>
         /// Adjusts a filename to be compatible with the archive.  This must always replace
         /// instances of the filename separator character, so that a filename isn't confused with
         /// a partial path.  Some formats have additional restrictions.

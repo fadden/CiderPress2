@@ -987,20 +987,30 @@ namespace DiskArc.Arc {
         /// <param name="fileName">New filename, which may be a partial path.</param>
         /// <exception cref="ArgumentException">Invalid filename.</exception>
         private void SetFileName(string fileName) {
+            if (!IsFileNameValid(fileName)) {
+                throw new ArgumentException("Invalid filename: '" + fileName + "'");
+            }
+            mFileName = fileName;
+        }
+
+        /// <summary>
+        /// Determines whether the string is a valid ZIP filename.
+        /// </summary>
+        /// <param name="fileName">Filename to check.</param>
+        /// <returns>True if all is well.</returns>
+        public static bool IsFileNameValid(string fileName) {
             if (string.IsNullOrEmpty(fileName)) {
-                throw new ArgumentException("Filename must be at least one character");
+                return false;       // must have at least one char
             }
             if (fileName.Length > BIG_PATHNAME_LEN) {
-                throw new ArgumentException("Filename is excessively long (" +
-                    fileName.Length + ")");
+                return false;       // too long
             }
             if (fileName[0] == SEP_CHAR) {
-                throw new ArgumentException("Filename may not start with '/'");
+                return false;       // may not start with '/'
             }
             // TODO: should also prevent logical MS-DOS names like "C:\".
             // TODO: shouldn't allow a trailing slash if the entry has data?
-
-            mFileName = fileName;
+            return true;
         }
 
         #endregion Filenames

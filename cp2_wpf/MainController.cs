@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -936,6 +937,7 @@ namespace cp2_wpf {
 
         private void EditAttributes(WorkTree.Node workNode, IFileEntry entry,
                 DirectoryTreeItem? dirItem, FileListItem? fileItem) {
+            Debug.WriteLine("EditAttributes: " + entry);
             object archiveOrFileSystem = workNode.DAObject;
 
             // TODO:
@@ -958,16 +960,6 @@ namespace cp2_wpf {
                 return;
             }
 
-            // TODO:
-            // - discard and recreate FileListItem, insert into same spot in list
-            //   - use FileListItem ctor for MacZip if needed
-            // - if directory (specifically, dirItem != null), discard and recreate
-            //   DirectoryTreeItem, insert in same spot in tree
-            // - call RefreshDirAndFileList to update the list and dir tree
-            // - unless sort order changed, should not be necessary to regenerate lists; change
-            //   to Item object should cause Observable stuff to pick up difference
-            //   (HFS will need to do full referesh if sort order changed)
-
             SettingsHolder settings = AppSettings.Global;
             EditAttributesProgress prog = new EditAttributesProgress(mMainWin, workNode.DAObject,
                     workNode.FindDANode(), entry, adfEntry, dialog.NewAttribs, mAppHook) {
@@ -976,7 +968,47 @@ namespace cp2_wpf {
             };
 
             // Currently doing updates on GUI thread.  Errors are reported to user.
-            prog.DoUpdate(isMacZip);
+            if (prog.DoUpdate(isMacZip)) {
+                mMainWin.PostNotification("File attributes edited", true);
+
+                if (fileItem != null) {
+                    FileListItem newFli;
+                    if (isMacZip) {
+                        throw new NotImplementedException();
+                    } else {
+                        newFli = new FileListItem(entry, mFormatter);
+                        int index = mMainWin.FileList.IndexOf(fileItem);
+                        Debug.Assert(index >= 0);
+                        mMainWin.FileList[index] = newFli;
+                        // Set the selection.  This causes a refresh.
+                        mMainWin.fileListDataGrid.SelectedItem = newFli;
+                    }
+
+                    // TODO: if this was an open archive, update the archive tree
+                }
+
+                if (dirItem != null) {
+                    DirectoryTreeItem newDti =
+                        new DirectoryTreeItem(dirItem.Parent, entry.FileName, entry);
+                    ObservableCollection<DirectoryTreeItem> dirList;
+                    if (dirItem.Parent != null) {
+                        dirList = dirItem.Parent.Items;
+                    } else {
+                        dirList = mMainWin.DirectoryTreeRoot;
+                    }
+                    int index = dirList.IndexOf(dirItem);
+                    Debug.Assert(index >= 0);
+                    dirList[index] = newDti;
+                    newDti.IsSelected = dirItem.IsSelected;
+
+                    // TODO: if this was a volume directory, update the archive tree
+                }
+            }
+
+            // Refresh the directory and file lists.  In some cases this is unnecessary because
+            // the file selection update did the refresh for us.
+            Debug.WriteLine("Edit attributes: final refresh");
+            RefreshDirAndFileList();
         }
 
         /// <summary>

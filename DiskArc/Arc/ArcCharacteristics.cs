@@ -66,9 +66,15 @@ namespace DiskArc.Arc {
         /// </summary>
         public char DefaultDirSep { get; }
 
+        /// <summary>
+        /// Human-readable filename syntax rules.
+        /// </summary>
+        public string FileNameSyntaxRules { get; }
+
+
         public ArcCharacteristics(string name, bool canWrite, bool hasSingleEntry,
                 bool hasResourceForks, bool hasDiskImages, bool hasArchiveComment,
-                bool hasRecordComments, char defaultDirSep) {
+                bool hasRecordComments, char defaultDirSep, string fnSyntax) {
             Name = name;
             CanWrite = canWrite;
             HasSingleEntry = hasSingleEntry;
@@ -77,6 +83,7 @@ namespace DiskArc.Arc {
             HasArchiveComment = hasArchiveComment;
             HasRecordComments = hasRecordComments;
             DefaultDirSep = defaultDirSep;
+            FileNameSyntaxRules = fnSyntax;
         }
     }
 }

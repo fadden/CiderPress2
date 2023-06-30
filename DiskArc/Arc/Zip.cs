@@ -51,6 +51,7 @@ namespace DiskArc.Arc {
         private const int MAX_COMMENT_LENGTH = 65535;       // max length of end-of-archive comment
         private const int MAX_RECORDS = 65535;              // max number of records in archive
 
+        private const string FILENAME_RULES = "Partial pathname.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "ZIP",
             canWrite: true,
@@ -59,7 +60,8 @@ namespace DiskArc.Arc {
             hasDiskImages: false,
             hasArchiveComment: true,
             hasRecordComments: true,
-            Zip_FileEntry.SEP_CHAR);
+            Zip_FileEntry.SEP_CHAR,
+            fnSyntax: FILENAME_RULES);
 
         //
         // IArchive interfaces.

@@ -58,8 +58,9 @@ namespace cp2_wpf.Actions {
         }
 
         /// <summary>
-        /// Performs the attribute update.  Errors are reported to the user.
+        /// Performs the attribute update.  Errors are reported directly to the user.
         /// </summary>
+        /// <param name="updateMacZip">True if we want to update a MacZip header entry.</param>
         /// <returns>True on success.</returns>
         public bool DoUpdate(bool updateMacZip) {
             try {
@@ -74,14 +75,14 @@ namespace cp2_wpf.Actions {
                     }
                     try {
                         arc.StartTransaction();
-                        // TODO: set attribs
+                        mNewAttribs.CopyAttrsTo(mFileEntry, false);
                         mLeafNode.SaveUpdates(DoCompress);
                     } finally {
                         arc.CancelTransaction();    // no effect if transaction isn't open
                     }
                 } else {
                     IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                    // TODO: set attribs
+                    mNewAttribs.CopyAttrsTo(mFileEntry, false);
                     mFileEntry.SaveChanges();
                     mLeafNode.SaveUpdates(DoCompress);
                 }

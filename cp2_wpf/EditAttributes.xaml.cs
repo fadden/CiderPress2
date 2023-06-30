@@ -54,6 +54,23 @@ namespace cp2_wpf {
         private Brush mDefaultLabelColor = SystemColors.WindowTextBrush;
         private Brush mErrorLabelColor = Brushes.Red;
 
+        public FileAttribs NewAttribs { get; private set; } = new FileAttribs();
+
+        private object mArchiveOrFileSystem;
+        private IFileEntry mFileEntry;
+        private FileAttribs mOldAttribs;
+
+
+        //
+        // Filename.
+        //
+
+        public string SyntaxRulesText {
+            get { return mSyntaxRulesText; }
+            set { mSyntaxRulesText = value; OnPropertyChanged(); }
+        }
+        private string mSyntaxRulesText;
+
         public Brush SyntaxRulesForeground {
             get { return mSyntaxRulesForeground; }
             set { mSyntaxRulesForeground = value; OnPropertyChanged(); }
@@ -66,8 +83,12 @@ namespace cp2_wpf {
         }
         private Brush mUniqueNameForeground = SystemColors.WindowTextBrush;
 
-        private delegate bool IsValidDirNameFunc(string name);
-        private IsValidDirNameFunc mIsValidFunc;
+        public string DirSepText { get; private set; }
+        public Visibility DirSepTextVisibility { get; private set; }
+        private const string DIR_SEP_CHAR_FMT = "\u2022 Directory separator character is '{0}'.";
+
+        private delegate bool IsValidFileNameFunc(string name);
+        private IsValidFileNameFunc mIsValidFunc;
 
         /// <summary>
         /// Filename string.
@@ -78,13 +99,24 @@ namespace cp2_wpf {
         }
         private string mFileName;
 
-        // [] filename
-        //    - list rules, flag non-unique
-        //    - show dir name separator char
+        //
+        // Dates.
+        //
+
         // [] dates (disabled for DOS)
         //    - create date (DatePicker class)
         //    - mod date
         //    - show valid date ranges, explain limitations
+
+        // Characteristics needs:
+        // - date range limitation string; do we want min/max date values?  Maybe define in
+        //   TimeStamp, copy into Characteristics
+
+
+        //
+        // File types.
+        //
+
         // [] ProDOS file type:
         //    - file type popup with strings; can enter string or $xx
         //      - instructions under
@@ -94,27 +126,36 @@ namespace cp2_wpf {
         // [] HFS file type:
         //    - checkbox for optional situations (NuFX, ProDOS ext)
         //    - input as 4-char or $xxxxxxxx
-        // [] access
-        //    - locked/unlocked for DOS/HFS, disabled for Pascal
-        //    - six checkboxes for ProDOS
-        // [] comment
-        //    - only for NuFX, Zip
-        //
         // SPECIAL:
         // - ProDOS dir type change not allowed
         // - HFS dir type change not possible
         //
-        // Characteristics needs:
-        // - date range limitation string; do we want min/max date values?  Maybe define in
-        //   TimeStamp, copy into Characteristics
-        // - filename limitations for IArchive
 
-        public FileAttribs NewAttribs { get; } = new FileAttribs();
+        //
+        // Access flags.
+        //
 
-        private object mArchiveOrFileSystem;
-        private IFileEntry mFileEntry;
+        // [] access
+        //    - locked/unlocked for DOS/HFS, disabled for Pascal
+        //    - six checkboxes for ProDOS
+
+        //
+        // Comment.
+        //
+
+        // [] comment
+        //    - only for NuFX, Zip
+        //
 
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="parent">Parent window.</param>
+        /// <param name="archiveOrFileSystem">IArchive or IFileSystem object.</param>
+        /// <param name="entry">File entry object.</param>
+        /// <param name="attribs">Current file attributes, from <paramref name="entry"/> or
+        ///   MacZip header contents.</param>
         public EditAttributes(Window parent, object archiveOrFileSystem, IFileEntry entry,
                 FileAttribs attribs) {
             InitializeComponent();
@@ -123,17 +164,43 @@ namespace cp2_wpf {
 
             mArchiveOrFileSystem = archiveOrFileSystem;
             mFileEntry = entry;
+            mOldAttribs = attribs;
 
             mFileName = entry.FileName;
 
-            // TODO: target-specific setup
-            mIsValidFunc = delegate (string arg) { return false; };
+            if (archiveOrFileSystem is IArchive) {
+                IArchive arc = (IArchive)archiveOrFileSystem;
+                mIsValidFunc = arc.IsValidFileName;
+                mSyntaxRulesText = "\u2022 " + arc.Characteristics.FileNameSyntaxRules;
+                if (arc.Characteristics.DefaultDirSep != IFileEntry.NO_DIR_SEP) {
+                    DirSepText = string.Format(DIR_SEP_CHAR_FMT, arc.Characteristics.DefaultDirSep);
+                    DirSepTextVisibility = Visibility.Visible;
+                } else {
+                    DirSepText = string.Empty;
+                    DirSepTextVisibility = Visibility.Hidden;
+                }
+            } else if (archiveOrFileSystem is IFileSystem) {
+                IFileSystem fs = (IFileSystem)archiveOrFileSystem;
+                if (entry.IsDirectory && entry.ContainingDir == IFileEntry.NO_ENTRY) {
+                    // Volume Directory.
+                    mIsValidFunc = fs.IsValidVolumeName;
+                    mSyntaxRulesText = "\u2022 " + fs.Characteristics.VolumeNameSyntaxRules;
+                } else {
+                    mIsValidFunc = fs.IsValidFileName;
+                    mSyntaxRulesText = "\u2022 " + fs.Characteristics.FileNameSyntaxRules;
+                }
+                DirSepText = string.Empty;
+                DirSepTextVisibility = Visibility.Hidden;
+            } else {
+                throw new NotImplementedException("Can't edit " + archiveOrFileSystem);
+            }
 
             UpdateControls();
         }
 
         /// <summary>
-        /// When window finishes rendering, put the focus on the filename text box.
+        /// When window finishes rendering, put the focus on the filename text box, with all of
+        /// the text selected.
         /// </summary>
         private void Window_ContentRendered(object sender, EventArgs e) {
             fileNameTextBox.SelectAll();
@@ -147,11 +214,34 @@ namespace cp2_wpf {
             bool nameOkay = mIsValidFunc(mFileName);
             SyntaxRulesForeground = nameOkay ? mDefaultLabelColor : mErrorLabelColor;
 
-            IsValid = nameOkay;
+            bool notUnique = false;
+            if (mArchiveOrFileSystem is IArchive) {
+                IArchive arc = (IArchive)mArchiveOrFileSystem;
+                // Check name for uniqueness.
+                if (arc.TryFindFileEntry(mFileName, out IFileEntry entry) &&
+                        entry != mFileEntry) {
+                    notUnique = true;
+                }
+            } else {
+                IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
+                if (mFileEntry.ContainingDir != IFileEntry.NO_ENTRY) {
+                    // Not editing the volume dir attributes.  Check name for uniqueness.
+                    if (fs.TryFindFileEntry(mFileEntry.ContainingDir, mFileName,
+                            out IFileEntry entry) && entry != mFileEntry) {
+                        notUnique = true;
+                    }
+                }
+            }
+
+            UniqueNameForeground = notUnique ? mErrorLabelColor : mDefaultLabelColor;
+
+            IsValid = nameOkay && !notUnique;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
-            // TODO: fill out FileAttribs object
+            NewAttribs = new FileAttribs(mOldAttribs);
+            NewAttribs.FullPathName = mFileName;
+            // TODO: fill out remaining fields
 
             DialogResult = true;
         }

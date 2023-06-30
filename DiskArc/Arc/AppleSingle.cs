@@ -41,6 +41,7 @@ namespace DiskArc.Arc {
         internal const uint VERSION_2 = 0x00020000;
         internal const int HEADER_LEN = 26;                 // file header length; 4+4+16+2
 
+        private const string FILENAME_RULES = "Filename only; may be empty.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "AppleSingle",
             canWrite: true,
@@ -49,7 +50,8 @@ namespace DiskArc.Arc {
             hasDiskImages: false,
             hasArchiveComment: false,
             hasRecordComments: false,               // TODO: "standard Macintosh comment" entries
-            defaultDirSep: IFileEntry.NO_DIR_SEP);  // partial paths are not supported
+            defaultDirSep: IFileEntry.NO_DIR_SEP,   // partial paths are not supported
+            fnSyntax: FILENAME_RULES);
 
         //
         // IArchive interfaces.

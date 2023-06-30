@@ -416,7 +416,7 @@ namespace AppCommon {
                                         adfArchive.AddPart(adfEntry, FilePart.RsrcFork, rsrcSource,
                                             CompressionFormat.Default);
                                     }
-                                    attrs.CopyAttrsTo(adfEntry);
+                                    attrs.CopyAttrsTo(adfEntry, true);
                                     adfArchive.CommitTransaction(outFile);
                                 }
                             }
@@ -468,7 +468,7 @@ namespace AppCommon {
                                     asArchive.AddPart(asEntry, FilePart.RsrcFork, rsrcSource,
                                         CompressionFormat.Default);
                                 }
-                                attrs.CopyAttrsTo(asEntry);
+                                attrs.CopyAttrsTo(asEntry, true);
                                 asArchive.CommitTransaction(outFile);
                             }
                         }

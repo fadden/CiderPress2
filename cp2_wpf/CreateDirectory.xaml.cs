@@ -83,6 +83,14 @@ namespace cp2_wpf {
         private IsValidDirNameFunc mIsValidFunc;
 
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="parent">Parent window.</param>
+        /// <param name="fs">Filesystem object.</param>
+        /// <param name="containingDir">Directory that will contain the new file entry.</param>
+        /// <param name="func">Function for evaluating filename correctness.</param>
+        /// <param name="syntaxRules">Human-readable syntax rules to display.</param>
         public CreateDirectory(Window parent, IFileSystem fs, IFileEntry containingDir,
                 IsValidDirNameFunc func, string syntaxRules) {
             InitializeComponent();
@@ -99,7 +107,8 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// When window finishes rendering, put the focus on the text box.
+        /// When window finishes rendering, put the focus on the directory name text box, with all
+        /// of the text selected.
         /// </summary>
         private void Window_ContentRendered(object sender, EventArgs e) {
             newFileNameTextBox.SelectAll();

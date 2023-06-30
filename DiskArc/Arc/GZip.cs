@@ -25,6 +25,7 @@ namespace DiskArc.Arc {
     /// GZip archive handling.
     /// </summary>
     public class GZip : IArchiveExt {
+        private const string FILENAME_RULES = "Filename only.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "GZip",
             canWrite: true,
@@ -33,7 +34,8 @@ namespace DiskArc.Arc {
             hasDiskImages: false,
             hasArchiveComment: false,
             hasRecordComments: false,       // currently ignoring gzip comment field
-            defaultDirSep: '/');
+            defaultDirSep: '/',
+            fnSyntax: FILENAME_RULES);
 
         //
         // IArchive interfaces.
