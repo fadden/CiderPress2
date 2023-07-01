@@ -132,6 +132,15 @@ namespace cp2_wpf {
         // - HFS dir type change not possible
         //
 
+        /// <summary>
+        /// ProDOS file type string.
+        /// </summary>
+        public string ProTypeStr {
+            get { return mProTypeStr; }
+            set { mProTypeStr = value; OnPropertyChanged(); UpdateControls(); }
+        }
+        private string mProTypeStr = "???";
+
         //
         // Access flags.
         //
@@ -200,6 +209,8 @@ namespace cp2_wpf {
             } else {
                 throw new NotImplementedException("Can't edit " + archiveOrFileSystem);
             }
+
+            mProTypeStr = "$" + attribs.FileType.ToString("x2");
 
             UpdateControls();
         }

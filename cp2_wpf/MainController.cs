@@ -34,6 +34,7 @@ using DiskArc;
 using DiskArc.Arc;
 using DiskArc.FS;
 using DiskArc.Multi;
+using static DiskArc.Defs;
 
 namespace cp2_wpf {
     /// <summary>
@@ -940,19 +941,25 @@ namespace cp2_wpf {
             Debug.WriteLine("EditAttributes: " + entry);
             object archiveOrFileSystem = workNode.DAObject;
 
-            // TODO:
-            // - if MacZip, look for header.  If found, use that as IFileEntry, set isMacZip,
-            //   and extract attributes from AppleDouble
             bool isMacZip = false;
             bool isMacZipEnabled = AppSettings.Global.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
             IFileEntry adfEntry = IFileEntry.NO_ENTRY;
+            IFileEntry adfArchiveEntry = IFileEntry.NO_ENTRY;
             if (isMacZipEnabled && workNode.DAObject is Zip &&
-                    Zip.HasMacZipHeader((IArchive)workNode.DAObject, entry, out adfEntry)) {
-                Debug.Assert(false, "Add MacZip here");
-                // TODO: stuff
+                    Zip.HasMacZipHeader((Zip)workNode.DAObject, entry, out adfEntry)) {
+                // Extract the archive and get the first entry.
+                Zip arc = (Zip)workNode.DAObject;
+                using (Stream adfStream = ArcTemp.ExtractToTemp(arc, adfEntry, FilePart.DataFork)) {
+                    using (IArchive adfArchive = AppleSingle.OpenArchive(adfStream, mAppHook)) {
+                        adfArchiveEntry = adfArchive.GetFirstEntry();
+                    }
+                }
                 isMacZip = true;
             }
             FileAttribs curAttribs = new FileAttribs(entry);
+            if (isMacZip) {
+                curAttribs.GetFromAppleSingle(adfArchiveEntry);
+            }
 
             EditAttributes dialog =
                 new EditAttributes(mMainWin, archiveOrFileSystem, entry, curAttribs);
@@ -976,15 +983,15 @@ namespace cp2_wpf {
                     // entire item.
                     FileListItem newFli;
                     if (isMacZip) {
-                        throw new NotImplementedException();
+                        newFli = new FileListItem(entry, adfEntry, dialog.NewAttribs, mFormatter);
                     } else {
                         newFli = new FileListItem(entry, mFormatter);
-                        int index = mMainWin.FileList.IndexOf(fileItem);
-                        Debug.Assert(index >= 0);
-                        mMainWin.FileList[index] = newFli;
-                        // Set the selection.  This causes a refresh.
-                        mMainWin.fileListDataGrid.SelectedItem = newFli;
                     }
+                    int index = mMainWin.FileList.IndexOf(fileItem);
+                    Debug.Assert(index >= 0);
+                    mMainWin.FileList[index] = newFli;
+                    // Set the selection.  This causes a refresh.
+                    mMainWin.fileListDataGrid.SelectedItem = newFli;
 
                     ArchiveTreeItem? ati =
                         ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);

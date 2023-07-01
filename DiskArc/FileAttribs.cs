@@ -213,9 +213,11 @@ namespace DiskArc {
         /// Copies file attributes to an IFileEntry.  We use this when extracting to ADF/AS,
         /// and when applying attribute changes.
         /// </summary>
-        /// <param name="entry"></param>
-        public void CopyAttrsTo(IFileEntry entry, bool fileNameOnly) {
-            if (fileNameOnly) {
+        /// <param name="entry">Entry to copy entries into.</param>
+        /// <param name="useFileNameOnly">If true, we use the FileNameOnly field as the new filename
+        ///   instead of the FullPathName field.</param>
+        public void CopyAttrsTo(IFileEntry entry, bool useFileNameOnly) {
+            if (useFileNameOnly) {
                 entry.FileName = FileNameOnly;
             } else {
                 entry.FileName = FullPathName;

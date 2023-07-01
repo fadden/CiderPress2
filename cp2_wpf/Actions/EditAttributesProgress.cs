@@ -26,6 +26,7 @@ using CommonUtil;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Arc;
+using static DiskArc.Defs;
 
 namespace cp2_wpf.Actions {
     /// <summary>
@@ -69,16 +70,23 @@ namespace cp2_wpf.Actions {
                 if (mArchiveOrFileSystem is IArchive) {
                     IArchive arc = (IArchive)mArchiveOrFileSystem;
                     if (updateMacZip) {
-                        Debug.Assert(EnableMacOSZip);
-                        // TODO: open mADFEntry and modify AppleDouble
-                        throw new NotImplementedException("TODO");
-                    }
-                    try {
-                        arc.StartTransaction();
-                        mNewAttribs.CopyAttrsTo(mFileEntry, false);
-                        mLeafNode.SaveUpdates(DoCompress);
-                    } finally {
-                        arc.CancelTransaction();    // no effect if transaction isn't open
+                        try {
+                            Debug.Assert(EnableMacOSZip);
+                            if (!HandleMacZip(arc, mFileEntry, mADFEntry, mNewAttribs, mAppHook)) {
+                                return false;
+                            }
+                            mLeafNode.SaveUpdates(DoCompress);
+                        } finally {
+                            arc.CancelTransaction();
+                        }
+                    } else {
+                        try {
+                            arc.StartTransaction();
+                            mNewAttribs.CopyAttrsTo(mFileEntry, false);
+                            mLeafNode.SaveUpdates(DoCompress);
+                        } finally {
+                            arc.CancelTransaction();    // no effect if transaction isn't open
+                        }
                     }
                 } else {
                     IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
@@ -96,8 +104,46 @@ namespace cp2_wpf.Actions {
             return true;
         }
 
-        private bool HandleMacZip() {
-            throw new NotImplementedException("TODO");
+        /// <summary>
+        /// Makes changes to a MacZip header entry.  This opens a transaction in
+        /// <paramref name="arc"/>, and leaves it open for the caller to commit.
+        /// </summary>
+        /// <param name="arc">Zip archive object.</param>
+        /// <param name="adfEntry">File entry for the ADF header.</param>
+        /// <param name="newAttribs">New attributes to save in the header.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <returns>True on success.</returns>
+        private static bool HandleMacZip(IArchive arc, IFileEntry mainEntry, IFileEntry adfEntry,
+                FileAttribs newAttribs, AppHook appHook) {
+            // Currently assuming that a single MacZip header entry will fit in a memory stream.
+            // Mac resource forks are limited to 16MB, so this seems reasonable.
+            MemoryStream tmpMem;
+
+            // Rewrite the AppleSingle file.
+            using (Stream adfStream = ArcTemp.ExtractToTemp(arc, adfEntry, FilePart.DataFork)) {
+                using (IArchive adfArchive = AppleSingle.OpenArchive(adfStream, appHook)) {
+                    IFileEntry adfArchiveEntry = adfArchive.GetFirstEntry();
+                    adfArchive.StartTransaction();
+                    newAttribs.CopyAttrsTo(adfArchiveEntry, true);
+                    adfArchive.CommitTransaction(tmpMem = new MemoryStream());
+                }
+            }
+
+            // Replace AppleDouble header entry.
+            arc.StartTransaction();
+            arc.DeletePart(adfEntry, FilePart.DataFork);
+            arc.AddPart(adfEntry, FilePart.DataFork, new SimplePartSource(tmpMem),
+                CompressionFormat.Default);
+
+            // Rename both files.
+            string? hdrName = Zip.GenerateMacZipName(newAttribs.FullPathName);
+            if (hdrName == null) {
+                Debug.Assert(false, "can't make name out of '" + newAttribs.FullPathName + "'");
+                return false;
+            }
+            mainEntry.FileName = newAttribs.FullPathName;
+            adfEntry.FileName = hdrName;
+            return true;
         }
     }
 }
