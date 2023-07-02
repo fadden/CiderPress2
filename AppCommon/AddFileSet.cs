@@ -599,6 +599,7 @@ namespace AppCommon {
             char partChar = '\0';
 
             // Parse the hash string.  '#' + 6 digits + optional char, or same with 16 digits.
+            // It matched the regex, so all digits should be valid hex.
             if (hashString.Length <= 8) {
                 fileType = Convert.ToUInt32(hashString.Substring(1, 2), 16);
                 auxType = Convert.ToUInt32(hashString.Substring(3, 4), 16);

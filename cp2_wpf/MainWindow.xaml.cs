@@ -891,6 +891,8 @@ namespace cp2_wpf {
             //    toastMessage.Visibility = Visibility.Collapsed;
             //};
             toastMessage.BeginAnimation(UIElement.OpacityProperty, doubAnim);
+
+            mMainCtrl.AppHook.LogI("Show notification: '" + msg + "' success=" + success);
         }
 
         /// <summary>

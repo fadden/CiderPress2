@@ -46,7 +46,7 @@ namespace cp2_wpf {
         private MainWindow mMainWin;
 
         private DebugMessageLog mDebugLog;
-        private AppHook mAppHook;
+        public AppHook AppHook { get; private set; }
 
         private string mWorkPathName = string.Empty;
         private WorkTree? mWorkTree = null;
@@ -89,7 +89,7 @@ namespace cp2_wpf {
             mFormatter = new Formatter(cfg);
 
             mDebugLog = new DebugMessageLog();
-            mAppHook = new AppHook(mDebugLog);
+            AppHook = new AppHook(mDebugLog);
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ namespace cp2_wpf {
                 Mouse.OverrideCursor = Cursors.Wait;
 
                 // Do the load on a background thread so we can show progress.
-                OpenProgress prog = new OpenProgress(pathName, limiter, asReadOnly, mAppHook);
+                OpenProgress prog = new OpenProgress(pathName, limiter, asReadOnly, AppHook);
                 WorkProgress workDialog = new WorkProgress(mMainWin, prog, true);
                 if (workDialog.ShowDialog() != true) {
                     // cancelled or failed
@@ -768,7 +768,7 @@ namespace cp2_wpf {
             AddFileSet.AddOpts addOpts = ConfigureAddOpts(false);
             AddFileSet fileSet;
             try {
-                fileSet = new AddFileSet(basePath, pathNames, addOpts, null, mAppHook);
+                fileSet = new AddFileSet(basePath, pathNames, addOpts, null, AppHook);
             } catch (IOException ex) {
                 ShowFileError(ex.Message);
                 return;
@@ -780,7 +780,7 @@ namespace cp2_wpf {
 
             SettingsHolder settings = AppSettings.Global;
             AddProgress prog =
-                new AddProgress(archiveOrFileSystem, daNode, fileSet, targetDir, mAppHook) {
+                new AddProgress(archiveOrFileSystem, daNode, fileSet, targetDir, AppHook) {
                     DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
                     EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
                     StripPaths = settings.GetBool(AppSettings.ADD_STRIP_PATHS_ENABLED, false),
@@ -879,7 +879,7 @@ namespace cp2_wpf {
             }
             SettingsHolder settings = AppSettings.Global;
             DeleteProgress prog = new DeleteProgress(archiveOrFileSystem, daNode, selected,
-                    mAppHook) {
+                    AppHook) {
                 DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
                 EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
             };
@@ -950,7 +950,7 @@ namespace cp2_wpf {
                 // Extract the archive and get the first entry.
                 Zip arc = (Zip)workNode.DAObject;
                 using (Stream adfStream = ArcTemp.ExtractToTemp(arc, adfEntry, FilePart.DataFork)) {
-                    using (IArchive adfArchive = AppleSingle.OpenArchive(adfStream, mAppHook)) {
+                    using (IArchive adfArchive = AppleSingle.OpenArchive(adfStream, AppHook)) {
                         adfArchiveEntry = adfArchive.GetFirstEntry();
                     }
                 }
@@ -958,18 +958,21 @@ namespace cp2_wpf {
             }
             FileAttribs curAttribs = new FileAttribs(entry);
             if (isMacZip) {
+                // Get the attributes from the contents of the AppleSingle entry, but use the
+                // filename from the main entry.
                 curAttribs.GetFromAppleSingle(adfArchiveEntry);
+                curAttribs.FullPathName = entry.FullPathName;
             }
 
-            EditAttributes dialog =
-                new EditAttributes(mMainWin, archiveOrFileSystem, entry, curAttribs);
+            EditAttributes dialog = new EditAttributes(mMainWin, archiveOrFileSystem, entry,
+                adfArchiveEntry, curAttribs);
             if (dialog.ShowDialog() != true) {
                 return;
             }
 
             SettingsHolder settings = AppSettings.Global;
             EditAttributesProgress prog = new EditAttributesProgress(mMainWin, workNode.DAObject,
-                    workNode.FindDANode(), entry, adfEntry, dialog.NewAttribs, mAppHook) {
+                    workNode.FindDANode(), entry, adfEntry, dialog.NewAttribs, AppHook) {
                 DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
                 EnableMacOSZip = isMacZipEnabled,
             };
@@ -1129,7 +1132,7 @@ namespace cp2_wpf {
             settings.SetString(AppSettings.LAST_EXTRACT_DIR, outputDir);
 
             ExtractProgress prog = new ExtractProgress(archiveOrFileSystem, selectionDir,
-                    selected, outputDir, mAppHook) {
+                    selected, outputDir, AppHook) {
                 Preserve = settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
                     ExtractFileWorker.PreserveMode.None),
                 EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
@@ -1163,7 +1166,7 @@ namespace cp2_wpf {
             }
 
             FileViewer dialog = new FileViewer(mMainWin, archiveOrFileSystem, selected,
-                firstSel, mAppHook);
+                firstSel, AppHook);
             dialog.ShowDialog();
         }
 
@@ -1194,7 +1197,7 @@ namespace cp2_wpf {
         }
 
         public void Debug_BulkCompressTest() {
-            LibTest.BulkCompress dialog = new LibTest.BulkCompress(mMainWin, mAppHook);
+            LibTest.BulkCompress dialog = new LibTest.BulkCompress(mMainWin, AppHook);
             dialog.ShowDialog();
         }
 

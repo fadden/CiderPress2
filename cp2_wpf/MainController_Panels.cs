@@ -149,12 +149,12 @@ namespace cp2_wpf {
             ObservableCollection<ArchiveTreeItem> tvRoot = mMainWin.ArchiveTreeRoot;
             Debug.Assert(tvRoot.Count == 0);
 
-            mAppHook.LogI("Constructing archive trees...");
+            AppHook.LogI("Constructing archive trees...");
             DateTime startWhen = DateTime.Now;
 
             ArchiveTreeItem.ConstructTree(tvRoot, mWorkTree.RootNode);
 
-            mAppHook.LogI("Finished archive tree construction in " +
+            AppHook.LogI("Finished archive tree construction in " +
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
 
             // Select the first filesystem or archive we encounter while chasing the first child.
@@ -552,7 +552,7 @@ namespace cp2_wpf {
             }
 
             DateTime endWhen = DateTime.Now;
-            mAppHook.LogD("File list refresh done in " +
+            AppHook.LogD("File list refresh done in " +
                 (endWhen - startWhen).TotalMilliseconds + " ms (clear took " +
                 (startWhen - clearWhen).TotalMilliseconds + " ms)");
 
@@ -600,7 +600,7 @@ namespace cp2_wpf {
                             using (Stream adfStream = ArcTemp.ExtractToTemp(arc,
                                     adfEntry, FilePart.DataFork)) {
                                 adfAttrs = new FileAttribs(entry);
-                                adfAttrs.GetFromAppleSingle(adfStream, mAppHook);
+                                adfAttrs.GetFromAppleSingle(adfStream, AppHook);
                             }
                         } catch (Exception ex) {
                             // Never mind.

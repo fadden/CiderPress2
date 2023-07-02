@@ -116,35 +116,7 @@ namespace cp2_wpf {
                 Type = "DIR";
                 AuxType = string.Empty;
             } else if (entry is DOS_FileEntry) {
-                switch (entry.FileType) {
-                    case FileAttribs.FILE_TYPE_TXT:
-                        Type = " T";
-                        break;
-                    case FileAttribs.FILE_TYPE_INT:
-                        Type = " I";
-                        break;
-                    case FileAttribs.FILE_TYPE_BAS:
-                        Type = " A";
-                        break;
-                    case FileAttribs.FILE_TYPE_BIN:
-                        Type = " B";
-                        break;
-                    case FileAttribs.FILE_TYPE_F2:
-                        Type = " S";
-                        break;
-                    case FileAttribs.FILE_TYPE_REL:
-                        Type = " R";
-                        break;
-                    case FileAttribs.FILE_TYPE_F3:
-                        Type = " AA";
-                        break;
-                    case FileAttribs.FILE_TYPE_F4:
-                        Type = " BB";
-                        break;
-                    default:
-                        Type = " ??";
-                        break;
-                }
+                Type = " " + FileTypes.GetDOSTypeAbbrev(entry.FileType);
                 AuxType = string.Format("${0:X4}", entry.AuxType);
             } else if (entry.HasHFSTypes) {
                 // See if ProDOS types are buried in the HFS types.

@@ -1390,17 +1390,7 @@ namespace cp2 {
                 type = "DIR";
                 aux = string.Empty;
             } else if (entry is DOS_FileEntry) {
-                switch (entry.FileType) {
-                    case FileAttribs.FILE_TYPE_TXT: type = " T"; break;
-                    case FileAttribs.FILE_TYPE_INT: type = " I"; break;
-                    case FileAttribs.FILE_TYPE_BAS: type = " A"; break;
-                    case FileAttribs.FILE_TYPE_BIN: type = " B"; break;
-                    case FileAttribs.FILE_TYPE_F2:  type = " S"; break;
-                    case FileAttribs.FILE_TYPE_REL: type = " R"; break;
-                    case FileAttribs.FILE_TYPE_F3:  type = " AA"; break;
-                    case FileAttribs.FILE_TYPE_F4:  type = " BB"; break;
-                    default: type = " ??"; break;
-                }
+                type = " " + FileTypes.GetDOSTypeAbbrev(entry.FileType);
                 aux = string.Format("${0:X4}", entry.AuxType);
             } else if (entry.HasHFSTypes) {
                 // See if ProDOS types are buried in the HFS types.
