@@ -451,7 +451,7 @@ namespace cp2_wpf {
             PreferSingleDirList = true;
             if (!ShowSingleDirFileList) {
                 ShowSingleDirFileList = true;
-                mMainCtrl.PopulateFileList();
+                mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, true);
             }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
@@ -459,7 +459,7 @@ namespace cp2_wpf {
             PreferSingleDirList = false;
             if (ShowSingleDirFileList) {
                 ShowSingleDirFileList = false;
-                mMainCtrl.PopulateFileList();
+                mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, true);
             }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
@@ -901,7 +901,6 @@ namespace cp2_wpf {
         /// <param name="count">Number of events to handle before disabling.</param>
         public void FileList_SetSelectionFocus() {
             mFileListRefocusNeeded = true;
-            //ItemContainerGenerator_StatusChanged(null, new EventArgs());
         }
 
         private bool mFileListRefocusNeeded;
@@ -918,7 +917,7 @@ namespace cp2_wpf {
             if (fileListDataGrid.ItemContainerGenerator.Status ==
                     GeneratorStatus.ContainersGenerated) {
                 int index = fileListDataGrid.SelectedIndex;
-                if (fileListDataGrid.SelectRowColAndFocus(index, 0)) {
+                if (index >= 0 && fileListDataGrid.SelectRowColAndFocus(index, 0)) {
                     // Sometimes this appears to work but actually doesn't.  The difference
                     // appears to be whether we were called as the result of ScrollIntoView()
                     // or as part of the framework layout code.  Only the latter works.  We

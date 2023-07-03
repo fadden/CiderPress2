@@ -15,6 +15,7 @@
  */
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -23,6 +24,7 @@ using CommonUtil;
 using DiskArc.FS;
 using DiskArc;
 using static DiskArc.Defs;
+using cp2_wpf.WPFCommon;
 
 //
 // TODO (maybe): we might be able to improve latency when switching between large file lists by
@@ -224,6 +226,9 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// Finds an item in the file list, searching by IFileEntry.
+        /// </summary>
         public static FileListItem? FindItemByEntry(ObservableCollection<FileListItem> tvRoot,
                 IFileEntry entry) {
             foreach (FileListItem item in tvRoot) {
@@ -232,6 +237,27 @@ namespace cp2_wpf {
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Sets the current file list selection to the item with a matching IFileEntry.
+        /// </summary>
+        public static void SetSelectionFocusByEntry(ObservableCollection<FileListItem> tvRoot,
+                DataGrid dataGrid, IFileEntry selEntry) {
+            FileListItem? reselItem = null;
+            if (selEntry != IFileEntry.NO_ENTRY) {
+                reselItem = FindItemByEntry(tvRoot, selEntry);
+            }
+            if (reselItem != null) {
+                dataGrid.SelectedItem = reselItem;                  // item -> index
+                dataGrid.SelectRowByIndex(dataGrid.SelectedIndex);  // set focus as well
+            } else {
+                // Not found (e.g. we changed directories and the selected entry is no longer
+                // part of the file list), or selEntry is NO_ENTRY.
+                if (dataGrid.Items.Count > 0) {
+                    dataGrid.SelectRowByIndex(0);
+                }
+            }
         }
 
         public override string ToString() {

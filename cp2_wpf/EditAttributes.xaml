@@ -89,7 +89,7 @@ limitations under the License.
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Aux Type:" Margin="0,4,0,0"
                            Foreground="{Binding ProAuxForeground}"/>
-                <TextBox Grid.Row="1" Grid.Column="1" Width="90" Margin="8,4,0,0"
+                <TextBox Grid.Row="1" Grid.Column="1" Width="65" Margin="8,4,0,0"
                          HorizontalAlignment="Left" MaxLength="4"
                          Text="{Binding ProAuxString, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"/>
@@ -117,20 +117,26 @@ limitations under the License.
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="File Type:"/>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="File Type:"
+                           Foreground="{Binding HFSTypeForeground}"/>
                 <TextBox Grid.Row="0" Grid.Column="1" Width="40" Margin="8,0,0,0"
                          MaxLength="4"
+                         Text="{Binding HFSTypeCharsString, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"/>
                 <TextBox Grid.Row="0" Grid.Column="2" Width="65" Margin="8,0,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
+                         Text="{Binding HFSTypeHexString, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"/>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Creator:" Margin="0,4,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Creator:" Margin="0,4,0,0"
+                           Foreground="{Binding HFSCreatorForeground}"/>
                 <TextBox Grid.Row="1" Grid.Column="1" Width="40" Margin="8,4,0,0"
                          MaxLength="4"
+                         Text="{Binding HFSCreatorCharsString, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"/>
                 <TextBox Grid.Row="1" Grid.Column="2" Width="65" Margin="8,4,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
+                         Text="{Binding HFSCreatorHexString, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"

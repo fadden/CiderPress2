@@ -92,7 +92,7 @@ namespace AppCommon {
         /// Gets the description of the file contents.
         /// </summary>
         /// <param name="type">ProDOS file type.</param>
-        /// <param name="auxType">ProDOS auxillary type.</param>
+        /// <param name="auxType">ProDOS auxiliary type.</param>
         /// <returns>String with description, or an empty string if there's no match.</returns>
         public static string GetDescription(byte type, ushort auxType) {
             for (int i = sDescs.Length - 1; i >= 0; i--) {

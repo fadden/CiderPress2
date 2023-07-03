@@ -838,9 +838,12 @@ namespace cp2_wpf {
             }
 
             try {
-                fs.CreateFile(targetDir, dialog.NewFileName, IFileSystem.CreateMode.Directory);
+                IFileEntry newEntry = fs.CreateFile(targetDir, dialog.NewFileName,
+                    IFileSystem.CreateMode.Directory);
                 // Refresh the directory and file lists.
                 RefreshDirAndFileList();
+                FileListItem.SetSelectionFocusByEntry(mMainWin.FileList, mMainWin.fileListDataGrid,
+                    newEntry);
                 mMainWin.PostNotification("Directory created", true);
             } catch (Exception ex) {
                 MessageBox.Show(mMainWin, "Failed: " + ex.Message, "Failed",
@@ -869,6 +872,8 @@ namespace cp2_wpf {
                 return;
             }
 
+            int firstSelIndex = mMainWin.fileListDataGrid.SelectedIndex;
+
             // We can't undo it, so get confirmation first.
             string msg = string.Format("Delete {0} file {1}?", selected.Count,
                 selected.Count == 1 ? "entry" : "entries");
@@ -888,6 +893,11 @@ namespace cp2_wpf {
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
                 mMainWin.PostNotification("Deletion successful", true);
+            }
+
+            // Put the selection on the item above the first one we deleted.
+            if (firstSelIndex > 0) {
+                mMainWin.fileListDataGrid.SelectRowByIndex(firstSelIndex - 1);
             }
 
             // Refresh the directory and file lists.

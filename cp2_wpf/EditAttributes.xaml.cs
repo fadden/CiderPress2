@@ -24,6 +24,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 
 using AppCommon;
+using CommonUtil;
 using DiskArc;
 using DiskArc.FS;
 
@@ -50,12 +51,17 @@ namespace cp2_wpf {
         private Brush mDefaultLabelColor = SystemColors.WindowTextBrush;
         private Brush mErrorLabelColor = Brushes.Red;
 
+        /// <summary>
+        /// File attributes after edits.  The filename will always be in FullPathName, even
+        /// for disk images.
+        /// </summary>
         public FileAttribs NewAttribs { get; private set; } = new FileAttribs();
 
         private object mArchiveOrFileSystem;
         private IFileEntry mFileEntry;
         private IFileEntry mADFEntry;
         private FileAttribs mOldAttribs;
+
 
         /// <summary>
         /// Constructor.
@@ -77,15 +83,15 @@ namespace cp2_wpf {
             mADFEntry = adfEntry;
             mOldAttribs = attribs;
 
+            NewAttribs = new FileAttribs(mOldAttribs);
             if (entry is DOS_FileEntry && entry.IsDirectory) {
                 // The DOS volume name is formatted as "DOS-nnn", but we just want the number.
-                mFileName = ((DOS)archiveOrFileSystem).VolumeNum.ToString("D3");
+                NewAttribs.FullPathName = ((DOS)archiveOrFileSystem).VolumeNum.ToString("D3");
+            } else if (archiveOrFileSystem is IArchive) {
+                NewAttribs.FullPathName = attribs.FullPathName;
             } else {
-                mFileName = attribs.FullPathName;
+                NewAttribs.FullPathName = attribs.FileNameOnly;
             }
-
-            NewAttribs = new FileAttribs(mOldAttribs);
-            NewAttribs.FullPathName = mFileName;
 
             if (archiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)archiveOrFileSystem;
@@ -118,6 +124,8 @@ namespace cp2_wpf {
             ProTypeDescString = FileTypes.GetDescription(attribs.FileType, attribs.AuxType);
             ProAuxString = attribs.AuxType.ToString("X4");
 
+            PrepareHFSTypes();
+
             UpdateControls();
         }
 
@@ -143,14 +151,14 @@ namespace cp2_wpf {
             // Filename.
             //
 
-            bool nameOkay = mIsValidFunc(mFileName);
+            bool nameOkay = mIsValidFunc(NewAttribs.FullPathName);
             SyntaxRulesForeground = nameOkay ? mDefaultLabelColor : mErrorLabelColor;
 
             bool notUnique = false;
             if (mArchiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)mArchiveOrFileSystem;
                 // Check name for uniqueness.
-                if (arc.TryFindFileEntry(mFileName, out IFileEntry entry) &&
+                if (arc.TryFindFileEntry(NewAttribs.FullPathName, out IFileEntry entry) &&
                         entry != mFileEntry) {
                     notUnique = true;
                 }
@@ -158,7 +166,7 @@ namespace cp2_wpf {
                 IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
                 if (mFileEntry.ContainingDir != IFileEntry.NO_ENTRY) {
                     // Not editing the volume dir attributes.  Check name for uniqueness.
-                    if (fs.TryFindFileEntry(mFileEntry.ContainingDir, mFileName,
+                    if (fs.TryFindFileEntry(mFileEntry.ContainingDir, NewAttribs.FullPathName,
                             out IFileEntry entry) && entry != mFileEntry) {
                         notUnique = true;
                     }
@@ -169,12 +177,15 @@ namespace cp2_wpf {
 
             IsValid = nameOkay && !notUnique;
 
-            //
             // ProDOS file and aux type.
             // We're currently always picking the file type from a list, so it's always valid.
-            //
             ProAuxForeground = mProAuxValid ? mDefaultLabelColor : mErrorLabelColor;
             IsValid &= mProAuxValid;
+
+            // HFS file type and creator.
+            HFSTypeForeground = mHFSTypeValid ? mDefaultLabelColor : mErrorLabelColor;
+            HFSCreatorForeground = mHFSCreatorValid ? mDefaultLabelColor : mErrorLabelColor;
+            IsValid &= mHFSTypeValid & mHFSCreatorValid;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
@@ -217,10 +228,9 @@ namespace cp2_wpf {
         /// Filename string.
         /// </summary>
         public string FileName {
-            get { return mFileName; }
-            set { mFileName = value; OnPropertyChanged(); UpdateControls(); }
+            get { return NewAttribs.FullPathName; }
+            set { NewAttribs.FullPathName = value; OnPropertyChanged(); UpdateControls(); }
         }
-        private string mFileName;
 
         #endregion Filename
 
@@ -243,8 +253,16 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// List of suitable types from the ProDOS type list.  This is the ItemsSource for the
+        /// combo box.
+        /// </summary>
         public List<ProTypeListItem> ProTypeList { get; } = new List<ProTypeListItem>();
 
+        /// <summary>
+        /// True if the ProDOS type list is enabled.  It will be visible but disabled in
+        /// certain circumstances, such as when editing attributes for a directory entry.
+        /// </summary>
         public bool IsProTypeListEnabled { get; private set; } = true;
 
         public string ProTypeDescString {
@@ -253,18 +271,20 @@ namespace cp2_wpf {
         }
         public string mProTypeDescString = string.Empty;
 
-        // Aux type input field (0-4 hex chars).
+        /// <summary>
+        /// Aux type input field (0-4 hex chars).  Must be a valid hex value or empty string.
+        /// </summary>
         public string ProAuxString {
             get { return mProAuxString; }
             set {
-                mProAuxValid = true;
                 mProAuxString = value;
+                mProAuxValid = true;
                 OnPropertyChanged();
-                if (string.IsNullOrEmpty(ProAuxString)) {
+                if (string.IsNullOrEmpty(value)) {
                     NewAttribs.AuxType = 0;
                 } else {
                     try {
-                        NewAttribs.AuxType = Convert.ToUInt16(ProAuxString, 16);
+                        NewAttribs.AuxType = Convert.ToUInt16(value, 16);
                     } catch (Exception) {       // ArgumentException or FormatException
                         mProAuxValid = false;
                     }
@@ -272,7 +292,7 @@ namespace cp2_wpf {
                 UpdateControls();
             }
         }
-        private string mProAuxString;
+        private string mProAuxString = string.Empty;
         private bool mProAuxValid;
 
         // Aux type label color, set to red on error.
@@ -282,24 +302,125 @@ namespace cp2_wpf {
         }
         private Brush mProAuxForeground = SystemColors.WindowTextBrush;
 
-        // [] ProDOS file type:
-        //    - file type popup with strings; can enter string or $xx
-        //      - instructions under
-        //    - aux type as $xxxx
-        //    - show type description string (type+aux -> str)
-        //    - available on HFS: modifies HFS type; need to show as single group?
-        // [] HFS file type:
-        //    - checkbox for optional situations (NuFX, ProDOS ext)
-        //    - input as 4-char or $xxxxxxxx
-        // SPECIAL:
-        // - ProDOS dir type change not allowed
-        // - HFS dir type change not possible
-        //
-        // THOUGHT:
-        // - HFS types of zero map to an empty input field, rather than NULs
-        // - modifying one field potentially changes the other; if chars are edited then
-        //   blank out hex, if hex is edited blank out chars, until a valid entry is made;
-        //   then fill out the other with equivalent data
+        public string HFSTypeCharsString {
+            get { return mHFSTypeCharsString; }
+            set {
+                mHFSTypeCharsString = value;
+                OnPropertyChanged();
+                mHFSTypeHexString = SetHexFromChars(value, out uint newNum, out mHFSTypeValid);
+                OnPropertyChanged(nameof(HFSTypeHexString));
+                NewAttribs.HFSFileType = newNum;
+                UpdateControls();
+            }
+        }
+        private string mHFSTypeCharsString = string.Empty;
+
+        public string HFSTypeHexString {
+            get { return mHFSTypeHexString; }
+            set {
+                mHFSTypeHexString = value;
+                OnPropertyChanged();
+                mHFSTypeCharsString = SetCharsFromHex(value, out uint newNum, out mHFSTypeValid);
+                OnPropertyChanged(nameof(HFSTypeCharsString));
+                NewAttribs.HFSFileType = newNum;
+                UpdateControls();
+            }
+        }
+        private string mHFSTypeHexString = string.Empty;
+        private bool mHFSTypeValid;
+
+        public Brush HFSTypeForeground {
+            get { return mHFSTypeForeground; }
+            set { mHFSTypeForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mHFSTypeForeground = SystemColors.WindowTextBrush;
+
+        public string HFSCreatorCharsString {
+            get { return mHFSCreatorCharsString; }
+            set {
+                mHFSCreatorCharsString = value;
+                OnPropertyChanged();
+                mHFSCreatorHexString =
+                    SetHexFromChars(value, out uint newNum, out mHFSCreatorValid);
+                OnPropertyChanged(nameof(HFSCreatorHexString));
+                NewAttribs.HFSCreator = newNum;
+                UpdateControls();
+            }
+        }
+        private string mHFSCreatorCharsString = string.Empty;
+
+        public string HFSCreatorHexString {
+            get { return mHFSCreatorHexString; }
+            set {
+                mHFSCreatorHexString = value;
+                OnPropertyChanged();
+                mHFSCreatorCharsString =
+                    SetCharsFromHex(value, out uint newNum, out mHFSCreatorValid);
+                OnPropertyChanged(nameof(HFSCreatorCharsString));
+                NewAttribs.HFSCreator = newNum;
+                UpdateControls();
+            }
+        }
+        private string mHFSCreatorHexString = string.Empty;
+        private bool mHFSCreatorValid;
+
+        public Brush HFSCreatorForeground {
+            get { return mHFSCreatorForeground; }
+            set { mHFSCreatorForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mHFSCreatorForeground = SystemColors.WindowTextBrush;
+
+        /// <summary>
+        /// Computes the hexadecimal field when the 4-char field changes.
+        /// </summary>
+        /// <param name="charValue">New character constant.</param>
+        /// <param name="newNum">Result: numeric value.</param>
+        /// <param name="isValid">Result: true if string is valid.</param>
+        /// <returns>Hexadecimal string.</returns>
+        private static string SetHexFromChars(string charValue, out uint newNum, out bool isValid) {
+            string newHexStr;
+            isValid = true;
+            if (string.IsNullOrEmpty(charValue)) {
+                newNum = 0;
+                newHexStr = string.Empty;
+            } else if (charValue.Length == 4) {
+                // set hex value
+                newNum = MacChar.IntifyMacConstantString(charValue);
+                newHexStr = newNum.ToString("X8");
+            } else {
+                // incomplete string, erase hex value
+                newNum = 0;
+                newHexStr = string.Empty;
+                isValid = false;
+            }
+            return newHexStr;
+        }
+
+        /// <summary>
+        /// Computes the 4-char field value when the hexadecimal field changes.
+        /// </summary>
+        /// <param name="hexStr">New hex string.</param>
+        /// <param name="newNum">Result: numeric value.</param>
+        /// <param name="isValid">Result: true if string is valid.</param>
+        /// <returns>Character string.</returns>
+        private static string SetCharsFromHex(string hexStr, out uint newNum, out bool isValid) {
+            string newCharStr;
+            isValid = true;
+            if (string.IsNullOrEmpty(hexStr)) {
+                newCharStr = string.Empty;
+                newNum = 0;
+            } else {
+                try {
+                    newNum = Convert.ToUInt32(hexStr, 16);
+                    newCharStr = MacChar.StringifyMacConstant(newNum);
+                } catch (Exception) {       // ArgumentException or FormatException
+                    isValid = false;
+                    newNum = 0;
+                    newCharStr = string.Empty;
+                }
+            }
+            return newCharStr;
+        }
 
         private static readonly byte[] DOS_TYPES = {
             FileAttribs.FILE_TYPE_TXT,      // T
@@ -334,6 +455,29 @@ namespace cp2_wpf {
                 IsProTypeListEnabled = (!mFileEntry.IsDirectory);
             } else {
                 IsProTypeListEnabled = false;
+                ProTypeVisibility = Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>
+        /// Initializes the fields during construction.
+        /// </summary>
+        private void PrepareHFSTypes() {
+            if (mADFEntry == IFileEntry.NO_ENTRY && !mFileEntry.HasHFSTypes) {
+                // Not MacZip AppleDouble, doesn't have HFS types.
+                HFSTypeVisibility = Visibility.Collapsed;
+            }
+
+            // Set the hex string; automatically sets the 4-char string and "valid" flag.
+            if (NewAttribs.HFSFileType == 0) {
+                HFSTypeHexString = string.Empty;
+            } else {
+                HFSTypeHexString = NewAttribs.HFSFileType.ToString("X8");
+            }
+            if (NewAttribs.HFSCreator == 0) {
+                HFSCreatorHexString = string.Empty;
+            } else {
+                HFSCreatorHexString = NewAttribs.HFSCreator.ToString("X8");
             }
         }
 

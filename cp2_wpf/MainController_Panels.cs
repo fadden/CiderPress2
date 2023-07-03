@@ -388,18 +388,28 @@ namespace cp2_wpf {
         /// attribute change didn't rearrange the list (which can happen on an HFS rename),
         /// there's no need to reload the lists.</para>
         /// </remarks>
-        /// <param name="needRefocus">If true, put the focus on the file list when done.  This
+        /// <param name="focusOnFileList">If true, put the focus on the file list when done.  This
         ///   should be set for all file operations, but not during archive or directory
         ///   tree traversal.</param>
-        internal void RefreshDirAndFileList(bool needRefocus = true) {
-            mSwitchFocusToFileList = needRefocus;
+        internal void RefreshDirAndFileList(bool focusOnFileList = true) {
+            mSwitchFocusToFileList |= focusOnFileList;
             if (CurrentWorkObject == null) {
                 return;
             }
+
+            // Get item currently selected in file list, if any.
+            FileListItem? selectedItem = (FileListItem?)mMainWin.fileListDataGrid.SelectedItem;
+            IFileEntry selFileEntry = IFileEntry.NO_ENTRY;
+            if (selectedItem != null) {
+                selFileEntry = selectedItem.FileEntry;
+            } else {
+                Debug.WriteLine("Refresh: no file list sel");
+            }
+
             if (CurrentWorkObject is IFileSystem) {
                 IFileSystem fs = (IFileSystem)CurrentWorkObject;
 
-                // Get currently selected item in directory tree.  May be null.
+                // Get item currently selected in directory tree, if any.
                 IFileEntry curSel = IFileEntry.NO_ENTRY;
                 DirectoryTreeItem? dirTreeSel =
                     mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
@@ -430,9 +440,19 @@ namespace cp2_wpf {
             }
 
             if (!VerifyFileList()) {
-                PopulateFileList();
+                PopulateFileList(selFileEntry, focusOnFileList);
             } else {
+                // Set the selection.  The list didn't change, but the directory tree selection
+                // change might have cleared the selection.  We can't just set it to the
+                // previously-selected item because we might have recreated the item.
+                FileListItem.SetSelectionFocusByEntry(mMainWin.FileList, mMainWin.fileListDataGrid,
+                    selFileEntry);
                 Debug.WriteLine("Not repopulating file list");
+            }
+            if (mSwitchFocusToFileList) {
+                Debug.WriteLine("++ focus to file list requested");
+                mMainWin.FileList_SetSelectionFocus();
+                mSwitchFocusToFileList = false;
             }
         }
 
@@ -509,15 +529,8 @@ namespace cp2_wpf {
             }
         }
 
-        internal void PopulateFileList() {
-            IFileEntry selEntry = IFileEntry.NO_ENTRY;
-            DataGrid fldg = mMainWin.fileListDataGrid;
-            // TODO: this doesn't work when an operation changes the directory tree hierarchy,
-            //   because when the tree gets torn down the directory selection changes and
-            //   the file list gets wiped
-            FileListItem? selectedItem = (FileListItem?)fldg.SelectedItem;
-            if (selectedItem != null) {
-                selEntry = selectedItem.FileEntry;
+        internal void PopulateFileList(IFileEntry selEntry, bool focusOnFileList) {
+            if (selEntry != IFileEntry.NO_ENTRY) {
                 Debug.WriteLine("Populate: current item is " + selEntry.FileName);
             } else {
                 Debug.WriteLine("Populate: no selected item in file list");
@@ -564,18 +577,11 @@ namespace cp2_wpf {
 
             // If the list isn't empty, select something, preferrably whatever was selected before.
             if (fileList.Count != 0) {
-                FileListItem? reselItem = null;
-                if (selEntry != IFileEntry.NO_ENTRY) {
-                    reselItem = FileListItem.FindItemByEntry(fileList, selEntry);
-                }
-                if (reselItem != null) {
-                    mMainWin.fileListDataGrid.SelectedItem = reselItem;
-                    mMainWin.fileListDataGrid.ScrollIntoView(reselItem);
-                } else {
-                    // Select the first item in the list.
-                    mMainWin.fileListDataGrid.SelectedIndex = 0;
-                    mMainWin.fileListDataGrid.ScrollIntoView(
-                        mMainWin.fileListDataGrid.SelectedItem);
+                // Don't do this unless we're working on the file list.  The file list selection
+                // change can cause a problematic refresh.
+                if (focusOnFileList) {
+                    FileListItem.SetSelectionFocusByEntry(fileList, mMainWin.fileListDataGrid,
+                        selEntry);
                 }
             }
 
@@ -798,6 +804,9 @@ namespace cp2_wpf {
                         // Select the entry in the dir tree.  This may rewrite the file list.
                         if (!DirectoryTreeItem.SelectItemByEntry(mMainWin, entry)) {
                             Debug.WriteLine("Unable to find dir tree entry for " + entry);
+                        } else {
+                            // TODO: the focus will move to the directory tree.  We may want
+                            // to put it on the first item in the file list instead.
                         }
                     } else {
                         // Directory file in a file archive.  Nothing for us to do.

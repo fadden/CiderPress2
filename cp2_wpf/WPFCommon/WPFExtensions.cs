@@ -178,9 +178,13 @@ namespace cp2_wpf.WPFCommon {
     /// Helper functions for working with DataGrids.
     /// </summary>
     /// <remarks>
-    /// It's tempting to handle double-click actions by using the selected row.  This gets a
+    /// <para>It's tempting to handle double-click actions by using the selected row.  This gets a
     /// little weird, though, because double-clicking on a header or blank area doesn't
-    /// clear the selection.
+    /// clear the selection.</para>
+    /// <para>Great explanation of row/cell selection in a DataGrid:
+    /// <see href="https://blog.magnusmontin.net/2013/11/08/how-to-programmatically-select-and-focus-a-row-or-cell-in-a-datagrid-in-wpf/"/>;
+    /// summarized here: <see href="https://stackoverflow.com/a/42583726/294248"/>.</para>
+    /// <para>Also used here: <see href="https://stackoverflow.com/a/29081353/294248"/>.</para>
     /// </remarks>
     public static class DataGridExtensions {
         /// <summary>
@@ -242,8 +246,7 @@ namespace cp2_wpf.WPFCommon {
         }
 
         /// <summary>
-        /// Used by SelectRowColAndFocus(); see
-        /// <see href="https://stackoverflow.com/a/29081353/294248"/>.
+        /// Gets a specific cell, scrolling the list around to cope with virtualization.
         /// </summary>
         public static DataGridCell? GetCell(DataGrid dataGrid, DataGridRow rowContainer,
                 int column) {
@@ -297,6 +300,41 @@ namespace cp2_wpf.WPFCommon {
                 //Keyboard.Focus(cell);
             }
             return true;
+        }
+
+        /// <summary>
+        /// Sets the selection to a specific row, and gives it focus.
+        /// </summary>
+        /// <remarks>
+        /// <para>The DataGrid must be configured for "FullRow" selection.</para>
+        /// </remarks>
+        /// <param name="rowIndex">Row index.</param>
+        /// <exception cref="ArgumentException"></exception>
+        public static void SelectRowByIndex(this DataGrid dataGrid, int rowIndex) {
+            if (!dataGrid.SelectionUnit.Equals(DataGridSelectionUnit.FullRow)) {
+                throw new ArgumentException("SelectionUnit of DataGrid is not FullRow");
+            }
+            if (rowIndex < 0 || rowIndex >= dataGrid.Items.Count) {
+                throw new ArgumentException("Invalid row index: " + rowIndex);
+            }
+            dataGrid.SelectedItems.Clear();
+            object item = dataGrid.Items[rowIndex];
+            dataGrid.SelectedItem = item;
+
+            DataGridRow? row =
+                dataGrid.ItemContainerGenerator.ContainerFromIndex(rowIndex) as DataGridRow;
+            if (row == null) {
+                /* bring the data item (Product object) into view
+                 * in case it has been virtualized away */
+                dataGrid.ScrollIntoView(item);
+                row = dataGrid.ItemContainerGenerator.ContainerFromIndex(rowIndex) as DataGridRow;
+            }
+            if (row != null) {
+                DataGridCell? cell = GetCell(dataGrid, row, 0);
+                if (cell != null) {
+                    cell.Focus();
+                }
+            }
         }
 
 #if false
