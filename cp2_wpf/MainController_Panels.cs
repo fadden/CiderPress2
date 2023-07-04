@@ -445,8 +445,13 @@ namespace cp2_wpf {
                 // Set the selection.  The list didn't change, but the directory tree selection
                 // change might have cleared the selection.  We can't just set it to the
                 // previously-selected item because we might have recreated the item.
-                FileListItem.SetSelectionFocusByEntry(mMainWin.FileList, mMainWin.fileListDataGrid,
-                    selFileEntry);
+                FileListItem? item = FileListItem.FindItemByEntry(mMainWin.FileList, selFileEntry);
+                if (item != null) {
+                    mMainWin.fileListDataGrid.SelectedItem = item;
+                }
+                // Don't set focus, or dir tree navigation in full-list mode will break.
+                //FileListItem.SetSelectionFocusByEntry(mMainWin.FileList, mMainWin.fileListDataGrid,
+                //    selFileEntry);
                 Debug.WriteLine("Not repopulating file list");
             }
             if (mSwitchFocusToFileList) {
