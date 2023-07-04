@@ -34,6 +34,7 @@ limitations under the License.
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- filename -->
@@ -165,12 +166,14 @@ limitations under the License.
                            Text="Creation:" Foreground="{Binding CreateWhenForeground}"/>
                 <DatePicker Grid.Row="0" Grid.Column="1" Margin="8,0,0,0"
                             Width="140" SelectedDateFormat="Short"
+                            IsEnabled="{Binding CreateWhenEnabled}"
                             DisplayDateStart="{Binding TimestampStart}"
                             DisplayDateEnd="{Binding TimestampEnd}"
                             SelectedDate="{Binding CreateDate}"/>
                 <TextBox Grid.Row="0" Grid.Column="2" Width="60" Margin="16,0,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          VerticalContentAlignment="Center"
+                         IsEnabled="{Binding CreateWhenEnabled}"
                          Text="{Binding CreateTimeString, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,6,0,0"
@@ -192,7 +195,22 @@ limitations under the License.
             </Grid>
         </GroupBox>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+        <GroupBox Grid.Row="4" Header="Access" Padding="2,4" Margin="0,12,0,0"
+                  Visibility="{Binding AccessVisibility}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <CheckBox Grid.Row="0" Content="Locked (read-only)"
+                          IsChecked="{Binding AccessLocked}"/>
+                <CheckBox Grid.Row="1" Margin="0,4,0,0" Content="Invisible"
+                          IsEnabled="{Binding AccessInvisibleEnabled}"
+                          IsChecked="{Binding AccessInvisible}"/>
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
             <Button Name="okButton" Content="OK" IsDefault="True" Width="70"
                     IsEnabled="{Binding IsValid}" Click="OkButton_Click"/>
             <Button Name="cancelButton" Content="Cancel" IsCancel="True"

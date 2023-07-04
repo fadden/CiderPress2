@@ -124,6 +124,8 @@ namespace cp2_wpf {
 
             PrepareTimestamps();
 
+            PrepareAccess();
+
             UpdateControls();
         }
 
@@ -468,7 +470,6 @@ namespace cp2_wpf {
                     // Editing VTOC volume number.
                     IsProTypeListEnabled = false;
                     ProTypeVisibility = Visibility.Collapsed;
-                    UniqueTextVisibility = Visibility.Collapsed;
                 } else {
                     // Editing DOS file type.  In theory we want to enable/disable the aux type
                     // field based on the current file type, but it's not essential.
@@ -491,6 +492,11 @@ namespace cp2_wpf {
             } else {
                 IsProTypeListEnabled = false;
                 ProTypeVisibility = Visibility.Collapsed;
+            }
+
+            if (mFileEntry.IsDirectory && mFileEntry.ContainingDir == IFileEntry.NO_ENTRY) {
+                // Editing volume dir name or VTOC volume number.
+                UniqueTextVisibility = Visibility.Collapsed;
             }
         }
 
@@ -581,6 +587,8 @@ namespace cp2_wpf {
         private string mCreateTimeString = string.Empty;
         private bool mCreateWhenValid = true;
 
+        public bool CreateWhenEnabled { get; private set; } = true;
+
         public DateTime? ModDate {
             get { return mModDate; }
             set {
@@ -626,7 +634,14 @@ namespace cp2_wpf {
         private const string TIME_PATTERN = @"^(\d{1,2}):(\d\d)(?>:(\d\d))?$";
         private static Regex sTimeRegex = new Regex(TIME_PATTERN);
 
-        private DateTime DateTimeUpdated(DateTime? ndt, string timeStr, out bool isValid) {
+        /// <summary>
+        /// Recomputes the full date/time and input validity.
+        /// </summary>
+        /// <param name="ndt">DateTime value from DatePicker.</param>
+        /// <param name="timeStr">String from time input field.</param>
+        /// <param name="isValid">Result: true if inputs are valid.</param>
+        /// <returns>Combined date/time.</returns>
+        private static DateTime DateTimeUpdated(DateTime? ndt, string timeStr, out bool isValid) {
             isValid = true;
             if (ndt == null) {
                 return TimeStamp.NO_DATE;
@@ -683,6 +698,12 @@ namespace cp2_wpf {
                 TimestampVisibility = Visibility.Collapsed;
             }
 
+            // Disable creation date input for formats that don't support it.
+            if ((mArchiveOrFileSystem is Zip && mADFEntry == IFileEntry.NO_ENTRY) ||
+                    mArchiveOrFileSystem is GZip) {
+                CreateWhenEnabled = false;
+            }
+
             if (TimeStamp.IsValidDate(NewAttribs.CreateWhen)) {
                 mCreateDate = NewAttribs.CreateWhen;
                 mCreateTimeString = NewAttribs.CreateWhen.ToString("HH:mm:ss");
@@ -701,13 +722,91 @@ namespace cp2_wpf {
         }
 
 
+        #region Access Flags
+
         //
         // Access flags.
         //
 
-        // [] access
-        //    - locked/unlocked for DOS/HFS, disabled for Pascal
-        //    - six checkboxes for ProDOS
+        public Visibility AccessVisibility { get; private set; } = Visibility.Visible;
+
+        // Bits to modify when flipping between locked and unlocked.  All other bits are
+        // left unchanged, except that we want to enable "read" access when unlocking just
+        // in case they're trying to clear a file with no permissions at all.
+        private const byte FILE_ACCESS_TOGGLE = (byte)
+            (FileAttribs.AccessFlags.Write |
+            FileAttribs.AccessFlags.Rename |
+            FileAttribs.AccessFlags.Delete);
+
+        public bool AccessLocked {
+            get { return mAccessLocked; }
+            set {
+                mAccessLocked = value;
+                OnPropertyChanged();
+                if (value) {
+                    NewAttribs.Access = (byte)(NewAttribs.Access & ~FILE_ACCESS_TOGGLE);
+                } else {
+                    NewAttribs.Access |= FILE_ACCESS_TOGGLE;
+                    NewAttribs.Access |= (byte)FileAttribs.AccessFlags.Read;
+                }
+            }
+        }
+        private bool mAccessLocked;
+
+        public bool AccessInvisible {
+            get { return mAccessInvisible; }
+            set {
+                mAccessInvisible = value;
+                OnPropertyChanged();
+                if (value) {
+                    NewAttribs.Access |= (byte)FileAttribs.AccessFlags.Invisible;
+                } else {
+                    NewAttribs.Access =
+                        (byte)(NewAttribs.Access & (byte)~FileAttribs.AccessFlags.Invisible);
+                }
+            }
+        }
+        private bool mAccessInvisible;
+
+        public bool AccessInvisibleEnabled { get; private set; }
+
+        /// <summary>
+        /// Prepares the access flag UI during construction.
+        /// </summary>
+        private void PrepareAccess() {
+            AccessInvisibleEnabled = false;
+
+            // No access flags in plain ZIP or gzip.  Technically they could have some
+            // system-specific permissions in the "extra" data, but DiskArc doesn't currently
+            // support that.
+            if ((mArchiveOrFileSystem is Zip && mADFEntry == IFileEntry.NO_ENTRY) ||
+                    mArchiveOrFileSystem is GZip) {
+                AccessVisibility = Visibility.Collapsed;
+                return;
+            }
+            if (mFileEntry.IsDirectory && mFileEntry.ContainingDir == IFileEntry.NO_ENTRY) {
+                // Editing volume dir name or VTOC volume number.  ProDOS volume directory
+                // headers do have access flags, but it's unclear why anybody would want to
+                // edit them.
+                AccessVisibility = Visibility.Collapsed;
+                return;
+            }
+
+            // "Locked" flag depends on value of "write" bit.
+            mAccessLocked = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Write) == 0;
+
+            // Anything with ProDOS access flags has the "hidden" bit.  HFS has an "invisible"
+            // flag in the FinderInfo fdFlags, but DiskArc doesn't currently support it.
+            AccessInvisibleEnabled =
+                mArchiveOrFileSystem is ProDOS ||
+                mArchiveOrFileSystem is AppleSingle ||
+                mArchiveOrFileSystem is Binary2 ||
+                mArchiveOrFileSystem is NuFX ||
+                mADFEntry != IFileEntry.NO_ENTRY;
+            mAccessInvisible = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Invisible) != 0;
+        }
+
+        #endregion Access Flags
 
         //
         // Comment.
