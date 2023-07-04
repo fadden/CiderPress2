@@ -423,7 +423,7 @@ namespace cp2 {
             Console.WriteLine(string.Format(LFMT + "'{1,4}' ${2:x8}",
                 "HFS Creator", MacChar.StringifyMacConstant(entry.HFSCreator), entry.HFSCreator));
             Console.WriteLine(string.Format(LFMT + "${1:x2} [{2}]",
-                "Access", entry.Access, Catalog.GetAccessString(entry.Access)));
+                "Access", entry.Access, Catalog.FormatAccessFlags(entry.Access)));
             Console.WriteLine(string.Format(LFMT + "{1}",
                 "Create Date", FormatDate(entry.CreateWhen)));
             Console.WriteLine(string.Format(LFMT + "{1}",

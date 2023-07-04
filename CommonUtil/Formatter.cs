@@ -41,6 +41,11 @@ namespace CommonUtil {
             public CharConvFunc HexDumpConvFunc { get; set; } = CharConv_HighASCII;
 
             /// <summary>
+            /// If true, put a space between the number and units, e.g. "800 KB" vs. "800KB".
+            /// </summary>
+            public bool SpaceBeforeUnits { get; set; } = true;
+
+            /// <summary>
             /// Constructor.  Sets options to defaults.
             /// </summary>
             public FormatConfig() { }
@@ -52,6 +57,7 @@ namespace CommonUtil {
             public FormatConfig(FormatConfig src) {
                 UpperHexDigits = src.UpperHexDigits;
                 HexDumpConvFunc = src.HexDumpConvFunc;
+                SpaceBeforeUnits = src.SpaceBeforeUnits;
             }
         }
 
@@ -92,8 +98,8 @@ namespace CommonUtil {
 
 
         /// <summary>
-        /// Generates a 15-char ProDOS-style date/time string, or a string that
-        /// identifies the date as missing or invalid.
+        /// Generates a 15-char ProDOS-style date/time string, or a string that identifies the
+        /// date as missing or invalid.  The style uses two digits for the year, and omits seconds.
         /// </summary>
         /// <param name="when">Date/time object.</param>
         /// <returns>Formatted string.</returns>
@@ -138,11 +144,14 @@ namespace CommonUtil {
             const int KBLOCK_SIZE = 1024;
             if (baseUnit == KBLOCK_SIZE || length >= 10 * 1024 * 1024) {
                 if (length >= 1024 * 1024 * 1024) {
-                    return string.Format("{0:F1}GB", length / (1024.0 * 1024.0 * 1024.0));
+                    return string.Format("{0:F1}{1}GB", length / (1024.0 * 1024.0 * 1024.0),
+                        mConfig.SpaceBeforeUnits ? " " : "");
                 } else if (length >= 10 * 1024 * 1024) {
-                    return string.Format("{0:F1}MB", length / (1024.0 * 1024.0));
+                    return string.Format("{0:F1}{1}MB", length / (1024.0 * 1024.0),
+                        mConfig.SpaceBeforeUnits ? " " : "");
                 } else {
-                    return string.Format("{0:F0}KB", length / 1024.0);
+                    return string.Format("{0:F0}{1}KB", length / 1024.0,
+                        mConfig.SpaceBeforeUnits ? " " : "");
                 }
             } else {
                 long num = length / baseUnit;
@@ -158,6 +167,7 @@ namespace CommonUtil {
                         unitStr = "unit";
                         break;
                 }
+                // Always put a space between the number and the units here.
                 return string.Format("{0:D0} {1}{2}", num, unitStr, (num == 1) ? "" : "s");
             }
         }

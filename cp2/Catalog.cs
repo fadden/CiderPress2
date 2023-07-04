@@ -277,8 +277,8 @@ namespace cp2 {
                         GetFileTypeStrings(attrs, attrs.RsrcLength > 0, out type, out aux);
                     }
 
-                    string creat = FormatDate(attrs.CreateWhen);
-                    string mod = FormatDate(attrs.ModWhen);
+                    string creat = FormatDateTime(attrs.CreateWhen);
+                    string mod = FormatDateTime(attrs.ModWhen);
 
                     long dataLen, rsrcLen, dataSize, rsrcSize;
                     CompressionFormat dataFmt, rsrcFmt, bestFmt;
@@ -366,7 +366,7 @@ namespace cp2 {
                             FileTypes.GetFileTypeAbbrev(proType), proAux,
                             MacChar.StringifyMacConstant(hfsType),
                             MacChar.StringifyMacConstant(hfsCreator),
-                            GetAccessString(access), creat, mod,
+                            FormatAccessFlags(access), creat, mod,
                             dataLen, dataSize, dataFmtStr,
                             rsrcLen, rsrcSize, rsrcFmtStr);
                     } else {
@@ -837,8 +837,8 @@ namespace cp2 {
             //}
             GetFileTypeStrings(entry, out string type, out string aux);
 
-            string creat = FormatDate(entry.CreateWhen);
-            string mod = FormatDate(entry.ModWhen);
+            string creat = FormatDateTime(entry.CreateWhen);
+            string mod = FormatDateTime(entry.ModWhen);
 
             string outStr;
             if (parms.Wide) {
@@ -860,7 +860,7 @@ namespace cp2 {
                     FileTypes.GetFileTypeAbbrev(entry.FileType);
                 outStr = string.Format(FS_FMT_WIDE, name,
                     proType, entry.AuxType, hfsType, hfsCreator,
-                    GetAccessString(entry.Access), creat, mod,
+                    FormatAccessFlags(entry.Access), creat, mod,
                     dataLen, dataSize, rsrcLen, rsrcSize);
             } else {
                 long dataLen;
@@ -1328,7 +1328,7 @@ namespace cp2 {
                 type = "????";
                 aux = "!!!!";
             }
-            string mod = FormatDate(entry.ModWhen);
+            string mod = FormatDateTime(entry.ModWhen);
 
             string fmt;     // can't use ThingString; must match original
             switch (fs.GetFileSystemType()) {
@@ -1456,31 +1456,24 @@ namespace cp2 {
             }
         }
 
+        private static Formatter.FormatConfig sFmtCfg = new Formatter.FormatConfig() {
+            SpaceBeforeUnits = false
+        };
+        private static Formatter sFormatter = new Formatter(sFmtCfg);
+
         /// <summary>
         /// Formats ProDOS access flags.
         /// </summary>
-        internal static string GetAccessString(byte access) {
-            const string LETTERS = "dnb??iwr";
-            StringBuilder sb = new StringBuilder(8);
-            for (int i = 0; i < 8; i++) {
-                if ((access & 0x80) != 0) {
-                    sb.Append(LETTERS[i]);
-                }
-                access <<= 1;
-            }
-            return sb.ToString();
+        internal static string FormatAccessFlags(byte access) {
+            return sFormatter.FormatAccessFlags(access);
         }
 
         /// <summary>
         /// Formats a date/time stamp.  We use the standard ProDOS format, with two digits for
         /// the year and no seconds.
         /// </summary>
-        internal static string FormatDate(DateTime when) {
-            if (!TimeStamp.IsValidDate(when)) {
-                return "[No Date]";
-            } else {
-                return when.ToString("dd-MMM-yy HH:mm");
-            }
+        internal static string FormatDateTime(DateTime when) {
+            return sFormatter.FormatDateTime(when);
         }
 
         /// <summary>
@@ -1491,30 +1484,7 @@ namespace cp2 {
         /// <param name="baseUnit">Base units: sectors, blocks, or KiB.</param>
         /// <returns>Formatted string.</returns>
         internal static string FormatSizeOnDisk(long length, int baseUnit) {
-            if (baseUnit == KBLOCK_SIZE || length >= 10 * 1024 * 1024) {
-                if (length >= 1024 * 1024 * 1024) {
-                    return string.Format("{0:F1}GB", length / (1024.0 * 1024.0 * 1024.0));
-                } else if (length >= 10 * 1024 * 1024) {
-                    return string.Format("{0:F1}MB", length / (1024.0 * 1024.0));
-                } else {
-                    return string.Format("{0:F0}KB", length / 1024.0);
-                }
-            } else {
-                long num = length / baseUnit;
-                string unitStr;
-                switch (baseUnit) {
-                    case SECTOR_SIZE:
-                        unitStr = "sector";
-                        break;
-                    case BLOCK_SIZE:
-                        unitStr = "block";
-                        break;
-                    default:
-                        unitStr = "unit";
-                        break;
-                }
-                return string.Format("{0:D0} {1}{2}", num, unitStr, (num == 1) ? "" : "s");
-            }
+            return sFormatter.FormatSizeOnDisk(length, baseUnit);
         }
 
         #endregion Utilities

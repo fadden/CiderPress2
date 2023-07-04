@@ -21,10 +21,11 @@ namespace CommonUtil {
     /// Utility functions for manipulating date/time stamps.
     /// </summary>
     /// <remarks>
-    /// These functions convert between the .NET DateTime class and various system-specific
-    /// encodings.  Vintage date/time encodings are always in the current time zone, so a
+    /// <para>These functions convert between the .NET DateTime class and various system-specific
+    /// encodings.  Vintage date/time encodings are usually in the "local" time zone, so a
     /// file edited at 10am in San Francisco was also edited at 10am in New York.  If we don't
-    /// handle the time zone conversion correctly things can be subtly wrong.
+    /// handle the time zone conversion correctly things can be subtly wrong.</para>
+    /// <para>https://english.stackexchange.com/q/470940</para>
     /// </remarks>
     public static class TimeStamp {
         // Pick a couple of values to use for invalid dates.  This is sort of fun:
