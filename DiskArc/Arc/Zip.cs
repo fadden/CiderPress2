@@ -61,7 +61,11 @@ namespace DiskArc.Arc {
             hasArchiveComment: true,
             hasRecordComments: true,
             Zip_FileEntry.SEP_CHAR,
-            fnSyntax: FILENAME_RULES);
+            fnSyntax: FILENAME_RULES,
+            // If we supported higher-resolution timestamps, this range would be larger.
+            tsStart: TimeStamp.MSDOS_MIN_TIMESTAMP,
+            tsEnd: TimeStamp.MSDOS_MAX_TIMESTAMP
+        );
 
         //
         // IArchive interfaces.

@@ -71,10 +71,21 @@ namespace DiskArc.Arc {
         /// </summary>
         public string FileNameSyntaxRules { get; }
 
+        /// <summary>
+        /// Earliest timestamp that can be represented in this archive.
+        /// </summary>
+        public DateTime TimeStampStart { get; }
+
+        /// <summary>
+        /// Latest timestamp that can be represented in this archive.
+        /// </summary>
+        public DateTime TimeStampEnd { get; }
+
 
         public ArcCharacteristics(string name, bool canWrite, bool hasSingleEntry,
                 bool hasResourceForks, bool hasDiskImages, bool hasArchiveComment,
-                bool hasRecordComments, char defaultDirSep, string fnSyntax) {
+                bool hasRecordComments, char defaultDirSep, string fnSyntax,
+                DateTime tsStart, DateTime tsEnd) {
             Name = name;
             CanWrite = canWrite;
             HasSingleEntry = hasSingleEntry;
@@ -84,6 +95,8 @@ namespace DiskArc.Arc {
             HasRecordComments = hasRecordComments;
             DefaultDirSep = defaultDirSep;
             FileNameSyntaxRules = fnSyntax;
+            TimeStampStart = tsStart;
+            TimeStampEnd = tsEnd;
         }
     }
 }

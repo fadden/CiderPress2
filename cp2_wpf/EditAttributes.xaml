@@ -33,6 +33,7 @@ limitations under the License.
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- filename -->
@@ -142,10 +143,38 @@ limitations under the License.
                 <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
                            Text="&#x2022; Enter four-character string or hexadecimal value."/>
             </Grid>
-
         </GroupBox>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+        <GroupBox Grid.Row="3" Header="Timestamp" Padding="2,4" Margin="0,12,0,0"
+                  Visibility="{Binding TimestampVisibility}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,4,0,0"
+                           Text="Creation:"/>
+                <DatePicker Grid.Row="0" Grid.Column="1" Margin="8,0,0,0"
+                            Width="140" SelectedDateFormat="Short"
+                            DisplayDateStart="{Binding TimestampStart}"
+                            DisplayDateEnd="{Binding TimestampEnd}"
+                            SelectedDate="{Binding CreateDate}"/>
+                <TextBox Grid.Row="0" Grid.Column="3" Width="50" Margin="16,0,0,0"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,4,0,0"
+                           Text="Modification:"/>
+                <!-- todo -->
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
             <Button Name="okButton" Content="OK" IsDefault="True" Width="70"
                     IsEnabled="{Binding IsValid}" Click="OkButton_Click"/>
             <Button Name="cancelButton" Content="Cancel" IsCancel="True"

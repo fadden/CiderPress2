@@ -53,6 +53,11 @@ namespace CommonUtil {
 
         #region ProDOS
 
+        public static readonly DateTime PRODOS_MIN_TIMESTAMP =
+            new DateTime(1940, 1, 1, 0, 0, 0, DateTimeKind.Local);
+        public static readonly DateTime PRODOS_MAX_TIMESTAMP =
+            new DateTime(2039, 12, 31, 23, 59, 59, DateTimeKind.Local);
+
         /// <summary>
         /// Converts a ProDOS timestamp to a DateTime object.
         /// </summary>
@@ -170,6 +175,9 @@ namespace CommonUtil {
             (long)(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) -
                    new DateTime(1904, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 
+        public static readonly DateTime HFS_MIN_TIMESTAMP = ConvertDateTime_HFS(uint.MinValue);
+        public static readonly DateTime HFS_MAX_TIMESTAMP = ConvertDateTime_HFS(uint.MaxValue);
+
         /// <summary>
         /// Converts an HFS timestamp to a DateTime object.
         /// </summary>
@@ -222,6 +230,11 @@ namespace CommonUtil {
         #endregion HFS
 
         #region IIgs
+
+        public static readonly DateTime IIGS_MIN_TIMESTAMP =
+            new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
+        public static readonly DateTime IIGS_MAX_TIMESTAMP =
+            new DateTime(2155, 12, 31, 23, 59, 59, DateTimeKind.Local);
 
         /// <summary>
         /// Converts a IIgs toolbox Date/Time (from ReadTimeHex) to a .NET DateTime.
@@ -308,6 +321,11 @@ namespace CommonUtil {
 
         #region MS-DOS
 
+        public static readonly DateTime MSDOS_MIN_TIMESTAMP =
+            new DateTime(1980, 1, 1, 0, 0, 0, DateTimeKind.Local);
+        public static readonly DateTime MSDOS_MAX_TIMESTAMP =
+            new DateTime(2107, 12, 31, 23, 59, 59, DateTimeKind.Local);
+
         /// <summary>
         /// Converts an MS-DOS timestamp to a DateTime object.
         /// </summary>
@@ -378,7 +396,10 @@ namespace CommonUtil {
 
         #region UNIX
 
-        public const int INVALID_UNIX_TIME = int.MinValue;      // 0x80000000
+        public const int INVALID_UNIX_TIME = int.MinValue;      // reserve 0x80000000 as invalid
+
+        public static readonly DateTime UNIX_MIN_TIMESTAMP = ConvertDateTime_Unix32(int.MinValue+1);
+        public static readonly DateTime UNIX_MAX_TIMESTAMP = ConvertDateTime_Unix32(int.MaxValue);
 
         /// <summary>
         /// Converts a 32-bit UNIX time_t to a DateTime object.

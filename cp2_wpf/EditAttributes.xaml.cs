@@ -26,6 +26,7 @@ using System.Windows.Media;
 using AppCommon;
 using CommonUtil;
 using DiskArc;
+using DiskArc.Arc;
 using DiskArc.FS;
 
 namespace cp2_wpf {
@@ -125,6 +126,8 @@ namespace cp2_wpf {
             ProAuxString = attribs.AuxType.ToString("X4");
 
             PrepareHFSTypes();
+
+            PrepareTimestamps();
 
             UpdateControls();
         }
@@ -511,14 +514,49 @@ namespace cp2_wpf {
         // Dates.
         //
 
-        // [] dates (disabled for DOS)
-        //    - create date (DatePicker class)
-        //    - mod date
-        //    - show valid date ranges, explain limitations
+        public Visibility TimestampVisibility { get; private set; } = Visibility.Visible;
 
-        // Characteristics needs:
-        // - date range limitation string; do we want min/max date values?  Maybe define in
-        //   TimeStamp, copy into Characteristics
+        public DateTime TimestampStart { get; set; }
+        public DateTime TimestampEnd { get; set; }
+
+        public DateTime? CreateDate {
+            get { return mCreateDate; }
+            set {
+                mCreateDate = value;
+                OnPropertyChanged();
+                // TODO: check validity, merge with time and set property
+            }
+        }
+        private DateTime? mCreateDate;
+
+        // TODO: time value
+
+
+        /// <summary>
+        /// Prepares properties during construction.
+        /// </summary>
+        private void PrepareTimestamps() {
+            if (mArchiveOrFileSystem is IArchive) {
+                if (mADFEntry == IFileEntry.NO_ENTRY) {
+                    IArchive arc = (IArchive)mArchiveOrFileSystem;
+                    TimestampStart = arc.Characteristics.TimeStampStart;
+                    TimestampEnd = arc.Characteristics.TimeStampEnd;
+                } else {
+                    // MacZip AppleDouble
+                    TimestampStart = AppleSingle.SCharacteristics.TimeStampStart;
+                    TimestampEnd = AppleSingle.SCharacteristics.TimeStampEnd;
+                }
+            } else {
+                IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
+                TimestampStart = fs.Characteristics.TimeStampStart;
+                TimestampEnd = fs.Characteristics.TimeStampEnd;
+            }
+            Debug.WriteLine("Timestamp date range: " + TimestampStart + " - " + TimestampEnd);
+
+            if (TimeStamp.IsValidDate(NewAttribs.CreateWhen)) {
+                mCreateDate = NewAttribs.CreateWhen;
+            }
+        }
 
 
         //

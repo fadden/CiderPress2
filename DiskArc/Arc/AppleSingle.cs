@@ -51,13 +51,18 @@ namespace DiskArc.Arc {
             hasArchiveComment: false,
             hasRecordComments: false,               // TODO: "standard Macintosh comment" entries
             defaultDirSep: IFileEntry.NO_DIR_SEP,   // partial paths are not supported
-            fnSyntax: FILENAME_RULES);
+            fnSyntax: FILENAME_RULES,
+            // AppleSingle v1 can have a system-specific timestamp, so this isn't quite right.
+            tsStart: AppleSingle_FileEntry.ConvertDateTime_AS2K(int.MinValue + 1),
+            tsEnd: AppleSingle_FileEntry.ConvertDateTime_AS2K(int.MaxValue)
+        );
 
         //
         // IArchive interfaces.
         //
 
         public ArcCharacteristics Characteristics => sCharacteristics;
+        public static ArcCharacteristics SCharacteristics => sCharacteristics;
 
         public Stream? DataStream { get; internal set; }
 

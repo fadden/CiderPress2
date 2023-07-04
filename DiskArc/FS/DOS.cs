@@ -76,7 +76,9 @@ namespace DiskArc.FS {
                 dirSep: IFileEntry.NO_DIR_SEP,
                 hasResourceForks: false,
                 fnSyntax: FILENAME_RULES,
-                vnSyntax:VOLNAME_RULES
+                vnSyntax: VOLNAME_RULES,
+                tsStart: DateTime.MinValue,
+                tsEnd: DateTime.MinValue
             );
 
         //

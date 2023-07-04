@@ -59,9 +59,20 @@ namespace DiskArc.FS {
         /// </summary>
         public string VolumeNameSyntaxRules { get; }
 
+        /// <summary>
+        /// Earliest file timestamp that can be represented on this filesystem.
+        /// </summary>
+        public DateTime TimeStampStart { get; }
+
+        /// <summary>
+        /// Latest file timestamp that can be represented on this filesystem.
+        /// </summary>
+        public DateTime TimeStampEnd { get; }
+
 
         public FSCharacteristics(string name, bool canWrite, bool isHierarchical,
-                char dirSep, bool hasResourceForks, string fnSyntax, string vnSyntax) {
+                char dirSep, bool hasResourceForks, string fnSyntax, string vnSyntax,
+                DateTime tsStart, DateTime tsEnd) {
             Name = name;
             CanWrite = canWrite;
             IsHierarchical = isHierarchical;
@@ -69,6 +80,8 @@ namespace DiskArc.FS {
             HasResourceForks = hasResourceForks;
             FileNameSyntaxRules = fnSyntax;
             VolumeNameSyntaxRules = vnSyntax;
+            TimeStampStart = tsStart;
+            TimeStampEnd = tsEnd;
         }
     }
 }

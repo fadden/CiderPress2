@@ -35,7 +35,10 @@ namespace DiskArc.Arc {
             hasArchiveComment: false,
             hasRecordComments: false,       // currently ignoring gzip comment field
             defaultDirSep: '/',
-            fnSyntax: FILENAME_RULES);
+            fnSyntax: FILENAME_RULES,
+            tsStart: TimeStamp.UNIX_MIN_TIMESTAMP,
+            tsEnd: TimeStamp.UNIX_MAX_TIMESTAMP
+        );
 
         //
         // IArchive interfaces.

@@ -70,14 +70,16 @@ namespace DiskArc.FS {
         private const string VOLNAME_RULES =
             "1-27 characters.  Must not include ':'.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
-                name: "HFS",
-                canWrite: true,
-                isHierarchical: true,
-                dirSep: SEP_CHAR,
-                hasResourceForks: true,
-                fnSyntax: FILENAME_RULES,
-                vnSyntax: VOLNAME_RULES
-            );
+            name: "HFS",
+            canWrite: true,
+            isHierarchical: true,
+            dirSep: SEP_CHAR,
+            hasResourceForks: true,
+            fnSyntax: FILENAME_RULES,
+            vnSyntax: VOLNAME_RULES,
+            tsStart: TimeStamp.HFS_MIN_TIMESTAMP,
+            tsEnd: TimeStamp.HFS_MAX_TIMESTAMP
+        );
 
         //
         // IFileSystem interfaces.

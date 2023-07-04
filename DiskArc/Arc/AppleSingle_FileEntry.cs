@@ -1154,13 +1154,14 @@ namespace DiskArc.Arc {
         private static readonly long AS2K_TIME_OFFSET =
             (long)(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) -
                    new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-        private const int INVALID_AS2K_DATE = int.MinValue;     // 0x80000000
-        private const uint INVALID_LE_AS2K_DATE = 0x80700000;
+
+        private const int INVALID_AS2K_DATE = int.MinValue;     // reserve 0x80000000 as invalid
+        private const uint INVALID_LE_AS2K_DATE = 0x80700000;   // weird little-endian thing
 
         /// <summary>
         /// Converts an AppleSingle ID 8 timestamp to a DateTime object.
         /// </summary>
-        private static DateTime ConvertDateTime_AS2K(int when) {
+        internal static DateTime ConvertDateTime_AS2K(int when) {
             if (when == INVALID_AS2K_DATE || (uint)when == INVALID_LE_AS2K_DATE) {
                 return TimeStamp.NO_DATE;
             }
@@ -1175,13 +1176,13 @@ namespace DiskArc.Arc {
         /// <summary>
         /// Converts a DateTime object to an AppleSingle ID 8 timestamp.
         /// </summary>
-        private static int ConvertDateTime_AS2K(DateTime when) {
+        internal static int ConvertDateTime_AS2K(DateTime when) {
             if (!TimeStamp.IsValidDate(when)) {
                 return INVALID_AS2K_DATE;
             }
             long unixSec = new DateTimeOffset(when).ToUnixTimeSeconds();
             long as2kSec = unixSec + AS2K_TIME_OFFSET;
-            if (as2kSec >= int.MinValue && unixSec <= int.MaxValue) {
+            if (as2kSec >= int.MinValue && as2kSec <= int.MaxValue) {
                 return (int)as2kSec;
             } else {
                 return INVALID_AS2K_DATE;

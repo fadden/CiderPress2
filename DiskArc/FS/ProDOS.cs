@@ -61,7 +61,9 @@ namespace DiskArc.FS {
             dirSep: SEP_CHAR,
             hasResourceForks: true,
             fnSyntax: FILENAME_RULES,
-            vnSyntax: FILENAME_RULES
+            vnSyntax: FILENAME_RULES,
+            tsStart: TimeStamp.PRODOS_MIN_TIMESTAMP,
+            tsEnd: TimeStamp.PRODOS_MAX_TIMESTAMP
         );
 
         //

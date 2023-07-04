@@ -45,7 +45,10 @@ namespace DiskArc.Arc {
             hasArchiveComment: false,
             hasRecordComments: false,
             defaultDirSep: '/',
-            fnSyntax: FILENAME_RULES);
+            fnSyntax: FILENAME_RULES,
+            tsStart: TimeStamp.PRODOS_MIN_TIMESTAMP,
+            tsEnd: TimeStamp.PRODOS_MAX_TIMESTAMP
+        );
 
         //
         // IArchive interfaces.

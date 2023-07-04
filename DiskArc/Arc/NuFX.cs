@@ -55,7 +55,10 @@ namespace DiskArc.Arc {
             hasArchiveComment: false,
             hasRecordComments: true,
             defaultDirSep: NuFX_FileEntry.DEFAULT_FSSEP,
-            fnSyntax: FILENAME_RULES);
+            fnSyntax: FILENAME_RULES,
+            tsStart: TimeStamp.IIGS_MIN_TIMESTAMP,
+            tsEnd: TimeStamp.IIGS_MAX_TIMESTAMP
+        );
 
         //
         // IArchive interfaces.
