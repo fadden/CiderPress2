@@ -59,7 +59,7 @@ limitations under the License.
                        Text="{Binding SyntaxRulesText, FallbackValue=o Syntax rules here.}"
                        Foreground="{Binding SyntaxRulesForeground}"/>
             <TextBlock Grid.Row="2" Margin="0,2,0,0"
-                       Text="&#x2022; Name must be unique."
+                       Text="&#x2022; Name must be unique." Visibility="{Binding UniqueTextVisibility}"
                        Foreground="{Binding UniqueNameForeground}"/>
             <TextBlock Grid.Row="3" Margin="0,2,0,0" Visibility="{Binding DirSepTextVisibility}"
                        Text="{Binding DirSepText, FallbackValue=o Directory separator character is X.}"/>
@@ -92,6 +92,7 @@ limitations under the License.
                            Foreground="{Binding ProAuxForeground}"/>
                 <TextBox Grid.Row="1" Grid.Column="1" Width="65" Margin="8,4,0,0"
                          HorizontalAlignment="Left" MaxLength="4"
+                         IsEnabled="{Binding IsProTypeListEnabled}"
                          Text="{Binding ProAuxString, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"/>
                 <TextBlock Grid.Row="1" Grid.Column="2" Margin="8,4,0,0"
@@ -152,25 +153,42 @@ limitations under the License.
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,4,0,0"
-                           Text="Creation:"/>
+                           Text="Creation:" Foreground="{Binding CreateWhenForeground}"/>
                 <DatePicker Grid.Row="0" Grid.Column="1" Margin="8,0,0,0"
                             Width="140" SelectedDateFormat="Short"
                             DisplayDateStart="{Binding TimestampStart}"
                             DisplayDateEnd="{Binding TimestampEnd}"
                             SelectedDate="{Binding CreateDate}"/>
-                <TextBox Grid.Row="0" Grid.Column="3" Width="50" Margin="16,0,0,0"/>
+                <TextBox Grid.Row="0" Grid.Column="2" Width="60" Margin="16,0,0,0"
+                         MaxLength="8" HorizontalAlignment="Left"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding CreateTimeString, UpdateSourceTrigger=PropertyChanged}"/>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,4,0,0"
-                           Text="Modification:"/>
-                <!-- todo -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,6,0,0"
+                           Text="Modification:" Foreground="{Binding ModWhenForeground}"/>
+                <DatePicker Grid.Row="1" Grid.Column="1" Margin="8,2,0,0"
+                            Width="140" SelectedDateFormat="Short"
+                            DisplayDateStart="{Binding TimestampStart}"
+                            DisplayDateEnd="{Binding TimestampEnd}"
+                            SelectedDate="{Binding ModDate}"/>
+                <TextBox Grid.Row="1" Grid.Column="2" Width="60" Margin="16,2,0,0"
+                         MaxLength="8" HorizontalAlignment="Left"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding ModTimeString, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
+                           Text="&#x2022; Dates are in local format."/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
+                           Text="&#x2022; Times are in 24-hour format, HH:MM or HH:MM:SS."/>
             </Grid>
         </GroupBox>
 

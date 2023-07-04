@@ -898,7 +898,6 @@ namespace cp2_wpf {
         /// <summary>
         /// Sets the file list DataGrid's focus to the selected item.
         /// </summary>
-        /// <param name="count">Number of events to handle before disabling.</param>
         public void FileList_SetSelectionFocus() {
             mFileListRefocusNeeded = true;
         }

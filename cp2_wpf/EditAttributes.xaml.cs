@@ -19,6 +19,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -84,16 +85,6 @@ namespace cp2_wpf {
             mADFEntry = adfEntry;
             mOldAttribs = attribs;
 
-            NewAttribs = new FileAttribs(mOldAttribs);
-            if (entry is DOS_FileEntry && entry.IsDirectory) {
-                // The DOS volume name is formatted as "DOS-nnn", but we just want the number.
-                NewAttribs.FullPathName = ((DOS)archiveOrFileSystem).VolumeNum.ToString("D3");
-            } else if (archiveOrFileSystem is IArchive) {
-                NewAttribs.FullPathName = attribs.FullPathName;
-            } else {
-                NewAttribs.FullPathName = attribs.FileNameOnly;
-            }
-
             if (archiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)archiveOrFileSystem;
                 mIsValidFunc = arc.IsValidFileName;
@@ -120,6 +111,10 @@ namespace cp2_wpf {
             } else {
                 throw new NotImplementedException("Can't edit " + archiveOrFileSystem);
             }
+
+            NewAttribs = new FileAttribs(mOldAttribs);
+
+            PrepareFileName();
 
             PrepareProTypeList();
             ProTypeDescString = FileTypes.GetDescription(attribs.FileType, attribs.AuxType);
@@ -150,45 +145,30 @@ namespace cp2_wpf {
         /// Updates the controls when a change has been made.
         /// </summary>
         private void UpdateControls() {
-            //
             // Filename.
-            //
-
-            bool nameOkay = mIsValidFunc(NewAttribs.FullPathName);
-            SyntaxRulesForeground = nameOkay ? mDefaultLabelColor : mErrorLabelColor;
-
-            bool notUnique = false;
-            if (mArchiveOrFileSystem is IArchive) {
-                IArchive arc = (IArchive)mArchiveOrFileSystem;
-                // Check name for uniqueness.
-                if (arc.TryFindFileEntry(NewAttribs.FullPathName, out IFileEntry entry) &&
-                        entry != mFileEntry) {
-                    notUnique = true;
-                }
-            } else {
-                IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                if (mFileEntry.ContainingDir != IFileEntry.NO_ENTRY) {
-                    // Not editing the volume dir attributes.  Check name for uniqueness.
-                    if (fs.TryFindFileEntry(mFileEntry.ContainingDir, NewAttribs.FullPathName,
-                            out IFileEntry entry) && entry != mFileEntry) {
-                        notUnique = true;
-                    }
-                }
-            }
-
-            UniqueNameForeground = notUnique ? mErrorLabelColor : mDefaultLabelColor;
-
-            IsValid = nameOkay && !notUnique;
+            SyntaxRulesForeground = mIsFileNameValid ? mDefaultLabelColor : mErrorLabelColor;
+            UniqueNameForeground = mIsFileNameUnique ? mDefaultLabelColor : mErrorLabelColor;
 
             // ProDOS file and aux type.
             // We're currently always picking the file type from a list, so it's always valid.
             ProAuxForeground = mProAuxValid ? mDefaultLabelColor : mErrorLabelColor;
-            IsValid &= mProAuxValid;
+            if (mProAuxValid) {
+                ProTypeDescString =
+                    FileTypes.GetDescription(NewAttribs.FileType, NewAttribs.AuxType);
+            } else {
+                ProTypeDescString = string.Empty;
+            }
 
             // HFS file type and creator.
             HFSTypeForeground = mHFSTypeValid ? mDefaultLabelColor : mErrorLabelColor;
             HFSCreatorForeground = mHFSCreatorValid ? mDefaultLabelColor : mErrorLabelColor;
-            IsValid &= mHFSTypeValid & mHFSCreatorValid;
+
+            // Timestamps.
+            CreateWhenForeground = mCreateWhenValid ? mDefaultLabelColor : mErrorLabelColor;
+            ModWhenForeground = mModWhenValid ? mDefaultLabelColor : mErrorLabelColor;
+
+            IsValid = mIsFileNameValid && mIsFileNameUnique && mProAuxValid &&
+                mHFSTypeValid && mHFSCreatorValid && mCreateWhenValid && mModWhenValid;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
@@ -219,6 +199,7 @@ namespace cp2_wpf {
             set { mUniqueNameForeground = value; OnPropertyChanged(); }
         }
         private Brush mUniqueNameForeground = SystemColors.WindowTextBrush;
+        public Visibility UniqueTextVisibility { get; private set; } = Visibility.Visible;
 
         public string DirSepText { get; private set; }
         public Visibility DirSepTextVisibility { get; private set; }
@@ -227,12 +208,54 @@ namespace cp2_wpf {
         private delegate bool IsValidFileNameFunc(string name);
         private IsValidFileNameFunc mIsValidFunc;
 
+        private bool mIsFileNameValid;
+        private bool mIsFileNameUnique;
+
         /// <summary>
         /// Filename string.
         /// </summary>
         public string FileName {
             get { return NewAttribs.FullPathName; }
-            set { NewAttribs.FullPathName = value; OnPropertyChanged(); UpdateControls(); }
+            set {
+                NewAttribs.FullPathName = value;
+                OnPropertyChanged();
+                CheckFileNameValidity(out mIsFileNameValid, out mIsFileNameUnique);
+                UpdateControls();
+            }
+        }
+
+        private void CheckFileNameValidity(out bool isValid, out bool isUnique) {
+            isValid = mIsValidFunc(NewAttribs.FullPathName);
+            isUnique = true;
+            if (mArchiveOrFileSystem is IArchive) {
+                IArchive arc = (IArchive)mArchiveOrFileSystem;
+                // Check name for uniqueness.
+                if (arc.TryFindFileEntry(NewAttribs.FullPathName, out IFileEntry entry) &&
+                        entry != mFileEntry) {
+                    isUnique = false;
+                }
+            } else {
+                IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
+                if (mFileEntry.ContainingDir != IFileEntry.NO_ENTRY) {
+                    // Not editing the volume dir attributes.  Check name for uniqueness.
+                    if (fs.TryFindFileEntry(mFileEntry.ContainingDir, NewAttribs.FullPathName,
+                            out IFileEntry entry) && entry != mFileEntry) {
+                        isUnique = false;
+                    }
+                }
+            }
+        }
+
+        private void PrepareFileName() {
+            if (mFileEntry is DOS_FileEntry && mFileEntry.IsDirectory) {
+                // The DOS volume name is formatted as "DOS-nnn", but we just want the number.
+                NewAttribs.FullPathName = ((DOS)mArchiveOrFileSystem).VolumeNum.ToString("D3");
+            } else if (mArchiveOrFileSystem is IArchive) {
+                NewAttribs.FullPathName = mOldAttribs.FullPathName;
+            } else {
+                NewAttribs.FullPathName = mOldAttribs.FileNameOnly;
+            }
+            CheckFileNameValidity(out mIsFileNameValid, out mIsFileNameUnique);
         }
 
         #endregion Filename
@@ -296,7 +319,7 @@ namespace cp2_wpf {
             }
         }
         private string mProAuxString = string.Empty;
-        private bool mProAuxValid;
+        private bool mProAuxValid = true;
 
         // Aux type label color, set to red on error.
         public Brush ProAuxForeground {
@@ -330,7 +353,7 @@ namespace cp2_wpf {
             }
         }
         private string mHFSTypeHexString = string.Empty;
-        private bool mHFSTypeValid;
+        private bool mHFSTypeValid = true;
 
         public Brush HFSTypeForeground {
             get { return mHFSTypeForeground; }
@@ -365,7 +388,7 @@ namespace cp2_wpf {
             }
         }
         private string mHFSCreatorHexString = string.Empty;
-        private bool mHFSCreatorValid;
+        private bool mHFSCreatorValid = true;
 
         public Brush HFSCreatorForeground {
             get { return mHFSCreatorForeground; }
@@ -441,9 +464,18 @@ namespace cp2_wpf {
         /// </summary>
         private void PrepareProTypeList() {
             if (mFileEntry is DOS_FileEntry) {
-                foreach (byte type in DOS_TYPES) {
-                    string abbrev = FileTypes.GetDOSTypeAbbrev(type);
-                    ProTypeList.Add(new ProTypeListItem(abbrev, type));
+                if (mFileEntry.IsDirectory) {
+                    // Editing VTOC volume number.
+                    IsProTypeListEnabled = false;
+                    ProTypeVisibility = Visibility.Collapsed;
+                    UniqueTextVisibility = Visibility.Collapsed;
+                } else {
+                    // Editing DOS file type.  In theory we want to enable/disable the aux type
+                    // field based on the current file type, but it's not essential.
+                    foreach (byte type in DOS_TYPES) {
+                        string abbrev = FileTypes.GetDOSTypeAbbrev(type);
+                        ProTypeList.Add(new ProTypeListItem(abbrev, type));
+                    }
                 }
             } else if (mFileEntry.HasProDOSTypes || mADFEntry != IFileEntry.NO_ENTRY) {
                 for (int type = 0; type < 256; type++) {
@@ -494,7 +526,9 @@ namespace cp2_wpf {
                 }
             }
             if (ProTypeList.Count != 0 && proTypeCombo.SelectedIndex < 0) {
-                Debug.Assert(false, "no ProDOS type matched");
+                // This can happen when editing the DOS volume, which is given the DIR type,
+                // but shouldn't happen otherwise.
+                Debug.Assert(mFileEntry is DOS_FileEntry, "no ProDOS type matched");
                 proTypeCombo.SelectedIndex = 0;
             }
         }
@@ -505,6 +539,7 @@ namespace cp2_wpf {
                 NewAttribs.FileType = ProTypeList[selIndex].Value;
                 Debug.WriteLine("ProDOS file type: $" + NewAttribs.FileType.ToString("x2"));
             }
+            UpdateControls();
         }
 
         #endregion File Type
@@ -522,15 +557,106 @@ namespace cp2_wpf {
         public DateTime? CreateDate {
             get { return mCreateDate; }
             set {
+                // This fires twice when a change is made.  The change is not published until
+                // the focus leaves the field, regardless of how the binding is configured.
                 mCreateDate = value;
                 OnPropertyChanged();
-                // TODO: check validity, merge with time and set property
+                NewAttribs.CreateWhen = DateTimeUpdated(mCreateDate, mCreateTimeString,
+                    out mCreateWhenValid);
+                UpdateControls();
             }
         }
         private DateTime? mCreateDate;
 
-        // TODO: time value
+        public string CreateTimeString {
+            get { return mCreateTimeString; }
+            set {
+                mCreateTimeString = value;
+                OnPropertyChanged();
+                NewAttribs.CreateWhen = DateTimeUpdated(mCreateDate, mCreateTimeString,
+                    out mCreateWhenValid);
+                UpdateControls();
+            }
+        }
+        private string mCreateTimeString = string.Empty;
+        private bool mCreateWhenValid = true;
 
+        public DateTime? ModDate {
+            get { return mModDate; }
+            set {
+                // This fires twice when a change is made.  The change is not published until
+                // the focus leaves the field, regardless of how the binding is configured.
+                mModDate = value;
+                OnPropertyChanged();
+                NewAttribs.ModWhen = DateTimeUpdated(mModDate, mModTimeString,
+                    out mModWhenValid);
+                UpdateControls();
+            }
+        }
+        private DateTime? mModDate;
+
+        public string ModTimeString {
+            get { return mModTimeString; }
+            set {
+                mModTimeString = value;
+                OnPropertyChanged();
+                NewAttribs.ModWhen = DateTimeUpdated(mModDate, mModTimeString,
+                    out mModWhenValid);
+                UpdateControls();
+            }
+        }
+        private string mModTimeString = string.Empty;
+        private bool mModWhenValid = true;
+
+        public Brush CreateWhenForeground {
+            get { return mCreateWhenForeground; }
+            set { mCreateWhenForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mCreateWhenForeground = SystemColors.WindowTextBrush;
+
+        public Brush ModWhenForeground {
+            get { return mModWhenForeground; }
+            set { mModWhenForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mModWhenForeground = SystemColors.WindowTextBrush;
+
+        /// <summary>
+        /// Time pattern.  We allow "1:23", "23:45", and "34:56:78".
+        /// </summary>
+        private const string TIME_PATTERN = @"^(\d{1,2}):(\d\d)(?>:(\d\d))?$";
+        private static Regex sTimeRegex = new Regex(TIME_PATTERN);
+
+        private DateTime DateTimeUpdated(DateTime? ndt, string timeStr, out bool isValid) {
+            isValid = true;
+            if (ndt == null) {
+                return TimeStamp.NO_DATE;
+            }
+            DateTime dt = (DateTime)ndt;
+            if (!string.IsNullOrEmpty(timeStr)) {
+                MatchCollection matches = sTimeRegex.Matches(timeStr);
+                if (matches.Count != 1) {
+                    isValid = false;
+                    return TimeStamp.NO_DATE;
+                }
+                int hours = int.Parse(matches[0].Groups[1].Value);
+                int minutes = int.Parse(matches[0].Groups[2].Value);
+                int seconds = 0;
+                if (!string.IsNullOrEmpty(matches[0].Groups[3].Value)) {
+                    seconds = int.Parse(matches[0].Groups[3].Value);
+                }
+                if (hours >= 24 || minutes >= 60 || seconds >= 60) {
+                    isValid = false;
+                    return TimeStamp.NO_DATE;
+                }
+
+                DateTime full = new DateTime(dt.Year, dt.Month, dt.Day, hours, minutes, seconds,
+                    DateTimeKind.Local);
+                return full;
+            } else {
+                DateTime newDt = new DateTime(dt.Year, dt.Month, dt.Day);
+                return DateTime.SpecifyKind(newDt, DateTimeKind.Local);
+            }
+        }
 
         /// <summary>
         /// Prepares properties during construction.
@@ -551,11 +677,27 @@ namespace cp2_wpf {
                 TimestampStart = fs.Characteristics.TimeStampStart;
                 TimestampEnd = fs.Characteristics.TimeStampEnd;
             }
-            Debug.WriteLine("Timestamp date range: " + TimestampStart + " - " + TimestampEnd);
+            //Debug.WriteLine("Timestamp date range: " + TimestampStart + " - " + TimestampEnd);
+
+            if (TimestampStart == TimestampEnd) {
+                TimestampVisibility = Visibility.Collapsed;
+            }
 
             if (TimeStamp.IsValidDate(NewAttribs.CreateWhen)) {
                 mCreateDate = NewAttribs.CreateWhen;
+                mCreateTimeString = NewAttribs.CreateWhen.ToString("HH:mm:ss");
+            } else {
+                mCreateDate = null;
+                mCreateTimeString = string.Empty;
             }
+            if (TimeStamp.IsValidDate(NewAttribs.ModWhen)) {
+                mModDate = NewAttribs.ModWhen;
+                mModTimeString = NewAttribs.ModWhen.ToString("HH:mm:ss");
+            } else {
+                mModDate = null;
+                mModTimeString = string.Empty;
+            }
+            mCreateWhenValid = mModWhenValid = true;
         }
 
 
