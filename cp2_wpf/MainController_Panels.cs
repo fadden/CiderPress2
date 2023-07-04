@@ -569,20 +569,20 @@ namespace cp2_wpf {
                 (endWhen - startWhen).TotalMilliseconds + " ms (clear took " +
                 (startWhen - clearWhen).TotalMilliseconds + " ms)");
 
-            if (mSwitchFocusToFileList) {
-                Debug.WriteLine("+ focus to file list requested");
-                mMainWin.FileList_SetSelectionFocus();
-                mSwitchFocusToFileList = false;
-            }
-
             // If the list isn't empty, select something, preferrably whatever was selected before.
             if (fileList.Count != 0) {
                 // Don't do this unless we're working on the file list.  The file list selection
                 // change can cause a problematic refresh.
-                if (focusOnFileList) {
+                if (focusOnFileList || mSwitchFocusToFileList) {
                     FileListItem.SetSelectionFocusByEntry(fileList, mMainWin.fileListDataGrid,
                         selEntry);
                 }
+            }
+
+            if (mSwitchFocusToFileList) {
+                Debug.WriteLine("+ focus to file list requested");
+                mMainWin.FileList_SetSelectionFocus();
+                mSwitchFocusToFileList = false;
             }
 
             SetEntryCounts(CurrentWorkObject as IFileSystem, dirCount, fileCount);

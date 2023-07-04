@@ -240,7 +240,8 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Sets the current file list selection to the item with a matching IFileEntry.
+        /// Sets the current file list selection to the item with a matching IFileEntry.  If
+        /// no item matches, the selection is set to the first item in the list.
         /// </summary>
         public static void SetSelectionFocusByEntry(ObservableCollection<FileListItem> tvRoot,
                 DataGrid dataGrid, IFileEntry selEntry) {

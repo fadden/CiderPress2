@@ -371,9 +371,8 @@ namespace cp2_wpf {
             //Debug.Assert(newFocus == mMainWin.fileListDataGrid);
 
             // We can't really focus on the file list yet because it won't get populated until
-            // the various selection-changed events percolate through.  This probably won't
-            // do anything.
-            mMainWin.FileList_SetSelectionFocus();
+            // the various selection-changed events percolate through.
+            mSwitchFocusToFileList = true;
         }
 
         private static bool DepthLimit(WorkTree.DepthParentKind parentKind,
