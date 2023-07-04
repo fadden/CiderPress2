@@ -296,6 +296,9 @@ namespace DiskArc.Arc {
                 if (!MacChar.IsStringValid(value, MacChar.Encoding.Roman)) {
                     throw new ArgumentException("Comment contains invalid characters");
                 }
+                if (value.Length > BIG_COMMENT_LEN) {
+                    throw new ArgumentException("Comment is excessively long");
+                }
                 ChangeObject.mComment = value;
                 // Don't set the field length; let the commit process do that.
             }

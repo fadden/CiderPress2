@@ -35,6 +35,7 @@ limitations under the License.
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- filename -->
@@ -210,7 +211,21 @@ limitations under the License.
             </Grid>
         </GroupBox>
 
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+        <GroupBox Grid.Row="5" Header="Comment" Padding="2,4" Margin="0,12,0,0"
+                  Visibility="{Binding CommentVisibility}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBox Grid.Row="0" Height="120"
+                         Text="{Binding CommentText, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="65535"
+                         VerticalScrollBarVisibility="Auto"
+                         AcceptsReturn="True" TextWrapping="Wrap"/>
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
             <Button Name="okButton" Content="OK" IsDefault="True" Width="70"
                     IsEnabled="{Binding IsValid}" Click="OkButton_Click"/>
             <Button Name="cancelButton" Content="Cancel" IsCancel="True"

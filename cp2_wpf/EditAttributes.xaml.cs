@@ -126,6 +126,8 @@ namespace cp2_wpf {
 
             PrepareAccess();
 
+            PrepareComment();
+
             UpdateControls();
         }
 
@@ -808,13 +810,37 @@ namespace cp2_wpf {
 
         #endregion Access Flags
 
+        #region Comment
+
         //
         // Comment.
         //
 
-        // [] comment
-        //    - only for NuFX, Zip
-        //
+        public Visibility CommentVisibility { get; private set; } = Visibility.Visible;
 
+        public string CommentText {
+            get { return mCommentText; }
+            set {
+                mCommentText = value;
+                OnPropertyChanged();
+                // TextBox limits the comment to 65535 chars.  Both Zip and NuFX can handle that,
+                // though it's risky for Zip because UTF-8 expansion might exceed the byte limit.
+                NewAttribs.Comment = value;
+            }
+        }
+        private string mCommentText = string.Empty;
+
+        private void PrepareComment() {
+            // Only available for ZIP and NuFX.
+            if ((mArchiveOrFileSystem is not Zip || mADFEntry != IFileEntry.NO_ENTRY) &&
+                    mArchiveOrFileSystem is not NuFX) {
+                CommentVisibility = Visibility.Collapsed;
+                return;
+            }
+
+            mCommentText = NewAttribs.Comment;
+        }
+
+        #endregion Comment
     }
 }

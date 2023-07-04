@@ -169,7 +169,7 @@ namespace FileConv.Doc {
         public List<StyleItem> TheStyles { get; private set; } = new List<StyleItem>();
 
         public bool Load(byte[] buf, ref int offset) {
-            try {
+            try {   // catch exception rather than trying to range-check everything
                 Version = RawData.ReadU16LE(buf, ref offset);
                 if (Version != 0) {
                     Debug.WriteLine("Unexpected version");
@@ -181,6 +181,14 @@ namespace FileConv.Doc {
                     TERuler newRuler = new TERuler();
                     newRuler.Load(buf, ref offset);
                     TheRulerList.Add(newRuler);
+
+                    if (endOffset - offset < TERuler.MIN_LEN) {
+                        // Some documents with absolute tabs (e.g. PatchHFS.doc) seem to have
+                        // one too many entries in the tab list (as if the $ffff were included
+                        // in the list and also as tabTerminator).  Work around that here by
+                        // halting if there can't possibly be another ruler.
+                        offset = endOffset;
+                    }
                 }
 
                 StyleListLength = (int)RawData.ReadU32LE(buf, ref offset);
@@ -224,6 +232,8 @@ namespace FileConv.Doc {
     /// Apple IIgs TextEdit TERuler structure.  May be found in rTERuler resources.
     /// </summary>
     internal class TERuler {
+        public const int MIN_LEN = 18;
+
         public enum Justification : short {
             Left = 0, Right = -1, Center = 1, Full = 2
         }

@@ -102,6 +102,7 @@ namespace DiskArc {
         public byte Access { get; set; }
         public DateTime CreateWhen { get; set; } = TimeStamp.NO_DATE;
         public DateTime ModWhen { get; set; } = TimeStamp.NO_DATE;
+        public string Comment { get; set; } = string.Empty;
 
         public long DataLength { get; set; }
         public long RsrcLength { get; set; }
@@ -134,6 +135,7 @@ namespace DiskArc {
             Access = src.Access;
             CreateWhen = src.CreateWhen;
             ModWhen = src.ModWhen;
+            Comment = src.Comment;
             DataLength = src.DataLength;
             RsrcLength = src.RsrcLength;
         }
@@ -207,6 +209,7 @@ namespace DiskArc {
             if (TimeStamp.IsValidDate(entry.ModWhen)) {
                 ModWhen = entry.ModWhen;
             }
+            Comment = entry.Comment;
         }
 
         /// <summary>
@@ -229,6 +232,7 @@ namespace DiskArc {
             entry.Access = Access;
             entry.CreateWhen = CreateWhen;
             entry.ModWhen = ModWhen;
+            entry.Comment = Comment;
         }
 
 

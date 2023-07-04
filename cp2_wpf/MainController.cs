@@ -522,6 +522,9 @@ namespace cp2_wpf {
             ClearEntryCounts();
             mMainWin.ShowLaunchPanel = true;
 
+            // This seems like a good time to save our current settings, notably the Recents list.
+            SaveAppSettings();
+
             // Not necessary, but it lets us check the memory monitor to see if we got
             // rid of everything.
             GC.Collect();
@@ -982,6 +985,7 @@ namespace cp2_wpf {
             if (dialog.ShowDialog() != true) {
                 return;
             }
+            // TODO: compare curAttribs to new attribs; if no change, do nothing.
 
             SettingsHolder settings = AppSettings.Global;
             EditAttributesProgress prog = new EditAttributesProgress(mMainWin, workNode.DAObject,

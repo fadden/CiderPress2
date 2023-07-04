@@ -40,6 +40,7 @@ namespace DiskArc.Arc {
     public class Zip_FileEntry : IFileEntry {
         internal const char SEP_CHAR = '/';                 // filename separator character
         private const int MAX_VAR_LEN = 65535;              // max value for a ushort
+        private const int MAX_COMMENT_LEN = 65535;          // max length of comment, in bytes
         private const int BIG_PATHNAME_LEN = 1024;          // be reasonable
         private const int VERSION_NEEDED = 0x0014;          // 2.0, minimum for Deflate
         private const int VERSION_MADE_BY = 0x003f;         // DOS / 6.3 (because of UTF-8)
@@ -172,6 +173,12 @@ namespace DiskArc.Arc {
             }
             set {
                 CheckChangeAllowed();
+                if (value.Length > MAX_COMMENT_LEN) {
+                    // This isn't perfect, because UTF-8 expansion could increase the size.  We
+                    // check it again before writing the field, but it's useful to have an early
+                    // failure indication if the size is excessive.
+                    throw new ArgumentException("Comment is excessively long");
+                }
                 ChangeObject!.mComment = value;
                 ChangeObject.IsDirty = true;
             }
