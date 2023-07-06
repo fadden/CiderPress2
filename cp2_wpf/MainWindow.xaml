@@ -45,12 +45,23 @@ limitations under the License.
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
             </Style>-->
 
+            <!-- Style for the "type" string in the archive tree view.  There are three
+            interesting states: not selected, selected, and selected but not focused.  The
+            properties come from our ArchiveTreeItem class, which doesn't know about focus, so
+            we need to peek at the ancestor object for that. -->
             <Style x:Key="archiveTreeTypeStyle" TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="Green"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
                         <Setter Property="Foreground" Value="LightGreen"/>
                     </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TreeViewItem}}, Path=IsSelected}" Value="True"/>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TreeViewItem}}, Path=IsFocused}" Value="False"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="DarkGreen"/>
+                    </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
 
@@ -391,14 +402,6 @@ limitations under the License.
                                   VirtualizingStackPanel.IsVirtualizing="True"
                                   VirtualizingStackPanel.VirtualizationMode="Recycling"
                                   SelectedItemChanged="ArchiveTree_SelectedItemChanged">
-                            <TreeView.Resources>
-                                <!-- make the no-focus color the same as the in-focus color -->
-                                <!-- thanks: https://stackoverflow.com/a/13053511/294248 -->
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
-                                                 Color="{x:Static SystemColors.HighlightColor}"/>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
-                                                 Color="{x:Static SystemColors.HighlightTextColor}"/>
-                            </TreeView.Resources>
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Items}">
                                     <StackPanel Orientation="Horizontal">
@@ -453,13 +456,6 @@ limitations under the License.
                                   VirtualizingStackPanel.VirtualizationMode="Recycling"
                                   ScrollViewer.CanContentScroll="True"
                                   SelectedItemChanged="DirectoryTree_SelectedItemChanged">
-                            <TreeView.Resources>
-                                <!-- make the no-focus color the same as the in-focus color -->
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
-                                                 Color="{x:Static SystemColors.HighlightColor}"/>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
-                                                 Color="{x:Static SystemColors.HighlightTextColor}"/>
-                            </TreeView.Resources>
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Items}">
                                     <TextBlock Text="{Binding Name}" Padding="4,0,4,0"/>
