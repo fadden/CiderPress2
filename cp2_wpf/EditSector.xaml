@@ -22,28 +22,77 @@ limitations under the License.
         xmlns:local="clr-namespace:cp2_wpf"
         mc:Ignorable="d"
         Title="Edit Block / Sector"
-        Height="600" Width="800" ResizeMode="NoResize"
-        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+        SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        ContentRendered="Window_ContentRendered"
+        Closing="Window_Closing">
+
     <Grid Margin="8">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Column="0" Grid.ColumnSpan="1" Grid.Row="0"
-                   Text="This Is A Place-Holder" HorizontalAlignment="Center"/>
+                   Text="Sector Data" HorizontalAlignment="Center"/>
 
-        <TextBox Grid.Column="0" Grid.Row="1" Margin="0,4,8,0"
-                 Text="{Binding SectorData, FallbackValue=DATA_HERE}"
-                 FontFamily="{StaticResource GeneralMonoFont}"/>
+        <DataGrid Name="sectorDataGrid" Grid.Column="0" Grid.Row="1" Margin="0,4,8,0"
+                  ItemsSource="{Binding SectorData}"
+                  IsReadOnly="True"
+                  GridLinesVisibility="None"
+                  SnapsToDevicePixels="True"
+                  AutoGenerateColumns="False"
+                  HeadersVisibility="All"
+                  CanUserReorderColumns="False"
+                  CanUserResizeColumns="False"
+                  CanUserSortColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserResizeRows="False"
+                  SelectionUnit="Cell"
+                  SelectionMode="Single"
+                  EnableRowVirtualization="False"
+                  SelectedCellsChanged="SectorDataGrid_SelectedCellsChanged"
+                  PreviewKeyDown="SectorDataGrid_PreviewKeyDown"
+                  FontFamily="{StaticResource GeneralMonoFont}">
+            <DataGrid.RowStyle>
+                <Style TargetType="{x:Type DataGridRow}">
+                    <Setter Property="Header" Value="{Binding RowLabel}"/>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.RowHeaderStyle>
+                <Style TargetType="{x:Type DataGridRowHeader}">
+                    <!-- row header buttons are slightly oversized; reign them in -->
+                    <Setter Property="Margin" Value="0,-2,0,-1"/>
+                </Style>
+            </DataGrid.RowHeaderStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="0" Binding="{Binding C0}"/>
+                <DataGridTextColumn Header="1" Binding="{Binding C1}"/>
+                <DataGridTextColumn Header="2" Binding="{Binding C2}"/>
+                <DataGridTextColumn Header="3" Binding="{Binding C3}"/>
+                <DataGridTextColumn Header="4" Binding="{Binding C4}"/>
+                <DataGridTextColumn Header="5" Binding="{Binding C5}"/>
+                <DataGridTextColumn Header="6" Binding="{Binding C6}"/>
+                <DataGridTextColumn Header="7" Binding="{Binding C7}"/>
+                <DataGridTextColumn Header="8" Binding="{Binding C8}"/>
+                <DataGridTextColumn Header="9" Binding="{Binding C9}"/>
+                <DataGridTextColumn Header="A" Binding="{Binding Ca}"/>
+                <DataGridTextColumn Header="B" Binding="{Binding Cb}"/>
+                <DataGridTextColumn Header="C" Binding="{Binding Cc}"/>
+                <DataGridTextColumn Header="D" Binding="{Binding Cd}"/>
+                <DataGridTextColumn Header="E" Binding="{Binding Ce}"/>
+                <DataGridTextColumn Header="F" Binding="{Binding Cf}"/>
+                <DataGridTextColumn Header="Text" Binding="{Binding AsText}"/>
+            </DataGrid.Columns>
+        </DataGrid>
 
-        <StackPanel Grid.Column="1" Grid.Row="1">
-            <Grid>
+        <DockPanel Grid.Column="1" Grid.Row="1" LastChildFill="False">
+            <Grid DockPanel.Dock="Top">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -55,7 +104,7 @@ limitations under the License.
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Column="0" Grid.Row="0" Text="Track:"/>
-                <TextBox Grid.Column="1" Grid.Row="0" Width="50"/>
+                <TextBox Name="trackNumBox" Grid.Column="1" Grid.Row="0" Width="50"/>
                 <TextBlock Grid.Column="0" Grid.Row="1" Text="Sector:"/>
                 <TextBox Grid.Column="1" Grid.Row="1" Width="50"/>
 
@@ -65,22 +114,18 @@ limitations under the License.
                         Content="Next" HorizontalAlignment="Right"/>
             </Grid>
 
-            <Button Width="90" Content="Read &#x23ce;" Margin="0,16,0,0" IsDefault="True"
+            <Button DockPanel.Dock="Top" Width="90" Content="Read &#x23ce;" Margin="0,16,0,0" IsDefault="True"
                     Click="ReadButton_Click"/>
-            <Button Width="90" Content="Write" Margin="0,16,0,0"
-                    IsEnabled="{Binding IsWriteEnabled}"
+            <Button DockPanel.Dock="Top" Width="90" Content="Write" Margin="0,16,0,0"
+                    IsEnabled="{Binding IsWriteButtonEnabled}"
                     Click="WriteButton_Click"/>
 
-            <Button Width="90" Content="Enable Writes" Margin="0,24,0,0"
+            <Button DockPanel.Dock="Top" Width="90" Content="Enable Writes" Margin="0,24,0,0"
                     IsEnabled="{Binding IsEnableWritesEnabled}"
                     Click="EnableWrites_Click"/>
-        </StackPanel>
-        
-        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Margin="0,8,0,0"
-                    Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Name="cancelButton" Content="Done" IsCancel="True"
-                    Width="70" Margin="4,0,0,0"/>
-        </StackPanel>
 
+            <Button DockPanel.Dock="Bottom" Name="cancelButton" Content="Done" IsCancel="True"
+                    Width="90" Margin="0,0,0,0"/>
+        </DockPanel>
     </Grid>
 </Window>

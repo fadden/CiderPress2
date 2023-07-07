@@ -281,6 +281,7 @@ namespace cp2_wpf.WPFCommon {
         /// </summary>
         /// <param name="rowIndex">Row index.</param>
         /// <param name="colIndex">Column index.</param>
+        /// <returns>True on success, false if the cell could not be selected.</returns>
         public static bool SelectRowColAndFocus(this DataGrid dataGrid, int rowIndex,
                 int colIndex) {
             if (rowIndex < 0 || rowIndex >= dataGrid.Items.Count) {
@@ -290,15 +291,15 @@ namespace cp2_wpf.WPFCommon {
             DataGridRow? row =
                 dataGrid.ItemContainerGenerator.ContainerFromIndex(rowIndex) as DataGridRow;
             if (row == null) {
-                //Debug.WriteLine("+ SelectRowColAndFocus: row is null");
                 return false;
             }
             DataGridCell? cell = GetCell(dataGrid, row, colIndex);
-            if (cell != null) {
-                //Debug.WriteLine("+ SelectRowColAndFocus: setting focus");
-                cell.Focus();
-                //Keyboard.Focus(cell);
+            if (cell == null) {
+                return false;
             }
+            cell.Focus();
+            //Keyboard.Focus(cell);
+            cell.IsSelected = true;
             return true;
         }
 
