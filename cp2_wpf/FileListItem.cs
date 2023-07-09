@@ -51,6 +51,8 @@ namespace cp2_wpf {
             (ControlTemplate)Application.Current.FindResource("icon_StatusInvalid");
         private static readonly ControlTemplate sErrorIcon =
             (ControlTemplate)Application.Current.FindResource("icon_StatusError");
+        private static readonly ControlTemplate sCommentIcon =
+            (ControlTemplate)Application.Current.FindResource("icon_Comment");
 
         public IFileEntry FileEntry { get; private set; }
 
@@ -94,10 +96,18 @@ namespace cp2_wpf {
                 Formatter fmt) {
             FileEntry = entry;
 
+            // Use the entry comment, unless it's MacZip, in which case use the ADF comment.
+            string comment = entry.Comment;
+            if (adfAttrs != null) {
+                comment = adfAttrs.Comment;
+            }
+
             if (entry.IsDubious) {
                 StatusIcon = sInvalidIcon;
             } else if (entry.IsDamaged) {
                 StatusIcon = sErrorIcon;
+            } else if (comment.Length > 0) {
+                StatusIcon = sCommentIcon;
             } else {
                 StatusIcon = null;
             }
