@@ -75,7 +75,8 @@ namespace cp2_wpf {
 
         /// <summary>
         /// True if this item can be closed.  This will be set for disk images and file archives
-        /// that are children of IFileSystem or IArchive.
+        /// that are children of IFileSystem or IArchive.  This allows us to close files that
+        /// have been opened as archives so that we can extract or delete them.
         /// </summary>
         public bool CanClose {
             get {

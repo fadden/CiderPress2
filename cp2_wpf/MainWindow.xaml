@@ -72,7 +72,7 @@ limitations under the License.
                     <KeyGesture>Ctrl+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
-            <RoutedUICommand x:Key="CloseSubTreeCmd" Text="Close Sub-Tree">
+            <RoutedUICommand x:Key="CloseSubTreeCmd" Text="Close File Source">
                 <RoutedUICommand.InputGestures>
                     <KeyGesture>Ctrl+Shift+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
@@ -581,13 +581,25 @@ limitations under the License.
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Text="{Binding CenterInfoText1}"/>
                             <TextBlock Grid.Row="1" Text="{Binding CenterInfoText2}"/>
 
-                            <StackPanel Grid.Row="2" Margin="2,8,0,0"
-                                    Visibility="{Binding ShowPartitionLayout, Converter={StaticResource BoolToVis}}">
+                            <GroupBox Grid.Row="2" Padding="2,4" Margin="0,8,0,0" Width="100"
+                                      Header="Disk Editing" HorizontalAlignment="Left"
+                                      Visibility="{Binding ShowSectorEditButtons, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <Button Content="Edit Blocks"
+                                            Command="{StaticResource EditBlocksCmd}"/>
+                                    <Button Content="Edit Sectors" Margin="0,4,0,0"
+                                            Command="{StaticResource EditSectorsCmd}"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <StackPanel Grid.Row="3" Margin="2,8,0,0"
+                                        Visibility="{Binding ShowPartitionLayout, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Partition Layout:"/>
                                 <DataGrid Name="partitionLayoutDataGrid"
                                         ItemsSource="{Binding PartitionList}"
@@ -611,8 +623,8 @@ limitations under the License.
                                 </DataGrid>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="3" Margin="2,8,0,0"
-                                    Visibility="{Binding ShowMetadata, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Grid.Row="4" Margin="2,8,0,0"
+                                        Visibility="{Binding ShowMetadata, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Metadata:"/>
                                 <DataGrid Name="metadataDataGrid"
                                         ItemsSource="{Binding MetadataList}"
@@ -632,8 +644,8 @@ limitations under the License.
                                 </DataGrid>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="4" Margin="2,8,0,0"
-                                    Visibility="{Binding ShowNotes, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Grid.Row="5" Margin="2,8,0,0"
+                                        Visibility="{Binding ShowNotes, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Notes:"/>
                                 <DataGrid Name="notesDataGrid"
                                         ItemsSource="{Binding NotesList}"

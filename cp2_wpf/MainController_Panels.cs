@@ -120,7 +120,8 @@ namespace cp2_wpf {
         /// <summary>
         /// True if the item is a closable sub-tree.
         /// </summary>
-        public bool IsClosableTreeSelected { get {
+        public bool IsClosableTreeSelected {
+            get {
                 ArchiveTreeItem? arcSel = (ArchiveTreeItem?)mMainWin.archiveTree.SelectedItem;
                 if (arcSel == null) {
                     return false;
@@ -199,6 +200,8 @@ namespace cp2_wpf {
                     title = "Disk Image Information";
                     mMainWin.SetNotesList(disk.Notes);
 
+                    mMainWin.ShowSectorEditButtons = true;
+
                     if (CurrentWorkObject is IMetadata) {
                         mMainWin.SetMetadataList((IMetadata)CurrentWorkObject);
                     }
@@ -211,6 +214,7 @@ namespace cp2_wpf {
                     Partition part = (Partition)CurrentWorkObject;
                     title = "Partition Information";
                     // no notes
+                    mMainWin.ShowSectorEditButtons = true;
                 }
                 DirectoryTreeItem newItem = new DirectoryTreeItem(null, title, IFileEntry.NO_ENTRY);
                 mMainWin.DirectoryTreeRoot.Add(newItem);

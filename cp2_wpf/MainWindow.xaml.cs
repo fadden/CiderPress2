@@ -696,6 +696,8 @@ namespace cp2_wpf {
         /// Clears the partition, notes, and metadata lists displayed on the center panel.
         /// </summary>
         public void ClearCenterInfo() {
+            ShowSectorEditButtons = false;
+
             PartitionList.Clear();
             ShowPartitionLayout = false;
             NotesList.Clear();
@@ -704,6 +706,12 @@ namespace cp2_wpf {
             MetadataList.Clear();
             ShowMetadata = false;
         }
+
+        public bool ShowSectorEditButtons {
+            get { return mShowSectorEditButtons; }
+            set { mShowSectorEditButtons = value; OnPropertyChanged(); }
+        }
+        private bool mShowSectorEditButtons;
 
         public bool ShowPartitionLayout {
             get { return mShowPartitionLayout; }
