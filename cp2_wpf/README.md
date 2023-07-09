@@ -3,8 +3,8 @@
 If you've used the original CiderPress, most of what CiderPress II does will be familiar.  This
 is a quick bit of documentation about new behavior.  Proper documentation will be added later.
 
-The initial window has an "open file" button and, eventually, buttons for the two files that
-were opened most recently.
+The initial window has an "open file" button and buttons for the two files that were opened
+most recently.
 
 ## Work Area ##
 

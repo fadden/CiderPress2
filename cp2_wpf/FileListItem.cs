@@ -253,6 +253,10 @@ namespace cp2_wpf {
         /// Sets the current file list selection to the item with a matching IFileEntry.  If
         /// no item matches, the selection is set to the first item in the list.
         /// </summary>
+        /// <remarks>
+        /// <para>Somehow the focus shift this does ends up being particularly forceful, and
+        /// can cause some really strange behavior in WPF.</para>
+        /// </remarks>
         public static void SetSelectionFocusByEntry(ObservableCollection<FileListItem> tvRoot,
                 DataGrid dataGrid, IFileEntry selEntry) {
             FileListItem? reselItem = null;
@@ -266,6 +270,7 @@ namespace cp2_wpf {
                 // Not found (e.g. we changed directories and the selected entry is no longer
                 // part of the file list), or selEntry is NO_ENTRY.
                 if (dataGrid.Items.Count > 0) {
+                    //Debug.WriteLine("Selecting row 0");
                     dataGrid.SelectRowByIndex(0);
                 }
             }

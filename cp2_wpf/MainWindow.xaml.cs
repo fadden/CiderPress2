@@ -451,7 +451,13 @@ namespace cp2_wpf {
             PreferSingleDirList = true;
             if (!ShowSingleDirFileList) {
                 ShowSingleDirFileList = true;
-                mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, true);
+                // NOTE: passing "true" to set the focus in the file list causes a weird bug
+                // where all commands are disabled until something else is clicked.
+                // Repro steps: (1) open ProDOS or HFS disk, (2) click toolbar buttons
+                // { info, dir list, full list } in sequence twice.  Should lock out all
+                // actions on second time through.  No idea why this is happening, but we
+                // don't need to "hard shift" the focus here.
+                mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, false);
             }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
@@ -459,7 +465,7 @@ namespace cp2_wpf {
             PreferSingleDirList = false;
             if (ShowSingleDirFileList) {
                 ShowSingleDirFileList = false;
-                mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, true);
+                mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, false);
             }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
