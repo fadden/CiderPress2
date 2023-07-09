@@ -21,6 +21,43 @@ namespace CommonUtil {
     /// </summary>
     public static class StringToValue {
         /// <summary>
+        /// <para>Parses an integer in a variety of formats (hex, decimal, binary).  We allow
+        /// hex to be identified with a leading '$' as well as "0x".</para>
+        /// <para>Trim whitespace before calling here.</para>
+        /// </summary>
+        /// <param name="str">String to parse.</param>
+        /// <param name="val">Integer value of string.</param>
+        /// <param name="intBase">What base the string was in (2, 10, or 16).</param>
+        /// <returns>True if the parsing was successful.</returns>
+        public static bool TryParseInt(string str, out int val, out int intBase) {
+            if (string.IsNullOrEmpty(str)) {
+                val = intBase = 0;
+                return false;
+            }
+
+            if (str[0] == '$') {
+                intBase = 16;
+                str = str.Substring(1);     // convert functions don't like '$'
+            } else if (str.Length > 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')) {
+                intBase = 16;
+            } else if (str[0] == '%') {
+                intBase = 2;
+                str = str.Substring(1);     // convert functions don't like '%'
+            } else {
+                intBase = 10;               // try it as decimal
+            }
+
+            try {
+                val = Convert.ToInt32(str, intBase);
+            } catch {
+                val = 0;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Converts a size descriptor, like "10KB", to a byte value, like "10240".
         /// </summary>
         /// <param name="sizeStr">String to convert.</param>

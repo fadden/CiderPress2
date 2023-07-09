@@ -47,7 +47,7 @@ namespace cp2_wpf {
         public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";
 
-        // Add/extract/import/export
+        // Add/extract/import/export.
         public const string ADD_RECURSE_ENABLED = "add-recurse-enabled";
         public const string ADD_COMPRESS_ENABLED = "add-compress-enabled";
         public const string ADD_STRIP_PATHS_ENABLED = "add-strip-paths-enabled";
@@ -61,6 +61,10 @@ namespace cp2_wpf {
         public const string EXT_STRIP_PATHS_ENABLED = "ext-strip-paths-enabled";
         public const string EXT_PRESERVE_MODE = "ext-preserve-mode";
 
+        // Sector editing.
+        public const string SCTED_TEXT_CONV_MODE = "scted-text-conv-mode";
+
+        // Debug.
         public const string DEBUG_MENU_ENABLED = "debug-menu-enabled";
     }
 }

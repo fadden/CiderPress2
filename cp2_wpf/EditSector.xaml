@@ -35,10 +35,11 @@ limitations under the License.
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Column="0" Grid.ColumnSpan="1" Grid.Row="0"
-                   Text="Sector Data" HorizontalAlignment="Center"/>
+        <TextBlock Grid.Row="0" Grid.Column="0"
+                   Text="{Binding SectorDataLabel, FallbackValue=LABEL}" HorizontalAlignment="Center"/>
 
         <DataGrid Name="sectorDataGrid" Grid.Column="0" Grid.Row="1" Margin="0,4,8,0"
                   ItemsSource="{Binding SectorData}"
@@ -91,41 +92,83 @@ limitations under the License.
             </DataGrid.Columns>
         </DataGrid>
 
-        <DockPanel Grid.Column="1" Grid.Row="1" LastChildFill="False">
+        <DockPanel Grid.Column="1" Grid.Row="1" Grid.RowSpan="2" LastChildFill="False">
             <Grid DockPanel.Dock="Top">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Column="0" Grid.Row="0" Text="Track:"/>
-                <TextBox Name="trackNumBox" Grid.Column="1" Grid.Row="0" Width="50"/>
-                <TextBlock Grid.Column="0" Grid.Row="1" Text="Sector:"/>
-                <TextBox Grid.Column="1" Grid.Row="1" Width="50"/>
+                <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4"
+                            Background="{DynamicResource {x:Static SystemColors.GradientInactiveCaptionBrushKey}}">
+                    <TextBlock Text="Location" HorizontalAlignment="Center"/>
+                </StackPanel>
 
-                <Button Grid.Column="0" Grid.Row="2" Width="40" Margin="0,4,0,0"
-                        Content="Prev" HorizontalAlignment="Left"/>
-                <Button Grid.Column="1" Grid.Row="2" Width="40" Margin="0,4,0,0"
-                        Content="Next" HorizontalAlignment="Right"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,2,0,0"
+                           Text="{Binding TrackBlockLabel, FallbackValue=Track:}"
+                           Foreground="{Binding TrackBlockLabelForeground}"/>
+                <TextBox Name="trackBlockNumBox" Grid.Row="1" Grid.Column="1" Margin="8,2,0,0"
+                         Text="{Binding TrackBlockNumString, UpdateSourceTrigger=PropertyChanged}"
+                         Width="75" MaxLength="12"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,4,0,0"
+                           Text="Sector:" Visibility="{Binding SectorVisibility}"
+                           Foreground="{Binding SectorLabelForeground}"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Margin="8,4,0,0"
+                         Visibility="{Binding SectorVisibility}"
+                         Text="{Binding SectorNumString, UpdateSourceTrigger=PropertyChanged}"
+                         Width="75" MaxLength="4"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,0"
+                           Text="{Binding TrackBlockInfoLabel, FallbackValue=o INFO1}"/>
+                <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                           Visibility="{Binding SectorVisibility}"
+                           Text="{Binding SectorInfoLabel, FallbackValue=o INFO2}"/>
             </Grid>
 
-            <Button DockPanel.Dock="Top" Width="90" Content="Read &#x23ce;" Margin="0,16,0,0" IsDefault="True"
+            <Grid DockPanel.Dock="Top" Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Row="5" Grid.Column="0" Width="40"
+                        Content="_Prev" HorizontalAlignment="Center"/>
+                <Button Grid.Row="5" Grid.Column="1" Width="40"
+                        Content="_Next" HorizontalAlignment="Center"/>
+            </Grid>
+
+            <!-- &#x23ce; -->
+            <Button DockPanel.Dock="Top" Width="90" Content="_Read" Margin="0,16,0,0" IsDefault="True"
+                    IsEnabled="{Binding IsReadButtonEnabled}"
                     Click="ReadButton_Click"/>
-            <Button DockPanel.Dock="Top" Width="90" Content="Write" Margin="0,16,0,0"
+            <Button DockPanel.Dock="Top" Width="90" Content="_Write" Margin="0,16,0,0"
                     IsEnabled="{Binding IsWriteButtonEnabled}"
                     Click="WriteButton_Click"/>
 
-            <Button DockPanel.Dock="Top" Width="90" Content="Enable Writes" Margin="0,24,0,0"
+            <!--<Button DockPanel.Dock="Top" Width="90" Content="_Enable Writes" Margin="0,24,0,0"
                     IsEnabled="{Binding IsEnableWritesEnabled}"
-                    Click="EnableWrites_Click"/>
+                    Click="EnableWrites_Click"/>-->
 
-            <Button DockPanel.Dock="Bottom" Name="cancelButton" Content="Done" IsCancel="True"
-                    Width="90" Margin="0,0,0,0"/>
+            <GroupBox DockPanel.Dock="Top" Header="Text Conversion" Padding="2,4" Margin="0,16,0,0">
+                <StackPanel>
+                    <RadioButton GroupName="TxtConv" Content="High/low ASCII"
+                                 IsChecked="{Binding IsChecked_ConvHighASCII}"/>
+                    <RadioButton GroupName="TxtConv" Content="Mac OS Roman" Margin="0,2,0,0"
+                                 IsChecked="{Binding IsChecked_ConvMOR}"/>
+                    <RadioButton GroupName="TxtConv" Content="ISO Latin-1" Margin="0,2,0,0"
+                                 IsChecked="{Binding IsChecked_ConvLatin}"/>
+                </StackPanel>
+            </GroupBox>
+
+            <Button DockPanel.Dock="Bottom" Name="cancelButton" Content="Close" IsCancel="True"
+                    Width="90" Margin="0,12,0,0"/>
         </DockPanel>
     </Grid>
 </Window>

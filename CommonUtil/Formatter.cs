@@ -266,6 +266,8 @@ namespace CommonUtil {
             }
         }
 
+        private const char MIDDLE_DOT = '\u00b7';
+
         /// <summary>
         /// Converts a byte into printable form.  The high bit is stripped.
         /// </summary>
@@ -273,14 +275,14 @@ namespace CommonUtil {
         /// <returns>Printable character.</returns>
         public static char CharConv_HighASCII(byte val) {
             val &= 0x7f;
-            if (val < 0x20 || val == 0x7f) {
+            if (val < 0x20 || val == 0x7f) {        // [0x00,0x1f] + 0x7f + [0x80,0x9f] + 0xff
                 // The Control Pictures group is a nice thought, but they're unreadably small,
                 // and they're a hair wider than the monospace font glyphs.  Traditionally
                 // hex dumps use a '.' for unreadable characters.  We use a middle-dot to
                 // differentiate them from actual periods.
                 //return (char)(val + ASCIIUtil.CTRL_PIC_START);
                 //return (char)ASCIIUtil.CTRL_PIC_DEL;
-                return '\u00b7';    // MIDDLE DOT
+                return MIDDLE_DOT;
             } else {
                 return (char)val;
             }
@@ -294,9 +296,9 @@ namespace CommonUtil {
         public static char CharConv_Latin(byte val) {
             // Replace C0 and C1 control codes.
             if (val < 0x20 || (val >= 0x7f && val <= 0x9f)) {
-                return '\u00b7';    // MIDDLE DOT
+                return MIDDLE_DOT;
             } else {
-                return (char)val;
+                return (char)val;   // maps directly to Unicode BMP
             }
         }
 
@@ -307,7 +309,7 @@ namespace CommonUtil {
         /// <returns>Printable character.</returns>
         public static char CharConv_MOR(byte val) {
             if (val < 0x20 || val == 0x7f) {
-                return '\u00b7';    // MIDDLE DOT
+                return MIDDLE_DOT;
             } else {
                 return MacChar.MacToUnicode(val, MacChar.Encoding.Roman);
             }

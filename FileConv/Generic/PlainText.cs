@@ -117,6 +117,9 @@ namespace FileConv.Generic {
                             if (!lastWasCR) {
                                 sb.Append(newline);
                             }
+                        } else if (ch == '\t') {
+                            // Output tabs as tab characters.
+                            sb.Append(ch);
                         } else if (!printableOnly) {
                             sb.Append(ch);      // output raw control code
                         } else {
