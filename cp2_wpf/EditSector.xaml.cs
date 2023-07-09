@@ -214,6 +214,12 @@ namespace cp2_wpf {
         /// </summary>
         public List<SectorRow> SectorData { get; set; } = new List<SectorRow>();
 
+        public Visibility SectorDataGridVisibility {
+            get { return mSectorDataGridVisibility; }
+            set { mSectorDataGridVisibility = value; OnPropertyChanged(); }
+        }
+        private Visibility mSectorDataGridVisibility = Visibility.Visible;
+
         public string SectorDataLabel {
             get { return mSectorDataLabel; }
             set { mSectorDataLabel = value; OnPropertyChanged(); }
@@ -248,18 +254,24 @@ namespace cp2_wpf {
         }
         private string mSectorNumString = string.Empty;
 
+        public string IOErrorMsg {
+            get { return mIOErrorMsg; }
+            set { mIOErrorMsg = value; OnPropertyChanged(); TrackSectorUpdated(); }
+        }
+        private string mIOErrorMsg = "I/O Error";
+
+        public Visibility IOErrorMsgVisibility {
+            get { return mIOErrorMsgVisibility; }
+            set {  mIOErrorMsgVisibility = value; OnPropertyChanged(); }
+        }
+        private Visibility mIOErrorMsgVisibility = Visibility.Collapsed;
+
         public delegate bool EnableWriteFunc();
         private EnableWriteFunc? mEnableWriteFunc;
 
         /// <summary>
-        /// True if the "enable writes" button is enabled.
+        /// Text conversion mode for hex dump.  Set by radio button.
         /// </summary>
-        //public bool IsEnableWritesEnabled {
-        //    get { return mIsEnableWritesEnabled; }
-        //    set { mIsEnableWritesEnabled = value; OnPropertyChanged(); }
-        //}
-        //private bool mIsEnableWritesEnabled;
-
         private TxtConvMode mTxtConvMode;
 
         public bool IsChecked_ConvHighASCII {
@@ -300,7 +312,7 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// True if writes are enabled.
+        /// True if writes have been enabled in the chunk.
         /// </summary>
         private bool mIsWritingEnabled;
 
@@ -309,19 +321,21 @@ namespace cp2_wpf {
         /// </summary>
         public bool IsDirty {
             get { return mIsDirty; }
-            set { mIsDirty = value; OnPropertyChanged(nameof(IsWriteButtonEnabled)); }
+            set { mIsDirty = value; }
         }
         private bool mIsDirty;
 
+        /// <summary>
+        /// True if the text entered into the track/block/sector fields is valid.
+        /// </summary>
         private bool mIsEntryValid;
 
         /// <summary>
         /// True if the "Write" button should be enabled in the GUI.  Depends on whether writing
-        /// is possible for this volume, whether the buffer has been modified, and the contents
-        /// of the entry fields.
+        /// is possible for this volume, and the contents of the entry fields.
         /// </summary>
         public bool IsWriteButtonEnabled {
-            get { return mIsWritingEnabled && mIsDirty && mIsEntryValid; }
+            get { return mEnableWriteFunc != null && mIsEntryValid; }
         }
 
         /// <summary>
@@ -331,6 +345,17 @@ namespace cp2_wpf {
         public bool IsReadButtonEnabled {
             get { return mIsEntryValid; }
         }
+
+        public bool IsPrevEnabled {
+            get { return mIsPrevEnabled; }
+            set { mIsPrevEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsPrevEnabled;
+        public bool IsNextEnabled {
+            get { return mIsNextEnabled; }
+            set { mIsNextEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsNextEnabled;
 
         private IChunkAccess mChunkAccess;
         private bool mAsSectors;
@@ -357,7 +382,7 @@ namespace cp2_wpf {
         /// <param name="asSectors">If true, try to operate on sectors rather than blocks.  This
         ///   will be ignored if the chunk source can't operate on sectors.</param>
         /// <param name="enableWriteFunc">Function to call to enable writes.  Will be null if
-        ///   we don't allow writes.</param>
+        ///   we don't allow writes (read-only volume).</param>
         /// <param name="formatter">Text formatter.</param>
         public EditSector(Window owner, IChunkAccess chunks, bool asSectors,
                 EnableWriteFunc? enableWriteFunc, Formatter unused) {
@@ -369,9 +394,7 @@ namespace cp2_wpf {
             mAsSectors = asSectors;
             mEnableWriteFunc = enableWriteFunc;
 
-            //if (enableWriteFunc != null) {
-            //    IsEnableWritesEnabled = true;
-            //}
+            Debug.Assert(mEnableWriteFunc == null || !mChunkAccess.IsReadOnly);
 
             SettingsHolder settings = AppSettings.Global;
             mTxtConvMode =
@@ -389,7 +412,8 @@ namespace cp2_wpf {
             }
             mCurBlockOrTrack = 0;
             mCurSector = 0;
-            ReadData();
+            SetPrevNextEnabled();
+            ReadFromDisk();
 
             if (mAsSectors) {
                 SectorVisibility = Visibility.Visible;
@@ -414,58 +438,118 @@ namespace cp2_wpf {
 
         private void Window_ContentRendered(object sender, EventArgs e) {
             // Put the focus on the data grid.
-            SetPosition(mCurCol, mCurRow);
+            //SetPosition(mCurCol, mCurRow);
+
+            // Put the focus on the track/block input field, since their first move will likely
+            // be to read something other than the boot block.
+            trackBlockNumBox.Focus();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e) {
-            if (mIsDirty) {
-                MessageBoxResult res = MessageBox.Show(this, "Discard changes?", "Confirm",
-                    MessageBoxButton.OKCancel, MessageBoxImage.Question);
-                if (res == MessageBoxResult.Cancel) {
-                    e.Cancel = true;
-                    return;
-                }
+            if (!ConfirmDiscardChanges()) {
+                e.Cancel = true;
             }
+        }
+
+        /// <summary>
+        /// If there are unwritten modifications to the buffer, ask the user to confirm.
+        /// </summary>
+        /// <returns>True if it's okay to continue.</returns>
+        private bool ConfirmDiscardChanges() {
+            if (!mIsDirty) {
+                return true;
+            }
+            MessageBoxResult res = MessageBox.Show(this, "Discard unwritten modifications?",
+                "Confirm", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            if (res == MessageBoxResult.Cancel) {
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
         /// Reads a block or sector of data from the current position.
         /// </summary>
-        private void ReadData() {
-            // TODO: confirm overwrite of modified data
+        private void ReadFromDisk() {
+            if (!ConfirmDiscardChanges()) {
+                return;
+            }
             try {
                 if (mAsSectors) {
                     mChunkAccess.ReadSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
                 } else {
                     mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0);
                 }
+                SectorDataGridVisibility = Visibility.Visible;
+                IOErrorMsgVisibility = Visibility.Collapsed;
             } catch (BadBlockException) {
-                // TODO
-                Debug.Assert(false, "need to handle this");
                 RawData.MemSet(mBuffer, 0, mBuffer.Length, 0xcc);
+                SectorDataGridVisibility = Visibility.Hidden;   // not Collapsed
+                IOErrorMsgVisibility = Visibility.Visible;
             }
             foreach (SectorRow row in SectorData) {
                 row.Refresh();
             }
+            IsDirty = false;
             SetSectorDataLabel();
+        }
+
+        private void WriteToDisk() {
+            if (!TryEnableWrites()) {
+                // This shouldn't happen; Write button should have been disabled.
+                MessageBox.Show(this, "Unable to write to this disk", "Not Possible",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            try {
+                if (mAsSectors) {
+                    mChunkAccess.WriteSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
+                } else {
+                    mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0);
+                }
+                IsDirty = false;
+            } catch (Exception ex) {
+                MessageBox.Show(this, "Write failed: " + ex.Message, "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            SetSectorDataLabel();   // clear mod flag, update T/S if we wrote elsewhere
         }
 
         /// <summary>
         /// Sets the label that identifies the source of the buffer contents.
         /// </summary>
         private void SetSectorDataLabel() {
+            string dirtyStr = IsDirty ? " [*]" : string.Empty;
             if (mAsSectors) {
-                SectorDataLabel = string.Format("Track {0} (${0:X}), Sector {1} (${1:X})",
-                    mCurBlockOrTrack, mCurSector);
+                SectorDataLabel = string.Format("Track {0} (${0:X}), Sector {1} (${1:X}) {2}",
+                    mCurBlockOrTrack, mCurSector, dirtyStr);
             } else {
-                SectorDataLabel = string.Format("Block {0} (${0:X})", mCurBlockOrTrack);
+                SectorDataLabel = string.Format("Block {0} (${0:X}) {1}",
+                    mCurBlockOrTrack, dirtyStr);
             }
         }
 
+        /// <summary>
+        /// Enables or disables the Prev/Next buttons, based on the current location.  Call
+        /// this whenever the location changes.
+        /// </summary>
+        private void SetPrevNextEnabled() {
+            bool hasPrev, hasNext;
+            if (mAsSectors) {
+                hasPrev = (mCurBlockOrTrack != 0 || mCurSector != 0);
+                hasNext = (mCurBlockOrTrack != mChunkAccess.NumTracks - 1 ||
+                    mCurSector != mChunkAccess.NumSectorsPerTrack - 1);
+            } else {
+                long numBlocks = mChunkAccess.FormattedLength / BLOCK_SIZE;
+                hasPrev = (mCurBlockOrTrack != 0);
+                hasNext = (mCurBlockOrTrack != numBlocks - 1);
+            }
+            IsPrevEnabled = hasPrev;
+            IsNextEnabled = hasNext;
+        }
+
         private void CopyNumToTextFields() {
-            mTrackBlockNumString = mCurBlockOrTrack.ToString();
-            mSectorNumString = mCurSector.ToString();
-            TrackSectorUpdated();
+            TrackBlockNumString = mCurBlockOrTrack.ToString();
+            SectorNumString = mCurSector.ToString();
         }
 
         private void UpdateTxtConv() {
@@ -525,30 +609,79 @@ namespace cp2_wpf {
         /// <summary>
         /// Attempts to enable modifications.
         /// </summary>
-        private void TryEnableWrites() {
-            if (mEnableWriteFunc == null || mIsWritingEnabled) {
-                return;
+        private bool TryEnableWrites() {
+            if (mEnableWriteFunc == null) {
+                return false;
+            }
+            if (mIsWritingEnabled) {
+                return true;
             }
             if (!mEnableWriteFunc()) {
                 MessageBox.Show(this, "Failed to enable write access", "Whoops",
                     MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                return false;
             }
 
             mIsWritingEnabled = true;
             Debug.WriteLine("Writes enabled");
+            return true;
         }
 
         private void ReadButton_Click(object sender, RoutedEventArgs e) {
             mCurBlockOrTrack = (uint)mEnteredBlockOrTrack;
             mCurSector = (uint)mEnteredSector;
-            ReadData();
+            SetPrevNextEnabled();
+            ReadFromDisk();
+        }
+
+        private void PrevButton_Click(object sender, RoutedEventArgs e) {
+            // Assume "prev" button is disabled if this would set an invalid value.
+            if (mAsSectors) {
+                if (mCurSector != 0) {
+                    mCurSector--;
+                } else {
+                    mCurSector = mChunkAccess.NumSectorsPerTrack - 1;
+                    mCurBlockOrTrack--;
+                }
+            } else {
+                mCurBlockOrTrack--;
+            }
+            SetPrevNextEnabled();
+            CopyNumToTextFields();
+            ReadFromDisk();
+        }
+
+        private void NextButton_Click(object sender, RoutedEventArgs e) {
+            // Assume "next" button is disabled if this would set an invalid value.
+            if (mAsSectors) {
+                mCurSector++;
+                if (mCurSector == mChunkAccess.NumSectorsPerTrack) {
+                    mCurSector = 0;
+                    mCurBlockOrTrack++;
+                }
+            } else {
+                mCurBlockOrTrack++;
+            }
+            SetPrevNextEnabled();
+            CopyNumToTextFields();
+            ReadFromDisk();
         }
 
         private void WriteButton_Click(object sender, RoutedEventArgs e) {
-            Debug.WriteLine("Write!");
             Debug.Assert(!mChunkAccess.IsReadOnly);
-            IsDirty = false;
+            if (mCurBlockOrTrack != mEnteredBlockOrTrack || mCurSector != mEnteredSector) {
+                MessageBoxResult res = MessageBox.Show(this,
+                    "This will write to a different sector than was read from. Proceed?",
+                    "Confirm", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+                if (res == MessageBoxResult.Cancel) {
+                    return;
+                }
+            }
+
+            mCurBlockOrTrack = (uint)mEnteredBlockOrTrack;
+            mCurSector = (uint)mEnteredSector;
+            SetPrevNextEnabled();
+            WriteToDisk();
         }
 
         /// <summary>
@@ -578,6 +711,7 @@ namespace cp2_wpf {
             bool digitPushed = false;
 
             // Don't handle Ctrl/Shift stuff here.
+            // TODO: handle shift-Tab?
             if (Keyboard.Modifiers != ModifierKeys.None) {
                 return;
             }
@@ -618,8 +752,7 @@ namespace cp2_wpf {
                 case Key.D8:
                 case Key.D9:
                     if (!InTextArea) {
-                        TryEnableWrites();
-                        if (mIsWritingEnabled) {
+                        if (TryEnableWrites()) {
                             SectorData[mCurRow].PushDigit(mCurCol, (byte)((int)e.Key - Key.D0));
                             digitPushed = true;
                         }
@@ -633,8 +766,7 @@ namespace cp2_wpf {
                 case Key.E:
                 case Key.F:
                     if (!InTextArea) {
-                        TryEnableWrites();
-                        if (mIsWritingEnabled) {
+                        if (TryEnableWrites()) {
                             SectorData[mCurRow].PushDigit(mCurCol, (byte)((int)e.Key - Key.A + 10));
                             digitPushed = true;
                         }
@@ -653,6 +785,7 @@ namespace cp2_wpf {
                     posnChanged = MoveRight();
                 }
                 IsDirty = true;
+                SetSectorDataLabel();
             }
             if (posnChanged) {
                 SetPosition(mCurCol, mCurRow);

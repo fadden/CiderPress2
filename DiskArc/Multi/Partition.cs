@@ -182,6 +182,7 @@ namespace DiskArc.Multi {
                 FileSystem.Dispose();
                 FileSystem = null;
             }
+            ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
         }
     }
 }

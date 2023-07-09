@@ -253,6 +253,9 @@ namespace DiskArc.Disk {
                 ((IMultiPart)Contents).Dispose();
             }
             Contents = null;
+            if (ChunkAccess != null) {
+                ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
+            }
         }
 
         ~UnadornedNibble525() {

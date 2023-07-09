@@ -41,8 +41,9 @@ limitations under the License.
         <TextBlock Grid.Row="0" Grid.Column="0"
                    Text="{Binding SectorDataLabel, FallbackValue=LABEL}" HorizontalAlignment="Center"/>
 
-        <DataGrid Name="sectorDataGrid" Grid.Column="0" Grid.Row="1" Margin="0,4,8,0"
+        <DataGrid Name="sectorDataGrid" Grid.Row="1" Grid.Column="0" Margin="0,4,8,0"
                   ItemsSource="{Binding SectorData}"
+                  Visibility="{Binding SectorDataGridVisibility}"
                   IsReadOnly="True"
                   GridLinesVisibility="None"
                   SnapsToDevicePixels="True"
@@ -92,7 +93,13 @@ limitations under the License.
             </DataGrid.Columns>
         </DataGrid>
 
-        <DockPanel Grid.Column="1" Grid.Row="1" Grid.RowSpan="2" LastChildFill="False">
+        <TextBlock Grid.Row="1" Grid.Column="0"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Text="{Binding IOErrorMsg}"
+                   FontSize="20"
+                   Visibility="{Binding IOErrorMsgVisibility}"/>
+
+        <DockPanel Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" LastChildFill="False">
             <Grid DockPanel.Dock="Top">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -138,10 +145,14 @@ limitations under the License.
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Row="5" Grid.Column="0" Width="40"
-                        Content="_Prev" HorizontalAlignment="Center"/>
-                <Button Grid.Row="5" Grid.Column="1" Width="40"
-                        Content="_Next" HorizontalAlignment="Center"/>
+                <Button Grid.Row="5" Grid.Column="0" Width="40" Margin="0,0,5,0"
+                        Content="_Prev" HorizontalAlignment="Right"
+                        IsEnabled="{Binding IsPrevEnabled}"
+                        Click="PrevButton_Click"/>
+                <Button Grid.Row="5" Grid.Column="1" Width="40" Margin="5,0,0,0"
+                        Content="_Next" HorizontalAlignment="Left"
+                        IsEnabled="{Binding IsNextEnabled}"
+                        Click="NextButton_Click"/>
             </Grid>
 
             <!-- &#x23ce; -->
