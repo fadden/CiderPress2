@@ -404,6 +404,10 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
                 mMainCtrl.IsHierarchicalFileSystemSelected);
         }
+        private void CanNavToParent(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsHierarchicalFileSystemSelected && !mMainCtrl.IsSelectedDirRoot);
+        }
 
         private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
@@ -481,6 +485,9 @@ namespace cp2_wpf {
         private void HelpCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // TODO
             MessageBox.Show(this, "Help is on the way... soon.", "Help");
+        }
+        private void NavToParentCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.NavToParent();
         }
         private void NewDiskImageCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.NewDiskImage();
@@ -567,16 +574,18 @@ namespace cp2_wpf {
 
         #region Archive Tree
 
-        //internal readonly ControlTemplate ICON_STATUS_OK;
-        //internal readonly ControlTemplate ICON_STATUS_DUBIOUS;
-        //internal readonly ControlTemplate ICON_STATUS_WARNING;
-        //internal readonly ControlTemplate ICON_STATUS_DAMAGE;
-
         /// <summary>
         /// Data for archive tree TreeView control.  This is a list of items, not a single item.
         /// </summary>
         public ObservableCollection<ArchiveTreeItem> ArchiveTreeRoot { get; private set; } =
             new ObservableCollection<ArchiveTreeItem>();
+
+        /// <summary>
+        /// Currently-selected item in the archive (work) TreeView, or null if nothing selected.
+        /// </summary>
+        public ArchiveTreeItem? SelectedArchiveTreeItem {
+            get { return (ArchiveTreeItem?)archiveTree.SelectedItem; }
+        }
 
         /// <summary>
         /// Handles selection change in archive tree view.
@@ -596,6 +605,13 @@ namespace cp2_wpf {
         /// </summary>
         public ObservableCollection<DirectoryTreeItem> DirectoryTreeRoot { get; private set; } =
             new ObservableCollection<DirectoryTreeItem>();
+
+        /// <summary>
+        /// Currently-selected item in the directory TreeView, or null if nothing selected.
+        /// </summary>
+        public DirectoryTreeItem? SelectedDirectoryTreeItem {
+            get { return (DirectoryTreeItem?)directoryTree.SelectedItem; }
+        }
 
         /// <summary>
         /// Handles selection change in directory tree view.
@@ -751,6 +767,14 @@ namespace cp2_wpf {
         private ObservableCollection<FileListItem> mFileList =
             new ObservableCollection<FileListItem>();
 
+        public FileListItem? SelectedFileListItem {
+            get {
+                return (FileListItem?)fileListDataGrid.SelectedItem;
+            }
+            set {
+                fileListDataGrid.SelectedItem = value;
+            }
+        }
 
         public string CenterInfoText1 {
             get { return mCenterInfoText1; }

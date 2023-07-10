@@ -75,7 +75,7 @@ namespace cp2_wpf {
 
         public bool CanWrite {
             get {
-                ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+                ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
                 if (arcTreeSel != null) {
                     return !arcTreeSel.WorkTreeNode.IsReadOnly;
                 }
@@ -107,6 +107,9 @@ namespace cp2_wpf {
         /// </summary>
         public bool IsFileSystemSelected { get { return CurrentWorkObject is IFileSystem; } }
 
+        /// <summary>
+        /// True if the selected archive is a hierarchical filesystem (ProDOS or HFS).
+        /// </summary>
         public bool IsHierarchicalFileSystemSelected {
             get {
                 IFileSystem? fs = CurrentWorkObject as IFileSystem;
@@ -118,15 +121,22 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// True if the item is a closable sub-tree.
+        /// True if the entry selected in the directory tree is at the root (has no parent).
+        /// </summary>
+        public bool IsSelectedDirRoot {
+            get {
+                DirectoryTreeItem? dirSel = mMainWin.SelectedDirectoryTreeItem;
+                return (dirSel != null && dirSel.Parent == null);
+            }
+        }
+
+        /// <summary>
+        /// True if the item selected in the archive tree view is a closable sub-tree.
         /// </summary>
         public bool IsClosableTreeSelected {
             get {
-                ArchiveTreeItem? arcSel = (ArchiveTreeItem?)mMainWin.archiveTree.SelectedItem;
-                if (arcSel == null) {
-                    return false;
-                }
-                return arcSel.CanClose;
+                ArchiveTreeItem? arcSel = mMainWin.SelectedArchiveTreeItem;
+                return (arcSel != null && arcSel.CanClose);
             }
         }
 
@@ -231,7 +241,7 @@ namespace cp2_wpf {
                 Debug.Assert(false);        // shouldn't be able to get here
                 return;
             }
-            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
             if (arcTreeSel == null) {
                 Debug.Assert(false);
                 return;
@@ -361,7 +371,7 @@ namespace cp2_wpf {
                     FileListItem? dirItem =
                         FileListItem.FindItemByEntry(mMainWin.FileList, newSel.FileEntry);
                     if (dirItem != null) {
-                        mMainWin.fileListDataGrid.SelectedItem = dirItem;
+                        mMainWin.SelectedFileListItem = dirItem;
                         mMainWin.fileListDataGrid.ScrollIntoView(dirItem);
                     }
                 }
@@ -402,7 +412,7 @@ namespace cp2_wpf {
             }
 
             // Get item currently selected in file list, if any.
-            FileListItem? selectedItem = (FileListItem?)mMainWin.fileListDataGrid.SelectedItem;
+            FileListItem? selectedItem = mMainWin.SelectedFileListItem;
             IFileEntry selFileEntry = IFileEntry.NO_ENTRY;
             if (selectedItem != null) {
                 selFileEntry = selectedItem.FileEntry;
@@ -415,8 +425,7 @@ namespace cp2_wpf {
 
                 // Get item currently selected in directory tree, if any.
                 IFileEntry curSel = IFileEntry.NO_ENTRY;
-                DirectoryTreeItem? dirTreeSel =
-                    mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+                DirectoryTreeItem? dirTreeSel = mMainWin.SelectedDirectoryTreeItem;
                 if (dirTreeSel != null) {
                     curSel = dirTreeSel.FileEntry;
                 } else {
@@ -451,7 +460,7 @@ namespace cp2_wpf {
                 // previously-selected item because we might have recreated the item.
                 FileListItem? item = FileListItem.FindItemByEntry(mMainWin.FileList, selFileEntry);
                 if (item != null) {
-                    mMainWin.fileListDataGrid.SelectedItem = item;
+                    mMainWin.SelectedFileListItem = item;
                 }
                 // Don't set focus, or dir tree navigation in full-list mode will break.
                 //FileListItem.SetSelectionFocusByEntry(mMainWin.FileList, mMainWin.fileListDataGrid,
@@ -522,8 +531,7 @@ namespace cp2_wpf {
                 return VerifyFileList(mMainWin.FileList, (IArchive)CurrentWorkObject);
             } else if (CurrentWorkObject is IFileSystem) {
                 if (mMainWin.ShowSingleDirFileList) {
-                    DirectoryTreeItem? dirTreeSel =
-                        mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+                    DirectoryTreeItem? dirTreeSel = mMainWin.SelectedDirectoryTreeItem;
                     if (dirTreeSel == null) {
                         Debug.WriteLine("Can't verify file list, no dir tree sel");
                         return false;
@@ -557,8 +565,7 @@ namespace cp2_wpf {
                     ref dirCount, ref fileCount, fileList);
             } else if (CurrentWorkObject is IFileSystem) {
                 if (mMainWin.ShowSingleDirFileList) {
-                    DirectoryTreeItem? dirTreeSel =
-                        mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+                    DirectoryTreeItem? dirTreeSel = mMainWin.SelectedDirectoryTreeItem;
                     if (dirTreeSel != null) {
                         PopulateEntriesFromSingleDir(dirTreeSel.FileEntry,
                             ref dirCount, ref fileCount, fileList);

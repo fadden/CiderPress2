@@ -409,4 +409,34 @@
         </Viewbox>
     </ControlTemplate>
 
+
+    <ControlTemplate x:Key="icon_Upload">
+        <Viewbox Style="{StaticResource DisableFade}"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:System="clr-namespace:System;assembly=mscorlib">
+            <Rectangle Width="16 " Height="16">
+                <Rectangle.Resources>
+                    <SolidColorBrush x:Key="canvas" Opacity="0" />
+                    <SolidColorBrush x:Key="light-defaultgrey" Color="#212121" Opacity="1" />
+                </Rectangle.Resources>
+                <Rectangle.Fill>
+                    <DrawingBrush Stretch="None">
+                        <DrawingBrush.Drawing>
+                            <DrawingGroup>
+                                <DrawingGroup x:Name="canvas">
+                                    <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,16V0H16V16Z" />
+                                    <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,16V0H16V16Z" />
+                                </DrawingGroup>
+                                <DrawingGroup x:Name="level_1">
+                                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M12.854,6l-.708.707L8,2.561V13.854H7V2.561L2.854,6.707,2.146,6l5-5h.708Z" />
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingBrush.Drawing>
+                    </DrawingBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Viewbox>
+    </ControlTemplate>
+
 </ResourceDictionary>

@@ -296,6 +296,14 @@ namespace cp2_wpf {
             }
         }
 
+        public void NavToParent() {
+            DirectoryTreeItem? dirSel = mMainWin.SelectedDirectoryTreeItem;
+            if (dirSel == null || dirSel.Parent == null) {
+                return;
+            }
+            dirSel.Parent.IsSelected = true;
+        }
+
         public void NewDiskImage() {
             Debug.WriteLine("new disk image!");     // TODO
         }
@@ -566,7 +574,7 @@ namespace cp2_wpf {
         /// Handles (context) : Close Sub-Tree.
         /// </summary>
         public void CloseSubTree() {
-            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
             if (arcTreeSel == null) {
                 return;
             }
@@ -611,8 +619,8 @@ namespace cp2_wpf {
             daNode = null;
             selectionDir = IFileEntry.NO_ENTRY;
 
-            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
-            DirectoryTreeItem? dirTreeSel= mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
+            DirectoryTreeItem? dirTreeSel= mMainWin.SelectedDirectoryTreeItem;
             if (arcTreeSel == null || dirTreeSel == null) {
                 Debug.WriteLine("Current selection is not archive or filesystem");
                 return false;
@@ -668,7 +676,7 @@ namespace cp2_wpf {
             // or if we don't feel the need to handle them specially.
             bool doCheckOpen = false;
             if (omitOpenArc || closeOpenArc) {
-                ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+                ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
                 if (arcTreeSel != null) {
                     doCheckOpen = arcTreeSel.Items.Count != 0;
                 }
@@ -937,8 +945,8 @@ namespace cp2_wpf {
         /// Handles Actions : Edit Attributes
         /// </summary>
         public void EditAttributes() {
-            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
-            FileListItem? fileItem = mMainWin.fileListDataGrid.SelectedItem as FileListItem;
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
+            FileListItem? fileItem = mMainWin.SelectedFileListItem;
             if (arcTreeSel == null || fileItem == null) {
                 Debug.Assert(false);
                 return;
@@ -960,9 +968,8 @@ namespace cp2_wpf {
         /// Handles Actions : Edit Directory Attributes
         /// </summary>
         public void EditDirAttributes() {
-            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
-            DirectoryTreeItem? dirTreeSel =
-                mMainWin.directoryTree.SelectedItem as DirectoryTreeItem;
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
+            DirectoryTreeItem? dirTreeSel = mMainWin.SelectedDirectoryTreeItem;
             if (arcTreeSel == null || dirTreeSel == null) {
                 Debug.Assert(false);
                 return;
@@ -1034,7 +1041,7 @@ namespace cp2_wpf {
                     Debug.Assert(index >= 0);
                     mMainWin.FileList[index] = newFli;
                     // Set the selection.  This causes a refresh.
-                    mMainWin.fileListDataGrid.SelectedItem = newFli;
+                    mMainWin.SelectedFileListItem = newFli;
 
                     ArchiveTreeItem? ati =
                         ArchiveTreeItem.FindItemByEntry(mMainWin.ArchiveTreeRoot, entry);
@@ -1074,7 +1081,7 @@ namespace cp2_wpf {
         /// </summary>
         public void EditBlocksSectors(bool asSectors) {
             Debug.Assert(mWorkTree != null);
-            ArchiveTreeItem? arcTreeSel = mMainWin.archiveTree.SelectedItem as ArchiveTreeItem;
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
             if (arcTreeSel == null) {
                 Debug.Assert(false);
                 return;
