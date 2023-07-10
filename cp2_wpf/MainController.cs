@@ -127,7 +127,7 @@ namespace cp2_wpf {
                 settings.GetInt(AppSettings.MAIN_LEFT_PANEL_WIDTH, 300);
             mMainWin.ShowOptionsPanel =
                 settings.GetBool(AppSettings.MAIN_RIGHT_PANEL_VISIBLE, true);
-            mMainWin.WorkTreePanelHeight =
+            mMainWin.WorkTreePanelHeightRatio =
                 settings.GetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, 200);
         }
 
@@ -242,7 +242,7 @@ namespace cp2_wpf {
             settings.SetBool(AppSettings.MAIN_RIGHT_PANEL_VISIBLE, mMainWin.ShowOptionsPanel);
 
             // Vertical splitters.
-            settings.SetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, (int)mMainWin.WorkTreePanelHeight);
+            settings.SetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, (int)mMainWin.WorkTreePanelHeightRatio);
 
             //mMainWin.CaptureColumnWidths();
 

@@ -92,20 +92,23 @@ namespace cp2_wpf {
             get { return mainTriptychPanel.ColumnDefinitions[0].ActualWidth; }
             set { mainTriptychPanel.ColumnDefinitions[0].Width = new GridLength(value); }
         }
-        public double WorkTreePanelHeight {
-            get { return leftPanel.RowDefinitions[0].ActualHeight; }
+        public double WorkTreePanelHeightRatio {
+            get {
+                // Recording the actual pixel height is very hard, because of the grid
+                // measurement system and because the total panel height changes after
+                // certain events.  Instead, we record the ratio between the heights.
+                double ratio = leftPanel.RowDefinitions[0].ActualHeight /
+                    leftPanel.RowDefinitions[2].ActualHeight;
+                return ratio * 1000;
+            }
             set {
                 // If you set the height to a pixel value, you lose the auto-sizing behavior,
                 // and the splitter will happily shove the bottom panel off the bottom of the
                 // main window.  The trick is to use "star" units.
                 // Thanks: https://stackoverflow.com/q/35000893/294248
-                double totalHeight = leftPanel.RowDefinitions[0].ActualHeight +
-                    leftPanel.RowDefinitions[2].ActualHeight;
-                if (totalHeight > value) {
-                    leftPanel.RowDefinitions[0].Height = new GridLength(value, GridUnitType.Star);
-                    leftPanel.RowDefinitions[2].Height = new GridLength(totalHeight - value,
-                        GridUnitType.Star);
-                }
+                double ratio = value / 1000.0;
+                leftPanel.RowDefinitions[0].Height = new GridLength(ratio, GridUnitType.Star);
+                leftPanel.RowDefinitions[2].Height = new GridLength(1.0, GridUnitType.Star);
             }
         }
 
