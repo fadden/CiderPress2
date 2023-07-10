@@ -89,3 +89,9 @@ There are four distinct operations for adding and extracting files:
 
 Utilities such as NuLib2 and the original CiderPress blend the operations
 together, which can lead to some ambiguous behavior.
+
+The current Add Files feature is only able to add files, not whole directories,
+due to limitations in the file dialog.  To add a directory, drag it from a
+Windows Explorer window and drop it onto the file list.  The files will be
+added to the current directory; if you are viewing the full list of files, the
+target directory is the one selected in the directory tree window.

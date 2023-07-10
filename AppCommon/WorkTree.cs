@@ -355,7 +355,8 @@ namespace AppCommon {
         /// is opened and added to the tree, using the defined auto-open rules.
         /// </summary>
         /// <remarks>
-        /// Do not call here if the entry is already in the tree.
+        /// <para>This is called by applications wishing to add a file entry to the work tree.
+        /// Do not call here if the entry is already in the tree.</para>
         /// </remarks>
         /// <param name="workNode">Node for the IArchive or IFileSystem that the entry is a
         ///   part of.</param>
@@ -410,7 +411,7 @@ namespace AppCommon {
                 FilePart part = entry.IsDiskImage ? FilePart.DiskImage : FilePart.DataFork;
                 Stream? stream = null;
                 try {
-                    Debug.WriteLine("+++ scanning: " + entry.FullPathName);
+                    Debug.WriteLine("+++ scanning sub: " + entry.FullPathName);
                     FileAccessMode accessMode = fs.IsReadOnly ?
                         FileAccessMode.ReadOnly : FileAccessMode.ReadWrite;
 
@@ -505,9 +506,15 @@ namespace AppCommon {
                 mWorker.ReportProgress(0, pathName);
             }
             IDisposable? leafObj = IdentifyStreamContents(stream, ext, pathName, mAppHook,
-                out errorMsg, out bool hasFiles, out SectorOrder orderHint);
+                out errorMsg, out bool holdsFiles, out SectorOrder orderHint);
             if (leafObj == null) {
                 return null;
+            }
+            if (!holdsFiles) {
+                // It could be a disk image, but there's no filesystem.  If we bail out here,
+                // the disk won't be available for track viewing / sector editing.
+                //leafObj.Dispose();
+                //return null;
             }
 
             DiskArcNode? leafNode;
@@ -881,13 +888,14 @@ namespace AppCommon {
         /// <param name="label">Label to include in error messages.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <param name="errorMsg">Result: error message string.</param>
-        /// <param name="hasFiles">Result: true if we think there are files here.</param>
+        /// <param name="holdsFiles">Result: true if we think files can be stored here (archive
+        ///   or filesystem).</param>
         /// <returns>IArchive, IDiskImage, or (if analysis fails) null.</returns>
         public static IDisposable? IdentifyStreamContents(Stream stream, string ext,
-                string label, AppHook appHook, out string errorMsg, out bool hasFiles,
+                string label, AppHook appHook, out string errorMsg, out bool holdsFiles,
                 out SectorOrder orderHint) {
             errorMsg = string.Empty;
-            hasFiles = false;
+            holdsFiles = false;
             orderHint = SectorOrder.Unknown;
 
             ext = ext.ToLowerInvariant();
@@ -911,7 +919,7 @@ namespace AppCommon {
                 }
                 // Do the disk analysis while we have the order hint handy.
                 diskImage.AnalyzeDisk(null, orderHint, IDiskImage.AnalysisDepth.Full);
-                hasFiles = (diskImage.Contents != null);
+                holdsFiles = (diskImage.Contents != null);
                 return diskImage;
             } else {
                 IArchive? archive = FileAnalyzer.PrepareArchive(stream, kind, appHook);
@@ -919,7 +927,7 @@ namespace AppCommon {
                     errorMsg = "unable to open " + ThingString.FileKind(kind) + ": " + label;
                     return null;
                 }
-                hasFiles = true;
+                holdsFiles = true;
                 return archive;
             }
         }

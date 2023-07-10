@@ -189,8 +189,8 @@ limitations under the License.
         <Menu Name="appMenu" DockPanel.Dock="Top">
             <!-- built-in commands are defined in WPF ApplicationCommands class -->
             <MenuItem Header="_File">
-                <MenuItem Command="{StaticResource NewDiskImageCmd}"/>
-                <MenuItem Command="{StaticResource NewFileArchiveCmd}"/>
+                <!--<MenuItem Command="{StaticResource NewDiskImageCmd}"/>
+                <MenuItem Command="{StaticResource NewFileArchiveCmd}"/>-->
                 <MenuItem Command="Open" Header="_Open"/>
                 <MenuItem Command="{StaticResource CloseCmd}"/>
                 <Separator/>

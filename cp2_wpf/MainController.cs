@@ -34,6 +34,7 @@ using DiskArc;
 using DiskArc.Arc;
 using DiskArc.FS;
 using DiskArc.Multi;
+using Microsoft.Win32;
 using static DiskArc.Defs;
 
 namespace cp2_wpf {
@@ -244,7 +245,8 @@ namespace cp2_wpf {
             settings.SetBool(AppSettings.MAIN_RIGHT_PANEL_VISIBLE, mMainWin.ShowOptionsPanel);
 
             // Vertical splitters.
-            settings.SetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, (int)mMainWin.WorkTreePanelHeightRatio);
+            settings.SetInt(AppSettings.MAIN_WORK_TREE_HEIGHT,
+                (int)mMainWin.WorkTreePanelHeightRatio);
 
             mMainWin.CaptureColumnWidths();
 
@@ -747,18 +749,37 @@ namespace cp2_wpf {
         /// Handles Actions : Add Files
         /// </summary>
         public void AddFiles() {
-            Debug.WriteLine("add!");
-
             // TODO: need a custom dialog to select files/folders.  All of the nonsense called out
             // in https://github.com/fadden/ciderpress/blob/master/util/SelectFilesDialog.h still
             // exists.  https://stackoverflow.com/q/31059/294248 has some stuff but it's
             // mostly Windows Forms or customized system dialogs.  Drag & drop from Explorer is
             // easier than this.
+
+            OpenFileDialog fileDlg = new OpenFileDialog() {
+                Filter = WinUtil.FILE_FILTER_ALL,
+                FilterIndex = 1,
+                Multiselect = true,
+                Title = "Select Files to Add (No Directories)"
+            };
+            if (fileDlg.ShowDialog() != true) {
+                return;
+            }
+            Debug.WriteLine("Add files:");
+            AddPaths(fileDlg.FileNames);
         }
 
+        /// <summary>
+        /// Handles file drop.
+        /// </summary>
+        /// <param name="dropTarget">File entry onto which the files were dropped.</param>
+        /// <param name="pathNames">List of pathnames to add.</param>
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
+            AddPaths(pathNames);
+        }
+
+        private void AddPaths(string[] pathNames) {
             foreach (string path in pathNames) {
                 Debug.WriteLine("  " + path);
             }

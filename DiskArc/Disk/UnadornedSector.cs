@@ -17,6 +17,7 @@ using System;
 using System.Diagnostics;
 
 using CommonUtil;
+using DiskArc.FS;
 using DiskArc.Multi;
 using static DiskArc.Defs;
 using static DiskArc.IDiskImage;
@@ -62,6 +63,10 @@ namespace DiskArc.Disk {
         // Innards.
         //
 
+        // Smallest file we'll recognize as a possible block image.  This helps screen out
+        // small files, notably those named ".IMG".
+        private const int MIN_BLOCK_IMG_LEN = ProDOS.MIN_VOL_SIZE;
+
         private Stream mStream;
         private AppHook mAppHook;
 
@@ -76,7 +81,7 @@ namespace DiskArc.Disk {
                 // so we can test mod BLOCK_SIZE rather than SECTOR_SIZE.
                 return true;
             } else {
-                return stream.Length > 0 && stream.Length % BLOCK_SIZE == 0;
+                return stream.Length >= MIN_BLOCK_IMG_LEN && stream.Length % BLOCK_SIZE == 0;
             }
         }
 
@@ -206,7 +211,7 @@ namespace DiskArc.Disk {
             } else if (mStream.Length == SECTOR_SIZE * 16 * 80) {
                 // 80-track 5.25" floppy (rare)
                 chunks = new GeneralChunkAccess(mStream, 0, 80, 16, orderHint);
-            } else if (mStream.Length % BLOCK_SIZE == 0) {
+            } else if (mStream.Length % BLOCK_SIZE == 0 && mStream.Length > MIN_BLOCK_IMG_LEN) {
                 // Assume block device of arbitrary size.
                 chunks = new GeneralChunkAccess(mStream, 0, (uint)(mStream.Length / BLOCK_SIZE));
             } else {
