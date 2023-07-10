@@ -200,7 +200,7 @@ namespace CommonUtil {
                 object o = Enum.Parse(typeof(T), valueStr);
                 return (T)o;
             } catch (ArgumentException ae) {
-                Debug.WriteLine("Failed to parse " + valueStr + " (enum " + typeof(T) + "): " +
+                Debug.WriteLine("Failed to parse '" + valueStr + "' (enum " + typeof(T) + "): " +
                     ae.Message);
                 return defaultValue;
             }

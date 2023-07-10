@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Text;
 
 namespace CommonUtil {
     /// <summary>
@@ -152,6 +153,46 @@ namespace CommonUtil {
             }
 
             return num * mult;
+        }
+
+        /// <summary>
+        /// Serializes an integer array into a string.
+        /// </summary>
+        /// <param name="values">Array to serialize.</param>
+        /// <returns>Serialized data.</returns>
+        public static string SerializeIntArray(int[] values) {
+            StringBuilder sb = new StringBuilder(64);
+            sb.Append("int[]");
+            for (int i = 0; i < values.Length; i++) {
+                sb.Append(',');
+                sb.Append(values[i]);
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Deserializes an integer array from a string.  Throws an exception if the format
+        /// is incorrect.
+        /// </summary>
+        /// <param name="cereal">Serialized data.</param>
+        /// <returns>Integer array with contents.</returns>
+        public static int[] DeserializeIntArray(string cereal) {
+            string[] splitted = cereal.Split(',');
+            if (splitted.Length == 0) {
+                throw new Exception("Bad serialized int[]");
+            }
+            if (splitted[0] != "int[]") {
+                throw new Exception("Bad serialized int[], started with " + splitted[0]);
+            }
+            int[] arr = new int[splitted.Length - 1];
+            try {
+                for (int i = 1; i < splitted.Length; i++) {
+                    arr[i - 1] = int.Parse(splitted[i]);
+                }
+            } catch (Exception ex) {
+                throw new Exception("Bad serialized int[]: " + ex.Message);
+            }
+            return arr;
         }
     }
 }

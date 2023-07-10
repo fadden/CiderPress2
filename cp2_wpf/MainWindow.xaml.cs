@@ -304,9 +304,75 @@ namespace cp2_wpf {
         private void ColumnWidthChanged(object? sender, EventArgs e) {
             DataGridTextColumn? col = sender as DataGridTextColumn;
             if (col != null) {
-                Debug.WriteLine("Column " + col.Header + " width now " + col.ActualWidth);
+                //Debug.WriteLine("Column " + col.Header + " width now " + col.ActualWidth);
             }
             AppSettings.Global.IsDirty = true;
+        }
+
+        /// <summary>
+        /// Grabs the widths of the columns and saves them in the global AppSettings.
+        /// </summary>
+        public void CaptureColumnWidths() {
+            string widthStr;
+
+            widthStr = CaptureColumnWidths(fileListDataGrid);
+            AppSettings.Global.SetString(AppSettings.MAIN_FILE_COL_WIDTHS, widthStr);
+        }
+        private string CaptureColumnWidths(GridView gv) {
+            int[] widths = new int[gv.Columns.Count];
+            for (int i = 0; i < gv.Columns.Count; i++) {
+                widths[i] = (int)Math.Round(gv.Columns[i].ActualWidth);
+            }
+            return StringToValue.SerializeIntArray(widths);
+        }
+        private string CaptureColumnWidths(DataGrid dg) {
+            int[] widths = new int[dg.Columns.Count];
+            for (int i = 0; i < dg.Columns.Count; i++) {
+                widths[i] = (int)Math.Round(dg.Columns[i].ActualWidth);
+            }
+            return StringToValue.SerializeIntArray(widths);
+        }
+
+        /// <summary>
+        /// Applies column widths from the global AppSettings.
+        /// </summary>
+        public void RestoreColumnWidths() {
+            RestoreColumnWidths(fileListDataGrid,
+                AppSettings.Global.GetString(AppSettings.MAIN_FILE_COL_WIDTHS, string.Empty));
+        }
+        private void RestoreColumnWidths(GridView gv, string str) {
+            int[] widths;
+            try {
+                widths = StringToValue.DeserializeIntArray(str);
+            } catch (Exception ex) {
+                Debug.WriteLine("Unable to deserialize widths for GridView: " + ex.Message);
+                return;
+            }
+            if (widths.Length != gv.Columns.Count) {
+                Debug.WriteLine("Incorrect column count for GridView");
+                return;
+            }
+
+            for (int i = 0; i < widths.Length; i++) {
+                gv.Columns[i].Width = widths[i];
+            }
+        }
+        private void RestoreColumnWidths(DataGrid dg, string str) {
+            int[] widths;
+            try {
+                widths = StringToValue.DeserializeIntArray(str);
+            } catch (Exception ex) {
+                Debug.WriteLine("Unable to deserialize widths for " + dg.Name + ": " + ex.Message);
+                return;
+            }
+            if (widths.Length != dg.Columns.Count) {
+                Debug.WriteLine("Incorrect column count for " + dg.Name);
+                return;
+            }
+
+            for (int i = 0; i < widths.Length; i++) {
+                dg.Columns[i].Width = widths[i];
+            }
         }
 
         #region Can-execute handlers
@@ -461,6 +527,7 @@ namespace cp2_wpf {
                 // actions on second time through.  No idea why this is happening, but we
                 // don't need to "hard shift" the focus here.
                 mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, false);
+                // TODO: reset sort order, in case filename/pathname selected?
             }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
@@ -469,6 +536,7 @@ namespace cp2_wpf {
             if (ShowSingleDirFileList) {
                 ShowSingleDirFileList = false;
                 mMainCtrl.PopulateFileList(IFileEntry.NO_ENTRY, false);
+                // TODO: reset sort order, in case filename/pathname selected?
             }
             SetShowCenterInfo(CenterPanelChange.Files);
         }
