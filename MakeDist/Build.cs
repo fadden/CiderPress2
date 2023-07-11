@@ -25,11 +25,15 @@ namespace MakeDist {
             "Examples/AddFile",
             "Examples/ListContents",
         };
+        private static string[] sWinTargets = new string[] {
+            "cp2_wpf",
+        };
 
         private static string[] sDistFiles = new string[] {
             "README.md",
             "LegalStuff.txt",
-            "cp2/Manual-cp2.md"
+            "cp2/Manual-cp2.md",
+            "CiderPress2-notes.txt",
         };
 
         private const string DIST_DIR = "DIST";
@@ -97,10 +101,12 @@ namespace MakeDist {
                     return false;
                 }
             }
-            // Throw in the WPF app for Windows builds, but not for the self-contained version.
-            if (rid.StartsWith("win") && !isContained) {
-                if (!BuildTarget(rid, isDebug, isContained, outputDir, "cp2_wpf")) {
-                    return false;
+            // Add the WPF app for Windows builds.
+            if (rid.StartsWith("win")) {
+                foreach (string target in sWinTargets) {
+                    if (!BuildTarget(rid, isDebug, isContained, outputDir, target)) {
+                        return false;
+                    }
                 }
             }
             return true;

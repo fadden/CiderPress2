@@ -1220,9 +1220,18 @@ namespace cp2_wpf {
         /// <summary>
         /// Handles Help : About.
         /// </summary>
-        public void About() {
+        public void HelpAbout() {
             AboutBox dialog = new AboutBox(mMainWin);
             dialog.ShowDialog();
+        }
+
+        /// <summary>
+        /// Handles Help : Help.
+        /// </summary>
+        public void HelpHelp() {
+            string pathName = Path.Combine(WinUtil.GetRuntimeDataDir(), "CiderPress2-notes.txt");
+            string url = "file://" + pathName;
+            CommonUtil.ShellCommand.OpenUrl(url);
         }
 
         private static void ShowFileError(string msg) {

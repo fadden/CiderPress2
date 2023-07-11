@@ -435,7 +435,7 @@ namespace cp2_wpf {
         #region Command handlers
 
         private void AboutCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            mMainCtrl.About();
+            mMainCtrl.HelpAbout();
         }
         private void AddFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.AddFiles();
@@ -483,8 +483,7 @@ namespace cp2_wpf {
             mMainCtrl.ExtractFiles();
         }
         private void HelpCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            // TODO
-            MessageBox.Show(this, "Help is on the way... soon.", "Help");
+            mMainCtrl.HelpHelp();
         }
         private void NavToParentCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.NavToParent();
