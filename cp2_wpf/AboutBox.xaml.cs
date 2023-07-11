@@ -15,6 +15,7 @@
  */
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 using AppCommon;
@@ -39,6 +40,16 @@ namespace cp2_wpf {
         public string OsPlatform {
             get {
                 return "OS: " + System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+            }
+        }
+
+        /// <summary>
+        /// Runtime information, for display.
+        /// </summary>
+        public string RuntimeInfo {
+            get {
+                return "Runtime: " + RuntimeInformation.FrameworkDescription + " / " +
+                    RuntimeInformation.RuntimeIdentifier;
             }
         }
 

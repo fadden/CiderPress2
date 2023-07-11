@@ -55,8 +55,9 @@ limitations under the License.
 
         <StackPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,20,0,0">
             <TextBlock Text="{Binding OsPlatform, FallbackValue=OS: blah blah blah}"/>
+            <TextBlock Text="{Binding RuntimeInfo, FallbackValue=RunTime: blah blah}"/>
             <TextBlock Text="Assertions and extended validation are enabled"
-                       Visibility="{Binding DebugMessageVisibility}"/>
+                       FontStyle="Italic" Visibility="{Binding DebugMessageVisibility}"/>
             <TextBlock Text="Legal stuff:" Margin="0,8,0,0"/>
         </StackPanel>
 
