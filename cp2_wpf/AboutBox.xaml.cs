@@ -39,7 +39,7 @@ namespace cp2_wpf {
         /// </summary>
         public string OsPlatform {
             get {
-                return "OS: " + System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+                return "OS: " + RuntimeInformation.OSDescription;
             }
         }
 

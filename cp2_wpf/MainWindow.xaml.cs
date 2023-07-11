@@ -208,15 +208,15 @@ namespace cp2_wpf {
         public MainWindow() {
             Debug.WriteLine("START at " + DateTime.Now.ToLocalTime());
 
+            Crash.AppTag = "CiderPress2";
+            Crash.AppIdent = "CiderPress II v" + GlobalAppVersion.AppVersion.ToString();
+            AppDomain.CurrentDomain.UnhandledException +=
+                new UnhandledExceptionEventHandler(Crash.CrashReporter);
+
             InitializeComponent();
             DataContext = this;
 
             mMainCtrl = new MainController(this);
-
-            //ICON_STATUS_OK = (ControlTemplate)FindResource("icon_StatusOK");
-            //ICON_STATUS_DUBIOUS = (ControlTemplate)FindResource("icon_StatusInvalid");
-            //ICON_STATUS_WARNING = (ControlTemplate)FindResource("icon_StatusWarning");
-            //ICON_STATUS_DAMAGE = (ControlTemplate)FindResource("icon_StatusDamage");
 
             // Get an event when the splitters move.  Because of the way things are set up, it's
             // actually best to get an event when the grid row/column sizes change.
