@@ -57,13 +57,14 @@ In the shell, change to the directory where the files were unzipped.  Then:
 The commands are:
 
  - `cp2`: command-line interface
- - `CiderPress2`: GUI interface (currently only in the framework-dependent Windows build)
+ - `CiderPress2`: GUI interface (Windows builds only)
  - `AddFile`: simple demo program - [README](Examples/AddFile/README.md)
  - `ListContents`: simple demo program - [README](Examples/ListContents/README.md)
 
 The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
 of viewing in a terminal window.  The file is in "markdown" format, which is perfectly readable
-as a plain text file.
+as a plain text file.  It also includes release notes for CiderPress2, `CiderPress2-notes.txt`,
+which can be opened in a web browser by hitting F1 from the GUI.
 
 ## Tested Systems ##
 
