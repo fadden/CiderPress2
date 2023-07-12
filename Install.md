@@ -7,7 +7,8 @@ Mac OS, and Linux.  It's even available for the
 
 Not everyone wants to install the .NET runtime on their system, so CiderPress II is available
 as both "framework-dependent" and "self-contained" downloads.  The former is much smaller
-(by ~30MB), but the latter will work without having the runtime installed.
+(by 30+MB), but the latter will work without having the runtime installed.  Windows users
+will likely already have the runtime installed.
 
 If you want to install the .NET runtime, get it here: https://dotnet.microsoft.com/en-us/download .
 Click on "all .NET 6.0 downloads" (or whatever version is current), then in the
@@ -23,18 +24,19 @@ or use one of these links to download a recent release:
 
 System      | Self-Cont'd? | Link
 ----------- | ------------ | ----
-Windows x86 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x86_fd.zip
-Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x86_sc.zip
-Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_fd.zip
-Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_win-x64_sc.zip
-Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_fd.zip
-Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_osx-x64_sc.zip
-Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_fd.zip
-Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.1.0-dev1/cp2_0.1.0-d1_linux-x64_sc.zip
+Windows x86 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x86_fd.zip
+Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x86_sc.zip
+Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x64_fd.zip
+Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x64_sc.zip
+Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_osx-x64_fd.zip
+Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_osx-x64_sc.zip
+Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_linux-x64_fd.zip
+Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_linux-x64_sc.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they were unzipped.
-On some systems an additional step may be necessary.  You will need a command-line shell:
+On some systems an additional step may be necessary.  You will need a command-line shell to
+run "cp2":
 
  - Windows: hit Windows+R to open the "run" window.  Enter "cmd" for a classic DOS shell or
    "powershell" for something fancier, and hit return.
@@ -44,13 +46,13 @@ On some systems an additional step may be necessary.  You will need a command-li
 In the shell, change to the directory where the files were unzipped.  Then:
 
  - Windows: run `./cp2 version`.  You will probably need to click through some security warnings.
- - Linux: use `chmod +x cp2` to make it executable.  Run `./cp2 version` to confirm it works.
- - Mac OS: use `chmod +x cp2` to make it executable.  You then need to remove the quarantine
-   flag from the files, or the system will not allow you to execute them.  In the directory
-   where the files were unpacked, run `xattr -d comp.apple.quarantine *`.  Run
-   `./cp2 version` to confirm this was successful.
-
-(The "chmod" step will be eliminated in the next release.)
+   If you're only interested in the GUI version, just double-click `CiderPress2.exe`.
+ - Linux: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
+   to fix it.  Run `./cp2 version` to confirm it works.
+ - Mac OS: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
+   to make it executable.  You then need to remove the quarantine flag from the files, or the
+   system will not allow you to execute them.  In the directory where the files were unpacked, run
+   `xattr -d comp.apple.quarantine *`.  Run `./cp2 version` to confirm this was successful.
 
 The commands are:
 

@@ -264,7 +264,7 @@ limitations under the License.
                     <ContentControl Template="{StaticResource icon_ListView}"/>
                 </Button>
                 <Button Command="{StaticResource ShowDirListCmd}" IsEnabled="{Binding IsDirListEnabled}"
-                        ToolTip="Show individual directory contents">
+                        ToolTip="Show contents of single directory">
                     <ContentControl Template="{StaticResource icon_MeasureTree}"/>
                 </Button>
                 <Button Command="{StaticResource ShowInfoCmd}"
@@ -279,7 +279,7 @@ limitations under the License.
                     <ContentControl Template="{StaticResource icon_ClearSort}"/>
                 </Button>
                 <Button Command="{StaticResource NavToParentCmd}"
-                        ToolTip="Move into parent directory">
+                        ToolTip="Move to parent directory">
                     <ContentControl Template="{StaticResource icon_Upload}"/>
                 </Button>
 

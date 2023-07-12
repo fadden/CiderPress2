@@ -443,6 +443,7 @@ namespace cp2_wpf {
             // Put the focus on the track/block input field, since their first move will likely
             // be to read something other than the boot block.
             trackBlockNumBox.Focus();
+            trackBlockNumBox.SelectAll();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e) {

@@ -129,7 +129,7 @@ namespace cp2_wpf {
             mMainWin.ShowOptionsPanel =
                 settings.GetBool(AppSettings.MAIN_RIGHT_PANEL_VISIBLE, true);
             mMainWin.WorkTreePanelHeightRatio =
-                settings.GetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, 200);
+                settings.GetInt(AppSettings.MAIN_WORK_TREE_HEIGHT, 800);    // 0.7:1
 
             mMainWin.RestoreColumnWidths();
         }
@@ -140,7 +140,7 @@ namespace cp2_wpf {
         /// </summary>
         public void WindowLoaded() {
             Debug.WriteLine("--- running unit tests ---");
-            Debug.Assert(CommonUtil.RangeSet.Test());
+            Debug.Assert(RangeSet.Test());
             Debug.Assert(CommonUtil.Version.Test());
             Debug.Assert(CircularBitBuffer.DebugTest());
             Debug.Assert(Glob.DebugTest());

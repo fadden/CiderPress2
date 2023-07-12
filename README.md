@@ -16,12 +16,13 @@ set metadata, copy blocks or sectors, edit blocks or sectors, and view raw track
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
- - Video demo of v0.1 here: https://www.youtube.com/watch?v=_jDVdC6-eoA
+ - Video demo of v0.2 GUI here: https://www.youtube.com/watch?v=esEHP6Bo8GI .
+   Video demo of v0.1 CLI/GUI here: https://www.youtube.com/watch?v=_jDVdC6-eoA
  - The command-line tool is alpha quality.  The command set is feature-complete for v1.0, though
    support for some key formats is missing.  See [the manual](cp2/Manual-cp2.md) for a thorough
    description of commands and features.
- - The GUI tool is still under development, and should not be used by anyone;
-   see notes in [GUI Tool Development](#gui-tool-development).
+ - The GUI tool is partly functional but substantially incomplete.  It's only available for
+   Windows at this time; see notes in [GUI Tool Development](#gui-tool-development).
 
 ## Features ##
 
@@ -212,6 +213,9 @@ overall package.
 ## Getting Started ##
 
 [ TODO ]
+
+The GUI application is usable but incomplete.  There are some significant differences from the
+original CiderPress, noted in the [release notes](CiderPress2-notes.txt).
 
 See [the manual](cp2/Manual-cp2.md) for instructions on using the command-line "cp2" tool.
 You will need a command shell for your system, such as Terminal for the Mac, or PowerShell
