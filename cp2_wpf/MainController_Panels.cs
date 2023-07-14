@@ -32,6 +32,34 @@ using DiskArc.FS;
 using DiskArc.Multi;
 using static DiskArc.Defs;
 
+//
+// The user can select a new directory in the tree by clicking on an entry.  If they double-click
+// on a directory in the file list, we want to change the directory tree selection from code.
+// Both of these actions cause a SelectedItemChanged event to fire, which is where we perform
+// various actions.  While these actions should result in the same updates to the data structures,
+// they have different behavior when it comes to which control ends up with the focus after the
+// changes have been made.  If the user clicked in the directory list we'd like the focus to stay
+// there, but in other circumstances we might want the focus to be on the file list.  A fundamental
+// requirement for managing focus is knowing whether a SelectedItemChanged event is firing as a
+// result of user activity or a programmatic change, but WPF provides no way for us to tell the
+// difference.
+//
+// We can wrap accesses to IsSelected and Clear() with a boolean flag that suppresses the usual
+// SelectedItemChange behavior for programmatic changes, but unfortunately that doesn't always
+// work.  For example, if the user clicks on a new entry in the archive tree, the change event
+// for that tree will repopulate the directory tree and select the first entry.  The directory
+// tree's SelectedItemChanged event doesn't fire until later (possibly delayed by virtualization?).
+//
+// One possible approach is to try to track which thing happened first, i.e. set an enum that
+// doesn't get overwritten by subsequent event handlers.  On exit, if the event handler sees a
+// matching enum value, it can do the appropriate focusing and then clear the enum.  This
+// requires that things happen in a specific order, however, which may not be the case because
+// sometimes WPF events are added to a queue instead of firing immediately.
+//
+// Detecting mouse and keyboard activity might work if they can be tied to a subsequent event,
+// but that approach seems error-prone.
+//
+
 namespace cp2_wpf {
     public partial class MainController {
         private bool mSwitchFocusToFileList = false;
