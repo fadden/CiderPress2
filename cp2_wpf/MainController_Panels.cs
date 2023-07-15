@@ -131,6 +131,11 @@ namespace cp2_wpf {
         public bool IsDiskImageSelected { get { return CurrentWorkObject is IDiskImage; } }
 
         /// <summary>
+        /// True if the object selected in the archive tree is a nibble disk image.
+        /// </summary>
+        public bool IsNibbleImageSelected { get { return CurrentWorkObject is INibbleDataAccess; } }
+
+        /// <summary>
         /// True if the object selected in the archive tree is a filesystem.
         /// </summary>
         public bool IsFileSystemSelected { get { return CurrentWorkObject is IFileSystem; } }

@@ -56,7 +56,7 @@ namespace cp2_wpf.Actions {
         /// <summary>
         /// List of results.  If all goes well, the list will be empty.
         /// </summary>
-        public List<Failure>? FailureResults { get; set; } = null;
+        public List<Failure>? FailureResults { get; private set; } = null;
 
 
         public TestProgress(object archiveOrFileSystem, List<IFileEntry> selected,
@@ -83,14 +83,14 @@ namespace cp2_wpf.Actions {
                 //    return false;
                 //}
 
-                TestArchive(arc, mSelected, EnableMacOSZip, failures);
+                TestArchive(arc, mSelected, EnableMacOSZip, bkWorker, failures);
             } else {
                 IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
                 //if (!Misc.StdChecks(fs, needWrite: false, fastScan: false)) {
                 //    return false;
                 //}
 
-                TestFileSystem(fs, mSelected, failures);
+                TestFileSystem(fs, mSelected, bkWorker, failures);
 
                 // Don't descend into embedded volumes.  If they want to test those, they can
                 // select the specific filesystem and test it.
@@ -100,35 +100,48 @@ namespace cp2_wpf.Actions {
         }
 
         private static void TestArchive(IArchive arc, List<IFileEntry> selected,
-                bool doMacZip, List<Failure> failures) {
-            foreach (IFileEntry entry in selected) {
+                bool doMacZip, BackgroundWorker bkWorker, List<Failure> failures) {
+            for (int i = 0; i < selected.Count; i++) {
+                IFileEntry entry = selected[i];
+                int perc = (i * 100) / selected.Count;     // approximate
+
+                if (bkWorker.CancellationPending) {
+                    return;
+                }
+
                 if (doMacZip && Zip.HasMacZipHeader(arc, entry, out IFileEntry adfEntry)) {
                     // Test the full ADF entry.  To be thorough we should open the ADF
                     // entry and confirm the validity of the resource fork.
-                    if (!TestArchiveFork(arc, adfEntry, FilePart.DataFork)) {
+                    if (!TestArchiveFork(arc, adfEntry, FilePart.DataFork, bkWorker, perc)) {
                         failures.Add(new Failure(adfEntry, FilePart.DataFork));
                     }
                 }
                 if (entry.IsDiskImage) {
-                    if (!TestArchiveFork(arc, entry, FilePart.DiskImage)) {
+                    if (!TestArchiveFork(arc, entry, FilePart.DiskImage, bkWorker, perc)) {
                         failures.Add(new Failure(entry, FilePart.DiskImage));
                     }
                 }
                 if (entry.HasDataFork) {
-                    if (!TestArchiveFork(arc, entry, FilePart.DataFork)) {
+                    if (!TestArchiveFork(arc, entry, FilePart.DataFork, bkWorker, perc)) {
                         failures.Add(new Failure(entry, FilePart.DataFork));
                     }
                 }
                 if (entry.HasRsrcFork) {
-                    if (!TestArchiveFork(arc, entry, FilePart.RsrcFork)) {
+                    if (!TestArchiveFork(arc, entry, FilePart.RsrcFork, bkWorker, perc)) {
                         failures.Add(new Failure(entry, FilePart.RsrcFork));
                     }
                 }
             }
         }
 
-        private static bool TestArchiveFork(IArchive arc, IFileEntry entry, FilePart part) {
-            //Debug.WriteLine("TestA: " + part + " " + entry.FullPathName);
+        private static bool TestArchiveFork(IArchive arc, IFileEntry entry, FilePart part,
+                BackgroundWorker bkWorker, int perc) {
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Progress,
+                entry.FullPathName, entry.DirectorySeparatorChar);
+            facts.ProgressPercent = perc;
+            facts.Part = part;
+            ProgressUtil.HandleCallback(facts, "test", bkWorker);
+
             try {
                 using (Stream stream = arc.OpenPart(entry, part)) {
                     stream.CopyTo(Stream.Null);
@@ -145,8 +158,15 @@ namespace cp2_wpf.Actions {
         }
 
         private static void TestFileSystem(IFileSystem fs, List<IFileEntry> selected,
-                List<Failure> failures) {
-            foreach (IFileEntry entry in selected) {
+                BackgroundWorker bkWorker, List<Failure> failures) {
+            for (int i = 0; i < selected.Count; i++) {
+                IFileEntry entry = selected[i];
+                int perc = (i * 100) / selected.Count;     // approximate
+
+                if (bkWorker.CancellationPending) {
+                    return;
+                }
+
                 if (entry.IsDirectory) {
                     // The selection set contains all entries (full recursive descent), so we
                     // don't need to handle that here.
@@ -154,12 +174,12 @@ namespace cp2_wpf.Actions {
                 } else {
                     if (entry.HasDataFork) {
                         // Use RawData to more fully scan DOS 3.3 disks.
-                        if (!TestDiskFork(fs, entry, FilePart.RawData)) {
+                        if (!TestDiskFork(fs, entry, FilePart.RawData, bkWorker, perc)) {
                             failures.Add(new Failure(entry, FilePart.RawData));
                         }
                     }
                     if (entry.HasRsrcFork) {
-                        if (!TestDiskFork(fs, entry, FilePart.RsrcFork)) {
+                        if (!TestDiskFork(fs, entry, FilePart.RsrcFork, bkWorker, perc)) {
                             failures.Add(new Failure(entry, FilePart.RsrcFork));
                         }
                     }
@@ -167,8 +187,13 @@ namespace cp2_wpf.Actions {
             }
         }
 
-        private static bool TestDiskFork(IFileSystem fs, IFileEntry entry, FilePart part) {
-            //Debug.WriteLine("TestF: " + part + " " + entry.FullPathName);
+        private static bool TestDiskFork(IFileSystem fs, IFileEntry entry, FilePart part,
+                BackgroundWorker bkWorker, int perc) {
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Progress,
+                entry.FullPathName, entry.DirectorySeparatorChar);
+            facts.ProgressPercent = perc;
+            facts.Part = part;
+            ProgressUtil.HandleCallback(facts, "test", bkWorker);
             try {
                 using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadOnly, part)) {
                     stream.CopyTo(Stream.Null);

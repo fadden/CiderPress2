@@ -1202,8 +1202,44 @@ namespace cp2_wpf {
         /// Handles context : ScanForBadBlocks
         /// </summary>
         public void ScanForBadBlocks() {
-            // TODO
-            Debug.WriteLine("SCAN! " + CurrentWorkObject);
+            IDiskImage? diskImage = CurrentWorkObject as IDiskImage;
+            if (diskImage == null) {
+                Debug.Assert(false);
+                return;
+            }
+
+            ScanBlocksProgress prog = new ScanBlocksProgress(diskImage, AppHook);
+            WorkProgress workDialog = new WorkProgress(mMainWin, prog, true);
+            if (workDialog.ShowDialog() == true) {
+                List<ScanBlocksProgress.Failure>? results = prog.FailureResults!;
+                if (results.Count != 0) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append("Unreadable blocks/sectors: ");
+                    sb.AppendLine(results.Count.ToString());
+                    sb.AppendLine();
+                    foreach (ScanBlocksProgress.Failure failure in results) {
+                        if (failure.IsBlock) {
+                            sb.Append("Block ");
+                            sb.Append(failure.BlockOrTrack);
+                        } else {
+                            sb.Append("T");
+                            sb.Append(failure.BlockOrTrack);
+                            sb.Append(" S");
+                            sb.Append(failure.Sector);
+                        }
+                        if (!failure.IsUnwritable) {
+                            sb.Append(" (writable)");
+                        }
+                        sb.AppendLine();
+                    }
+
+                    ShowText reportDialog = new ShowText(mMainWin, sb.ToString());
+                    reportDialog.Title = "Errors";
+                    reportDialog.Show();
+                } else {
+                    mMainWin.PostNotification("Scan successful, no errors", true);
+                }
+            }
         }
 
         /// <summary>
@@ -1237,8 +1273,6 @@ namespace cp2_wpf {
             };
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
-                mMainWin.PostNotification("Tests successful", true);
-
                 List<TestProgress.Failure>? results = prog.FailureResults!;
                 if (results.Count != 0) {
                     StringBuilder sb = new StringBuilder();
@@ -1255,7 +1289,11 @@ namespace cp2_wpf {
                     ShowText reportDialog = new ShowText(mMainWin, sb.ToString());
                     reportDialog.Title = "Failures";
                     reportDialog.Show();
+                } else {
+                    mMainWin.PostNotification("Tests successful, no failures", true);
                 }
+            } else {
+                mMainWin.PostNotification("Cancelled", false);
             }
         }
 

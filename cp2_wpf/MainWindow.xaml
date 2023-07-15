@@ -175,7 +175,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource ResetSortCmd}"
                         CanExecute="IsFileOpen" Executed="ResetSortCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForBadBlocksCmd}"
-                        CanExecute="IsDiskImageSelected" Executed="ScanForBadBlocksCmd_Executed"/>
+                        CanExecute="IsNibbleImageSelected" Executed="ScanForBadBlocksCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForSubVolCmd}"
                         CanExecute="IsFileSystemSelected" Executed="ScanForSubVolCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowDirListCmd}"

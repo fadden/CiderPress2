@@ -43,7 +43,12 @@ namespace cp2_wpf.Actions {
                         result = CallbackFacts.Results.Cancel;
                         break;
                     }
-                    bkWorker.ReportProgress(what.ProgressPercent, what.OrigPathName);
+                    if (what.Part == DiskArc.Defs.FilePart.RsrcFork) {
+                        bkWorker.ReportProgress(what.ProgressPercent,
+                            what.OrigPathName + " (rsrc)");
+                    } else {
+                        bkWorker.ReportProgress(what.ProgressPercent, what.OrigPathName);
+                    }
                     // DEBUG: sleep briefly so we can see the progress
                     //System.Threading.Thread.Sleep(500);
                     break;
