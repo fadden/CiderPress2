@@ -30,10 +30,13 @@ namespace cp2_wpf {
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;" +
             "*.gz;*.zip;*.as;*.acu";
+        public const string FILE_FILTER_BINARY2 = "Binary ][ (*.bny/bqy)|*.bny;*.bqy";
         public const string FILE_FILTER_CSV = "Comma-separated values (*.csv)|*.csv";
+        public const string FILE_FILTER_NUFX = "ShrinkIt (NuFX) archive (*.shk)|*.shk";
         public const string FILE_FILTER_PNG = "PNG images (*.png)|*.png";
         public const string FILE_FILTER_RTF = "RTF documents (*.rtf)|*.rtf";
-        public const string FILE_FILTER_TXT = "Text documents (*.txt)|*.txt";
+        public const string FILE_FILTER_TEXT = "Text documents (*.txt)|*.txt";
+        public const string FILE_FILTER_ZIP = "ZIP archive (*.zip)|*.zip";
 
         /// <summary>
         /// Asks the user to select a file to open.

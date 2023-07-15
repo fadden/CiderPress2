@@ -62,6 +62,9 @@ namespace cp2_wpf {
         public const string EXT_STRIP_PATHS_ENABLED = "ext-strip-paths-enabled";
         public const string EXT_PRESERVE_MODE = "ext-preserve-mode";
 
+        // New archive/disk.
+        public const string NEW_ARC_MODE = "new-arc-mode";
+
         // Sector editing.
         public const string SCTED_TEXT_CONV_MODE = "scted-text-conv-mode";
 

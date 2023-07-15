@@ -559,7 +559,7 @@ namespace cp2_wpf {
                 filter = WinUtil.FILE_FILTER_RTF;
                 ext = prefix + ".rtf";
             } else if (convOut is SimpleText) {
-                filter = WinUtil.FILE_FILTER_TXT;
+                filter = WinUtil.FILE_FILTER_TEXT;
                 ext = prefix + ".txt";
             } else if (convOut is CellGrid) {
                 filter = WinUtil.FILE_FILTER_CSV;

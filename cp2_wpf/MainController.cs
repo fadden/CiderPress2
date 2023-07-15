@@ -25,6 +25,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Win32;
 
 using AppCommon;
 using CommonUtil;
@@ -35,7 +36,6 @@ using DiskArc;
 using DiskArc.Arc;
 using DiskArc.FS;
 using DiskArc.Multi;
-using Microsoft.Win32;
 using static DiskArc.Defs;
 
 namespace cp2_wpf {
@@ -306,11 +306,86 @@ namespace cp2_wpf {
         }
 
         public void NewDiskImage() {
+            if (!CloseWorkFile()) {
+                return;
+            }
             Debug.WriteLine("new disk image!");     // TODO
         }
 
+        /// <summary>
+        /// Handles File : New File Archive
+        /// </summary>
         public void NewFileArchive() {
-            Debug.WriteLine("new file archive!");   // TODO
+            CreateFileArchive dialog = new CreateFileArchive(mMainWin);
+            if (dialog.ShowDialog() != true) {
+                return;
+            }
+
+            // It feels less distracting to do this now.
+            if (!CloseWorkFile()) {
+                return;
+            }
+
+            string ext, filter;
+            switch (dialog.Kind) {
+                case FileKind.Binary2:
+                    ext = ".bny";
+                    filter = WinUtil.FILE_FILTER_BINARY2;
+                    break;
+                case FileKind.NuFX:
+                    ext = ".shk";
+                    filter = WinUtil.FILE_FILTER_NUFX;
+                    break;
+                case FileKind.Zip:
+                    ext = ".zip";
+                    filter = WinUtil.FILE_FILTER_ZIP;
+                    break;
+                default:
+                    Debug.Assert(false);
+                    return;
+            }
+            string fileName = "NewArchive" + ext;
+
+            SaveFileDialog fileDlg = new SaveFileDialog() {
+                Title = "Create New Archive...",
+                Filter = filter + "|" + WinUtil.FILE_FILTER_ALL,
+                FilterIndex = 1,
+                FileName = fileName
+            };
+            if (fileDlg.ShowDialog() != true) {
+                return;
+            }
+
+            // Add extension if not present.  (AddExtension property doesn't work quite right.)
+            string pathName = Path.GetFullPath(fileDlg.FileName);
+            if (!pathName.ToLowerInvariant().EndsWith(ext)) {
+                pathName += ext;
+            }
+
+            IArchive archive;
+            switch (dialog.Kind) {
+                case FileKind.Binary2:
+                    archive = Binary2.CreateArchive(AppHook);
+                    break;
+                case FileKind.NuFX:
+                    archive = NuFX.CreateArchive(AppHook);
+                    break;
+                case FileKind.Zip:
+                    archive = Zip.CreateArchive(AppHook);
+                    break;
+                default:
+                    Debug.Assert(false);
+                    return;
+            }
+            try {
+                using (FileStream imgStream = new FileStream(pathName, FileMode.CreateNew)) {
+                    archive.StartTransaction();
+                    archive.CommitTransaction(imgStream);
+                }
+                DoOpenWorkFile(pathName, false);
+            } catch (IOException ex) {
+                ShowFileError("Unable to create archive: " + ex.Message);
+            }
         }
 
         /// <summary>
@@ -1248,7 +1323,7 @@ namespace cp2_wpf {
 
                     ShowText reportDialog = new ShowText(mMainWin, sb.ToString());
                     reportDialog.Title = "Errors";
-                    reportDialog.Show();
+                    reportDialog.ShowDialog();
                 } else {
                     mMainWin.PostNotification("Scan successful, no errors", true);
                 }
