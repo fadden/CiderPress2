@@ -92,7 +92,14 @@ namespace AppCommon {
             if (mOuterStream != null || mFileStream != null) {
                 throw new InvalidOperationException("Stream is already open");
             }
-            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Progress);
+
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.QueryCancel);
+            if (mFunc(facts) == CallbackFacts.Results.Cancel) {
+                // Asynchronous cancel requested.
+                throw new CancelException("Cancelled in AddFileSource");
+            }
+
+            facts = new CallbackFacts(CallbackFacts.Reasons.Progress);
             // Configure before/after filenames.
             string curDir = Environment.CurrentDirectory;
             if (mFullPath.StartsWith(curDir)) {

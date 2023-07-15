@@ -79,6 +79,9 @@ namespace cp2_wpf.Actions {
                     }
                     bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
                     mLeafNode.SaveUpdates(DoCompress);
+                } catch (AppCommon.CancelException) {
+                    Debug.Assert(bkWorker.CancellationPending);
+                    return false;
                 } catch (ConversionException ex) {
                     ProgressUtil.ShowMessage("Import error: " + ex.Message, true, bkWorker);
                     return false;

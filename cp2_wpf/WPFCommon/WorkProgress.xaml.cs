@@ -191,7 +191,7 @@ namespace cp2_wpf.WPFCommon {
         // Callback that fires when execution completes.
         private void RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e) {
             if (e.Cancelled) {
-                Debug.WriteLine("CANCELLED " + DialogResult);
+                Debug.WriteLine("RunWorkerCompleted: CANCELLED dr=" + DialogResult);
                 // If the window was closed, the DialogResult will already be set, and WPF
                 // throws a misleading exception ("only after Window is created and shown")
                 // if you try to set the result twice.

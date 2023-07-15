@@ -166,6 +166,10 @@ namespace cp2 {
                             return false;
                         }
                         leafNode.SaveUpdates(parms.Compress);
+                    } catch (CancelException) {
+                        // unexpected for CLI app
+                        Console.Error.WriteLine("Got async cancel request");
+                        return false;
                     } catch (ConversionException ex) {
                         Console.Error.WriteLine("Import error: " + ex.Message);
                         return false;
