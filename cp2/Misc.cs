@@ -117,8 +117,11 @@ namespace cp2 {
         /// </summary>
         public static CallbackFacts.Results HandleCallback(CallbackFacts what, string actionStr,
                 ParamsBag parms) {
-            CallbackFacts.Results result = CallbackFacts.Results.Unknown;
+            CallbackFacts.Results result = CallbackFacts.Results.Continue;
             switch (what.Reason) {
+                case CallbackFacts.Reasons.QueryCancel:
+                    // No async cancel request in command-line interface.
+                    break;
                 case CallbackFacts.Reasons.Progress:
                     if (parms.Verbose) {
                         string origPath = what.OrigPathName;

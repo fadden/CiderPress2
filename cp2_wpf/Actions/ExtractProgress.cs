@@ -75,7 +75,7 @@ namespace cp2_wpf.Actions {
                             out bool wasCancelled)) {
                         // failed
                         if (wasCancelled) {
-                            ProgressUtil.ShowCancelled(bkWorker);
+                            //ProgressUtil.ShowCancelled(bkWorker);
                             return false;
                         }
                         return false;
@@ -86,7 +86,7 @@ namespace cp2_wpf.Actions {
                             out bool wasCancelled)) {
                         // failed
                         if (wasCancelled) {
-                            ProgressUtil.ShowCancelled(bkWorker);
+                            //ProgressUtil.ShowCancelled(bkWorker);
                             return false;
                         }
                         return false;

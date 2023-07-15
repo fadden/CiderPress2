@@ -35,6 +35,7 @@ namespace DiskArc.FS {
         // IFileEntry interfaces.
         //
 
+        public bool IsValid { get { return FileSystem != null; } }
         public bool IsDubious { get { return mHasConflict || HasJunk; } }
         public bool IsDamaged { get; internal set; }
 
@@ -681,11 +682,6 @@ namespace DiskArc.FS {
         /// Reference to filesystem object.
         /// </summary>
         public ProDOS FileSystem { get; private set; }
-
-        /// <summary>
-        /// True if this object has not been invalidated.
-        /// </summary>
-        internal bool IsValid { get { return FileSystem != null; } }
 
         /// <summary>
         /// True if this is the "fake" volume directory entry.

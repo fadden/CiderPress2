@@ -35,11 +35,15 @@ namespace cp2_wpf.Actions {
         /// <returns>Result code from user query, if any.</returns>
         public static CallbackFacts.Results HandleCallback(CallbackFacts what, string actionStr,
                 BackgroundWorker bkWorker) {
-            CallbackFacts.Results result = CallbackFacts.Results.Unknown;
+            CallbackFacts.Results result = CallbackFacts.Results.Continue;
             switch (what.Reason) {
+                case CallbackFacts.Reasons.QueryCancel:
+                    if (bkWorker.CancellationPending) {
+                        result = CallbackFacts.Results.Cancel;
+                    }
+                    break;
                 case CallbackFacts.Reasons.Progress:
                     if (bkWorker.CancellationPending) {
-                        // TODO: the AppCommon code is currently ignoring this
                         result = CallbackFacts.Results.Cancel;
                         break;
                     }

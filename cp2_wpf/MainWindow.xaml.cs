@@ -208,10 +208,12 @@ namespace cp2_wpf {
         public MainWindow() {
             Debug.WriteLine("START at " + DateTime.Now.ToLocalTime());
 
+#if !DEBUG
             Crash.AppTag = "CiderPress2";
             Crash.AppIdent = "CiderPress II v" + GlobalAppVersion.AppVersion.ToString();
             AppDomain.CurrentDomain.UnhandledException +=
                 new UnhandledExceptionEventHandler(Crash.CrashReporter);
+#endif
 
             InitializeComponent();
             DataContext = this;

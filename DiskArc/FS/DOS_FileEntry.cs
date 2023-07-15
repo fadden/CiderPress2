@@ -55,6 +55,8 @@ namespace DiskArc.FS {
 
         #region IFileEntry
 
+        public bool IsValid { get { return FileSystem != null; } }
+
         public bool IsDubious { get { return mHasConflict || mHasBadTS; } }
 
         public bool IsDamaged { get; private set; }
@@ -340,11 +342,6 @@ namespace DiskArc.FS {
         /// Reference to filesystem object.
         /// </summary>
         public DOS FileSystem { get; private set; }
-
-        /// <summary>
-        /// True if this object has not been invalidated.
-        /// </summary>
-        internal bool IsValid { get { return FileSystem != null; } }
 
         /// <summary>
         /// True if this is the "fake" volume directory object.

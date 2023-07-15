@@ -77,7 +77,7 @@ namespace cp2 {
                     }
                     try {
                         arc.StartTransaction();
-                        if (!worker.DeleteFromArchive(arc, entries)) {
+                        if (!worker.DeleteFromArchive(arc, entries, out bool wasCancelled)) {
                             return false;
                         }
                         leafNode.SaveUpdates(parms.Compress);
@@ -108,7 +108,7 @@ namespace cp2 {
                         Console.Error.WriteLine("Weird: nothing found");
                         return false;
                     }
-                    bool success = worker.DeleteFromDisk(fs, entries);
+                    bool success = worker.DeleteFromDisk(fs, entries, out bool wasCancelled);
                     try {
                         // Save the deletions we managed to handle.
                         leafNode.SaveUpdates(parms.Compress);

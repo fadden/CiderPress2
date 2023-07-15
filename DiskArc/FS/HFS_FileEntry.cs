@@ -33,6 +33,7 @@ namespace DiskArc.FS {
         // IFileEntry interfaces.
         //
 
+        public bool IsValid { get { return FileSystem != null; } }
         public bool IsDubious { get { return mHasConflict; } }
         public bool IsDamaged { get; private set; }
 
@@ -226,8 +227,6 @@ namespace DiskArc.FS {
         private const string NO_FILENAME = "!UNSET!";
         private static byte[] NO_FILENAME_RAW =
             MacChar.UnicodeToMacStr("!UNSET!", MacChar.Encoding.RomanShowCtrl);
-
-        internal bool IsValid { get { return FileSystem != null; } }
 
         internal HFS FileSystem { get; private set; }
 

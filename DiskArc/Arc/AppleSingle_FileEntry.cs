@@ -63,6 +63,8 @@ namespace DiskArc.Arc {
         // IFileEntry interfaces.
         //
 
+        public bool IsValid { get { return Archive != null; } }
+
         public bool IsDubious { get; private set; }
 
         public bool IsDamaged { get; private set; }
@@ -79,7 +81,7 @@ namespace DiskArc.Arc {
 
         public string FileName {
             get {
-                if (Archive == null) {
+                if (!IsValid) {
                     throw new InvalidOperationException("Invalid object");
                 }
                 return mFileName;

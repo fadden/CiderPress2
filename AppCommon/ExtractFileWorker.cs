@@ -108,6 +108,10 @@ namespace AppCommon {
 
             int doneCount = 0;
             foreach (IFileEntry entry in entries) {
+                if (IsCancelPending()) {
+                    wasCancelled = true;
+                    return false;
+                }
                 if (entry.IsDirectory) {
                     continue;
                 }
@@ -237,6 +241,10 @@ namespace AppCommon {
             int doneCount = 0;
 
             foreach (IFileEntry entry in entries) {
+                if (IsCancelPending()) {
+                    wasCancelled = true;
+                    return false;
+                }
                 if (StripPaths && entry.IsDirectory) {
                     continue;
                 }
@@ -715,6 +723,11 @@ namespace AppCommon {
             CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Failure);
             facts.FailMessage = msg;
             mFunc(facts);
+        }
+
+        private bool IsCancelPending() {
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.QueryCancel);
+            return mFunc(facts) == CallbackFacts.Results.Cancel;
         }
 
         /// <summary>

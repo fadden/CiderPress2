@@ -74,7 +74,7 @@ namespace cp2_wpf.Actions {
                     arc.StartTransaction();
                     addWorker.AddFilesToArchive(arc, out bool isCancelled);
                     if (isCancelled) {
-                        ProgressUtil.ShowCancelled(bkWorker);
+                        //ProgressUtil.ShowCancelled(bkWorker);
                         return false;
                     }
                     bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
@@ -95,7 +95,7 @@ namespace cp2_wpf.Actions {
                 try {
                     addWorker.AddFilesToDisk(fs, mTargetDir, out bool isCancelled);
                     if (isCancelled) {
-                        ProgressUtil.ShowCancelled(bkWorker);
+                        //ProgressUtil.ShowCancelled(bkWorker);
                         // continue; some changes may have been made
                         success = false;
                     }

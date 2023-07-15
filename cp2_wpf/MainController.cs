@@ -830,6 +830,8 @@ namespace cp2_wpf {
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
                 mMainWin.PostNotification("Files added", true);
+            } else {
+                mMainWin.PostNotification("Cancelled", false);
             }
 
             // Refresh the contents of the file list.  Do this even if the operation was
@@ -930,13 +932,22 @@ namespace cp2_wpf {
 
             // Do the deletion on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
+            bool didCancel;
             if (workDialog.ShowDialog() == true) {
                 mMainWin.PostNotification("Deletion successful", true);
+                didCancel = false;
+            } else {
+                mMainWin.PostNotification("Cancelled", false);
+                didCancel = true;
             }
 
-            // Put the selection on the item above the first one we deleted.
-            if (firstSelIndex > 0) {
-                mMainWin.fileListDataGrid.SelectRowByIndex(firstSelIndex - 1);
+            if (didCancel && archiveOrFileSystem is IArchive) {
+                // Nothing will have changed, don't mess with selection.
+            } else {
+                // Put the selection on the item above the first one we deleted.
+                if (firstSelIndex > 0) {
+                    mMainWin.fileListDataGrid.SelectRowByIndex(firstSelIndex - 1);
+                }
             }
 
             // Refresh the directory and file lists.
@@ -1195,6 +1206,8 @@ namespace cp2_wpf {
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
                 mMainWin.PostNotification("Extraction successful", true);
+            } else {
+                mMainWin.PostNotification("Cancelled", false);
             }
         }
 

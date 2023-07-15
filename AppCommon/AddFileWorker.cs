@@ -380,6 +380,10 @@ namespace AppCommon {
                 fileSystem.GetVolDirEntry() : targetDir;
 
             for (int i = 0; i < addEntries.Length; i++) {
+                if (IsCancelPending()) {
+                    isCancelled = true;
+                    return;
+                }
                 AddFileEntry addEnt = addEntries[i];
                 if (doStripPaths && addEnt.IsDirectory) {
                     continue;
@@ -717,6 +721,11 @@ namespace AppCommon {
             newEntry.ModWhen = addEnt.ModWhen;
             newEntry.Access = addEnt.Access;
             // no Comment field in AddFileEntry
+        }
+
+        private bool IsCancelPending() {
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.QueryCancel);
+            return mFunc(facts) == CallbackFacts.Results.Cancel;
         }
 
         #endregion Utility

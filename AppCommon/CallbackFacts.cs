@@ -33,6 +33,13 @@ namespace AppCommon {
             // of file being added in Message.
             Progress,
 
+            // Query cancellation status.  This is useful for GUI interfaces with a "cancel"
+            // button, allowing an operation to be interrupted with an async cancel request.
+            // (Using this is easier than checking the result from Progress, because that's issued
+            // in multiple deep places.)
+            // Options: Continue, Cancel
+            QueryCancel,
+
             // Warning: resource fork was ignored due to archive capabilities (e.g. add to ZIP).
             // Options: Continue, Cancel
             ResourceForkIgnored,
@@ -68,6 +75,7 @@ namespace AppCommon {
         /// </summary>
         public enum Results {
             Unknown = 0,
+            Continue,           // keep going
             Cancel,             // cancel remaining steps; abort entire operation if possible
             Skip,               // skip adding this entry
             Overwrite,          // overwrite existing entry with same name

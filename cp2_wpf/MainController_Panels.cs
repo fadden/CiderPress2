@@ -449,7 +449,11 @@ namespace cp2_wpf {
             FileListItem? selectedItem = mMainWin.SelectedFileListItem;
             IFileEntry selFileEntry = IFileEntry.NO_ENTRY;
             if (selectedItem != null) {
-                selFileEntry = selectedItem.FileEntry;
+                if (selectedItem.FileEntry.IsValid) {
+                    selFileEntry = selectedItem.FileEntry;
+                } else {
+                    Debug.WriteLine("Refresh: selected file entry is no longer valid");
+                }
             } else {
                 Debug.WriteLine("Refresh: no file list sel");
             }

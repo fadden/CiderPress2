@@ -55,9 +55,15 @@ namespace AppCommon {
         /// <summary>
         /// Deletes a list of files from a file archive.
         /// </summary>
-        public bool DeleteFromArchive(IArchive arc, List<IFileEntry> entries) {
+        public bool DeleteFromArchive(IArchive arc, List<IFileEntry> entries,
+                out bool wasCancelled) {
+            wasCancelled = false;
             int doneCount = 0;
             foreach (IFileEntry entry in entries) {
+                if (IsCancelPending()) {
+                    wasCancelled = true;
+                    return false;
+                }
                 ShowProgress(entry.FullPathName, entry.DirectorySeparatorChar,
                     (100 * doneCount) / entries.Count);
 
@@ -91,12 +97,19 @@ namespace AppCommon {
         /// We just need the contents of each subdirectory to appear after the entry for
         /// the subdirectory itself.</para>
         /// </remarks>
-        public bool DeleteFromDisk(IFileSystem fs, List<IFileEntry> entries) {
+        public bool DeleteFromDisk(IFileSystem fs, List<IFileEntry> entries,
+                out bool wasCancelled) {
+            wasCancelled = false;
+
             // We need to delete the files that live in a directory before we delete that
             // directory.  Recursive traversals generate the list in exactly the
             // wrong order, so we need to walk it from back to front.
             int doneCount = 0;
             for (int i = entries.Count - 1; i >= 0; i--) {
+                if (IsCancelPending()) {
+                    wasCancelled = true;
+                    return false;
+                }
                 IFileEntry entry = entries[i];
                 try {
                     ShowProgress(entry.FullPathName, entry.DirectorySeparatorChar,
@@ -124,6 +137,11 @@ namespace AppCommon {
             CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Failure);
             facts.FailMessage = msg;
             mFunc(facts);
+        }
+
+        private bool IsCancelPending() {
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.QueryCancel);
+            return mFunc(facts) == CallbackFacts.Results.Cancel;
         }
     }
 }

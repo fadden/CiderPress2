@@ -65,7 +65,7 @@ namespace cp2_wpf.Actions {
                 // TODO: Misc.StdChecks equivalent (maybe in caller?)
                 try {
                     arc.StartTransaction();
-                    if (!worker.DeleteFromArchive(arc, mSelected)) {
+                    if (!worker.DeleteFromArchive(arc, mSelected, out bool wasCancelled)) {
                         return false;
                     }
                     bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
@@ -79,7 +79,7 @@ namespace cp2_wpf.Actions {
 
             } else {
                 IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                bool success = worker.DeleteFromDisk(fs, mSelected);
+                bool success = worker.DeleteFromDisk(fs, mSelected, out bool wasCancelled);
                 try {
                     // Save the deletions we managed to handle.
                     bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);

@@ -95,6 +95,12 @@ namespace DiskArc {
         const char NO_DIR_SEP = '\ufffe';
 
         /// <summary>
+        /// True if this file entry is valid.  Entries may become invalid if they are
+        /// deleted from the filesystem or archive, or if the containing object is closed.
+        /// </summary>
+        bool IsValid { get; }
+
+        /// <summary>
         /// True if the file's coherency is in doubt.
         /// </summary>
         /// <remarks>
@@ -461,6 +467,7 @@ namespace DiskArc {
     }
 
     internal class NullFileEntry : IFileEntry {
+        public bool IsValid => throw new NotImplementedException();
         public bool IsDubious => throw new NotImplementedException();
         public bool IsDamaged => throw new NotImplementedException();
 
