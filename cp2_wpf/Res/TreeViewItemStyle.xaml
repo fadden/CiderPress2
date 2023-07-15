@@ -26,7 +26,8 @@ explanation of why it's necessary to clone all this stuff.
 Note to self: the default style can be obtained by clicking on the XAML element in the
 editor, hitting F4 to open Properties, scrolling down to Miscellaneous and finding the
 Template entry, using the icon on the right to select "Convert to New Resource", and then
-inserting the new resource in a XAML doc.
+inserting the new resource in a XAML doc.  Because colors are specified, this may look
+peculiar when the global theme is changed.
 -->
 
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"

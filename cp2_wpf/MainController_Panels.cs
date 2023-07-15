@@ -274,6 +274,7 @@ namespace cp2_wpf {
                 Debug.Assert(false);
                 return;
             }
+            Debug.Assert(arcTreeSel.WorkTreeNode.DAObject == fs);
 
             IMultiPart? embeds = fs.FindEmbeddedVolumes();
             if (embeds == null) {

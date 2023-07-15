@@ -120,6 +120,10 @@ namespace cp2 {
                 }
             }
 
+            // We're currently ignoring MacZip, because failures will generally take the form of
+            // unreadable compressed data, but to be thorough it might make sense to verify the
+            // integrity of resource forks stored in an ADF entry.
+
             int fileCount = 0;
             int forkCount = 0;
             int failCount = 0;

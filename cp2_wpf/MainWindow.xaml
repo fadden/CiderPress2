@@ -48,7 +48,9 @@ limitations under the License.
             <!-- Style for the "type" string in the archive tree view.  There are three
             interesting states: not selected, selected, and selected but not focused.  The
             properties come from our ArchiveTreeItem class, which doesn't know about focus, so
-            we need to peek at the ancestor object for that. -->
+            we need to peek at the ancestor object for that.
+            The colors look good with the standard Win10 theme, but might be totally wrong for
+            a "dark" theme.  TODO: adjust for that. -->
             <Style x:Key="archiveTreeTypeStyle" TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="Green"/>
                 <Style.Triggers>
@@ -101,10 +103,12 @@ limitations under the License.
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
             <RoutedUICommand x:Key="RecentFileCmd"/>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>
+            <RoutedUICommand x:Key="ScanForBadBlocksCmd" Text="Scan for Bad Blocks"/>
             <RoutedUICommand x:Key="ScanForSubVolCmd" Text="Scan for Sub-Volumes"/>
             <RoutedUICommand x:Key="ShowDirListCmd" Text="Show Directory List"/>
             <RoutedUICommand x:Key="ShowFullListCmd" Text="Show Full List"/>
             <RoutedUICommand x:Key="ShowInfoCmd" Text="Show Information"/>
+            <RoutedUICommand x:Key="TestFilesCmd" Text="Test Files"/>
             <RoutedUICommand x:Key="ToggleInfoCmd" Text="Toggle Information">
                 <RoutedUICommand.InputGestures>
                     <KeyGesture>Ctrl+I</KeyGesture>
@@ -170,6 +174,8 @@ limitations under the License.
                         Executed="RecentFileCmd_Executed"/>
         <CommandBinding Command="{StaticResource ResetSortCmd}"
                         CanExecute="IsFileOpen" Executed="ResetSortCmd_Executed"/>
+        <CommandBinding Command="{StaticResource ScanForBadBlocksCmd}"
+                        CanExecute="IsDiskImageSelected" Executed="ScanForBadBlocksCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForSubVolCmd}"
                         CanExecute="IsFileSystemSelected" Executed="ScanForSubVolCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowDirListCmd}"
@@ -178,6 +184,8 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="ShowFullListCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowInfoCmd}"
                         CanExecute="IsFileOpen" Executed="ShowInfoCmd_Executed"/>
+        <CommandBinding Command="{StaticResource TestFilesCmd}"
+                        CanExecute="AreFileEntriesSelected" Executed="TestFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource ToggleInfoCmd}"
                         CanExecute="IsFileOpen" Executed="ToggleInfoCmd_Executed"/>
         <CommandBinding Command="{StaticResource ViewFilesCmd}"
@@ -224,6 +232,7 @@ limitations under the License.
                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
+                <MenuItem Command="{StaticResource TestFilesCmd}"/>
                 <MenuItem Command="{StaticResource EditAttributesCmd}"/>
                 <MenuItem Command="{StaticResource CreateDirectoryCmd}"/>
                 <Separator/>
@@ -447,9 +456,10 @@ limitations under the License.
                             </TreeView.ItemContainerStyle>
                             <TreeView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                                     <MenuItem Command="{StaticResource EditBlocksCmd}"/>
                                     <MenuItem Command="{StaticResource EditSectorsCmd}"/>
+                                    <MenuItem Command="{StaticResource ScanForBadBlocksCmd}"/>
+                                    <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                                     <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
@@ -580,6 +590,7 @@ limitations under the License.
                                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
                                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
+                                <MenuItem Command="{StaticResource TestFilesCmd}"/>
                                 <MenuItem Command="{StaticResource EditAttributesCmd}"/>
                                 <MenuItem Command="{StaticResource CreateDirectoryCmd}"/>
                             </ContextMenu>

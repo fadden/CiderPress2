@@ -519,6 +519,9 @@ namespace cp2_wpf {
         private void ResetSortCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             fileListDataGrid.ResetSort();
         }
+        private void ScanForBadBlocksCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.ScanForBadBlocks();
+        }
         private void ScanForSubVolCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.ScanForSubVol();
         }
@@ -548,6 +551,9 @@ namespace cp2_wpf {
         }
         private void ShowInfoCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             SetShowCenterInfo(CenterPanelChange.Info);
+        }
+        private void TestFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.TestFiles();
         }
         private void ToggleInfoCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             SetShowCenterInfo(CenterPanelChange.Toggle);

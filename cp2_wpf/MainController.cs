@@ -29,6 +29,7 @@ using System.Windows.Input;
 using AppCommon;
 using CommonUtil;
 using cp2_wpf.Actions;
+using cp2_wpf.Tools;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Arc;
@@ -642,7 +643,8 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Obtains the current file list selection.
+        /// Obtains the current file list selection.  Depending on the arguments, the result
+        /// may include the results of a recursive filesystem descent.
         /// </summary>
         /// <param name="omitDir">True if directories should be omitted from the list.  This also
         ///   prevents recursive descent.  Set when viewing entries.</param>
@@ -1155,9 +1157,9 @@ namespace cp2_wpf {
         /// Handles Actions : Extract Files
         /// </summary>
         public void ExtractFiles() {
-            if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
-                    oneMeansAll:false, out object? archiveOrFileSystem, out IFileEntry selectionDir,
-                    out List<IFileEntry>? selected, out int unused)) {
+            if (!GetFileSelection(omitDir: false, omitOpenArc: false, closeOpenArc: true,
+                    oneMeansAll: false, out object? archiveOrFileSystem,
+                    out IFileEntry selectionDir, out List<IFileEntry>? selected, out int unused)) {
                 return;
             }
             if (selected.Count == 0) {
@@ -1193,6 +1195,67 @@ namespace cp2_wpf {
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
                 mMainWin.PostNotification("Extraction successful", true);
+            }
+        }
+
+        /// <summary>
+        /// Handles context : ScanForBadBlocks
+        /// </summary>
+        public void ScanForBadBlocks() {
+            // TODO
+            Debug.WriteLine("SCAN! " + CurrentWorkObject);
+        }
+
+        /// <summary>
+        /// Handles Actions : Test Files
+        /// </summary>
+        public void TestFiles() {
+            if (!GetFileSelection(omitDir: false, omitOpenArc: false, closeOpenArc: true,
+                    oneMeansAll: false, out object? archiveOrFileSystem,
+                    out IFileEntry unusedDir, out List<IFileEntry>? selected, out int unused)) {
+                return;
+            }
+            if (selected.Count == 0) {
+                MessageBox.Show(mMainWin, "No files selected.", "Empty", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            // Note: this probably won't report a failure for a file that has been identified
+            // as damaged by the file scanner, because the file scanner would have truncated
+            // the file.  We can either redundantly identify damaged/dubious files, or just
+            // limit the output to generating a set of facts that the user doesn't already have.
+            // The CLI tool handles this by outputting the Notes as well as failure messages.
+            // The GUI shows status icons for damage/dubious.
+            //
+            // The real purpose of this is for verifying the compression and checksum of data
+            // stored in a file archive.  Files in filesystems should be fully handled by the
+            // initial file scan.
+
+            TestProgress prog = new TestProgress(archiveOrFileSystem, selected, AppHook) {
+                EnableMacOSZip = AppSettings.Global.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
+            };
+            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
+            if (workDialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Tests successful", true);
+
+                List<TestProgress.Failure>? results = prog.FailureResults!;
+                if (results.Count != 0) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append("Failures: ");
+                    sb.AppendLine(results.Count.ToString());
+                    sb.AppendLine();
+                    foreach (TestProgress.Failure failure in results) {
+                        sb.Append(failure.Entry.FullPathName);
+                        sb.Append(" (");
+                        sb.Append(failure.Part);
+                        sb.AppendLine(")");
+                    }
+
+                    ShowText reportDialog = new ShowText(mMainWin, sb.ToString());
+                    reportDialog.Title = "Failures";
+                    reportDialog.Show();
+                }
             }
         }
 
