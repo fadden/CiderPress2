@@ -306,10 +306,17 @@ namespace cp2_wpf {
         }
 
         public void NewDiskImage() {
+            CreateDiskImage dialog = new CreateDiskImage(mMainWin);
+            if (dialog.ShowDialog() != true) {
+                return;
+            }
+
+            // It feels less distracting to do this now, rather than earlier.
             if (!CloseWorkFile()) {
                 return;
             }
-            Debug.WriteLine("new disk image!");     // TODO
+
+            // TODO
         }
 
         /// <summary>
@@ -321,7 +328,7 @@ namespace cp2_wpf {
                 return;
             }
 
-            // It feels less distracting to do this now.
+            // It feels less distracting to do this now, rather than earlier.
             if (!CloseWorkFile()) {
                 return;
             }
