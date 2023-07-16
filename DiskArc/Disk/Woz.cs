@@ -429,6 +429,20 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="numTracks">Number of tracks.</param>
+        /// <param name="errMsg">Error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
+        public static bool CanCreateDisk525(uint numTracks, out string errMsg) {
+            errMsg = string.Empty;
+            if (numTracks != 35 && numTracks != 40) {
+                errMsg = "Number of tracks must be 35 or 40";
+            }
+            return errMsg == string.Empty;
+        }
+
+        /// <summary>
         /// Creates a new 5.25" disk image.  The disk will be fully formatted.
         /// </summary>
         /// <remarks>
@@ -442,10 +456,10 @@ namespace DiskArc.Disk {
         /// <param name="volume">Low-level volume number.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>Newly-created disk image.</returns>
-        public static Woz CreateDisk525(Stream stream, int numTracks, SectorCodec codec,
+        public static Woz CreateDisk525(Stream stream, uint numTracks, SectorCodec codec,
                 byte volume, AppHook appHook) {
-            if (numTracks != 35 && numTracks != 40) {
-                throw new ArgumentOutOfRangeException(nameof(numTracks), "must be 35 or 40");
+            if (!CanCreateDisk525(numTracks, out string errMsg)) {
+                throw new ArgumentException(errMsg);
             }
 
             // Generate track data.
@@ -552,6 +566,24 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="mediaKind">Kind of disk to create.</param>
+        /// <param name="interleave">Disk interleave (2 or 4).</param>
+        /// <param name="errMsg">Error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
+        public static bool CanCreateDisk35(MediaKind mediaKind, int interleave, out string errMsg) {
+            errMsg = string.Empty;
+            if (mediaKind != MediaKind.GCR_SSDD35 && mediaKind != MediaKind.GCR_DSDD35) {
+                errMsg = "Unsupported value for MediaKind: " + mediaKind;
+            }
+            if (interleave != 2 && interleave != 4) {
+                errMsg = "Interleave must be 2:1 or 4:1";
+            }
+            return errMsg == string.Empty;
+        }
+
+        /// <summary>
         /// Creates a new 400KB or 800KB 3.5" disk image.  The disk will be fully formatted.
         /// </summary>
         /// <param name="stream">Stream into which the new disk image will be written.</param>
@@ -561,8 +593,8 @@ namespace DiskArc.Disk {
         /// <returns>Newly-created disk image.</returns>
         public static Woz CreateDisk35(Stream stream, MediaKind mediaKind, int interleave,
                 SectorCodec codec, AppHook appHook) {
-            if (interleave != 2 && interleave != 4) {
-                throw new ArgumentException("Interleave must be 2:1 or 4:1");
+            if (!CanCreateDisk35(mediaKind, interleave, out string errMsg)) {
+                throw new ArgumentException(errMsg);
             }
             int numSides;
             switch (mediaKind) {

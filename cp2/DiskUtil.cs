@@ -268,7 +268,7 @@ namespace cp2 {
                             SectorCodec codec = is13Sector ?
                                 StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
                                 StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
-                            image = Woz.CreateDisk525(imgStream, (int)(byteSize / trackSize),
+                            image = Woz.CreateDisk525(imgStream, (uint)(byteSize / trackSize),
                                 codec, volumeNum, appHook);
                         } else if (byteSize == 400 * 1024 || byteSize == 800 * 1024) {
                             // 3.5" disk image.

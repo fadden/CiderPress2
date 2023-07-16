@@ -65,26 +65,36 @@ limitations under the License.
             </StackPanel>
             <GroupBox Grid.Row="1" Padding="0,2" Header="5.25&quot; Floppy">
                 <StackPanel>
-                    <RadioButton GroupName="DiskSize" Content="113KB - 35 tracks x 13 sectors"/>
-                    <RadioButton GroupName="DiskSize" Content="140KB - 35 tracks x 16 sectors" Margin="0,2,0,0"/>
-                    <RadioButton GroupName="DiskSize" Content="160KB - 40 tracks x 16 sectors" Margin="0,2,0,0"/>
+                    <RadioButton GroupName="DiskSize" Content="113.75KB - 35 tracks x 13 sectors"
+                                 IsChecked="{Binding IsChecked_Flop525_113}"/>
+                    <RadioButton GroupName="DiskSize" Content="140KB - 35 tracks x 16 sectors" Margin="0,2,0,0"
+                                 FontWeight="Bold"
+                                 IsChecked="{Binding IsChecked_Flop525_140}"/>
+                    <RadioButton GroupName="DiskSize" Content="160KB - 40 tracks x 16 sectors" Margin="0,2,0,0"
+                                 IsChecked="{Binding IsChecked_Flop525_160}"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Grid.Row="2" Padding="0,2" Header="3.5&quot; Floppy">
                 <StackPanel>
-                    <RadioButton GroupName="DiskSize" Content="400KB - SS/DD GCR"/>
-                    <RadioButton GroupName="DiskSize" Content="800KB - DS/DD GCR" Margin="0,2,0,0"/>
-                    <RadioButton GroupName="DiskSize" Content="1440KB - DS/HD MFM" Margin="0,2,0,0"/>
+                    <RadioButton GroupName="DiskSize" Content="400KB - SS/DD GCR"
+                                 IsChecked="{Binding IsChecked_Flop35_400}"/>
+                    <RadioButton GroupName="DiskSize" Content="800KB - DS/DD GCR" Margin="0,2,0,0"
+                                 IsChecked="{Binding IsChecked_Flop35_800}"/>
+                    <RadioButton GroupName="DiskSize" Content="1440KB - DS/HD MFM" Margin="0,2,0,0"
+                                 IsChecked="{Binding IsChecked_Flop35_1440}"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Grid.Row="3" Padding="0,2" Header="Other">
                 <StackPanel>
-                    <RadioButton GroupName="DiskSize" Content="32MB - hard drive"/>
+                    <RadioButton GroupName="DiskSize" Content="32MB - hard drive"
+                                 IsChecked="{Binding IsChecked_Other_32MB}"/>
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton GroupName="DiskSize" Content="Custom:" Margin="0,2,0,0"/>
+                        <RadioButton GroupName="DiskSize" Content="Custom:" Margin="0,2,0,0"
+                                     IsChecked="{Binding IsChecked_Other_Custom}"/>
                         <TextBox Text="SIZE" Width="120" Margin="8,0,0,0"/>
                     </StackPanel>
                     <TextBlock Text="&#x2022; Specify size in blocks, KiB, MiB, or GiB"/>
+                    <TextBlock Text="&#x2022; Size must be &gt; 0 and &lt;= 4GB"/>
                 </StackPanel>
             </GroupBox>
         </Grid>
@@ -100,12 +110,24 @@ limitations under the License.
                 <TextBlock Text="Filesystem" HorizontalAlignment="Center"/>
             </StackPanel>
             <StackPanel Grid.Row="1">
-                <RadioButton GroupName="Filesystem" Content="DOS" Margin="0,2,0,0"/>
-                <RadioButton GroupName="Filesystem" Content="ProDOS" Margin="0,2,0,0"/>
-                <RadioButton GroupName="Filesystem" Content="HFS" Margin="0,2,0,0"/>
-                <RadioButton GroupName="Filesystem" Content="Pascal" Margin="0,2,0,0"/>
-                <RadioButton GroupName="Filesystem" Content="CP/M" Margin="0,2,0,0"/>
-                <RadioButton GroupName="Filesystem" Content="None (zeroed)" Margin="0,2,0,0"/>
+                <RadioButton GroupName="Filesystem" Content="DOS" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FS_DOS}"
+                             IsChecked="{Binding IsChecked_FS_DOS}"/>
+                <RadioButton GroupName="Filesystem" Content="ProDOS" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FS_ProDOS}"
+                             IsChecked="{Binding IsChecked_FS_ProDOS}"/>
+                <RadioButton GroupName="Filesystem" Content="HFS" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FS_HFS}"
+                             IsChecked="{Binding IsChecked_FS_HFS}"/>
+                <RadioButton GroupName="Filesystem" Content="Pascal" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FS_Pascal}"
+                             IsChecked="{Binding IsChecked_FS_Pascal}"/>
+                <RadioButton GroupName="Filesystem" Content="CP/M" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FS_CPM}"
+                             IsChecked="{Binding IsChecked_FS_CPM}"/>
+                <RadioButton GroupName="Filesystem" Content="None (zeroed)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FS_None}"
+                             IsChecked="{Binding IsChecked_FS_None}"/>
                 <Grid Margin="0,4,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -122,7 +144,7 @@ limitations under the License.
                     <TextBox Grid.Row="1" Grid.Column="1" Width="50" Margin="8,2,0,0"
                              Text="254" HorizontalAlignment="Left"/>
                 </Grid>
-                <CheckBox Content="Include boot tracks (DOS 3.2/3.3)" Margin="0,2,0,0"/>
+                <CheckBox Content="Allocate boot tracks (DOS 3.2/3.3)" Margin="0,2,0,0"/>
             </StackPanel>
         </Grid>
 
@@ -137,13 +159,27 @@ limitations under the License.
                 <TextBlock Text="File Type" HorizontalAlignment="Center"/>
             </StackPanel>
             <StackPanel Grid.Row="1">
-                <RadioButton GroupName="FileType" Content="Unadorned DOS-order (.do/.d13)" Margin="0,2,0,0"/>
-                <RadioButton GroupName="FileType" Content="Unadorned ProDOS-order (.po)" Margin="0,2,0,0"/>
-                <RadioButton GroupName="FileType" Content="2IMG (ProDOS-order) (.2mg)" Margin="0,2,0,0"/>
-                <RadioButton GroupName="FileType" Content="ShrinkIt (.sdk)" Margin="0,2,0,0"/>
-                <RadioButton GroupName="FileType" Content="WOZ (.woz)" Margin="0,2,0,0"/>
-                <RadioButton GroupName="FileType" Content="Nibble (.nib)" Margin="0,2,0,0"/>
-                <RadioButton GroupName="FileType" Content="Trackstar (.app)" Margin="0,2,0,0"/>
+                <RadioButton GroupName="FileType" Content="Unadorned DOS-order (.do/.d13)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_DOSSector}"
+                             IsChecked="{Binding IsChecked_FT_DOSSector}"/>
+                <RadioButton GroupName="FileType" Content="Unadorned ProDOS-order (.po)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_ProDOSBlock}"
+                             IsChecked="{Binding IsChecked_FT_ProDOSBlock}"/>
+                <RadioButton GroupName="FileType" Content="2IMG (ProDOS-order) (.2mg)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_TwoIMG}"
+                             IsChecked="{Binding IsChecked_FT_TwoIMG}"/>
+                <RadioButton GroupName="FileType" Content="ShrinkIt (.sdk)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_NuFX}"
+                             IsChecked="{Binding IsChecked_FT_NuFX}"/>
+                <RadioButton GroupName="FileType" Content="WOZ (.woz)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_Woz}"
+                             IsChecked="{Binding IsChecked_FT_Woz}"/>
+                <RadioButton GroupName="FileType" Content="Nibble (.nib)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_Nib}"
+                             IsChecked="{Binding IsChecked_FT_Nib}"/>
+                <RadioButton GroupName="FileType" Content="Trackstar (.app)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_Trackstar}"
+                             IsChecked="{Binding IsChecked_FT_Trackstar}"/>
             </StackPanel>
         </Grid>
 

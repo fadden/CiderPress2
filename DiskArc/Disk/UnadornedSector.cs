@@ -108,6 +108,29 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="numTracks">Number of tracks.</param>
+        /// <param name="sectorsPerTrack">Number of sectors.</param>
+        /// <param name="sectorOrder">Desired sector order.</param>
+        /// <param name="errMsg">Error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
+        public static bool CanCreateSectorImage(uint numTracks, uint sectorsPerTrack,
+                SectorOrder sectorOrder, out string errMsg) {
+            errMsg = string.Empty;
+            if (numTracks != 35 && numTracks != 40 && numTracks != 50 && numTracks != 80) {
+                errMsg = "Invalid number of tracks: " + numTracks;
+            }
+            if (sectorsPerTrack != 13 && sectorsPerTrack != 16 && sectorsPerTrack != 32) {
+                errMsg = "Invalid number of sectors: " + sectorsPerTrack;
+            }
+            if (sectorOrder == SectorOrder.Unknown) {
+                errMsg = "Must choose a sector order";
+            }
+            return errMsg == string.Empty;
+        }
+
+        /// <summary>
         /// Creates a new disk image as a collection of tracks and 256-byte sectors.
         /// </summary>
         /// <remarks>
@@ -128,14 +151,8 @@ namespace DiskArc.Disk {
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
                 throw new ArgumentException("Invalid stream capabilities");
             }
-            if (numTracks != 35 && numTracks != 40 && numTracks != 50 && numTracks != 80) {
-                throw new ArgumentException("Invalid number of tracks: " + numTracks);
-            }
-            if (sectorsPerTrack != 13 && sectorsPerTrack != 16 && sectorsPerTrack != 32) {
-                throw new ArgumentException("Invalid number of sectors: " + sectorsPerTrack);
-            }
-            if (fileOrder == SectorOrder.Unknown) {
-                throw new ArgumentException("Must choose a sector order");
+            if (!CanCreateSectorImage(numTracks, sectorsPerTrack, fileOrder, out string errMsg)) {
+                throw new ArgumentException(errMsg);
             }
             stream.Position = 0;
             stream.SetLength(0);
@@ -144,6 +161,20 @@ namespace DiskArc.Disk {
             disk.ChunkAccess = new GatedChunkAccess(
                 new GeneralChunkAccess(stream, 0, numTracks, sectorsPerTrack, fileOrder));
             return disk;
+        }
+
+        /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="numBlocks">Number of blocks.</param>
+        /// <param name="errMsg">Error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
+        public static bool CanCreateBlockImage(uint numBlocks, out string errMsg) {
+            errMsg = string.Empty;
+            if (numBlocks == 0 || numBlocks > 8 * 1024 * 1024) {        // arbitrary 4GB limit
+                errMsg = "Invalid block count: " + numBlocks;
+            }
+            return errMsg == string.Empty;
         }
 
         /// <summary>
@@ -165,8 +196,8 @@ namespace DiskArc.Disk {
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
                 throw new ArgumentException("Invalid stream capabilities");
             }
-            if (numBlocks == 0 || numBlocks >= 8*1024*1024) {       // arbitrary 4GB limit
-                throw new ArgumentOutOfRangeException("block count: " + numBlocks);
+            if (!CanCreateBlockImage(numBlocks, out string errMsg)) {
+                throw new ArgumentException(errMsg);
             }
             stream.Position = 0;
             stream.SetLength(numBlocks * BLOCK_SIZE);

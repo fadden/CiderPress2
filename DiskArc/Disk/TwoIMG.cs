@@ -596,6 +596,21 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="numTracks">Number of tracks.</param>
+        /// <param name="sectorsPerTrack">Number of sectors.</param>
+        /// <param name="errMsg">Error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
+        public static bool CanCreateDOSSectorImage(uint numTracks, out string errMsg) {
+            errMsg = string.Empty;
+            if (numTracks <= 0 || numTracks > 255) {
+                errMsg = "Invalid number of tracks: " + numTracks;
+            }
+            return errMsg == string.Empty;
+        }
+
+        /// <summary>
         /// Creates a new disk image as a collection of 16-sector tracks in DOS order.
         /// </summary>
         /// <remarks>
@@ -612,8 +627,8 @@ namespace DiskArc.Disk {
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
                 throw new ArgumentException("Invalid stream capabilities");
             }
-            if (numTracks <= 0 || numTracks > 255) {
-                throw new ArgumentException("Invalid number of tracks: " + numTracks);
+            if (!CanCreateDOSSectorImage(numTracks, out string errMsg)) {
+                throw new ArgumentException(errMsg);
             }
 
             // Set the length of the stream.
@@ -635,6 +650,20 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="numBlocks">Number of blocks.</param>
+        /// <param name="errMsg">Error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
+        public static bool CanCreateProDOSBlockImage(uint numBlocks, out string errMsg) {
+            errMsg = string.Empty;
+            if (numBlocks == 0 || numBlocks > 8 * 1024 * 1024) {        // arbitrary 4GB limit
+                errMsg = "Invalid block count: " + numBlocks;
+            }
+            return errMsg == string.Empty;
+        }
+
+        /// <summary>
         /// Creates a new disk image as a collection of 512-byte blocks.
         /// </summary>
         /// <remarks>
@@ -651,8 +680,8 @@ namespace DiskArc.Disk {
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
                 throw new ArgumentException("Invalid stream capabilities");
             }
-            if (numBlocks == 0 || numBlocks >= 8 * 1024 * 1024) {       // arbitrary 4GB limit
-                throw new ArgumentOutOfRangeException("block count: " + numBlocks);
+            if (!CanCreateProDOSBlockImage(numBlocks, out string errMsg)) {
+                throw new ArgumentException(errMsg);
             }
 
             // Set the length of the stream.
