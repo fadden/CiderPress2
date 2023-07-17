@@ -90,7 +90,7 @@ namespace DiskArc {
             if (startOffset < 0) {
                 throw new ArgumentOutOfRangeException(nameof(startOffset));
             }
-            long length = blockCount * BLOCK_SIZE;
+            long length = blockCount * (long)BLOCK_SIZE;
             if (length > file.Length || startOffset > file.Length - length) {
                 throw new ArgumentException("Invalid start/blockCount");
             }
@@ -189,7 +189,7 @@ namespace DiskArc {
                 throw new InvalidOperationException("No blocks");
             }
             if (block >= FormattedLength / BLOCK_SIZE) {
-                throw new ArgumentOutOfRangeException("Block out of range: " + block);
+                throw new ArgumentOutOfRangeException("block", block, "block number out of range");
             }
             if (isWrite && IsReadOnly) {
                 throw new InvalidOperationException("Chunk access is read-only");

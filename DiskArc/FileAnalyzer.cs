@@ -557,6 +557,9 @@ namespace DiskArc {
             } catch (NotSupportedException) {
                 // The constructor rejected our file.
                 appHook.LogE("Failed to open disk file with kind=" + kind);
+            } catch (Exception ex) {
+                appHook.LogE("Failed to open disk file with kind=" + kind + " (" + ex + ")");
+                Debug.Assert(false, "unexpected exception");
             }
 
             return diskImage;

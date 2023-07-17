@@ -300,7 +300,6 @@ namespace cp2 {
                         } else {
                             throw new DAException("Size not supported for NuFX disks");
                         }
-
                     }
                     break;
                 case FileKind.DiskCopy42:

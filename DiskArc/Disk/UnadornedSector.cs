@@ -200,7 +200,7 @@ namespace DiskArc.Disk {
                 throw new ArgumentException(errMsg);
             }
             stream.Position = 0;
-            stream.SetLength(numBlocks * BLOCK_SIZE);
+            stream.SetLength(numBlocks * (long)BLOCK_SIZE);
             UnadornedSector disk = new UnadornedSector(stream, appHook);
             disk.ChunkAccess = new GatedChunkAccess(new GeneralChunkAccess(stream, 0, numBlocks));
             return disk;

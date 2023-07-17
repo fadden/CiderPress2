@@ -16,9 +16,17 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
+using Microsoft.Win32;
 
+using AppCommon;
+using CommonUtil;
+using DiskArc;
+using DiskArc.Arc;
 using DiskArc.Disk;
 using DiskArc.FS;
 using static DiskArc.Defs;
@@ -34,6 +42,9 @@ namespace cp2_wpf {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        private Brush mDefaultLabelColor = SystemColors.WindowTextBrush;
+        private Brush mErrorLabelColor = Brushes.Red;
+
         /// <summary>
         /// True if the configuration is valid.  This will be false if the free-entry fields
         /// (custom size, volume name, volume number) are invalid.
@@ -44,22 +55,303 @@ namespace cp2_wpf {
         }
         private bool mIsValid;
 
+        /// <summary>
+        /// Pathname of created file.
+        /// </summary>
+        public string PathName { get; private set; } = string.Empty;
+
+        private AppHook mAppHook;
 
 
-        public CreateDiskImage(Window owner) {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="owner">Parent window.</param>
+        public CreateDiskImage(Window owner, AppHook appHook) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
             mIsValid = false;
+            mAppHook = appHook;
 
-            mDiskSize = DiskSizeValue.Flop525_140;      // TODO: from settings
-            mFilesystem = FilesystemValue.ProDOS;
-            mFileType = FileTypeValue.ProDOSBlock;
+            SettingsHolder settings = AppSettings.Global;
+            mDiskSize = settings.GetEnum(AppSettings.NEW_DISK_SIZE, DiskSizeValue.Flop525_140);
+            mFilesystem = settings.GetEnum(AppSettings.NEW_DISK_FILESYSTEM, FilesystemValue.ProDOS);
+            mFileType = settings.GetEnum(AppSettings.NEW_DISK_FILE_TYPE, FileTypeValue.ProDOSBlock);
+
+            mVolumeNameText = settings.GetString(AppSettings.NEW_DISK_VOLUME_NAME, "NEWDISK");
+            mVolumeNumText = settings.GetInt(AppSettings.NEW_DISK_VOLUME_NUM,
+                Defs.DEFAULT_525_VOLUME_NUM).ToString();
+            mCustomSizeText = settings.GetString(AppSettings.NEW_DISK_CUSTOM_SIZE, "65535");
+            mIsChecked_MakeBootable = settings.GetBool(AppSettings.NEW_DISK_MAKE_BOOTABLE, true);
+
+            UpdateControls();
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
+            if (!CreateImage()) {
+                return;
+            }
+
             DialogResult = true;
+
+            // Save current UI state to the settings.
+            GetVolNum(out int volNum);
+
+            SettingsHolder settings = AppSettings.Global;
+            settings.SetEnum(AppSettings.NEW_DISK_SIZE, mDiskSize);
+            settings.SetEnum(AppSettings.NEW_DISK_FILESYSTEM, mFilesystem);
+            settings.SetEnum(AppSettings.NEW_DISK_FILE_TYPE, mFileType);
+
+            settings.SetString(AppSettings.NEW_DISK_VOLUME_NAME, mVolumeNameText);
+            settings.SetInt(AppSettings.NEW_DISK_VOLUME_NUM, volNum);
+            settings.SetString(AppSettings.NEW_DISK_CUSTOM_SIZE, mCustomSizeText);
+            settings.SetBool(AppSettings.NEW_DISK_MAKE_BOOTABLE, mIsChecked_MakeBootable);
+        }
+
+        /// <summary>
+        /// Creates the disk image file as directed.
+        /// </summary>
+        /// <returns>True on success.</returns>
+        private bool CreateImage() {
+            string filter, ext;
+            switch (mFileType) {
+                case FileTypeValue.DOSSector:
+                    if (GetNumTracksSectors(out uint tracks, out uint sectors) && sectors == 13) {
+                        filter = WinUtil.FILE_FILTER_D13;
+                        ext = ".d13";
+                    } else {
+                        filter = WinUtil.FILE_FILTER_DO;
+                        ext = ".do";
+                    }
+                    break;
+                case FileTypeValue.ProDOSBlock:
+                    filter = WinUtil.FILE_FILTER_PO;
+                    ext = ".po";
+                    break;
+                case FileTypeValue.TwoIMG:
+                    filter = WinUtil.FILE_FILTER_2MG;
+                    ext = ".2mg";
+                    break;
+                case FileTypeValue.NuFX:
+                    filter = WinUtil.FILE_FILTER_SDK;
+                    ext = ".sdk";
+                    break;
+                case FileTypeValue.DiskCopy42:
+                    filter = WinUtil.FILE_FILTER_DC42;
+                    ext = ".image";
+                    break;
+                case FileTypeValue.Woz:
+                    filter = WinUtil.FILE_FILTER_WOZ;
+                    ext = ".woz";
+                    break;
+                case FileTypeValue.Nib:
+                    filter = WinUtil.FILE_FILTER_NIB;
+                    ext = ".nib";
+                    break;
+                case FileTypeValue.Trackstar:
+                    filter = WinUtil.FILE_FILTER_APP;
+                    ext = ".app";
+                    break;
+                default:
+                    throw new NotImplementedException("Not implemented: " + mFileType);
+            }
+
+            string fileName = "NewDisk" + ext;
+
+            // AddExtension, ValidateNames, CheckPathExists, OverwritePrompt are enabled by default
+            SaveFileDialog fileDlg = new SaveFileDialog() {
+                Title = "Create File...",
+                Filter = filter + "|" + WinUtil.FILE_FILTER_ALL,
+                FilterIndex = 1,
+                FileName = fileName
+            };
+            if (fileDlg.ShowDialog() != true) {
+                return false;
+            }
+            string pathName = Path.GetFullPath(fileDlg.FileName);
+            if (!pathName.ToLowerInvariant().EndsWith(ext)) {
+                pathName += ext;
+            }
+
+            FileStream? stream;
+            try {
+                stream = new FileStream(pathName, FileMode.Create);
+            } catch (Exception ex) {
+                MessageBox.Show(this, "Unable to create file: " + ex.Message, "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            MemoryStream? tmpStream = null;
+
+            try {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                IDiskImage diskImage;
+                uint blocks, tracks, sectors;
+                SectorCodec codec;
+
+                GetVolNum(out int volNum);
+
+                FileSystemType fsType;
+                switch (mFilesystem) {
+                    case FilesystemValue.DOS: fsType = FileSystemType.DOS33; break;
+                    case FilesystemValue.ProDOS: fsType = FileSystemType.ProDOS; break;
+                    case FilesystemValue.HFS: fsType = FileSystemType.HFS; break;
+                    case FilesystemValue.Pascal: fsType = FileSystemType.Pascal; break;
+                    case FilesystemValue.CPM: fsType = FileSystemType.CPM; break;
+                    case FilesystemValue.None: fsType = FileSystemType.Unknown; break;
+                    default:
+                        throw new Exception("internal error");
+                }
+
+                switch (mFileType) {
+                    case FileTypeValue.DOSSector:
+                        if (!GetNumTracksSectors(out tracks, out sectors)) {
+                            throw new Exception("internal error");
+                        }
+                        diskImage = UnadornedSector.CreateSectorImage(stream, tracks, sectors,
+                            SectorOrder.DOS_Sector, mAppHook);
+                        break;
+                    case FileTypeValue.ProDOSBlock:
+                        // Try to create as sectors, since this could be a DOS filesystem.
+                        if (GetNumTracksSectors(out tracks, out sectors)) {
+                            diskImage = UnadornedSector.CreateSectorImage(stream, tracks, sectors,
+                                SectorOrder.ProDOS_Block, mAppHook);
+                        } else if (GetNumBlocks(out blocks)) {
+                            diskImage = UnadornedSector.CreateBlockImage(stream, blocks, mAppHook);
+                        } else {
+                            throw new Exception("internal error");
+                        }
+                        break;
+                    case FileTypeValue.TwoIMG:
+                        if (!GetNumBlocks(out blocks)) {
+                            throw new Exception("internal error");
+                        }
+                        if (GetNumTracksSectors(out tracks, out sectors)) {
+                            diskImage = TwoIMG.CreateDOSSectorImage(stream, tracks, mAppHook);
+                        } else if (GetNumBlocks(out blocks)) {
+                            diskImage = TwoIMG.CreateProDOSBlockImage(stream, blocks, mAppHook);
+                        } else {
+                            throw new Exception("internal error");
+                        }
+                        if (volNum != Defs.DEFAULT_525_VOLUME_NUM) {
+                            ((TwoIMG)diskImage).VolumeNumber = volNum;
+                        }
+                        break;
+                    case FileTypeValue.NuFX:
+                        // Create a temporary in-memory image.
+                        if (!GetNumBlocks(out blocks)) {
+                            throw new Exception("internal error");
+                        }
+                        tmpStream = new MemoryStream();
+                        if (blocks == 280) {
+                            diskImage = UnadornedSector.CreateSectorImage(tmpStream, 35, 16,
+                                SectorOrder.ProDOS_Block, mAppHook);
+                        } else if (blocks == 1600) {
+                            diskImage = UnadornedSector.CreateBlockImage(tmpStream, 1600, mAppHook);
+                        } else {
+                            throw new Exception("internal error");
+                        }
+                        break;
+                    case FileTypeValue.Woz:
+                        if (IsFlop525) {
+                            if (!GetNumTracksSectors(out tracks, out sectors)) {
+                                throw new Exception("internal error");
+                            }
+                            codec = (sectors == 13) ?
+                                StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
+                                StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
+                            diskImage = Woz.CreateDisk525(stream, tracks, codec, (byte)volNum,
+                                mAppHook);
+                        } else {
+                            if (!GetMediaKind(out MediaKind kind)) {
+                                throw new Exception("internal error");
+                            }
+                            codec = StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex35.Std_35);
+                            diskImage = Woz.CreateDisk35(stream, kind, WOZ_IL_35, codec,
+                                mAppHook);
+                        }
+                        // Let's just add a default META chunk to all disks.
+                        ((Woz)diskImage).AddMETA();
+                        break;
+                    case FileTypeValue.Nib:
+                        if (!GetNumTracksSectors(out tracks, out sectors)) {
+                            throw new Exception("internal error");
+                        }
+                        codec = (sectors == 13) ?
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
+                        diskImage = UnadornedNibble525.CreateDisk(stream, codec, (byte)volNum,
+                            mAppHook);
+                        break;
+                    case FileTypeValue.DiskCopy42:
+                    case FileTypeValue.Trackstar:
+                        MessageBox.Show(this, "Not yet!");
+                        throw new Exception("not yet");
+                    default:
+                        throw new NotImplementedException("Not implemented: " + mFileType);
+                }
+
+                // Format the filesystem, if one was chosen.
+                using (diskImage) {
+                    if (fsType != FileSystemType.Unknown) {
+                        // Map a filesystem instance on top of the disk image chunks.
+                        FileAnalyzer.CreateInstance(fsType, diskImage.ChunkAccess!, mAppHook,
+                            out IDiskContents? contents);
+                        if (contents is not IFileSystem) {
+                            throw new DAException("Unable to create filesystem");
+                        }
+                        IFileSystem fs = (IFileSystem)contents;
+
+                        // New stream, no need to initialize chunks.  Format the filesystem.
+                        fs.Format(VolumeNameText, volNum, IsChecked_MakeBootable);
+
+                        // Dispose of the object to ensure everything has been flushed.
+                        fs.Dispose();
+                    }
+                }
+
+                // Handle NuFX ".SDK" disk image creation.
+                if (mFileType == FileTypeValue.NuFX) {
+                    Debug.Assert(tmpStream != null);
+
+                    NuFX archive = NuFX.CreateArchive(mAppHook);
+                    archive.StartTransaction();
+                    IFileEntry entry = archive.CreateRecord();
+                    // Using the volume name is risky, because we don't syntax-check it for
+                    // all filesystems.
+                    if (fsType == FileSystemType.ProDOS) {
+                        entry.FileName = VolumeNameText;
+                    } else {
+                        entry.FileName = "DISK";
+                    }
+                    SimplePartSource source = new SimplePartSource(tmpStream);
+                    archive.AddPart(entry, FilePart.DiskImage, source, CompressionFormat.Default);
+                    archive.CommitTransaction(stream);
+                }
+
+                // Copy the pathname to a property where the caller can see it.
+                PathName = pathName;
+            } catch (Exception ex) {
+                MessageBox.Show(this, "Error creating disk: " + ex.Message, "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                // Need to close file before deleting it.
+                stream.Close();
+                stream = null;
+                Debug.WriteLine("Cleanup: removing '" + pathName + "'");
+                File.Delete(pathName);
+                return false;
+            } finally {
+                if (stream != null) {
+                    stream.Close();
+                }
+                Mouse.OverrideCursor = null;
+            }
+
+            return true;
         }
 
         private static readonly string[] sPropList = {
@@ -93,6 +385,8 @@ namespace cp2_wpf {
             nameof(IsChecked_FT_TwoIMG),
             nameof(IsEnabled_FT_NuFX),
             nameof(IsChecked_FT_NuFX),
+            nameof(IsEnabled_FT_DiskCopy42),
+            nameof(IsChecked_FT_DiskCopy42),
             nameof(IsEnabled_FT_Woz),
             nameof(IsChecked_FT_Woz),
             nameof(IsEnabled_FT_Nib),
@@ -101,94 +395,156 @@ namespace cp2_wpf {
             nameof(IsChecked_FT_Trackstar),
         };
 
+        private const long FOUR_GB = 4L * 1024 * 1024 * 1024;
+
+        /// <summary>
+        /// Updates the controls, adjusting radio button selections as needed.  The data-entry
+        /// fields are evaluated for validity.
+        /// </summary>
         private void UpdateControls() {
-            // Check filesystem.
-            bool needNewFs = false;
-            switch (mFilesystem) {
-                case FilesystemValue.DOS:
-                    needNewFs = !IsEnabled_FS_DOS;
-                    break;
-                case FilesystemValue.ProDOS:
-                    needNewFs = !IsEnabled_FS_ProDOS;
-                    break;
-                case FilesystemValue.HFS:
-                    needNewFs = !IsEnabled_FS_HFS;
-                    break;
-                case FilesystemValue.Pascal:
-                    needNewFs = !IsEnabled_FS_Pascal;
-                    break;
-                case FilesystemValue.CPM:
-                    needNewFs = !IsEnabled_FS_CPM;
-                    break;
-                case FilesystemValue.None:
-                    break;
-                default:
-                    Debug.Assert(false);
-                    break;
+            bool customSizeSyntaxOk = true;
+            bool customSizeLimitOk = true;
+            if (mDiskSize == DiskSizeValue.Other_Custom) {
+                // Check syntax.
+                long customSize = GetVolSize();
+                if (customSize < 0) {
+                    customSizeSyntaxOk = false;
+                } else if (customSize == 0 || customSize > FOUR_GB) {
+                    customSizeLimitOk = false;
+                }
             }
-            if (needNewFs) {
-                if (IsEnabled_FS_DOS) {
-                    mFilesystem = FilesystemValue.DOS;
-                } else if (IsEnabled_FS_ProDOS) {
-                    mFilesystem = FilesystemValue.ProDOS;
-                } else if (IsEnabled_FS_HFS) {
-                    mFilesystem = FilesystemValue.HFS;
-                } else if (IsEnabled_FS_Pascal) {
-                    mFilesystem = FilesystemValue.Pascal;
-                } else if (IsEnabled_FS_CPM) {
-                    mFilesystem = FilesystemValue.CPM;
-                } else {
-                    mFilesystem = FilesystemValue.None;
+            SizeDescForeground = customSizeSyntaxOk ? mDefaultLabelColor : mErrorLabelColor;
+            SizeLimitForeground = customSizeLimitOk ? mDefaultLabelColor : mErrorLabelColor;
+
+            IsValid = customSizeSyntaxOk && customSizeLimitOk;
+
+            // Adjust the radio selections for filesystem and file type to fit the current
+            // disk size specification.  If the custom size value is invalid, don't do
+            // the adjustments.
+            if (IsValid) {
+                // Check filesystem.
+                bool needNewFs = false;
+                switch (mFilesystem) {
+                    case FilesystemValue.DOS:
+                        needNewFs = !IsEnabled_FS_DOS;
+                        break;
+                    case FilesystemValue.ProDOS:
+                        needNewFs = !IsEnabled_FS_ProDOS;
+                        break;
+                    case FilesystemValue.HFS:
+                        needNewFs = !IsEnabled_FS_HFS;
+                        break;
+                    case FilesystemValue.Pascal:
+                        needNewFs = !IsEnabled_FS_Pascal;
+                        break;
+                    case FilesystemValue.CPM:
+                        needNewFs = !IsEnabled_FS_CPM;
+                        break;
+                    case FilesystemValue.None:
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        break;
+                }
+                if (needNewFs) {
+                    if (IsEnabled_FS_DOS) {
+                        mFilesystem = FilesystemValue.DOS;
+                    } else if (IsEnabled_FS_ProDOS) {
+                        mFilesystem = FilesystemValue.ProDOS;
+                    } else if (IsEnabled_FS_HFS) {
+                        mFilesystem = FilesystemValue.HFS;
+                    } else if (IsEnabled_FS_Pascal) {
+                        mFilesystem = FilesystemValue.Pascal;
+                    } else if (IsEnabled_FS_CPM) {
+                        mFilesystem = FilesystemValue.CPM;
+                    } else {
+                        mFilesystem = FilesystemValue.None;
+                    }
+                }
+
+                // Check file type.
+                bool needNewType = false;
+                switch (mFileType) {
+                    case FileTypeValue.DOSSector:
+                        needNewType = !IsEnabled_FT_DOSSector;
+                        break;
+                    case FileTypeValue.ProDOSBlock:
+                        needNewType = !IsEnabled_FT_ProDOSBlock;
+                        break;
+                    case FileTypeValue.TwoIMG:
+                        needNewType = !IsEnabled_FT_TwoIMG;
+                        break;
+                    case FileTypeValue.NuFX:
+                        needNewType = !IsEnabled_FT_NuFX;
+                        break;
+                    case FileTypeValue.DiskCopy42:
+                        needNewType = !IsEnabled_FT_DiskCopy42;
+                        break;
+                    case FileTypeValue.Woz:
+                        needNewType = !IsEnabled_FT_Woz;
+                        break;
+                    case FileTypeValue.Nib:
+                        needNewType = !IsEnabled_FT_Nib;
+                        break;
+                    case FileTypeValue.Trackstar:
+                        needNewType = !IsEnabled_FT_Trackstar;
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        break;
+                }
+                if (needNewType) {
+                    if (IsEnabled_FT_ProDOSBlock) {
+                        mFileType = FileTypeValue.ProDOSBlock;
+                    } else if (IsEnabled_FT_DOSSector) {
+                        mFileType = FileTypeValue.DOSSector;
+                    } else if (IsEnabled_FT_Woz) {
+                        mFileType = FileTypeValue.Woz;
+                    } else if (IsEnabled_FT_TwoIMG) {
+                        mFileType = FileTypeValue.TwoIMG;
+                    } else if (IsEnabled_FT_NuFX) {             // shouldn't get this far
+                        mFileType = FileTypeValue.NuFX;
+                    } else if (IsEnabled_FT_DiskCopy42) {
+                        mFileType = FileTypeValue.DiskCopy42;
+                    } else if (IsEnabled_FT_Nib) {
+                        mFileType = FileTypeValue.Nib;
+                    } else if (IsEnabled_FT_Trackstar) {
+                        mFileType = FileTypeValue.Trackstar;
+                    } else {
+                        // Custom size that has no compatible disk formats.  Leave the selection
+                        // alone while things get sorted.  (If the minimum granularity is blocks,
+                        // we shouldn't hit this unless they enter "0".)
+                    }
                 }
             }
 
-            // Check file type.
-            bool needNewType = false;
-            switch (mFileType) {
-                case FileTypeValue.DOSSector:
-                    needNewType = !IsEnabled_FT_DOSSector;
+            // Check the volume name if an appropriate filesystem is selected.
+            bool volNameSyntaxOk = true;
+            switch (mFilesystem) {
+                case FilesystemValue.ProDOS:
+                    volNameSyntaxOk = ProDOS_FileEntry.IsVolumeNameValid(VolumeNameText);
                     break;
-                case FileTypeValue.ProDOSBlock:
-                    needNewType = !IsEnabled_FT_ProDOSBlock;
+                case FilesystemValue.HFS:
+                    volNameSyntaxOk = HFS_FileEntry.IsVolumeNameValid(VolumeNameText);
                     break;
-                case FileTypeValue.TwoIMG:
-                    needNewType = !IsEnabled_FT_TwoIMG;
+                case FilesystemValue.Pascal:
+                    // TODO
                     break;
-                case FileTypeValue.NuFX:
-                    needNewType = !IsEnabled_FT_NuFX;
-                    break;
-                case FileTypeValue.Woz:
-                    needNewType = !IsEnabled_FT_Woz;
-                    break;
-                case FileTypeValue.Nib:
-                    needNewType = !IsEnabled_FT_Nib;
-                    break;
-                case FileTypeValue.Trackstar:
-                    needNewType = !IsEnabled_FT_Trackstar;
+                case FilesystemValue.DOS:
+                case FilesystemValue.CPM:
+                case FilesystemValue.None:
                     break;
                 default:
-                    Debug.Assert(false);
-                    break;
+                    throw new NotImplementedException("Didn't handle " + mFilesystem);
             }
-            if (needNewType) {
-                if (IsEnabled_FT_ProDOSBlock) {
-                    mFileType = FileTypeValue.ProDOSBlock;
-                } else if (IsEnabled_FT_DOSSector) {
-                    mFileType = FileTypeValue.DOSSector;
-                } else if (IsEnabled_FT_Woz) {
-                    mFileType = FileTypeValue.Woz;
-                } else if (IsEnabled_FT_TwoIMG) {
-                    mFileType = FileTypeValue.TwoIMG;
-                } else if (IsEnabled_FT_NuFX) {             // shouldn't get this far
-                    mFileType = FileTypeValue.NuFX;
-                } else if (IsEnabled_FT_Nib) {
-                    mFileType = FileTypeValue.Nib;
-                } else if (IsEnabled_FT_Trackstar) {
-                    mFileType = FileTypeValue.Trackstar;
-                } else {
-                    Debug.Assert(false);
-                }
-            }
+            VolNameSyntaxForeground = volNameSyntaxOk ? mDefaultLabelColor : mErrorLabelColor;
+            IsValid &= volNameSyntaxOk;
+
+            // Check the volume number.  It's used for the DOS VTOC and for 5.25" floppy sector
+            // formatting.  No real reason not to check it for everything.
+            bool volNumSyntaxOk = GetVolNum(out int volNum);
+            VolNumSyntaxForeground = volNumSyntaxOk ? mDefaultLabelColor : mErrorLabelColor;
+            IsValid &= volNumSyntaxOk;
 
             // Broadcast updates for all controls.
             foreach (string propName in sPropList) {
@@ -206,6 +562,10 @@ namespace cp2_wpf {
         }
         public DiskSizeValue mDiskSize;
 
+        /// <summary>
+        /// Returns the size, in bytes, of the selected disk size item.  For custom entries
+        /// this will return -1 if the syntax is invalid.
+        /// </summary>
         private long GetVolSize() {
             switch (mDiskSize) {
                 case DiskSizeValue.Flop525_113:
@@ -223,27 +583,39 @@ namespace cp2_wpf {
                 case DiskSizeValue.Other_32MB:
                     return 32 * 1024 * 1024;
                 case DiskSizeValue.Other_Custom:
-                    Debug.Assert(false, "TODO");
-                    return 0;
+                    return StringToValue.SizeToBytes(mCustomSizeText, true);
                 default:
                     throw new NotImplementedException("Didn't handle size=" + mDiskSize);
             }
         }
 
-        private bool GetBlocks(out uint blocks) {
+        /// <summary>
+        /// Calculates the number of blocks for the selected disk size item.
+        /// </summary>
+        /// <param name="blocks">Result: block count.</param>
+        /// <returns>True on success, false if the item doesn't have blocks or is an invalid
+        /// custom specifier.</returns>
+        private bool GetNumBlocks(out uint blocks) {
             long volSize = GetVolSize();
-            if (volSize % BLOCK_SIZE != 0) {
+            if (volSize < 0 || volSize % BLOCK_SIZE != 0) {
                 blocks = 0;
                 return false;
             }
-            blocks = (uint)volSize / BLOCK_SIZE;
-            if (blocks * BLOCK_SIZE != volSize) {
+            blocks = (uint)(volSize / BLOCK_SIZE);
+            if (blocks * (long)BLOCK_SIZE != volSize) {
                 return false;       // overflow
             }
             return true;
         }
 
-        private bool GetTracksSectors(out uint tracks, out uint sectors) {
+        /// <summary>
+        /// Calculates the number of tracks/sectors for the selected disk size item.
+        /// </summary>
+        /// <param name="tracks">Result: track count.</param>
+        /// <param name="sectors">Result: sector count.</param>
+        /// <returns>True on success, false if the item doesn't have sectors or is an invalid
+        /// custom specifier.</returns>
+        private bool GetNumTracksSectors(out uint tracks, out uint sectors) {
             switch (mDiskSize) {
                 case DiskSizeValue.Flop525_113:
                     tracks = 35;
@@ -366,6 +738,25 @@ namespace cp2_wpf {
             }
         }
 
+        public Brush SizeDescForeground {
+            get { return mSizeDescForeground; }
+            set { mSizeDescForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mSizeDescForeground = SystemColors.WindowTextBrush;
+
+        public Brush SizeLimitForeground {
+            get { return mSizeLimitForeground; }
+            set { mSizeLimitForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mSizeLimitForeground = SystemColors.WindowTextBrush;
+
+        public string CustomSizeText {
+            get { return mCustomSizeText; }
+            set { mCustomSizeText = value; OnPropertyChanged();
+                mDiskSize = DiskSizeValue.Other_Custom; UpdateControls(); }
+        }
+        private string mCustomSizeText;
+
         #endregion Disk Size
 
         #region Filesystem
@@ -376,6 +767,18 @@ namespace cp2_wpf {
         }
 
         private FilesystemValue mFilesystem;
+
+        /// <summary>
+        /// Converts the disk volume number to an integer.
+        /// </summary>
+        /// <param name="volNum">Result: volume number; will be 0 if conversion fails.</param>
+        /// <returns>True on success.</returns>
+        private bool GetVolNum(out int volNum) {
+            if (!int.TryParse(VolumeNumText, out volNum)) {
+                return false;
+            }
+            return volNum >= 0 && volNum <= 254;
+        }
 
         public bool IsChecked_FS_None {
             get { return mFilesystem == FilesystemValue.None; }
@@ -449,15 +852,49 @@ namespace cp2_wpf {
             }
         }
 
+        public Brush VolNameSyntaxForeground {
+            get { return mVolNameSyntaxForeground; }
+            set { mVolNameSyntaxForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mVolNameSyntaxForeground = SystemColors.WindowTextBrush;
+
+        public string VolumeNameText {
+            get { return mVolumeNameText; }
+            set { mVolumeNameText = value; OnPropertyChanged(); UpdateControls(); }
+        }
+        private string mVolumeNameText;
+
+        public Brush VolNumSyntaxForeground {
+            get { return mVolNumSyntaxForeground; }
+            set { mVolNumSyntaxForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mVolNumSyntaxForeground = SystemColors.WindowTextBrush;
+
+        public string VolumeNumText {
+            get { return mVolumeNumText; }
+            set { mVolumeNumText = value; OnPropertyChanged(); UpdateControls(); }
+        }
+        private string mVolumeNumText;
+
+        public bool IsChecked_MakeBootable {
+            get { return mIsChecked_MakeBootable; }
+            set { mIsChecked_MakeBootable = value; OnPropertyChanged(); }
+        }
+        private bool mIsChecked_MakeBootable;
+
         #endregion Filesystem
 
         #region File Type
+
+        // Interleave for WOZ 3.5" floppy disks.  Assume 4:1 since WOZ is an Apple II format.
+        private const int WOZ_IL_35 = 4;
 
         public enum FileTypeValue {
             Unknown = 0,
             DOSSector,
             ProDOSBlock,
             TwoIMG,
+            DiskCopy42,
             NuFX,
             Woz,
             Nib,
@@ -474,7 +911,7 @@ namespace cp2_wpf {
         }
         public bool IsEnabled_FT_DOSSector {
             get {
-                if (!GetTracksSectors(out uint tracks, out uint sectors)) {
+                if (!GetNumTracksSectors(out uint tracks, out uint sectors)) {
                     return false;
                 }
                 if (!UnadornedSector.CanCreateSectorImage(tracks, sectors, SectorOrder.DOS_Sector,
@@ -494,7 +931,7 @@ namespace cp2_wpf {
         }
         public bool IsEnabled_FT_ProDOSBlock {
             get {
-                if (!GetBlocks(out uint blocks)) {
+                if (!GetNumBlocks(out uint blocks)) {
                     return false;
                 }
                 if (!UnadornedSector.CanCreateBlockImage(blocks, out string errMsg)) {
@@ -513,7 +950,7 @@ namespace cp2_wpf {
         }
         public bool IsEnabled_FT_TwoIMG {
             get {
-                if (!GetBlocks(out uint blocks)) {
+                if (!GetNumBlocks(out uint blocks)) {
                     return false;
                 }
                 if (!TwoIMG.CanCreateProDOSBlockImage(blocks, out string errMsg)) {
@@ -532,12 +969,28 @@ namespace cp2_wpf {
         }
         public bool IsEnabled_FT_NuFX {
             get {
-                if (!GetBlocks(out uint blocks)) {
+                if (!GetNumBlocks(out uint blocks)) {
                     return false;
                 }
                 // Limit ourselves to 140KB and 800KB floppies, since that's what utilities
                 // on the Apple II will be expecting.
                 return blocks == 280 || blocks == 1600;
+            }
+        }
+
+        public bool IsChecked_FT_DiskCopy42 {
+            get { return mFileType == FileTypeValue.DiskCopy42; }
+            set {
+                if (value) { mFileType = FileTypeValue.DiskCopy42; }
+                UpdateControls();
+            }
+        }
+        public bool IsEnabled_FT_DiskCopy42 {
+            get {
+                if (!GetNumBlocks(out uint blocks)) {
+                    return false;
+                }
+                return blocks == 1600;
             }
         }
 
@@ -551,7 +1004,7 @@ namespace cp2_wpf {
         public bool IsEnabled_FT_Woz {
             get {
                 if (IsFlop525) {
-                    if (!GetTracksSectors(out uint tracks, out uint sectors)) {
+                    if (!GetNumTracksSectors(out uint tracks, out uint sectors)) {
                         return false;
                     }
                     return Woz.CanCreateDisk525(tracks, out string errMsg);
@@ -559,8 +1012,7 @@ namespace cp2_wpf {
                     if (!GetMediaKind(out MediaKind kind)) {
                         return false;
                     }
-                    // Assume 4:1 interleave, since WOZ is an Apple II format.
-                    return Woz.CanCreateDisk35(kind, 4, out string errMsg);
+                    return Woz.CanCreateDisk35(kind, WOZ_IL_35, out string errMsg);
                 }
             }
         }
@@ -574,7 +1026,7 @@ namespace cp2_wpf {
         }
         public bool IsEnabled_FT_Nib {
             get {
-                if (!GetTracksSectors(out uint tracks, out uint sectors)) {
+                if (!GetNumTracksSectors(out uint tracks, out uint sectors)) {
                     return false;
                 }
                 return tracks == 35;
@@ -590,7 +1042,7 @@ namespace cp2_wpf {
         }
         public bool IsEnabled_FT_Trackstar {
             get {
-                if (!GetTracksSectors(out uint tracks, out uint sectors)) {
+                if (!GetNumTracksSectors(out uint tracks, out uint sectors)) {
                     return false;
                 }
                 return tracks == 35 || tracks == 40;

@@ -306,17 +306,18 @@ namespace cp2_wpf {
         }
 
         public void NewDiskImage() {
-            CreateDiskImage dialog = new CreateDiskImage(mMainWin);
-            if (dialog.ShowDialog() != true) {
-                return;
-            }
-
-            // It feels less distracting to do this now, rather than earlier.
+            // Close the current file now, in case we want to overwrite it.
             if (!CloseWorkFile()) {
                 return;
             }
 
-            // TODO
+            CreateDiskImage dialog = new CreateDiskImage(mMainWin, AppHook);
+            if (dialog.ShowDialog() != true) {
+                return;
+            }
+
+            // Open the new archive.
+            DoOpenWorkFile(dialog.PathName, false);
         }
 
         /// <summary>
@@ -434,11 +435,10 @@ namespace cp2_wpf {
                 WorkProgress workDialog = new WorkProgress(mMainWin, prog, true);
                 if (workDialog.ShowDialog() != true) {
                     // cancelled or failed
-                    return;
-                }
-                if (prog.Results.mException != null) {
-                    MessageBox.Show("Error: " + prog.Results.mException.Message,
-                        FILE_ERR_CAPTION, MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (prog.Results.mException != null) {
+                        MessageBox.Show(mMainWin, "Error: " + prog.Results.mException.Message,
+                            FILE_ERR_CAPTION, MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                     return;
                 }
                 Debug.Assert(prog.Results.mWorkTree != null);

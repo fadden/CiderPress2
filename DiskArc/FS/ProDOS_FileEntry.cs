@@ -1768,11 +1768,18 @@ namespace DiskArc.FS {
         }
 
         /// <summary>
-        /// Returns true if the string is a valid ProDOS filename (or volume name).
+        /// Returns true if the string is a valid ProDOS filename.
         /// </summary>
         public static bool IsFileNameValid(string fileName) {
             MatchCollection matches = sFileNameRegex.Matches(fileName);
             return (matches.Count == 1);
+        }
+
+        /// <summary>
+        /// Returns true if the string is a valid ProDOS volume name.
+        /// </summary>
+        public static bool IsVolumeNameValid(string volName) {
+            return IsFileNameValid(volName);
         }
 
         /// <summary>

@@ -62,9 +62,10 @@ namespace CommonUtil {
         /// Converts a size descriptor, like "10KB", to a byte value, like "10240".
         /// </summary>
         /// <param name="sizeStr">String to convert.</param>
+        /// <param name="baseIsBlocks">If true, lack of a suffix means blocks.</param>
         /// <returns>Value, in bytes, or -1 if the conversion failed.</returns>
-        public static long SizeToBytes(string sizeStr) {
-            return SizeToBytes(sizeStr, 0);
+        public static long SizeToBytes(string sizeStr, bool baseIsBlocks = false) {
+            return SizeToBytes(sizeStr, 0, baseIsBlocks);
         }
 
         /// <summary>
@@ -73,8 +74,9 @@ namespace CommonUtil {
         /// <param name="sizeStr">String to convert.</param>
         /// <param name="trackSize">Value to use for units of "tracks".  If the value is zero,
         ///   track specifiers are rejected.</param>
+        /// <param name="baseIsBlocks">If true, lack of a suffix means blocks.</param>
         /// <returns>Value, in bytes, or -1 if the conversion failed.</returns>
-        public static long SizeToBytes(string sizeStr, int trackSize) {
+        public static long SizeToBytes(string sizeStr, int trackSize, bool baseIsBlocks = false) {
             const int INVALID_ARGS = -1;
 
             if (trackSize < 0) {
@@ -112,9 +114,11 @@ namespace CommonUtil {
             //
             // In theory, "K" and "KB" should be kilobytes (1000), and only "KiB" should be
             // kibibytes (1024).  Ditto for the other SI prefixes.
+            //
+            // We trim whitespace off the start to allow "800 KB" and "800KB".
 
-            long mult = 1;
-            switch (suffix.ToLowerInvariant()) {
+            long mult = baseIsBlocks ? 512 : 1;
+            switch (suffix.TrimStart().ToLowerInvariant()) {
                 case "":            // bytes
                     break;
                 case "k":

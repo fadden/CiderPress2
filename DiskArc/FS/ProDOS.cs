@@ -765,7 +765,7 @@ namespace DiskArc.FS {
             }
 
             // Validate volume name.  We don't care about volumeNum.
-            if (!ProDOS_FileEntry.IsFileNameValid(volumeName)) {
+            if (!ProDOS_FileEntry.IsVolumeNameValid(volumeName)) {
                 throw new ArgumentException("Invalid volume name");
             }
 
@@ -1366,7 +1366,7 @@ namespace DiskArc.FS {
             if (!idestDir.IsDirectory) {
                 throw new ArgumentException("Destination file entry must be a directory");
             }
-            if (newFileName == null || !HFS_FileEntry.IsFileNameValid(newFileName, false)) {
+            if (newFileName == null || !ProDOS_FileEntry.IsFileNameValid(newFileName)) {
                 throw new ArgumentException("Invalid filename '" + newFileName + "'");
             }
             ProDOS_FileEntry destDir = (ProDOS_FileEntry)idestDir;

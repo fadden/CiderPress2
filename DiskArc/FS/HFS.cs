@@ -613,7 +613,7 @@ namespace DiskArc.FS {
                 throw new ArgumentOutOfRangeException("Invalid length for HFS volume");
             }
 
-            if (!HFS_FileEntry.IsFileNameValid(volumeName, true)) {
+            if (!HFS_FileEntry.IsVolumeNameValid(volumeName)) {
                 throw new ArgumentException("Invalid volume name");
             }
 
@@ -947,7 +947,7 @@ namespace DiskArc.FS {
             if (!dirEntry.IsDirectory) {
                 throw new ArgumentException("Directory entry argument must be a directory");
             }
-            if (fileName == null || !HFS_FileEntry.IsFileNameValid(fileName, false)) {
+            if (fileName == null || !HFS_FileEntry.IsFileNameValid(fileName)) {
                 throw new ArgumentException("Invalid filename '" + fileName + "'");
             }
             if (mode != CreateMode.File &&
@@ -1146,7 +1146,7 @@ namespace DiskArc.FS {
             if (!idestDir.IsDirectory) {
                 throw new ArgumentException("Destination file entry must be a directory");
             }
-            if (newFileName == null || !HFS_FileEntry.IsFileNameValid(newFileName, false)) {
+            if (newFileName == null || !HFS_FileEntry.IsFileNameValid(newFileName)) {
                 throw new ArgumentException("Invalid filename '" + newFileName + "'");
             }
             HFS_FileEntry destDir = (HFS_FileEntry)idestDir;

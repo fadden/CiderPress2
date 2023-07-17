@@ -99,7 +99,11 @@ limitations under the License.
                     <KeyGesture>Alt+Up</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
-            <RoutedUICommand x:Key="NewDiskImageCmd" Text="New _Disk Image..."/>
+            <RoutedUICommand x:Key="NewDiskImageCmd" Text="New _Disk Image...">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+N</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
             <RoutedUICommand x:Key="RecentFileCmd"/>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>

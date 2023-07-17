@@ -64,6 +64,13 @@ namespace cp2_wpf {
 
         // New archive/disk.
         public const string NEW_ARC_MODE = "new-arc-mode";
+        public const string NEW_DISK_SIZE = "new-disk-size";
+        public const string NEW_DISK_FILESYSTEM = "new-disk-filesystem";
+        public const string NEW_DISK_FILE_TYPE = "new-disk-file-type";
+        public const string NEW_DISK_CUSTOM_SIZE = "new-disk-custom-size";
+        public const string NEW_DISK_VOLUME_NAME = "new-disk-volume-name";
+        public const string NEW_DISK_VOLUME_NUM = "new-disk-volume-num";
+        public const string NEW_DISK_MAKE_BOOTABLE = "new-disk-make-bootable";
 
         // Sector editing.
         public const string SCTED_TEXT_CONV_MODE = "scted-text-conv-mode";

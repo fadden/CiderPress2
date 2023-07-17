@@ -293,7 +293,7 @@ namespace DiskArc.Disk {
             /// <param name="format">Image format.</param>
             /// <param name="dataLen">Data chunk length.</param>
             /// <returns>Newly-created object.</returns>
-            public static Header Create(ImageFormat format, int dataLen) {
+            public static Header Create(ImageFormat format, uint dataLen) {
                 Header hdr = new Header();
                 Array.Copy(SIGNATURE, hdr.mMagic, SIGNATURE.Length);
                 Array.Copy(CREATOR_CPII, hdr.mCreator, CREATOR_CPII.Length);
@@ -309,7 +309,7 @@ namespace DiskArc.Disk {
                 } else if (format == ImageFormat.Nibble_Floppy) {
                     Debug.Assert(dataLen % TwoIMG_Nibble.NIB_TRACK_LENGTH == 0);
                 }
-                hdr.mDataLen = (uint)dataLen;
+                hdr.mDataLen = dataLen;
                 // All other fields are zero.
                 return hdr;
             }
@@ -632,12 +632,12 @@ namespace DiskArc.Disk {
             }
 
             // Set the length of the stream.
-            int dataLen = (int)numTracks * 16 * SECTOR_SIZE;
+            long dataLen = numTracks * 16 * SECTOR_SIZE;
             stream.SetLength(0);
             stream.SetLength(Header.LENGTH + dataLen);
 
             // Create the header and write it to the stream.
-            Header hdr = Header.Create(Header.ImageFormat.DOS_Floppy, dataLen);
+            Header hdr = Header.Create(Header.ImageFormat.DOS_Floppy, (uint)dataLen);
             byte[] buf = new byte[Header.LENGTH];
             hdr.Store(buf, 0);
             stream.Position = 0;
@@ -657,7 +657,10 @@ namespace DiskArc.Disk {
         /// <returns>True on success.</returns>
         public static bool CanCreateProDOSBlockImage(uint numBlocks, out string errMsg) {
             errMsg = string.Empty;
-            if (numBlocks == 0 || numBlocks > 8 * 1024 * 1024) {        // arbitrary 4GB limit
+            if (numBlocks == 0 || numBlocks > 4 * 1024 * 1024) {
+                // Depending on whether we want to treat the field as signed or unsigned, the
+                // limit is 2GB or 4GB.  We shouldn't really need anything over 32MB, so cap
+                // creation at 2GB in case some other tools assume it's signed.
                 errMsg = "Invalid block count: " + numBlocks;
             }
             return errMsg == string.Empty;
@@ -684,21 +687,26 @@ namespace DiskArc.Disk {
                 throw new ArgumentException(errMsg);
             }
 
-            // Set the length of the stream.
-            int dataLen = (int)numBlocks * BLOCK_SIZE;
+            // Set the length of the stream.  The length stored in the header is 32 bits.
+            long dataLen = numBlocks * (long)BLOCK_SIZE;
             stream.SetLength(0);
             stream.SetLength(Header.LENGTH + dataLen);
 
             // Create the header and write it to the stream.
-            Header hdr = Header.Create(Header.ImageFormat.ProDOS_Disk, dataLen);
+            Header hdr = Header.Create(Header.ImageFormat.ProDOS_Disk, (uint)dataLen);
             byte[] buf = new byte[Header.LENGTH];
             hdr.Store(buf, 0);
             stream.Position = 0;
             stream.Write(buf, 0, buf.Length);
 
             TwoIMG disk = new TwoIMG(stream, hdr, appHook);
-            disk.ChunkAccess = new GatedChunkAccess(
-                new GeneralChunkAccess(stream, Header.LENGTH, numBlocks));
+            try {
+                disk.ChunkAccess = new GatedChunkAccess(
+                    new GeneralChunkAccess(stream, Header.LENGTH, numBlocks));
+            } catch {
+                disk.Dispose();
+                throw;
+            }
             return disk;
         }
 

@@ -30,12 +30,21 @@ namespace cp2_wpf {
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;" +
             "*.gz;*.zip;*.as;*.acu";
+        public const string FILE_FILTER_2MG = "2IMG disk image (*.2mg)|*.2mg";
+        public const string FILE_FILTER_APP = "Trackstar disk image (*.app)|*.app";
         public const string FILE_FILTER_BINARY2 = "Binary ][ (*.bny/bqy)|*.bny;*.bqy";
         public const string FILE_FILTER_CSV = "Comma-separated values (*.csv)|*.csv";
+        public const string FILE_FILTER_D13 = "Unadorned 13-sector disk (*.d13)|*.d13";
+        public const string FILE_FILTER_DO = "Unadorned DOS sectors (*.do)|*.do";
+        public const string FILE_FILTER_DC42 = "DiskCopy 4.2 image (*.image)|*.image";
+        public const string FILE_FILTER_NIB = "Nibble disk image (*.nib)|*.nib";
         public const string FILE_FILTER_NUFX = "ShrinkIt (NuFX) archive (*.shk)|*.shk";
         public const string FILE_FILTER_PNG = "PNG images (*.png)|*.png";
+        public const string FILE_FILTER_PO = "Unadorned ProDOS blocks (*.po)|*.po";
         public const string FILE_FILTER_RTF = "RTF documents (*.rtf)|*.rtf";
+        public const string FILE_FILTER_SDK = "ShrinkIt disk image (*.sdk)|*.sdk";
         public const string FILE_FILTER_TEXT = "Text documents (*.txt)|*.txt";
+        public const string FILE_FILTER_WOZ = "WOZ disk image (*.woz)|*.woz";
         public const string FILE_FILTER_ZIP = "ZIP archive (*.zip)|*.zip";
 
         /// <summary>

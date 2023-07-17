@@ -44,7 +44,8 @@ The header is:
 +$30 /16: reserved, must be zero (pads header to 64 bytes)
 ```
 
-All values are little-endian order.  The document does not specify signed vs. unsigned.
+All values are in little-endian order.  The document does not specify signed vs. unsigned, but
+given the target platform limitations it's reasonable to treat the values as signed.
 
 The meaning of the "header length" field is a little confusing: the magnet.ch document says,
 "the length of this header which equals 52 bytes as of this writing".  The header shown in that

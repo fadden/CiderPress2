@@ -705,7 +705,7 @@ namespace DiskArc.FS {
         /// <param name="idestDir">Destination directory.</param>
         /// <param name="newFileName">New filename.</param>
         internal void DoMoveFile(IFileEntry idestDir, string newFileName) {
-            if (!IsFileNameValid(newFileName, IsVolumeDirectory)) {
+            if (!IsNameValid(newFileName, IsVolumeDirectory)) {
                 throw new ArgumentException("Invalid filename");
             }
 
@@ -872,12 +872,26 @@ namespace DiskArc.FS {
         //}
 
         /// <summary>
-        /// Returns true if the string is a valid HFS filename or volume name.
+        /// Returns true if the string is a valid HFS volume name.
         /// </summary>
         /// <remarks>
         /// Control characters are allowed if mapped to the control-pictures group.
         /// </remarks>
-        public static bool IsFileNameValid(string name, bool isVolumeName) {
+        public static bool IsVolumeNameValid(string name) {
+            return IsNameValid(name, true);
+        }
+
+        /// <summary>
+        /// Returns true if the string is a valid HFS file name.
+        /// </summary>
+        /// <remarks>
+        /// Control characters are allowed if mapped to the control-pictures group.
+        /// </remarks>
+        public static bool IsFileNameValid(string name) {
+            return IsNameValid(name, false);
+        }
+
+        private static bool IsNameValid(string name, bool isVolumeName) {
             // We need to check the unicode values of the Mac OS Roman character set, so we
             // can't use a simple regex for this one.
             int maxLen = isVolumeName ? HFS.MAX_VOL_NAME_LEN : HFS.MAX_FILE_NAME_LEN;

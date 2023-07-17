@@ -299,37 +299,37 @@ namespace AppCommon {
             mAppHook = appHook;
 
             DateTime startWhen = DateTime.Now;
-            appHook.LogI("Constructing work tree for '" + hostPathName + "'");
-            mHostFileNode = new HostFileNode(hostPathName, appHook);
+            mAppHook.LogI("Constructing work tree for '" + mHostPathName + "'");
+            mHostFileNode = new HostFileNode(mHostPathName, mAppHook);
 
             Stream? hostStream = null;
             try {
                 try {
                     // Try to open with read-write access unless read-only requested.
                     FileAccess access = readOnly ? FileAccess.Read : FileAccess.ReadWrite;
-                    hostStream = new FileStream(hostPathName, FileMode.Open, access,
+                    hostStream = new FileStream(mHostPathName, FileMode.Open, access,
                         FileShare.Read);
                 } catch (IOException ex) {
                     // Retry with read-only access unless we did that the first time around.
                     if (readOnly) {
                         throw;
                     }
-                    appHook.LogI("R/W open failed (" + ex.Message + "), retrying R/O: '" +
-                        hostPathName + "'");
-                    hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.Read,
+                    mAppHook.LogI("R/W open failed (" + ex.Message + "), retrying R/O: '" +
+                        mHostPathName + "'");
+                    hostStream = new FileStream(mHostPathName, FileMode.Open, FileAccess.Read,
                         FileShare.Read);
                 }
 
-                string ext = Path.GetExtension(hostPathName);
+                string ext = Path.GetExtension(mHostPathName);
                 // This will throw InvalidDataException if the stream isn't recognized.  Let
                 // the caller handle the exception (it has the error message).
-                Node? newNode = ProcessStream(hostStream, ext, Path.GetFileName(hostPathName),
+                Node? newNode = ProcessStream(hostStream, ext, Path.GetFileName(mHostPathName),
                         null, mHostFileNode, IFileEntry.NO_ENTRY, out string errorMsg);
                 if (newNode == null) {
                     throw new InvalidDataException(errorMsg);
                 }
                 if (mWorker != null && mWorker.CancellationPending) {
-                    appHook.LogW("Work tree construction was cancelled");
+                    mAppHook.LogW("Work tree construction was cancelled");
                     throw new Exception("cancelled");   // kind doesn't matter, just want cleanup
                 }
                 RootNode = newNode;
@@ -343,7 +343,7 @@ namespace AppCommon {
                 hostStream?.Close();
             }
 
-            appHook.LogD("Work tree construction finished in " +
+            mAppHook.LogD("Work tree construction finished in " +
                 (DateTime.Now - startWhen).TotalMilliseconds + " ms");
 
             // Clear this so we don't try to use it for updates later.
@@ -517,57 +517,63 @@ namespace AppCommon {
                 //return null;
             }
 
-            DiskArcNode? leafNode;
-            string typeStr;
-            Node.Status status;
             Node newNode;
-            if (leafObj is IArchive) {
-                IArchive arc = (IArchive)leafObj;
-                leafNode = new ArchiveNode(daParent, stream, arc, entryInParent, mAppHook);
+            try {
+                DiskArcNode? leafNode;
+                string typeStr;
+                Node.Status status;
+                if (leafObj is IArchive) {
+                    IArchive arc = (IArchive)leafObj;
+                    leafNode = new ArchiveNode(daParent, stream, arc, entryInParent, mAppHook);
 
-                typeStr = ThingString.IArchive(arc);
-                if (arc.IsDubious) {
-                    status = Node.Status.Dubious;
-                } else if (arc.Notes.WarningCount > 0 || arc.Notes.ErrorCount > 0) {
-                    status = Node.Status.Warning;
+                    typeStr = ThingString.IArchive(arc);
+                    if (arc.IsDubious) {
+                        status = Node.Status.Dubious;
+                    } else if (arc.Notes.WarningCount > 0 || arc.Notes.ErrorCount > 0) {
+                        status = Node.Status.Warning;
+                    } else {
+                        status = Node.Status.OK;
+                    }
+                    newNode = new Node(leafObj, parentNode, leafNode) {
+                        Label = pathName,
+                        TypeStr = typeStr,
+                        NodeStatus = status,
+                        IsReadOnly = !leafNode.CanWrite,
+                        IsNodeReadOnly = arc.IsReadOnly,
+                    };
+
+                    HandleFileArchive((IArchive)leafObj, newNode, leafNode, pathName);
+                } else if (leafObj is IDiskImage) {
+                    IDiskImage disk = (IDiskImage)leafObj;
+                    leafNode = new DiskImageNode(daParent, stream, disk, entryInParent, mAppHook);
+
+                    typeStr = ThingString.IDiskImage(disk);
+                    if (disk.IsDubious) {
+                        status = Node.Status.Dubious;
+                    } else if (disk.Notes.WarningCount > 0 || disk.Notes.ErrorCount > 0) {
+                        status = Node.Status.Warning;
+                    } else {
+                        status = Node.Status.OK;
+                    }
+                    newNode = new Node(leafObj, parentNode, leafNode) {
+                        Label = pathName,
+                        TypeStr = typeStr,
+                        NodeStatus = status,
+                        IsReadOnly = !leafNode.CanWrite,
+                        IsNodeReadOnly = disk.IsReadOnly,
+                        OrderHint = orderHint
+                    };
+
+                    HandleDiskImage((IDiskImage)leafObj, newNode, leafNode);
                 } else {
-                    status = Node.Status.OK;
+                    throw new NotImplementedException(
+                        "Unexpected result from IdentifyStreamContents: " + leafObj);
                 }
-                newNode = new Node(leafObj, parentNode, leafNode) {
-                    Label = pathName,
-                    TypeStr = typeStr,
-                    NodeStatus = status,
-                    IsReadOnly = !leafNode.CanWrite,
-                    IsNodeReadOnly = arc.IsReadOnly,
-                };
-
-                HandleFileArchive((IArchive)leafObj, newNode, leafNode, pathName);
-            } else if (leafObj is IDiskImage) {
-                IDiskImage disk = (IDiskImage)leafObj;
-                leafNode = new DiskImageNode(daParent, stream, disk, entryInParent, mAppHook);
-
-                typeStr = ThingString.IDiskImage(disk);
-                if (disk.IsDubious) {
-                    status = Node.Status.Dubious;
-                } else if (disk.Notes.WarningCount > 0 || disk.Notes.ErrorCount > 0) {
-                    status = Node.Status.Warning;
-                } else {
-                    status = Node.Status.OK;
-                }
-                newNode = new Node(leafObj, parentNode, leafNode) {
-                    Label = pathName,
-                    TypeStr = typeStr,
-                    NodeStatus = status,
-                    IsReadOnly = !leafNode.CanWrite,
-                    IsNodeReadOnly = disk.IsReadOnly,
-                    OrderHint = orderHint
-                };
-
-                HandleDiskImage((IDiskImage)leafObj, newNode, leafNode);
-            } else {
-                throw new NotImplementedException(
-                    "Unexpected result from IdentifyStreamContents: " + leafObj);
+            } catch {
+                leafObj.Dispose();
+                throw;
             }
+
             return newNode;
         }
 
@@ -917,8 +923,15 @@ namespace AppCommon {
                     errorMsg = "unable to open " + ThingString.FileKind(kind) + ": " + label;
                     return null;
                 }
-                // Do the disk analysis while we have the order hint handy.
-                diskImage.AnalyzeDisk(null, orderHint, IDiskImage.AnalysisDepth.Full);
+                // Do the disk analysis while we have the order hint handy.  This is not
+                // expected to throw an exception, but let's be cautious.
+                try {
+                    diskImage.AnalyzeDisk(null, orderHint, IDiskImage.AnalysisDepth.Full);
+                } catch {
+                    diskImage.Dispose();
+                    errorMsg = "internal error while analyzing disk";
+                    return null;
+                }
                 holdsFiles = (diskImage.Contents != null);
                 return diskImage;
             } else {

@@ -352,7 +352,7 @@ namespace DiskArc {
             if (fs is DOS) {
                 return DOS_FileEntry.IsFileNameValid(fileName);
             } else if (fs is HFS) {
-                return HFS_FileEntry.IsFileNameValid(fileName, false);
+                return HFS_FileEntry.IsFileNameValid(fileName);
             } else if (fs is ProDOS) {
                 return ProDOS_FileEntry.IsFileNameValid(fileName);
             } else {
@@ -369,9 +369,9 @@ namespace DiskArc {
             if (fs is DOS) {
                 return DOS_FileEntry.IsVolumeNameValid(volName);
             } else if (fs is HFS) {
-                return HFS_FileEntry.IsFileNameValid(volName, true);
+                return HFS_FileEntry.IsVolumeNameValid(volName);
             } else if (fs is ProDOS) {
-                return ProDOS_FileEntry.IsFileNameValid(volName);
+                return ProDOS_FileEntry.IsVolumeNameValid(volName);
             } else {
                 throw new NotImplementedException("Not handled IVVN: " + fs.GetType().Name);
             }

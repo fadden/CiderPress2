@@ -143,12 +143,12 @@ namespace DiskArc.Disk {
             }
 
             // Set the length of the stream.
-            int dataLen = NIB_TRACK_LENGTH * NUM_TRACKS;
+            long dataLen = NIB_TRACK_LENGTH * NUM_TRACKS;
             stream.SetLength(0);
             stream.SetLength(Header.LENGTH + dataLen);
 
             // Create the header.  It will be written to the stream by Flush(), later.
-            Header hdr = Header.Create(Header.ImageFormat.Nibble_Floppy, dataLen);
+            Header hdr = Header.Create(Header.ImageFormat.Nibble_Floppy, (uint)dataLen);
 
             stream.SetLength(NUM_TRACKS * NIB_TRACK_LENGTH);
             TwoIMG_Nibble disk = new TwoIMG_Nibble(stream, hdr, appHook);

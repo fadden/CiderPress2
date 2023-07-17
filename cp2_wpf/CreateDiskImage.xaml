@@ -22,7 +22,7 @@ limitations under the License.
         xmlns:local="clr-namespace:cp2_wpf"
         mc:Ignorable="d"
         Title="Create Disk Image"
-        SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        SizeToContent="Height" Width="700" ResizeMode="NoResize"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
 
     <Grid Margin="8">
@@ -48,8 +48,8 @@ limitations under the License.
                    HorizontalAlignment="Right" Width="1"
                    Stroke="LightGray" Fill="Transparent"/>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5"
-                   Text="Select disk parameters:" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,8"
+                   Text="Select disk parameters" HorizontalAlignment="Center"/>
 
         <Grid Grid.Row="1" Grid.Column="0">
             <Grid.RowDefinitions>
@@ -65,36 +65,39 @@ limitations under the License.
             </StackPanel>
             <GroupBox Grid.Row="1" Padding="0,2" Header="5.25&quot; Floppy">
                 <StackPanel>
-                    <RadioButton GroupName="DiskSize" Content="113.75KB - 35 tracks x 13 sectors"
+                    <RadioButton GroupName="DiskSize" Content="113.75 KB - 35 tracks x 13 sectors"
                                  IsChecked="{Binding IsChecked_Flop525_113}"/>
-                    <RadioButton GroupName="DiskSize" Content="140KB - 35 tracks x 16 sectors" Margin="0,2,0,0"
+                    <RadioButton GroupName="DiskSize" Content="140 KB - 35 tracks x 16 sectors" Margin="0,2,0,0"
                                  FontWeight="Bold"
                                  IsChecked="{Binding IsChecked_Flop525_140}"/>
-                    <RadioButton GroupName="DiskSize" Content="160KB - 40 tracks x 16 sectors" Margin="0,2,0,0"
+                    <RadioButton GroupName="DiskSize" Content="160 KB - 40 tracks x 16 sectors" Margin="0,2,0,0"
                                  IsChecked="{Binding IsChecked_Flop525_160}"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Grid.Row="2" Padding="0,2" Header="3.5&quot; Floppy">
                 <StackPanel>
-                    <RadioButton GroupName="DiskSize" Content="400KB - SS/DD GCR"
+                    <RadioButton GroupName="DiskSize" Content="400 KB - SS/DD GCR"
                                  IsChecked="{Binding IsChecked_Flop35_400}"/>
-                    <RadioButton GroupName="DiskSize" Content="800KB - DS/DD GCR" Margin="0,2,0,0"
+                    <RadioButton GroupName="DiskSize" Content="800 KB - DS/DD GCR" Margin="0,2,0,0"
                                  IsChecked="{Binding IsChecked_Flop35_800}"/>
-                    <RadioButton GroupName="DiskSize" Content="1440KB - DS/HD MFM" Margin="0,2,0,0"
+                    <RadioButton GroupName="DiskSize" Content="1440 KB - DS/HD MFM" Margin="0,2,0,0"
                                  IsChecked="{Binding IsChecked_Flop35_1440}"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Grid.Row="3" Padding="0,2" Header="Other">
                 <StackPanel>
-                    <RadioButton GroupName="DiskSize" Content="32MB - hard drive"
+                    <RadioButton GroupName="DiskSize" Content="32 MB - hard drive"
                                  IsChecked="{Binding IsChecked_Other_32MB}"/>
                     <StackPanel Orientation="Horizontal">
                         <RadioButton GroupName="DiskSize" Content="Custom:" Margin="0,2,0,0"
                                      IsChecked="{Binding IsChecked_Other_Custom}"/>
-                        <TextBox Text="SIZE" Width="120" Margin="8,0,0,0"/>
+                        <TextBox Width="100" Margin="8,0,0,0"
+                                 Text="{Binding CustomSizeText, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
-                    <TextBlock Text="&#x2022; Specify size in blocks, KiB, MiB, or GiB"/>
-                    <TextBlock Text="&#x2022; Size must be &gt; 0 and &lt;= 4GB"/>
+                    <TextBlock Text="&#x2022; Specify size in blocks, KB, MB, or GB"
+                               Foreground="{Binding SizeDescForeground}"/>
+                    <TextBlock Text="&#x2022; Size must be &gt; 0 and &lt;= 4GB"
+                               Foreground="{Binding SizeLimitForeground}"/>
                 </StackPanel>
             </GroupBox>
         </Grid>
@@ -110,7 +113,7 @@ limitations under the License.
                 <TextBlock Text="Filesystem" HorizontalAlignment="Center"/>
             </StackPanel>
             <StackPanel Grid.Row="1">
-                <RadioButton GroupName="Filesystem" Content="DOS" Margin="0,2,0,0"
+                <RadioButton GroupName="Filesystem" Content="DOS 3.2/3.3" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FS_DOS}"
                              IsChecked="{Binding IsChecked_FS_DOS}"/>
                 <RadioButton GroupName="Filesystem" Content="ProDOS" Margin="0,2,0,0"
@@ -119,7 +122,7 @@ limitations under the License.
                 <RadioButton GroupName="Filesystem" Content="HFS" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FS_HFS}"
                              IsChecked="{Binding IsChecked_FS_HFS}"/>
-                <RadioButton GroupName="Filesystem" Content="Pascal" Margin="0,2,0,0"
+                <RadioButton GroupName="Filesystem" Content="UCSD Pascal" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FS_Pascal}"
                              IsChecked="{Binding IsChecked_FS_Pascal}"/>
                 <RadioButton GroupName="Filesystem" Content="CP/M" Margin="0,2,0,0"
@@ -128,8 +131,13 @@ limitations under the License.
                 <RadioButton GroupName="Filesystem" Content="None (zeroed)" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FS_None}"
                              IsChecked="{Binding IsChecked_FS_None}"/>
+                <Rectangle Margin="0,4,0,4" Height="1"
+                   Stroke="LightGray" Fill="Transparent"/>
+
                 <Grid Margin="0,4,0,0">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
@@ -138,13 +146,23 @@ limitations under the License.
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Volume name:" Margin="0,1,0,0"/>
-                    <TextBox Grid.Row="0" Grid.Column="1" Width="120" Margin="8,0,0,0"
-                             Text="NEW.DISK" HorizontalAlignment="Left"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Volume #:" Margin="0,3,0,0"/>
-                    <TextBox Grid.Row="1" Grid.Column="1" Width="50" Margin="8,2,0,0"
-                             Text="254" HorizontalAlignment="Left"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" Margin="8,0,0,0"
+                             HorizontalAlignment="Stretch" MaxLength="27"
+                             Text="{Binding VolumeNameText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,8"
+                               Text="&#x2022; Filesystem-specific syntax"
+                               Foreground="{Binding VolNameSyntaxForeground}"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Volume num:" Margin="0,3,0,0"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" Width="50" Margin="8,2,0,0"
+                             HorizontalAlignment="Left" MaxLength="3"
+                             Text="{Binding VolumeNumText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,8"
+                               Text="&#x2022; Must be 0-254"
+                               Foreground="{Binding VolNumSyntaxForeground}"/>
                 </Grid>
-                <CheckBox Content="Allocate boot tracks (DOS 3.2/3.3)" Margin="0,2,0,0"/>
+                <CheckBox Content="Allocate boot tracks (DOS 3.x)"
+                          IsChecked="{Binding IsChecked_MakeBootable}"/>
             </StackPanel>
         </Grid>
 
@@ -171,6 +189,9 @@ limitations under the License.
                 <RadioButton GroupName="FileType" Content="ShrinkIt (.sdk)" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FT_NuFX}"
                              IsChecked="{Binding IsChecked_FT_NuFX}"/>
+                <RadioButton GroupName="FileType" Content="DiskCopy 4.2 (.image)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_DiskCopy42}"
+                             IsChecked="{Binding IsChecked_FT_DiskCopy42}"/>
                 <RadioButton GroupName="FileType" Content="WOZ (.woz)" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FT_Woz}"
                              IsChecked="{Binding IsChecked_FT_Woz}"/>
@@ -185,7 +206,7 @@ limitations under the License.
 
         <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,8,0,0"
                     Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="OK" IsDefault="True" Width="70"
+            <Button Content="Create" IsDefault="True" Width="70"
                     IsEnabled="{Binding IsValid}" Click="OkButton_Click"/>
             <Button Content="Cancel" IsCancel="True" Width="70" Margin="4,0,0,0"/>
         </StackPanel>
