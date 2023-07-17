@@ -360,37 +360,39 @@ limitations under the License.
                     </Grid>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
-                    <!--<Button Content="Create new file archive" Width="240" Height="50" Margin="10,30,10,10"
-                            Command="{StaticResource NewFileArchiveCmd}"/>
-                    <Button Content="Create new disk image" Width="240" Height="50" Margin="10"
-                            Command="{StaticResource NewDiskImageCmd}"/>-->
-                    <Button Content="Open file" Width="240" Height="50" Margin="10"
-                            Command="Open"/>
-                    <Button Width="240" Height="50" Margin="10"
-                            Visibility="{Binding ShowRecentFile1, Converter={StaticResource BoolToVis}}"
-                            ToolTip="{Binding RecentFilePath1}" ToolTipService.InitialShowDelay="750"
-                            Command="{DynamicResource RecentFileCmd}" CommandParameter="0">
-                        <Button.Content>
-                            <StackPanel>
-                                <TextBlock HorizontalAlignment="Center">Recent file #1</TextBlock>
-                                <TextBlock Text="{Binding RecentFileName1, FallbackValue=RECENT 1}" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Button.Content>
-                    </Button>
-                    <Button Width="240" Height="50" Margin="10"
-                            Visibility="{Binding ShowRecentFile2, Converter={StaticResource BoolToVis}}"
-                            ToolTip="{Binding RecentFilePath2}" ToolTipService.InitialShowDelay="750"
-                            Command="{DynamicResource RecentFileCmd}" CommandParameter="1">
-                        <Button.Content>
-                            <StackPanel>
-                                <TextBlock HorizontalAlignment="Center">Recent file #2</TextBlock>
-                                <TextBlock Text="{Binding RecentFileName2, FallbackValue=RECENT 2}" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Button.Content>
-                    </Button>
-                </StackPanel>
+                <ScrollViewer Grid.Column="1" Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                              HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <StackPanel>
+                        <Button Content="Create new disk image" Width="240" Height="50" Margin="10"
+                                Command="{StaticResource NewDiskImageCmd}"/>
+                        <Button Content="Create new file archive" Width="240" Height="50" Margin="10"
+                                Command="{StaticResource NewFileArchiveCmd}"/>
+                        <Button Content="Open file" Width="240" Height="50" Margin="10"
+                                Command="Open"/>
+                        <Button Width="240" Height="50" Margin="10"
+                                Visibility="{Binding ShowRecentFile1, Converter={StaticResource BoolToVis}}"
+                                ToolTip="{Binding RecentFilePath1}" ToolTipService.InitialShowDelay="750"
+                                Command="{DynamicResource RecentFileCmd}" CommandParameter="0">
+                            <Button.Content>
+                                <StackPanel>
+                                    <TextBlock HorizontalAlignment="Center">Recent file #1</TextBlock>
+                                    <TextBlock Text="{Binding RecentFileName1, FallbackValue=RECENT 1}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button.Content>
+                        </Button>
+                        <Button Width="240" Height="50" Margin="10"
+                                Visibility="{Binding ShowRecentFile2, Converter={StaticResource BoolToVis}}"
+                                ToolTip="{Binding RecentFilePath2}" ToolTipService.InitialShowDelay="750"
+                                Command="{DynamicResource RecentFileCmd}" CommandParameter="1">
+                            <Button.Content>
+                                <StackPanel>
+                                    <TextBlock HorizontalAlignment="Center">Recent file #2</TextBlock>
+                                    <TextBlock Text="{Binding RecentFileName2, FallbackValue=RECENT 2}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button.Content>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
 
             <!-- Active UI ("main" screen).  Three side-by-side panels, only the middle of which
