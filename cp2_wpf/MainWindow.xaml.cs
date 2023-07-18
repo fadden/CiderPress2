@@ -423,6 +423,14 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsDiskImageSelected);
         }
+        private void IsDiskOrPartitionSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsDiskOrPartitionSelected);
+        }
+        private void IsWritablePartitionSelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.CanWrite && mMainCtrl.IsPartitionSelected);
+        }
         private void IsNibbleImageSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsNibbleImageSelected);
@@ -503,6 +511,9 @@ namespace cp2_wpf {
         private void OpenCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.OpenWorkFile();
         }
+        private void OverwriteWithDiskImageCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            Debug.WriteLine("overwrite");
+        }
         private void PasteCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Paste!");
         }
@@ -524,6 +535,9 @@ namespace cp2_wpf {
         }
         private void ResetSortCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             fileListDataGrid.ResetSort();
+        }
+        private void SaveAsDiskImageCmd_Executed(Object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.SaveAsDiskImage();
         }
         private void ScanForBadBlocksCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.ScanForBadBlocks();

@@ -105,8 +105,10 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
+            <RoutedUICommand x:Key="OverwriteWithDiskImageCmd" Text="Overwrite With Disk Image"/>
             <RoutedUICommand x:Key="RecentFileCmd"/>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>
+            <RoutedUICommand x:Key="SaveAsDiskImageCmd" Text="Save As Disk Image"/>
             <RoutedUICommand x:Key="ScanForBadBlocksCmd" Text="Scan for Bad Blocks"/>
             <RoutedUICommand x:Key="ScanForSubVolCmd" Text="Scan for Sub-Volumes"/>
             <RoutedUICommand x:Key="ShowDirListCmd" Text="Show Directory List"/>
@@ -176,8 +178,12 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="PasteCmd_Executed"/>
         <CommandBinding Command="{StaticResource RecentFileCmd}" x:Name="recentFileCmd"
                         Executed="RecentFileCmd_Executed"/>
+        <CommandBinding Command="{StaticResource OverwriteWithDiskImageCmd}"
+                        CanExecute="IsWritablePartitionSelected" Executed="OverwriteWithDiskImageCmd_Executed"/>
         <CommandBinding Command="{StaticResource ResetSortCmd}"
                         CanExecute="IsFileOpen" Executed="ResetSortCmd_Executed"/>
+        <CommandBinding Command="{StaticResource SaveAsDiskImageCmd}"
+                        CanExecute="IsDiskOrPartitionSelected" Executed="SaveAsDiskImageCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForBadBlocksCmd}"
                         CanExecute="IsNibbleImageSelected" Executed="ScanForBadBlocksCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForSubVolCmd}"
@@ -242,10 +248,13 @@ limitations under the License.
                 <Separator/>
                 <MenuItem Command="{StaticResource EditDirAttributesCmd}"/>
                 <Separator/>
-                <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                 <MenuItem Command="{StaticResource EditBlocksCmd}"/>
                 <MenuItem Command="{StaticResource EditSectorsCmd}"/>
+                <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                 <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
+                <MenuItem Command="{StaticResource ScanForBadBlocksCmd}"/>
+                <MenuItem Command="{StaticResource SaveAsDiskImageCmd}"/>
+                <MenuItem Command="{StaticResource OverwriteWithDiskImageCmd}"/>
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Command="{StaticResource ShowFullListCmd}"/>
@@ -467,6 +476,8 @@ limitations under the License.
                                     <MenuItem Command="{StaticResource ScanForBadBlocksCmd}"/>
                                     <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                                     <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
+                                    <MenuItem Command="{StaticResource SaveAsDiskImageCmd}"/>
+                                    <MenuItem Command="{StaticResource OverwriteWithDiskImageCmd}"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                         </TreeView>

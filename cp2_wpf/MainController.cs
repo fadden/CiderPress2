@@ -1294,6 +1294,16 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Action : SaveAsDiskImage
+        /// </summary>
+        public void SaveAsDiskImage() {
+            SaveAsDisk dialog = new SaveAsDisk(mMainWin, CurrentWorkObject!, mFormatter, AppHook);
+            if (dialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Saved", true);
+            }
+        }
+
+        /// <summary>
         /// Handles context : ScanForBadBlocks
         /// </summary>
         public void ScanForBadBlocks() {

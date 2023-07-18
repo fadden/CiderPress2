@@ -126,22 +126,35 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// True if the object selected in the archive tree is a disk image.
+        /// True if the item selected in the archive tree is a disk image.
         /// </summary>
         public bool IsDiskImageSelected { get { return CurrentWorkObject is IDiskImage; } }
 
         /// <summary>
-        /// True if the object selected in the archive tree is a nibble disk image.
+        /// True if the item selected in the archive tree is a partition.
+        /// </summary>
+        public bool IsPartitionSelected { get { return CurrentWorkObject is Partition; } }
+
+        /// <summary>
+        /// True if the item selected in the archive tree is a disk image or a partition.
+        /// </summary>
+        public bool IsDiskOrPartitionSelected {
+            get { return CurrentWorkObject is IDiskImage || CurrentWorkObject is Partition; }
+        }
+
+        /// <summary>
+        /// True if the item selected in the archive tree is a nibble disk image.
         /// </summary>
         public bool IsNibbleImageSelected { get { return CurrentWorkObject is INibbleDataAccess; } }
 
         /// <summary>
-        /// True if the object selected in the archive tree is a filesystem.
+        /// True if the item selected in the archive tree is a filesystem.
         /// </summary>
         public bool IsFileSystemSelected { get { return CurrentWorkObject is IFileSystem; } }
 
         /// <summary>
-        /// True if the selected archive is a hierarchical filesystem (ProDOS or HFS).
+        /// True if the selected item in the archive tree is a hierarchical filesystem
+        /// (ProDOS or HFS).
         /// </summary>
         public bool IsHierarchicalFileSystemSelected {
             get {

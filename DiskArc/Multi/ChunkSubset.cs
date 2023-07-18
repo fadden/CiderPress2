@@ -139,8 +139,11 @@ namespace DiskArc.Multi {
         /// Useful for DOS in ProDOS.
         /// </summary>
         /// <remarks>
-        /// Sectors are assumed to be in DOS order, so the first block holds T0S0, the second
-        /// block holds T0S1, etc.
+        /// <para>Sectors are assumed to be in DOS order, so the first block holds T0S0, the second
+        /// block holds T0S1, etc.  This means we're declaring a subset of a ProDOS-block-ordered
+        /// file to be DOS-ordered.  This works, but we can't set HasBlocks to true because our
+        /// local ReadBlock function doesn't know how to act like it's reading ProDOS blocks from
+        /// a DOS disk.</para>
         /// </remarks>
         /// <param name="baseAccess">Chunk access object we are subsetting.</param>
         /// <param name="startBlock">Start block in base.</param>
