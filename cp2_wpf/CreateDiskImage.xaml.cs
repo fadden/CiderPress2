@@ -67,6 +67,7 @@ namespace cp2_wpf {
         /// Constructor.
         /// </summary>
         /// <param name="owner">Parent window.</param>
+        /// <param name="appHook">Application hook reference.</param>
         public CreateDiskImage(Window owner, AppHook appHook) {
             InitializeComponent();
             Owner = owner;
@@ -77,7 +78,7 @@ namespace cp2_wpf {
 
             SettingsHolder settings = AppSettings.Global;
             mDiskSize = settings.GetEnum(AppSettings.NEW_DISK_SIZE, DiskSizeValue.Flop525_140);
-            mFilesystem = settings.GetEnum(AppSettings.NEW_DISK_FILESYSTEM, FilesystemValue.ProDOS);
+            mFilesystem = settings.GetEnum(AppSettings.NEW_DISK_FILESYSTEM, FileSystemType.ProDOS);
             mFileType = settings.GetEnum(AppSettings.NEW_DISK_FILE_TYPE, FileTypeValue.ProDOSBlock);
 
             mVolumeNameText = settings.GetString(AppSettings.NEW_DISK_VOLUME_NAME, "NEWDISK");
@@ -115,64 +116,12 @@ namespace cp2_wpf {
         /// </summary>
         /// <returns>True on success.</returns>
         private bool CreateImage() {
-            string filter, ext;
-            switch (mFileType) {
-                case FileTypeValue.DOSSector:
-                    if (GetNumTracksSectors(out uint tracks, out uint sectors) && sectors == 13) {
-                        filter = WinUtil.FILE_FILTER_D13;
-                        ext = ".d13";
-                    } else {
-                        filter = WinUtil.FILE_FILTER_DO;
-                        ext = ".do";
-                    }
-                    break;
-                case FileTypeValue.ProDOSBlock:
-                    filter = WinUtil.FILE_FILTER_PO;
-                    ext = ".po";
-                    break;
-                case FileTypeValue.TwoIMG:
-                    filter = WinUtil.FILE_FILTER_2MG;
-                    ext = ".2mg";
-                    break;
-                case FileTypeValue.NuFX:
-                    filter = WinUtil.FILE_FILTER_SDK;
-                    ext = ".sdk";
-                    break;
-                case FileTypeValue.DiskCopy42:
-                    filter = WinUtil.FILE_FILTER_DC42;
-                    ext = ".image";
-                    break;
-                case FileTypeValue.Woz:
-                    filter = WinUtil.FILE_FILTER_WOZ;
-                    ext = ".woz";
-                    break;
-                case FileTypeValue.Nib:
-                    filter = WinUtil.FILE_FILTER_NIB;
-                    ext = ".nib";
-                    break;
-                case FileTypeValue.Trackstar:
-                    filter = WinUtil.FILE_FILTER_APP;
-                    ext = ".app";
-                    break;
-                default:
-                    throw new NotImplementedException("Not implemented: " + mFileType);
-            }
+            uint blocks, tracks, sectors;
 
-            string fileName = "NewDisk" + ext;
-
-            // AddExtension, ValidateNames, CheckPathExists, OverwritePrompt are enabled by default
-            SaveFileDialog fileDlg = new SaveFileDialog() {
-                Title = "Create File...",
-                Filter = filter + "|" + WinUtil.FILE_FILTER_ALL,
-                FilterIndex = 1,
-                FileName = fileName
-            };
-            if (fileDlg.ShowDialog() != true) {
+            bool is13Sector = GetNumTracksSectors(out tracks, out sectors) && sectors == 13;
+            string pathName = SelectOutputFile(mFileType, is13Sector);
+            if (string.IsNullOrEmpty(pathName)) {
                 return false;
-            }
-            string pathName = Path.GetFullPath(fileDlg.FileName);
-            if (!pathName.ToLowerInvariant().EndsWith(ext)) {
-                pathName += ext;
             }
 
             FileStream? stream;
@@ -190,23 +139,11 @@ namespace cp2_wpf {
                 Mouse.OverrideCursor = Cursors.Wait;
 
                 IDiskImage diskImage;
-                uint blocks, tracks, sectors;
                 SectorCodec codec;
 
                 GetVolNum(out int volNum);
 
-                FileSystemType fsType;
-                switch (mFilesystem) {
-                    case FilesystemValue.DOS: fsType = FileSystemType.DOS33; break;
-                    case FilesystemValue.ProDOS: fsType = FileSystemType.ProDOS; break;
-                    case FilesystemValue.HFS: fsType = FileSystemType.HFS; break;
-                    case FilesystemValue.Pascal: fsType = FileSystemType.Pascal; break;
-                    case FilesystemValue.CPM: fsType = FileSystemType.CPM; break;
-                    case FilesystemValue.None: fsType = FileSystemType.Unknown; break;
-                    default:
-                        throw new Exception("internal error");
-                }
-
+                // Create a disk image in the output stream.
                 switch (mFileType) {
                     case FileTypeValue.DOSSector:
                         if (!GetNumTracksSectors(out tracks, out sectors)) {
@@ -227,9 +164,6 @@ namespace cp2_wpf {
                         }
                         break;
                     case FileTypeValue.TwoIMG:
-                        if (!GetNumBlocks(out blocks)) {
-                            throw new Exception("internal error");
-                        }
                         if (GetNumTracksSectors(out tracks, out sectors)) {
                             diskImage = TwoIMG.CreateDOSSectorImage(stream, tracks, mAppHook);
                         } else if (GetNumBlocks(out blocks)) {
@@ -289,7 +223,6 @@ namespace cp2_wpf {
                         break;
                     case FileTypeValue.DiskCopy42:
                     case FileTypeValue.Trackstar:
-                        MessageBox.Show(this, "Not yet!");
                         throw new Exception("not yet");
                     default:
                         throw new NotImplementedException("Not implemented: " + mFileType);
@@ -297,9 +230,9 @@ namespace cp2_wpf {
 
                 // Format the filesystem, if one was chosen.
                 using (diskImage) {
-                    if (fsType != FileSystemType.Unknown) {
+                    if (mFilesystem != FileSystemType.Unknown) {
                         // Map a filesystem instance on top of the disk image chunks.
-                        FileAnalyzer.CreateInstance(fsType, diskImage.ChunkAccess!, mAppHook,
+                        FileAnalyzer.CreateInstance(mFilesystem, diskImage.ChunkAccess!, mAppHook,
                             out IDiskContents? contents);
                         if (contents is not IFileSystem) {
                             throw new DAException("Unable to create filesystem");
@@ -323,7 +256,7 @@ namespace cp2_wpf {
                     IFileEntry entry = archive.CreateRecord();
                     // Using the volume name is risky, because we don't syntax-check it for
                     // all filesystems.
-                    if (fsType == FileSystemType.ProDOS) {
+                    if (mFilesystem == FileSystemType.ProDOS) {
                         entry.FileName = VolumeNameText;
                     } else {
                         entry.FileName = "DISK";
@@ -352,6 +285,77 @@ namespace cp2_wpf {
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Selects the output file, using the standard file dialog.  The filename extension is
+        /// chosen based on the file type.
+        /// </summary>
+        /// <param name="fileType">Type of file to create.</param>
+        /// <param name="is13Sector">True if this is a 13-sector disk image.</param>
+        /// <returns>Fullly-qualified pathname.</returns>
+        internal static string SelectOutputFile(FileTypeValue fileType, bool is13Sector) {
+            string filter, ext;
+            switch (fileType) {
+                case FileTypeValue.DOSSector:
+                    if (is13Sector) {
+                        filter = WinUtil.FILE_FILTER_D13;
+                        ext = ".d13";
+                    } else {
+                        filter = WinUtil.FILE_FILTER_DO;
+                        ext = ".do";
+                    }
+                    break;
+                case FileTypeValue.ProDOSBlock:
+                    filter = WinUtil.FILE_FILTER_PO;
+                    ext = ".po";
+                    break;
+                case FileTypeValue.TwoIMG:
+                    filter = WinUtil.FILE_FILTER_2MG;
+                    ext = ".2mg";
+                    break;
+                case FileTypeValue.NuFX:
+                    filter = WinUtil.FILE_FILTER_SDK;
+                    ext = ".sdk";
+                    break;
+                case FileTypeValue.DiskCopy42:
+                    filter = WinUtil.FILE_FILTER_DC42;
+                    ext = ".image";
+                    break;
+                case FileTypeValue.Woz:
+                    filter = WinUtil.FILE_FILTER_WOZ;
+                    ext = ".woz";
+                    break;
+                case FileTypeValue.Nib:
+                    filter = WinUtil.FILE_FILTER_NIB;
+                    ext = ".nib";
+                    break;
+                case FileTypeValue.Trackstar:
+                    filter = WinUtil.FILE_FILTER_APP;
+                    ext = ".app";
+                    break;
+                default:
+                    throw new NotImplementedException("Not implemented: " + fileType);
+            }
+
+            string fileName = "NewDisk" + ext;
+
+            // AddExtension, ValidateNames, CheckPathExists, OverwritePrompt are enabled by default
+            SaveFileDialog fileDlg = new SaveFileDialog() {
+                Title = "Create File...",
+                Filter = filter + "|" + WinUtil.FILE_FILTER_ALL,
+                FilterIndex = 1,
+                FileName = fileName
+            };
+            if (fileDlg.ShowDialog() != true) {
+                return string.Empty;
+            }
+            string pathName = Path.GetFullPath(fileDlg.FileName);
+            if (!pathName.ToLowerInvariant().EndsWith(ext)) {
+                pathName += ext;
+            }
+
+            return pathName;
         }
 
         private static readonly string[] sPropList = {
@@ -425,22 +429,22 @@ namespace cp2_wpf {
                 // Check filesystem.
                 bool needNewFs = false;
                 switch (mFilesystem) {
-                    case FilesystemValue.DOS:
+                    case FileSystemType.DOS33:
                         needNewFs = !IsEnabled_FS_DOS;
                         break;
-                    case FilesystemValue.ProDOS:
+                    case FileSystemType.ProDOS:
                         needNewFs = !IsEnabled_FS_ProDOS;
                         break;
-                    case FilesystemValue.HFS:
+                    case FileSystemType.HFS:
                         needNewFs = !IsEnabled_FS_HFS;
                         break;
-                    case FilesystemValue.Pascal:
+                    case FileSystemType.Pascal:
                         needNewFs = !IsEnabled_FS_Pascal;
                         break;
-                    case FilesystemValue.CPM:
+                    case FileSystemType.CPM:
                         needNewFs = !IsEnabled_FS_CPM;
                         break;
-                    case FilesystemValue.None:
+                    case FileSystemType.Unknown:
                         break;
                     default:
                         Debug.Assert(false);
@@ -448,17 +452,17 @@ namespace cp2_wpf {
                 }
                 if (needNewFs) {
                     if (IsEnabled_FS_DOS) {
-                        mFilesystem = FilesystemValue.DOS;
+                        mFilesystem = FileSystemType.DOS33;
                     } else if (IsEnabled_FS_ProDOS) {
-                        mFilesystem = FilesystemValue.ProDOS;
+                        mFilesystem = FileSystemType.ProDOS;
                     } else if (IsEnabled_FS_HFS) {
-                        mFilesystem = FilesystemValue.HFS;
+                        mFilesystem = FileSystemType.HFS;
                     } else if (IsEnabled_FS_Pascal) {
-                        mFilesystem = FilesystemValue.Pascal;
+                        mFilesystem = FileSystemType.Pascal;
                     } else if (IsEnabled_FS_CPM) {
-                        mFilesystem = FilesystemValue.CPM;
+                        mFilesystem = FileSystemType.CPM;
                     } else {
-                        mFilesystem = FilesystemValue.None;
+                        mFilesystem = FileSystemType.Unknown;
                     }
                 }
 
@@ -521,18 +525,18 @@ namespace cp2_wpf {
             // Check the volume name if an appropriate filesystem is selected.
             bool volNameSyntaxOk = true;
             switch (mFilesystem) {
-                case FilesystemValue.ProDOS:
+                case FileSystemType.ProDOS:
                     volNameSyntaxOk = ProDOS_FileEntry.IsVolumeNameValid(VolumeNameText);
                     break;
-                case FilesystemValue.HFS:
+                case FileSystemType.HFS:
                     volNameSyntaxOk = HFS_FileEntry.IsVolumeNameValid(VolumeNameText);
                     break;
-                case FilesystemValue.Pascal:
+                case FileSystemType.Pascal:
                     // TODO
                     break;
-                case FilesystemValue.DOS:
-                case FilesystemValue.CPM:
-                case FilesystemValue.None:
+                case FileSystemType.DOS33:
+                case FileSystemType.CPM:
+                case FileSystemType.Unknown:
                     break;
                 default:
                     throw new NotImplementedException("Didn't handle " + mFilesystem);
@@ -556,7 +560,7 @@ namespace cp2_wpf {
 
         public enum DiskSizeValue {
             Unknown = 0,
-            Flop525_113, Flop525_140, Flop525_160,
+            Flop525_114, Flop525_140, Flop525_160,
             Flop35_400, Flop35_800, Flop35_1440,
             Other_32MB, Other_Custom
         }
@@ -568,7 +572,7 @@ namespace cp2_wpf {
         /// </summary>
         private long GetVolSize() {
             switch (mDiskSize) {
-                case DiskSizeValue.Flop525_113:
+                case DiskSizeValue.Flop525_114:
                     return 35 * 13 * SECTOR_SIZE;
                 case DiskSizeValue.Flop525_140:
                     return 35 * 16 * SECTOR_SIZE;
@@ -617,7 +621,7 @@ namespace cp2_wpf {
         /// custom specifier.</returns>
         private bool GetNumTracksSectors(out uint tracks, out uint sectors) {
             switch (mDiskSize) {
-                case DiskSizeValue.Flop525_113:
+                case DiskSizeValue.Flop525_114:
                     tracks = 35;
                     sectors = 13;
                     return true;
@@ -643,7 +647,7 @@ namespace cp2_wpf {
 
         private bool GetMediaKind(out MediaKind kind) {
             switch (mDiskSize) {
-                case DiskSizeValue.Flop525_113:
+                case DiskSizeValue.Flop525_114:
                 case DiskSizeValue.Flop525_140:
                 case DiskSizeValue.Flop525_160:
                     kind = MediaKind.GCR_525;
@@ -668,7 +672,7 @@ namespace cp2_wpf {
 
         private bool IsFlop525 {
             get {
-                return mDiskSize == DiskSizeValue.Flop525_113 ||
+                return mDiskSize == DiskSizeValue.Flop525_114 ||
                     mDiskSize == DiskSizeValue.Flop525_140 ||
                     mDiskSize == DiskSizeValue.Flop525_160;
             }
@@ -682,9 +686,9 @@ namespace cp2_wpf {
         }
 
         public bool IsChecked_Flop525_113 {
-            get { return mDiskSize == DiskSizeValue.Flop525_113; }
+            get { return mDiskSize == DiskSizeValue.Flop525_114; }
             set {
-                if (value) { mDiskSize = DiskSizeValue.Flop525_113; }
+                if (value) { mDiskSize = DiskSizeValue.Flop525_114; }
                 UpdateControls();
             }
         }
@@ -761,12 +765,7 @@ namespace cp2_wpf {
 
         #region Filesystem
 
-        public enum FilesystemValue {
-            Unknown = 0,
-            None, DOS, ProDOS, HFS, Pascal, CPM
-        }
-
-        private FilesystemValue mFilesystem;
+        private FileSystemType mFilesystem;
 
         /// <summary>
         /// Converts the disk volume number to an integer.
@@ -781,9 +780,9 @@ namespace cp2_wpf {
         }
 
         public bool IsChecked_FS_None {
-            get { return mFilesystem == FilesystemValue.None; }
+            get { return mFilesystem == FileSystemType.Unknown; }
             set {
-                if (value) { mFilesystem = FilesystemValue.None; }
+                if (value) { mFilesystem = FileSystemType.Unknown; }
                 UpdateControls();
             }
         }
@@ -792,9 +791,9 @@ namespace cp2_wpf {
         }
 
         public bool IsChecked_FS_DOS {
-            get { return mFilesystem == FilesystemValue.DOS; }
+            get { return mFilesystem == FileSystemType.DOS33; }
             set {
-                if (value) { mFilesystem = FilesystemValue.DOS; }
+                if (value) { mFilesystem = FileSystemType.DOS33; }
                 UpdateControls();
             }
         }
@@ -803,9 +802,9 @@ namespace cp2_wpf {
         }
 
         public bool IsChecked_FS_ProDOS {
-            get { return mFilesystem == FilesystemValue.ProDOS; }
+            get { return mFilesystem == FileSystemType.ProDOS; }
             set {
-                if (value) { mFilesystem = FilesystemValue.ProDOS; }
+                if (value) { mFilesystem = FileSystemType.ProDOS; }
                 UpdateControls();
             }
         }
@@ -814,9 +813,9 @@ namespace cp2_wpf {
         }
 
         public bool IsChecked_FS_HFS {
-            get { return mFilesystem == FilesystemValue.HFS; }
+            get { return mFilesystem == FileSystemType.HFS; }
             set {
-                if (value) { mFilesystem = FilesystemValue.HFS; }
+                if (value) { mFilesystem = FileSystemType.HFS; }
                 UpdateControls();
             }
         }
@@ -825,9 +824,9 @@ namespace cp2_wpf {
         }
 
         public bool IsChecked_FS_Pascal {
-            get { return mFilesystem == FilesystemValue.Pascal; }
+            get { return mFilesystem == FileSystemType.Pascal; }
             set {
-                if (value) { mFilesystem = FilesystemValue.Pascal; }
+                if (value) { mFilesystem = FileSystemType.Pascal; }
                 UpdateControls();
             }
         }
@@ -839,9 +838,9 @@ namespace cp2_wpf {
         }
 
         public bool IsChecked_FS_CPM {
-            get { return mFilesystem == FilesystemValue.CPM; }
+            get { return mFilesystem == FileSystemType.CPM; }
             set {
-                if (value) { mFilesystem = FilesystemValue.CPM; }
+                if (value) { mFilesystem = FileSystemType.CPM; }
                 UpdateControls();
             }
         }

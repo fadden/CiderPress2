@@ -20,19 +20,14 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
-using Microsoft.Win32;
 
 using AppCommon;
 using CommonUtil;
 using DiskArc;
 using DiskArc.Arc;
 using DiskArc.Disk;
-using DiskArc.FS;
 using static DiskArc.Defs;
-using static cp2_wpf.CreateDiskImage;
-using DiskArc.Multi;
-using System.Windows.Controls.Primitives;
+using FileTypeValue = cp2_wpf.CreateDiskImage.FileTypeValue;
 
 namespace cp2_wpf
 {
@@ -53,32 +48,80 @@ namespace cp2_wpf
 
         public string SourceSizeText { get; private set; } = string.Empty;
 
-        private object mDiskOrPartition;
-        private Formatter mFormatter;
+        private IChunkAccess mChunks;
         private AppHook mAppHook;
 
 
-        public SaveAsDisk(Window owner, object diskOrPartition, Formatter formatter,
-                AppHook appHook) {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="owner">Parent window.</param>
+        /// <param name="diskOrPartition">IDiskImage or Partition object.</param>
+        /// <param name="chunks">Chunk access object.</param>
+        /// <param name="formatter">Text formatter.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        public SaveAsDisk(Window owner, object diskOrPartition, IChunkAccess chunks,
+                Formatter formatter, AppHook appHook) {
             InitializeComponent();
 
             Owner = owner;
             DataContext = this;
 
-            mDiskOrPartition = diskOrPartition;
-            mFormatter = formatter;
+            mChunks = chunks;
             mAppHook = appHook;
 
-            IChunkAccess? chunks = GetChunkAccess();
-            if (chunks == null) {
-                // TODO: test this; too early?
-                MessageBox.Show(this, "Unable to identify disk sector format.", "Problem",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                DialogResult = false;
+            SetDefaultFileType();
+
+            string type;
+            if (diskOrPartition is IDiskImage) {
+                type = "disk image";
+            } else {
+                type = "partition";
+            }
+            SourceSizeText = "Source " + type + " size is " +
+                formatter.FormatSizeOnDisk(chunks.FormattedLength, 1024);
+        }
+
+        /// <summary>
+        /// Gets the default value from settings, then fixes it if it's not allowed.
+        /// </summary>
+        private void SetDefaultFileType() {
+            mFileType = AppSettings.Global.GetEnum(AppSettings.SAVE_DISK_FILE_TYPE,
+                FileTypeValue.ProDOSBlock);
+
+            bool needNewType = false;
+            switch (mFileType) {
+                case FileTypeValue.DOSSector:
+                    needNewType = !IsEnabled_FT_DOSSector;
+                    break;
+                case FileTypeValue.ProDOSBlock:
+                    needNewType = !IsEnabled_FT_ProDOSBlock;
+                    break;
+                case FileTypeValue.TwoIMG:
+                    needNewType = !IsEnabled_FT_TwoIMG;
+                    break;
+                case FileTypeValue.NuFX:
+                    needNewType = !IsEnabled_FT_NuFX;
+                    break;
+                case FileTypeValue.DiskCopy42:
+                    needNewType = !IsEnabled_FT_DiskCopy42;
+                    break;
+                case FileTypeValue.Woz:
+                    needNewType = !IsEnabled_FT_Woz;
+                    break;
+                case FileTypeValue.Nib:
+                    needNewType = !IsEnabled_FT_Nib;
+                    break;
+                case FileTypeValue.Trackstar:
+                    needNewType = !IsEnabled_FT_Trackstar;
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+            if (!needNewType) {
                 return;
             }
-
-            // TODO: get initial setting from settings
 
             if (IsEnabled_FT_ProDOSBlock) {
                 mFileType = FileTypeValue.ProDOSBlock;
@@ -100,15 +143,6 @@ namespace cp2_wpf
                 Debug.Assert(false);
                 mFileType = FileTypeValue.ProDOSBlock;
             }
-
-            string type;
-            if (diskOrPartition is IDiskImage) {
-                type = "disk image";
-            } else {
-                type = "partition";
-            }
-            SourceSizeText = "Source " + type + " size is " +
-                formatter.FormatSizeOnDisk(chunks.FormattedLength, 1024);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
@@ -117,37 +151,221 @@ namespace cp2_wpf
             }
 
             DialogResult = true;
-        }
 
-        private bool CreateImage() {
-            Debug.WriteLine("CREATE!");
-            // TODO:
-            // - get name of file to save to
-            // - create type-specific file
-            // - copy sectors if available, blocks otherwise
-            // - report failed reads
-            //
-            // - save radio button setting
-            return true;
+            AppSettings.Global.SetEnum(AppSettings.SAVE_DISK_FILE_TYPE, mFileType);
         }
 
         /// <summary>
-        /// Returns the chunk access object from the disk image or partition.  The object is
-        /// likely read-only due to an open filesystem.
+        /// Creates a new disk image file and copies the data into it.
         /// </summary>
-        private IChunkAccess? GetChunkAccess() {
-            if (mDiskOrPartition is IDiskImage) {
-                return ((IDiskImage)mDiskOrPartition).ChunkAccess;
+        /// <returns>True on success.</returns>
+        private bool CreateImage() {
+            uint blocks, tracks, sectors;
+
+            bool is13Sector = GetNumTracksSectors(out tracks, out sectors) && sectors == 13;
+            string pathName = CreateDiskImage.SelectOutputFile(mFileType, is13Sector);
+            if (string.IsNullOrEmpty(pathName)) {
+                return false;
+            }
+
+            FileStream? stream;
+            try {
+                stream = new FileStream(pathName, FileMode.Create);
+            } catch (Exception ex) {
+                MessageBox.Show(this, "Unable to create file: " + ex.Message, "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            IDiskImage? diskImage = null;
+            MemoryStream? tmpStream = null;
+            int errorCount;
+
+            // Create a disk image in the output stream.
+            try {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                SectorCodec codec;
+
+                int volNum = Defs.DEFAULT_525_VOLUME_NUM;
+
+                // Create a disk image in the output stream.
+                switch (mFileType) {
+                    case FileTypeValue.DOSSector:
+                        if (!GetNumTracksSectors(out tracks, out sectors)) {
+                            throw new Exception("internal error");
+                        }
+                        diskImage = UnadornedSector.CreateSectorImage(stream, tracks, sectors,
+                            SectorOrder.DOS_Sector, mAppHook);
+                        break;
+                    case FileTypeValue.ProDOSBlock:
+                        if (GetNumTracksSectors(out tracks, out sectors)) {
+                            diskImage = UnadornedSector.CreateSectorImage(stream, tracks, sectors,
+                                SectorOrder.ProDOS_Block, mAppHook);
+                        } else if (GetNumBlocks(out blocks)) {
+                            diskImage = UnadornedSector.CreateBlockImage(stream, blocks, mAppHook);
+                        } else {
+                            throw new Exception("internal error");
+                        }
+                        break;
+                    case FileTypeValue.TwoIMG:
+                        if (GetNumTracksSectors(out tracks, out sectors)) {
+                            diskImage = TwoIMG.CreateDOSSectorImage(stream, tracks, mAppHook);
+                        } else if (GetNumBlocks(out blocks)) {
+                            diskImage = TwoIMG.CreateProDOSBlockImage(stream, blocks, mAppHook);
+                        } else {
+                            throw new Exception("internal error");
+                        }
+                        if (volNum != Defs.DEFAULT_525_VOLUME_NUM) {
+                            ((TwoIMG)diskImage).VolumeNumber = volNum;
+                        }
+                        break;
+                    case FileTypeValue.NuFX:
+                        // Create a temporary in-memory image.
+                        tmpStream = new MemoryStream();
+                        if (GetNumTracksSectors(out tracks, out sectors)) {
+                            Debug.Assert(tracks == 35 && sectors == 16);
+                            diskImage = UnadornedSector.CreateSectorImage(tmpStream, tracks,
+                                sectors, SectorOrder.ProDOS_Block, mAppHook);
+                        } else if (GetNumBlocks(out blocks)) {
+                            Debug.Assert(blocks == 1600);
+                            diskImage = UnadornedSector.CreateBlockImage(tmpStream, blocks,
+                                mAppHook);
+                        } else {
+                            throw new Exception("internal error");
+                        }
+                        break;
+                    case FileTypeValue.Woz:
+                        if (GetNumTracksSectors(out tracks, out sectors)) {
+                            codec = (sectors == 13) ?
+                                StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
+                                StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
+                            diskImage = Woz.CreateDisk525(stream, tracks, codec, (byte)volNum,
+                                mAppHook);
+                        } else {
+                            if (!GetMediaKind(out MediaKind kind)) {
+                                throw new Exception("internal error");
+                            }
+                            codec = StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex35.Std_35);
+                            diskImage = Woz.CreateDisk35(stream, kind, WOZ_IL_35, codec,
+                                mAppHook);
+                        }
+                        // Let's just add a default META chunk to all disks.
+                        ((Woz)diskImage).AddMETA();
+                        break;
+                    case FileTypeValue.Nib:
+                        if (!GetNumTracksSectors(out tracks, out sectors)) {
+                            throw new Exception("internal error");
+                        }
+                        codec = (sectors == 13) ?
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
+                        diskImage = UnadornedNibble525.CreateDisk(stream, codec, (byte)volNum,
+                            mAppHook);
+                        break;
+                    case FileTypeValue.DiskCopy42:
+                    case FileTypeValue.Trackstar:
+                        throw new Exception("not yet");
+                    default:
+                        throw new NotImplementedException("Not implemented: " + mFileType);
+                }
+
+                CopyDisk(mChunks, diskImage.ChunkAccess!, out errorCount);
+
+                // Handle NuFX ".SDK" disk image creation.
+                if (mFileType == FileTypeValue.NuFX) {
+                    Debug.Assert(tmpStream != null);
+
+                    NuFX archive = NuFX.CreateArchive(mAppHook);
+                    archive.StartTransaction();
+                    IFileEntry entry = archive.CreateRecord();
+                    entry.FileName = "DISK";
+                    SimplePartSource source = new SimplePartSource(tmpStream);
+                    archive.AddPart(entry, FilePart.DiskImage, source, CompressionFormat.Default);
+                    archive.CommitTransaction(stream);
+                }
+
+                // Copy the pathname to a property where the caller can see it.
+                PathName = pathName;
+            } catch (Exception ex) {
+                MessageBox.Show(this, "Error creating disk: " + ex.Message, "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                // Need to close file before deleting it.
+                stream.Close();
+                stream = null;
+                Debug.WriteLine("Cleanup: removing '" + pathName + "'");
+                File.Delete(pathName);
+                return false;
+            } finally {
+                if (diskImage != null) {
+                    diskImage.Dispose();
+                }
+                if (stream != null) {
+                    stream.Close();
+                }
+                Mouse.OverrideCursor = null;
+            }
+
+            if (errorCount != 0) {
+                string msg = "Some data could not be read. Total errors: " + errorCount + ".";
+                MessageBox.Show(msg, "Partial Copy", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+
+            return true;
+        }
+
+        private void CopyDisk(IChunkAccess srcChunks, IChunkAccess dstChunks, out int errorCount) {
+            Debug.Assert(!dstChunks.IsReadOnly);
+            if (srcChunks.FormattedLength != dstChunks.FormattedLength) {
+                throw new Exception("Internal error: src/dst size mismatch");
+            }
+
+            errorCount = 0;
+            if (srcChunks.HasSectors) {
+                Debug.Assert(dstChunks.HasSectors);
+                Debug.Assert(srcChunks.NumTracks == dstChunks.NumTracks);
+                Debug.Assert(srcChunks.NumSectorsPerTrack == dstChunks.NumSectorsPerTrack);
+
+                byte[] copyBuf = new byte[SECTOR_SIZE];
+
+                for (uint trk = 0; trk < srcChunks.NumTracks; trk++) {
+                    for (uint sct = 0; sct < srcChunks.NumSectorsPerTrack; sct++) {
+                        try {
+                            srcChunks.ReadSector(trk, sct, copyBuf, 0);
+                        } catch (IOException) {
+                            Debug.WriteLine("Failed reading T" + trk + " S" + sct);
+                            // Continue, but write a zeroed-out buffer.
+                            RawData.MemSet(copyBuf, 0, SECTOR_SIZE, 0x00);
+                            errorCount++;
+                        }
+
+                        // We just created this disk, so writes shouldn't fail.
+                        dstChunks.WriteSector(trk, sct, copyBuf, 0);
+                    }
+                }
             } else {
-                return ((Partition)mDiskOrPartition).ChunkAccess;
+                Debug.Assert(srcChunks.HasBlocks && dstChunks.HasBlocks);
+
+                byte[] copyBuf = new byte[BLOCK_SIZE];
+                uint numBlocks = (uint)(srcChunks.FormattedLength / BLOCK_SIZE);
+                for (uint block = 0; block < numBlocks; block++) {
+                    try {
+                        srcChunks.ReadBlock(block, copyBuf, 0);
+                    } catch (IOException) {
+                        Debug.WriteLine("Failed reading block " + block);
+                        // Continue, but write a zeroed-out buffer.
+                        RawData.MemSet(copyBuf, 0, BLOCK_SIZE, 0x00);
+                        errorCount++;
+                    }
+
+                    dstChunks.WriteBlock(block, copyBuf, 0);
+                }
             }
         }
 
         private bool GetNumBlocks(out uint blocks) {
-            IChunkAccess chunks = GetChunkAccess()!;
-
-            if (chunks.HasBlocks) {
-                blocks = (uint)(chunks.FormattedLength / BLOCK_SIZE);
+            if (mChunks.HasBlocks) {
+                blocks = (uint)(mChunks.FormattedLength / BLOCK_SIZE);
                 return true;
             } else {
                 blocks = 0;
@@ -156,11 +374,9 @@ namespace cp2_wpf
         }
 
         private bool GetNumTracksSectors(out uint tracks, out uint sectors) {
-            IChunkAccess chunks = GetChunkAccess()!;
-
-            if (chunks.HasSectors) {
-                tracks = chunks.NumTracks;
-                sectors = chunks.NumSectorsPerTrack;
+            if (mChunks.HasSectors) {
+                tracks = mChunks.NumTracks;
+                sectors = mChunks.NumSectorsPerTrack;
                 return true;
             } else {
                 tracks = sectors = 0;
@@ -168,20 +384,24 @@ namespace cp2_wpf
             }
         }
 
+        private bool GetMediaKind(out MediaKind kind) {
+            kind = MediaKind.Unknown;
+            if (!GetNumBlocks(out uint blocks)) {
+                return false;
+            }
+            if (blocks == 800) {
+                kind = MediaKind.GCR_SSDD35;
+                return true;
+            } else if (blocks == 1600) {
+                kind = MediaKind.GCR_DSDD35;
+                return true;
+            }
+            return false;
+        }
+
         // Interleave for WOZ 3.5" floppy disks.  Assume 4:1 since WOZ is an Apple II format.
         private const int WOZ_IL_35 = 4;
 
-        public enum FileTypeValue {
-            Unknown = 0,
-            DOSSector,
-            ProDOSBlock,
-            TwoIMG,
-            DiskCopy42,
-            NuFX,
-            Woz,
-            Nib,
-            Trackstar
-        }
         private FileTypeValue mFileType;
 
         public bool IsChecked_FT_DOSSector {
@@ -229,7 +449,7 @@ namespace cp2_wpf
         public bool IsEnabled_FT_TwoIMG {
             get {
                 if (GetNumTracksSectors(out uint tracks, out uint sectors)) {
-                    return TwoIMG.CanCreateDOSSectorImage(tracks, out string errMsg);
+                    return TwoIMG.CanCreateDOSSectorImage(tracks, sectors, out string errMsg);
                 } else if (GetNumBlocks(out uint blocks)) {
                     return TwoIMG.CanCreateProDOSBlockImage(blocks, out string errMsg);
                 } else {

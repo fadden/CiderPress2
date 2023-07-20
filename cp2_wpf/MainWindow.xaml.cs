@@ -423,9 +423,9 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsDiskImageSelected);
         }
-        private void IsDiskOrPartitionSelected(object sender, CanExecuteRoutedEventArgs e) {
+        private void IsChunkyDiskOrPartitionSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
-                mMainCtrl.IsDiskOrPartitionSelected);
+                mMainCtrl.IsDiskOrPartitionSelected && mMainCtrl.HasChunks);
         }
         private void IsWritablePartitionSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&

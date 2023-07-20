@@ -598,12 +598,19 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Determines whether the disk configuration is supported.
         /// </summary>
+        /// <remarks>
+        /// This is not for 2IMG nibble images.
+        /// </remarks>
         /// <param name="numTracks">Number of tracks.</param>
         /// <param name="sectorsPerTrack">Number of sectors.</param>
         /// <param name="errMsg">Error message, or empty string on success.</param>
         /// <returns>True on success.</returns>
-        public static bool CanCreateDOSSectorImage(uint numTracks, out string errMsg) {
+        public static bool CanCreateDOSSectorImage(uint numTracks, uint numSectors,
+                out string errMsg) {
             errMsg = string.Empty;
+            if (numSectors != 16) {
+                errMsg = "Only possible for 16-sector disks";
+            }
             if (numTracks <= 0 || numTracks > 255) {
                 errMsg = "Invalid number of tracks: " + numTracks;
             }
@@ -624,15 +631,17 @@ namespace DiskArc.Disk {
         /// <returns>Disk image object.</returns>
         public static TwoIMG CreateDOSSectorImage(Stream stream, uint numTracks,
                 AppHook appHook) {
+            const int kNumSectors = 16;
+
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
                 throw new ArgumentException("Invalid stream capabilities");
             }
-            if (!CanCreateDOSSectorImage(numTracks, out string errMsg)) {
+            if (!CanCreateDOSSectorImage(numTracks, kNumSectors, out string errMsg)) {
                 throw new ArgumentException(errMsg);
             }
 
             // Set the length of the stream.
-            long dataLen = numTracks * 16 * SECTOR_SIZE;
+            long dataLen = numTracks * kNumSectors * SECTOR_SIZE;
             stream.SetLength(0);
             stream.SetLength(Header.LENGTH + dataLen);
 
@@ -645,7 +654,7 @@ namespace DiskArc.Disk {
 
             TwoIMG disk = new TwoIMG(stream, hdr, appHook);
             disk.ChunkAccess = new GatedChunkAccess(new GeneralChunkAccess(stream,
-                Header.LENGTH, numTracks, 16, SectorOrder.DOS_Sector));
+                Header.LENGTH, numTracks, kNumSectors, SectorOrder.DOS_Sector));
             return disk;
         }
 

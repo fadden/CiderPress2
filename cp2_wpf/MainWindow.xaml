@@ -183,7 +183,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource ResetSortCmd}"
                         CanExecute="IsFileOpen" Executed="ResetSortCmd_Executed"/>
         <CommandBinding Command="{StaticResource SaveAsDiskImageCmd}"
-                        CanExecute="IsDiskOrPartitionSelected" Executed="SaveAsDiskImageCmd_Executed"/>
+                        CanExecute="IsChunkyDiskOrPartitionSelected" Executed="SaveAsDiskImageCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForBadBlocksCmd}"
                         CanExecute="IsNibbleImageSelected" Executed="ScanForBadBlocksCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForSubVolCmd}"

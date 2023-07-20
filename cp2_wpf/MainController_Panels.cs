@@ -71,8 +71,12 @@ namespace cp2_wpf {
         /// </summary>
         private object? CurrentWorkObject { get; set; }
 
+        // True if blocks/sectors are readable.  If we support custom sector codecs we will want
+        // to relax this restriction for floppy disk images.
         public bool CanEditBlocks { get { return CanEditChunk(false); } }
         public bool CanEditSectors { get { return CanEditChunk(true); } }
+
+        public bool HasChunks { get { return GetChunks() != null; } }
 
         /// <summary>
         /// Determines whether the current work object can be sector-edited by blocks or sectors.
@@ -85,12 +89,7 @@ namespace cp2_wpf {
         /// <para>A "True" result does not indicate that the storage is writable.</para>
         /// </remarks>
         private bool CanEditChunk(bool asSectors) {
-            IChunkAccess? chunks = null;
-            if (CurrentWorkObject is IDiskImage) {
-                chunks = ((IDiskImage)CurrentWorkObject).ChunkAccess;
-            } else if (CurrentWorkObject is Partition) {
-                chunks = ((Partition)CurrentWorkObject).ChunkAccess;
-            }
+            IChunkAccess? chunks = GetChunks();
             if (chunks != null) {
                 if (asSectors) {
                     return chunks.HasSectors;
@@ -101,6 +100,24 @@ namespace cp2_wpf {
             return false;
         }
 
+        /// <summary>
+        /// Obtains the IChunkAccess object from CurrentWorkObject.  Returns null if the
+        /// current work object is not IDiskImage/Partition, or is a disk image with an
+        /// unrecognized sector format.
+        /// </summary>
+        private IChunkAccess? GetChunks() {
+            if (CurrentWorkObject is IDiskImage) {
+                return ((IDiskImage)CurrentWorkObject).ChunkAccess;
+            } else if (CurrentWorkObject is Partition) {
+                return ((Partition)CurrentWorkObject).ChunkAccess;
+            } else {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// True if the currently selected archive tree item is a writable node.
+        /// </summary>
         public bool CanWrite {
             get {
                 ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;

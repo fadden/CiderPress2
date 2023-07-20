@@ -126,6 +126,11 @@ namespace DiskArc {
                 throw new ArgumentException("Invalid value for sectors per track (" +
                     sectorsPerTrack + ")");
             }
+            if (sectorsPerTrack != 16 && fileOrder != SectorOrder.DOS_Sector) {
+                // 13-sector disks are always physical order, 32-sector disks are only used
+                // for embedded volumes, so there's no skew translation table for them.
+                throw new ArgumentException("Must use DOS order for disks with 13 or 32 sectors");
+            }
 
             long length = numTracks * sectorsPerTrack * SECTOR_SIZE;
             if (length > file.Length || startOffset > file.Length - length) {

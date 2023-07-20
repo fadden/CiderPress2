@@ -1297,7 +1297,14 @@ namespace cp2_wpf {
         /// Handles Action : SaveAsDiskImage
         /// </summary>
         public void SaveAsDiskImage() {
-            SaveAsDisk dialog = new SaveAsDisk(mMainWin, CurrentWorkObject!, mFormatter, AppHook);
+            IChunkAccess? chunks = GetChunks();
+            if (chunks == null) {
+                Debug.Assert(false);
+                return;
+            }
+
+            SaveAsDisk dialog =
+                new SaveAsDisk(mMainWin, CurrentWorkObject!, chunks, mFormatter, AppHook);
             if (dialog.ShowDialog() == true) {
                 mMainWin.PostNotification("Saved", true);
             }

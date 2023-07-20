@@ -242,6 +242,7 @@ namespace DiskArc.Multi {
         public void ReadSector(uint trk, uint sct, byte[] data, int offset) {
             CheckSectorArgs(trk, sct, false);
             if (mBase.HasSectors) {
+                Debug.Assert(FileOrder == SectorOrder.DOS_Sector);      // or perform skew
                 mBase.ReadSector(trk, sct, data, offset);
             } else if (mBase.HasBlocks && mIsOzSpecial) {
                 uint blockIndex = trk * NumSectorsPerTrack + sct;
@@ -276,6 +277,7 @@ namespace DiskArc.Multi {
         public void ReadBlock(uint block, byte[] data, int offset) {
             CheckBlockArgs(block, false);
             if (mBase.HasBlocks) {
+                Debug.Assert(FileOrder == SectorOrder.ProDOS_Block);    // or perform skew
                 mBase.ReadBlock(StartBlock + block, data, offset);
             } else {
                 throw new InvalidOperationException("No blocks");

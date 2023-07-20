@@ -127,6 +127,9 @@ namespace DiskArc.Disk {
             if (sectorOrder == SectorOrder.Unknown) {
                 errMsg = "Must choose a sector order";
             }
+            if (sectorOrder != SectorOrder.DOS_Sector && sectorsPerTrack != 16) {
+                errMsg = "Must use DOS order for non-16-sector disks";
+            }
             return errMsg == string.Empty;
         }
 

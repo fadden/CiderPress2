@@ -234,8 +234,8 @@ namespace cp2 {
                     }
                     break;
                 case FileKind.TwoIMG: {
-                        // We don't create nibble images here.  Create a sector image if it looks
-                        // like a 35/40-track floppy, otherwise create a block image.
+                        // We don't create nibble images here.  Create a DOS-ordered sector image
+                        // if it looks like a 35/40-track floppy, otherwise create a block image.
                         if (trackSize != 4096) {
                             throw new DAException("only 16-sector disks are supported");
                         }
