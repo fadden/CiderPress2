@@ -819,6 +819,31 @@ namespace DiskArc {
         }
 
         /// <summary>
+        /// Creates an instance of a filesystem, by type.
+        /// </summary>
+        /// <param name="type">Filesystem type.</param>
+        /// <param name="chunkAccess">Chunk access object.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <returns>Filesystem object, or null if unable to create it.</returns>
+        public static IFileSystem? CreateFileSystem(FileSystemType type, IChunkAccess chunkAccess,
+                AppHook appHook) {
+            Debug.Assert(chunkAccess is not GatedChunkAccess);
+            foreach (DiskLayoutEntry fse in sDiskLayouts) {
+                if (fse.FSType == type) {
+                    DiskLayoutEntry.TestResult result = fse.TestImage(chunkAccess, appHook);
+                    if (result <= DiskLayoutEntry.TestResult.No) {
+                        Debug.WriteLine("Requested filesystem not found");
+                        return null;
+                    }
+                    fse.CreateInstance(chunkAccess, appHook, out IDiskContents? contents);
+                    return contents as IFileSystem;
+                }
+            }
+            Debug.Assert(false, "Unable to find FS type " + type);
+            return null;
+        }
+
+        /// <summary>
         /// Prepares a file archive for use, based on the detected file kind.
         /// </summary>
         /// <param name="stream">Stream with archive data.  Must be seekable, may be

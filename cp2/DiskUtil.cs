@@ -204,6 +204,13 @@ namespace cp2 {
                             uint sectorsPerTrack = (uint)trackSize / SECTOR_SIZE;
                             image = UnadornedSector.CreateSectorImage(imgStream, numTracks,
                                 sectorsPerTrack, sectorOrder, appHook);
+                        } else if (byteSize == 400 * 1024 && trackSize == 32 * SECTOR_SIZE &&
+                                sectorOrder == SectorOrder.DOS_Sector) {
+                            // Special case: 50 track, 32 sector DOS disk.
+                            uint numTracks = (uint)(byteSize / trackSize);
+                            uint sectorsPerTrack = (uint)trackSize / SECTOR_SIZE;
+                            image = UnadornedSector.CreateSectorImage(imgStream, numTracks,
+                                sectorsPerTrack, sectorOrder, appHook);
                         } else {
                             if (byteSize % BLOCK_SIZE != 0) {
                                 throw new DAException("size must be a multiple of 512");

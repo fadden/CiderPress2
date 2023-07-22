@@ -56,13 +56,13 @@ namespace DiskArc {
         /// <summary>
         /// Number of partitions.
         /// </summary>
-        public int Count { get; }
+        int Count { get; }
 
         /// <summary>
         /// Obtains a reference to the Nth partition.
         /// </summary>
         /// <param name="key">Partition index.</param>
         /// <returns>Partition reference.</returns>
-        public Partition this[int key] { get; }
+        Partition this[int key] { get; }
     }
 }

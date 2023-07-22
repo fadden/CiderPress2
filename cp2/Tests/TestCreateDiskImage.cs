@@ -39,6 +39,7 @@ namespace cp2.Tests {
             Controller.RemoveTestTmp(parms);
         }
 
+        // Args for disk images that are 16-sector or block-oriented.
         private static string[][] sTestArgs = new string[][] {
             new string[] { "140k-dos.do", "140KiB", "dos" },
             new string[] { "35trk-dos.do", "35tracks", "dos" },
@@ -75,6 +76,20 @@ namespace cp2.Tests {
                         throw new Exception("list " + catArgs[0] + " failed");
                     }
                 }
+
+                // 400KB DOS disk (50 tracks * 32 sectors)
+                parms.Sectors = 32;
+                string[] args32 = new string[] { "400k-dos.do", "400 kb", "dos" };
+                if (!DiskUtil.HandleCreateDiskImage("cdi", args32, parms)) {
+                    throw new Exception("cdi 32/400k failed");
+                }
+                // DOS 3.2 disk (35 tracks * 13 sectors)
+                parms.Sectors = 13;
+                string[] args13 = new string[] { "dos32.do", "35 tracks", "dos" };
+                if (!DiskUtil.HandleCreateDiskImage("cdi", args13, parms)) {
+                    throw new Exception("cdi 13/35trk failed");
+                }
+                parms.Sectors = 16;
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;
             }

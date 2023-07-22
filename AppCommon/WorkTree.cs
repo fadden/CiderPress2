@@ -713,7 +713,10 @@ namespace AppCommon {
             };
             parentNode.AddChild(partNode);
 
-            part.AnalyzePartition();
+            if (part.FileSystem == null) {
+                // Embedded volumes are already analyzed.
+                part.AnalyzePartition();
+            }
             if (part.FileSystem != null) {
                 ProcessFileSystem(part.FileSystem, partNode, daParent);
             }
@@ -730,8 +733,11 @@ namespace AppCommon {
             Debug.Assert(mHostFileNode.CheckHealth());
             Partition part = (Partition)partNode.DAObject;
             DiskArcNode daParent = partNode.FindDANode();
-            part.AnalyzePartition();
+            if (part.FileSystem == null) {
+                part.AnalyzePartition();
+            }
             if (part.FileSystem != null) {
+                part.FileSystem.PrepareFileAccess(true);
                 ProcessFileSystem(part.FileSystem, partNode, daParent);
             }
             Debug.Assert(mHostFileNode.CheckHealth());

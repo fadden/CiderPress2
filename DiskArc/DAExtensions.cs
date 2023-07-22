@@ -329,6 +329,9 @@ namespace DiskArc {
         /// <summary>
         /// Returns the FileSystemType value for a filesystem.
         /// </summary>
+        /// <remarks>
+        /// Use <see cref="FileAnalyzer.CreateFileSystem"/> to create an instance from the type.
+        /// </remarks>
         /// <returns>FileSystemType enumerated value, or Unknown if not known.</returns>
         public static Defs.FileSystemType GetFileSystemType(this IFileSystem fs) {
             if (fs is DOS) {

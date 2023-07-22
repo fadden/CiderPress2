@@ -64,33 +64,40 @@ namespace DiskArc.Multi {
         public IFileSystem? FileSystem { get; protected set; }
 
         /// <summary>
-        /// Is re-analysis okay?
+        /// Is full re-analysis allowed?
         /// </summary>
         /// <remarks>
-        /// <para>We want to block this for embedded filesystems, especially DOS hybrids where
-        /// ProDOS/Pascal have total overlap, because when we re-scan we might find DOS and just
-        /// stop looking.</para>
+        /// <para>As noted in the constructor used by hybrid/embedded volumes, the partition
+        /// cannot be properly analyzed in isolation in certain circumstances.  We work around
+        /// the problem by recording the filesystem type that was handed to the constructor.
+        /// This won't always yield correct results, because the contents could change, but
+        /// it's usually correct and much simpler than discarding the entire embedded partition
+        /// set and reanalyzing the entire thing.</para>
         /// </remarks>
-        private bool mIsReanalysisOkay;
+        protected bool IsReanalysisAllowed { get; set; }
 
+        // Chunk access subset for this partition.
         private ChunkSubset mPartChunks;
+
+        // Last filesystem type provided.
+        private FileSystemType mOrigFSType;
+
+        // Application hook reference.
         private AppHook mAppHook;
 
 
         /// <summary>
-        /// Constructor for a partition that is defined by a chunk subset.
+        /// Constructor for a partition that is defined by a chunk subset.  Re-analysis of
+        /// partitions created in this way is limited.
         /// </summary>
         /// <remarks>
-        /// <para>Re-analysis may yield different results, because the routines that call here
-        /// are used for embedded/hybrid volumes.  If this is being used to define the "inner"
-        /// volume of a hybrid disk, re-analysis might find the "outer" one.  For DOS Master
-        /// embeds we might be giving the "is it DOS" test more leniency.  The only reliable
-        /// way to reanalyze these is to reconsider the entire embedded volume set, because
-        /// that guarantees that the results will match what happens the next time we open
-        /// the file.</para>
-        /// <para>We might consider recording the filesystem type, and only test for the same
-        /// type during reanalysis, but that ignores the possibility that the contents have
-        /// actually changed.</para>
+        /// <para>Reanalysis may yield significantly different results, because the routines that
+        /// call here are used for embedded/hybrid volumes.  If this is being used to define the
+        /// "inner" volume of a hybrid disk, re-analysis might find the "outer" one.  For
+        /// DOS Master embeds we might need to give the "is it DOS" test more leniency.  The only
+        /// reliable way to reanalyze these is to reconsider the entire embedded volume set,
+        /// because that guarantees that the results will match what happens the next time we
+        /// open the file.</para>
         /// </remarks>
         /// <param name="partChunks">Chunk access object for partition contents.</param>
         /// <param name="fileSystem">Filesystem found on partition.</param>
@@ -101,10 +108,16 @@ namespace DiskArc.Multi {
             FileSystem = fileSystem;
             mAppHook = appHook;
 
+            if (fileSystem != null) {
+                mOrigFSType = fileSystem.GetFileSystemType();
+            } else {
+                mOrigFSType = FileSystemType.Unknown;
+            }
+
             // Set these so that we have something to display.  They're not actually useful.
             StartOffset = partChunks.StartBlock * BLOCK_SIZE;
             Length = partChunks.FormattedLength;
-            mIsReanalysisOkay = false;
+            IsReanalysisAllowed = false;
         }
 
         /// <summary>
@@ -128,7 +141,7 @@ namespace DiskArc.Multi {
             StartOffset = startOffset;
             Length = length;
             mAppHook = appHook;
-            mIsReanalysisOkay = true;
+            IsReanalysisAllowed = true;
         }
 
         ~Partition() {
@@ -156,15 +169,25 @@ namespace DiskArc.Multi {
 #endif
 
         /// <summary>
-        /// Analyzes the filesystem in the partition.  Configures FileSystem and ChunkAccess.
+        /// Analyzes the filesystem in the partition.  Configures FileSystem.
         /// </summary>
+        /// <remarks>
+        /// The ChunkAccess was determined by the parent, and cannot be altered.
+        /// </remarks>
         public virtual void AnalyzePartition() {
-            if (!mIsReanalysisOkay) {
-                Debug.WriteLine("Reanalysis not allowed");
-                return;
-            }
             CloseContents();
             // leave the ChunkAccess alone
+
+            if (!IsReanalysisAllowed) {
+                // Can't redo the full analysis, so just try to recreate what we had before.
+                if (mOrigFSType != FileSystemType.Unknown) {
+                    FileSystem = FileAnalyzer.CreateFileSystem(mOrigFSType, mPartChunks, mAppHook);
+                }
+                if (FileSystem != null) {
+                    ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
+                }
+                return;
+            }
 
             // (Re-)analyze the filesystem.  Use the non-gated version of the chunk source.
             // No need to probe for the file order for an embedded volume.
