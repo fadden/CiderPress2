@@ -163,7 +163,7 @@ namespace DiskArc {
         /// <remarks>
         /// <para>This has no effect in "raw" access mode.</para>
         /// <para>This may not call SaveChanges on file entries that aren't associated with
-        /// open files.</para>
+        /// open files (i.e. attribute edits).</para>
         /// </remarks>
         void Flush();
 
@@ -192,8 +192,9 @@ namespace DiskArc {
         /// <para>Embedded volumes aren't arranged like partitions -- they can overlap with the
         /// host filesystem -- so IMultiPart isn't quite right.  It does have a number of
         /// things we want, and it's convenient, so we use it anyway.</para>
-        /// <para>The object returned will be disposed when the filesystem is disposed or switched
-        /// to raw-access mode.  Do not wrap uses of this with "using".</para>
+        /// <para>The object returned is owned by the filesystem object, and will be disposed when
+        /// the filesystem is disposed or switched to raw-access mode.  Do not wrap uses of the
+        /// return value with "using".</para>
         /// </remarks>
         /// <returns>List of volumes found, or null if there were none.</returns>
         /// <exception cref="IOException">Filesystem is not in file-access mode.</exception>

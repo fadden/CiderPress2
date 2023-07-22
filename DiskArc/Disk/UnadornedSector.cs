@@ -242,6 +242,16 @@ namespace DiskArc.Disk {
                 // 50-track 5.25" floppy (not really a thing except for embedded volumes; we
                 // only handle it here for the sake of generality)
                 chunks = new GeneralChunkAccess(mStream, 0, 50, 16, orderHint);
+            } else if (mStream.Length == SECTOR_SIZE * 32 * 50) {
+                if (orderHint == SectorOrder.DOS_Sector) {
+                    // 50-track, 32-sector DOS volume (not really a thing except for 2x400KB on a
+                    // 3.5" floppy, but somebody might extract one and expect it to work)
+                    chunks = new GeneralChunkAccess(mStream, 0, 50, 32, orderHint);
+                } else {
+                    // Not DOS ordered, treat as ProDOS blocks.
+                    chunks = new GeneralChunkAccess(mStream, 0,
+                        (uint)(mStream.Length / BLOCK_SIZE));
+                }
             } else if (mStream.Length == SECTOR_SIZE * 16 * 80) {
                 // 80-track 5.25" floppy (rare)
                 chunks = new GeneralChunkAccess(mStream, 0, 80, 16, orderHint);

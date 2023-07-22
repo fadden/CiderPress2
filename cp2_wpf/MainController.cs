@@ -16,7 +16,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -1294,10 +1293,112 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Handles Action : SaveAsDiskImage
+        /// Handles Action : Replace Partition
+        /// </summary>
+        public void ReplacePartition() {
+            Partition? dstPartition = CurrentWorkObject as Partition;
+            if (dstPartition == null) {
+                Debug.Assert(false);
+                return;
+            }
+
+            // Get the name of the source disk image.
+            OpenFileDialog fileDlg = new OpenFileDialog() {
+                Filter = WinUtil.FILE_FILTER_KNOWN + "|" + WinUtil.FILE_FILTER_ALL_DISK,
+                FilterIndex = 1
+            };
+            if (fileDlg.ShowDialog() != true) {
+                return;
+            }
+            string pathName = Path.GetFullPath(fileDlg.FileName);
+            string ext = Path.GetExtension(pathName);
+
+            // Open the file.
+            FileStream stream;
+            try {
+                stream = new FileStream(pathName, FileMode.Open, FileAccess.Read);
+            } catch (Exception ex) {
+                MessageBox.Show(mMainWin, "Unable to open file: " + ex.Message, "I/O Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Analyze the file contents.
+            // TODO: this only accepts disk image files.  It will reject "file.po.gz" and
+            // "file.sdk" because they are actually multi-file archives.  We can do better here,
+            // handling the "simple" formats, but we probably don't want to get into disk archives
+            // stored in ZIP files.
+            using (stream) {
+                FileAnalyzer.AnalysisResult result = FileAnalyzer.Analyze(stream, ext, AppHook,
+                    out FileKind kind, out SectorOrder orderHint);
+                string errMsg;
+                switch (result) {
+                    case FileAnalyzer.AnalysisResult.DubiousSuccess:
+                    case FileAnalyzer.AnalysisResult.FileDamaged:
+                        errMsg = "File is not usable due to possible damage.";
+                        break;
+                    case FileAnalyzer.AnalysisResult.UnknownExtension:
+                        errMsg = "File format not recognized.";
+                        break;
+                    case FileAnalyzer.AnalysisResult.ExtensionMismatch:
+                        errMsg = "File appears to have the wrong extension.";
+                        break;
+                    case FileAnalyzer.AnalysisResult.NotImplemented:
+                        errMsg = "Support for this type of file has not been implemented.";
+                        break;
+                    case FileAnalyzer.AnalysisResult.Success:
+                        if (!Defs.IsDiskImageFile(kind)) {
+                            errMsg = "File is not a disk image.";
+                        } else {
+                            errMsg = string.Empty;
+                        }
+                        break;
+                    default:
+                        errMsg = "Internal error: unexpected result from analyzer: " + result;
+                        break;
+                }
+                if (!string.IsNullOrEmpty(errMsg)) {
+                    MessageBox.Show(mMainWin, errMsg, "Unable to use file",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Create disk image.
+                using IDiskImage? diskImage = FileAnalyzer.PrepareDiskImage(stream, kind, AppHook);
+                if (diskImage == null) {
+                    errMsg =
+                        "Unable to prepare disk image, type=" + ThingString.FileKind(kind) + ".";
+                    MessageBox.Show(mMainWin, errMsg, "Unable to use file",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                // Attempt the disk analysis while we have the order hint handy.  We're only
+                // interested in the chunks, not the filesystem.
+                if (!diskImage.AnalyzeDisk(null, orderHint, IDiskImage.AnalysisDepth.ChunksOnly)) {
+                    errMsg = "Unable to determine format of disk image contents.";
+                    MessageBox.Show(mMainWin, errMsg, "Unable to use file",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                Debug.Assert(diskImage.ChunkAccess != null);
+
+                // TODO: partition close function
+
+                ReplacePartition dialog = new ReplacePartition(mMainWin, dstPartition,
+                    diskImage.ChunkAccess, mFormatter, AppHook);
+                if (dialog.ShowDialog() == true) {
+                    mMainWin.PostNotification("Completed", true);
+                }
+
+                // TODO: reopen partition if needed
+            }
+        }
+
+        /// <summary>
+        /// Handles Action : Save As Disk Image
         /// </summary>
         public void SaveAsDiskImage() {
-            IChunkAccess? chunks = GetChunks();
+            IChunkAccess? chunks = GetCurrentWorkChunks();
             if (chunks == null) {
                 Debug.Assert(false);
                 return;
@@ -1311,7 +1412,7 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Handles context : ScanForBadBlocks
+        /// Handles Action : Scan For Bad Blocks
         /// </summary>
         public void ScanForBadBlocks() {
             IDiskImage? diskImage = CurrentWorkObject as IDiskImage;

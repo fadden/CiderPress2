@@ -172,7 +172,7 @@ namespace DiskArc.FS {
             // DOS MASTER allows volumes of size 140KB, 160KB, 200KB, and 400KB.  The only
             // limitation is that they must all be the same size.
             foreach (uint testCount in sBlockCounts) {
-                if (CheckVolumes(startBlock, regionCount, testCount)) {
+                if (TryVolumes(startBlock, regionCount, testCount)) {
                     // We have a winner.
                     if (firstReserved != 0) {
                         // TODO: check firstReserved against first DOS volume VTOC.  If not
@@ -186,13 +186,13 @@ namespace DiskArc.FS {
 
         /// <summary>
         /// Tests whether there are a series of DOS volumes with a specific size, starting at a
-        /// specific location.
+        /// specific location.  If all looks correct, this forms the partition list.
         /// </summary>
         /// <param name="startBlock">ProDOS block number of volume start.</param>
         /// <param name="regionBlockCount">Total size of region, in blocks.</param>
         /// <param name="testBlockCount">Size, in blocks, of an individual DOS volume.</param>
         /// <returns>True if all "slots" hold a valid DOS filesystem.</returns>
-        private bool CheckVolumes(uint startBlock, uint regionBlockCount, uint testBlockCount) {
+        private bool TryVolumes(uint startBlock, uint regionBlockCount, uint testBlockCount) {
             // Confirm that the size is a multiple.
             if (regionBlockCount < testBlockCount || regionBlockCount % testBlockCount != 0) {
                 return false;
@@ -239,6 +239,10 @@ namespace DiskArc.FS {
             // Create the partition list.
             Debug.Assert(mPartitions.Count == 0);
             foreach (ChunkSubset subChunk in goodChunks) {
+                // This Partition constructor prevents re-analysis, which isn't strictly necessary
+                // here because the partition is an independent entity.  However, if we want the
+                // results to come up the same way when the file is reopened, it's best to force
+                // a full re-scan every time.  Our image testing strongly favors finding DOS.
                 Partition part = new Partition(subChunk, new DOS(subChunk, mAppHook), mAppHook);
                 mPartitions.Add(part);
             }

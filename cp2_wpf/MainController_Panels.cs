@@ -73,13 +73,13 @@ namespace cp2_wpf {
 
         // True if blocks/sectors are readable.  If we support custom sector codecs we will want
         // to relax this restriction for floppy disk images.
-        public bool CanEditBlocks { get { return CanEditChunk(false); } }
-        public bool CanEditSectors { get { return CanEditChunk(true); } }
+        public bool CanEditBlocks { get { return CanAccessChunk(false); } }
+        public bool CanEditSectors { get { return CanAccessChunk(true); } }
 
-        public bool HasChunks { get { return GetChunks() != null; } }
+        public bool HasChunks { get { return GetCurrentWorkChunks() != null; } }
 
         /// <summary>
-        /// Determines whether the current work object can be sector-edited by blocks or sectors.
+        /// Determines whether the current work object can be sector-edited as blocks or sectors.
         /// This only works for IDiskImage and Partition.
         /// </summary>
         /// <remarks>
@@ -88,8 +88,8 @@ namespace cp2_wpf {
         /// meant to be carved up into smaller pieces.</para>
         /// <para>A "True" result does not indicate that the storage is writable.</para>
         /// </remarks>
-        private bool CanEditChunk(bool asSectors) {
-            IChunkAccess? chunks = GetChunks();
+        private bool CanAccessChunk(bool asSectors) {
+            IChunkAccess? chunks = GetCurrentWorkChunks();
             if (chunks != null) {
                 if (asSectors) {
                     return chunks.HasSectors;
@@ -105,7 +105,7 @@ namespace cp2_wpf {
         /// current work object is not IDiskImage/Partition, or is a disk image with an
         /// unrecognized sector format.
         /// </summary>
-        private IChunkAccess? GetChunks() {
+        private IChunkAccess? GetCurrentWorkChunks() {
             if (CurrentWorkObject is IDiskImage) {
                 return ((IDiskImage)CurrentWorkObject).ChunkAccess;
             } else if (CurrentWorkObject is Partition) {

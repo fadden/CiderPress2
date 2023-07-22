@@ -105,10 +105,10 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
-            <RoutedUICommand x:Key="OverwriteWithDiskImageCmd" Text="Overwrite With Disk Image"/>
+            <RoutedUICommand x:Key="ReplacePartitionCmd" Text="Replace Partition Contents..."/>
             <RoutedUICommand x:Key="RecentFileCmd"/>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>
-            <RoutedUICommand x:Key="SaveAsDiskImageCmd" Text="Save As Disk Image"/>
+            <RoutedUICommand x:Key="SaveAsDiskImageCmd" Text="Save As Disk Image..."/>
             <RoutedUICommand x:Key="ScanForBadBlocksCmd" Text="Scan for Bad Blocks"/>
             <RoutedUICommand x:Key="ScanForSubVolCmd" Text="Scan for Sub-Volumes"/>
             <RoutedUICommand x:Key="ShowDirListCmd" Text="Show Directory List"/>
@@ -178,8 +178,8 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="PasteCmd_Executed"/>
         <CommandBinding Command="{StaticResource RecentFileCmd}" x:Name="recentFileCmd"
                         Executed="RecentFileCmd_Executed"/>
-        <CommandBinding Command="{StaticResource OverwriteWithDiskImageCmd}"
-                        CanExecute="IsWritablePartitionSelected" Executed="OverwriteWithDiskImageCmd_Executed"/>
+        <CommandBinding Command="{StaticResource ReplacePartitionCmd}"
+                        CanExecute="IsWritablePartitionSelected" Executed="ReplacePartitionCmd_Executed"/>
         <CommandBinding Command="{StaticResource ResetSortCmd}"
                         CanExecute="IsFileOpen" Executed="ResetSortCmd_Executed"/>
         <CommandBinding Command="{StaticResource SaveAsDiskImageCmd}"
@@ -254,7 +254,7 @@ limitations under the License.
                 <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
                 <MenuItem Command="{StaticResource ScanForBadBlocksCmd}"/>
                 <MenuItem Command="{StaticResource SaveAsDiskImageCmd}"/>
-                <MenuItem Command="{StaticResource OverwriteWithDiskImageCmd}"/>
+                <MenuItem Command="{StaticResource ReplacePartitionCmd}"/>
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Command="{StaticResource ShowFullListCmd}"/>
@@ -477,7 +477,7 @@ limitations under the License.
                                     <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                                     <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
                                     <MenuItem Command="{StaticResource SaveAsDiskImageCmd}"/>
-                                    <MenuItem Command="{StaticResource OverwriteWithDiskImageCmd}"/>
+                                    <MenuItem Command="{StaticResource ReplacePartitionCmd}"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                         </TreeView>

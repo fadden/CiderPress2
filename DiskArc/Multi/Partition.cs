@@ -80,6 +80,18 @@ namespace DiskArc.Multi {
         /// <summary>
         /// Constructor for a partition that is defined by a chunk subset.
         /// </summary>
+        /// <remarks>
+        /// <para>Re-analysis may yield different results, because the routines that call here
+        /// are used for embedded/hybrid volumes.  If this is being used to define the "inner"
+        /// volume of a hybrid disk, re-analysis might find the "outer" one.  For DOS Master
+        /// embeds we might be giving the "is it DOS" test more leniency.  The only reliable
+        /// way to reanalyze these is to reconsider the entire embedded volume set, because
+        /// that guarantees that the results will match what happens the next time we open
+        /// the file.</para>
+        /// <para>We might consider recording the filesystem type, and only test for the same
+        /// type during reanalysis, but that ignores the possibility that the contents have
+        /// actually changed.</para>
+        /// </remarks>
         /// <param name="partChunks">Chunk access object for partition contents.</param>
         /// <param name="fileSystem">Filesystem found on partition.</param>
         /// <param name="appHook">Application hook reference.</param>
@@ -102,7 +114,8 @@ namespace DiskArc.Multi {
         /// <param name="startOffset">Start offset, in bytes, of partition.</param>
         /// <param name="length">Length, in bytes, of partition.</param>
         /// <param name="appHook">Application hook reference.</param>
-        internal Partition(IChunkAccess baseAccess, long startOffset, long length, AppHook appHook) {
+        internal Partition(IChunkAccess baseAccess, long startOffset, long length,
+                AppHook appHook) {
             if (startOffset % BLOCK_SIZE != 0 || length % BLOCK_SIZE != 0) {
                 throw new ArgumentException("Offset or length not multiple of block size");
             }

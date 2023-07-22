@@ -25,11 +25,14 @@ using FileConv;
 namespace cp2_wpf {
     public static class WinUtil {
         public const string FILE_FILTER_ALL = "All files|*.*";
-        public const string FILE_FILTER_KNOWN = "Known Formats|" +
+        public const string FILE_FILTER_KNOWN = "Known formats|" +
             "*.shk;*.sdk;*.sea;*.bny;*.bqy;*.bxy;*.bse;" +
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;" +
             "*.gz;*.zip;*.as;*.acu";
+        public const string FILE_FILTER_ALL_DISK = "Disk image formats|" +
+            "*.sdk;*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc6;*.image;*.ddd;" +
+            "*.nib;*.nb2;*.raw;*.app;*.woz;";
         public const string FILE_FILTER_2MG = "2IMG disk image (*.2mg)|*.2mg";
         public const string FILE_FILTER_APP = "Trackstar disk image (*.app)|*.app";
         public const string FILE_FILTER_BINARY2 = "Binary ][ (*.bny/bqy)|*.bny;*.bqy";

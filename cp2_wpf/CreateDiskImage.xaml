@@ -67,9 +67,14 @@ limitations under the License.
                 <StackPanel>
                     <RadioButton GroupName="DiskSize" Content="113.75 KB - 35 tracks x 13 sectors"
                                  IsChecked="{Binding IsChecked_Flop525_113}"/>
-                    <RadioButton GroupName="DiskSize" Content="140 KB - 35 tracks x 16 sectors" Margin="0,2,0,0"
-                                 FontWeight="Bold"
-                                 IsChecked="{Binding IsChecked_Flop525_140}"/>
+                    <RadioButton GroupName="DiskSize" Margin="0,2,0,0"
+                                 IsChecked="{Binding IsChecked_Flop525_140}">
+                        <RadioButton.Content>
+                            <TextBlock>
+                                 <Bold>140 KB</Bold> - 35 tracks x 16 sectors
+                            </TextBlock>
+                        </RadioButton.Content>
+                    </RadioButton>
                     <RadioButton GroupName="DiskSize" Content="160 KB - 40 tracks x 16 sectors" Margin="0,2,0,0"
                                  IsChecked="{Binding IsChecked_Flop525_160}"/>
                 </StackPanel>

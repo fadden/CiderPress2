@@ -118,5 +118,24 @@ namespace DiskArcTests {
                 }
             }
         }
+
+        public static void TestHalf(AppHook appHook) {
+            using (Stream diskFile =
+                    Helper.OpenTestFile("dos800/OzDOS-half.do", true, appHook)) {
+                using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(diskFile,
+                        FileKind.UnadornedSector, appHook)!) {
+                    // Must specify DOS order when analyzing, or we'll treat it as a block image
+                    // and the DOS filesystem code won't accept it.
+                    diskImage.AnalyzeDisk(null, SectorOrder.DOS_Sector,
+                        IDiskImage.AnalysisDepth.Full);
+                    IFileSystem fs = (IFileSystem)diskImage.Contents!;
+                    fs.PrepareFileAccess(true);
+                    Helper.CheckNotes(fs, 0, 0);
+
+                    IFileEntry volDir = fs.GetVolDirEntry();
+                    Helper.ExpectInt(8, volDir.Count, "wrong file count");
+                }
+            }
+        }
     }
 }

@@ -29,10 +29,9 @@ using DiskArc.Disk;
 using static DiskArc.Defs;
 using FileTypeValue = cp2_wpf.CreateDiskImage.FileTypeValue;
 
-namespace cp2_wpf
-{
+namespace cp2_wpf {
     /// <summary>
-    /// Interaction logic for SaveAsDisk.xaml
+    /// Save a disk image or partition as a disk image.
     /// </summary>
     public partial class SaveAsDisk : Window, INotifyPropertyChanged {
         // INotifyPropertyChanged implementation
@@ -63,7 +62,6 @@ namespace cp2_wpf
         public SaveAsDisk(Window owner, object diskOrPartition, IChunkAccess chunks,
                 Formatter formatter, AppHook appHook) {
             InitializeComponent();
-
             Owner = owner;
             DataContext = this;
 
@@ -270,6 +268,9 @@ namespace cp2_wpf
                         throw new NotImplementedException("Not implemented: " + mFileType);
                 }
 
+                // Do the disk copy.  In theory this could be a few GB from a physical device,
+                // but it will generally be pretty small.  Doing it on the GUI thread should
+                // be fine for now.
                 CopyDisk(mChunks, diskImage.ChunkAccess!, out errorCount);
 
                 // Handle NuFX ".SDK" disk image creation.

@@ -511,8 +511,8 @@ namespace cp2_wpf {
         private void OpenCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.OpenWorkFile();
         }
-        private void OverwriteWithDiskImageCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            Debug.WriteLine("overwrite");
+        private void ReplacePartitionCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.ReplacePartition();
         }
         private void PasteCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Paste!");

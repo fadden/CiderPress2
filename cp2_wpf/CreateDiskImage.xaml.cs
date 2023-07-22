@@ -638,8 +638,18 @@ namespace cp2_wpf {
                 case DiskSizeValue.Flop35_1440:
                 case DiskSizeValue.Other_32MB:
                 case DiskSizeValue.Other_Custom:
-                    tracks = sectors = 0;
-                    return false;
+                    long volSize = GetVolSize();
+                    if (volSize == 400 * 1024) {
+                        // Special case for 400KB embedded volume (e.g. UniDOS).  This should
+                        // perhaps be a standard case, but it's rare that somebody would want
+                        // to create one stand-alone since nothing supports it.
+                        tracks = 50;
+                        sectors = 32;
+                        return true;
+                    } else {
+                        tracks = sectors = 0;
+                        return false;
+                    }
                 default:
                     throw new NotImplementedException("Didn't handle size=" + mDiskSize);
             }
