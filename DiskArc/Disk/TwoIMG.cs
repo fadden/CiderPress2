@@ -126,7 +126,7 @@ namespace DiskArc.Disk {
                     mHeader.mFlags = (uint)(mHeader.mFlags & ~0xff) | VOL_FLAG | (byte)value;
                     mMetadataDirty = true;
                 } else {
-                    throw new ArgumentException("volume number must be 0-254");
+                    throw new ArgumentException("volume number must be 0-254, or -1 to unset");
                 }
             }
         }
@@ -971,11 +971,18 @@ namespace DiskArc.Disk {
         #region Metadata
 
         private static readonly MetaEntry[] sTwoIMGEntries = new MetaEntry[] {
-            new MetaEntry("comment", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("creator", MetaEntry.ValType.String, canEdit:false),
-            new MetaEntry("format", MetaEntry.ValType.Int, canEdit:false),
-            new MetaEntry("write_protected", MetaEntry.ValType.Bool, canEdit:true),
-            new MetaEntry("volume_number", MetaEntry.ValType.Int, canEdit:true),
+            new MetaEntry("comment", MetaEntry.ValType.String,
+                "File comment.", "Arbitrary string.", canEdit:true),
+            new MetaEntry("creator", MetaEntry.ValType.String,
+                "Creator signature.", "", canEdit:false),
+            new MetaEntry("format", MetaEntry.ValType.Int,
+                "Image data format.", "", canEdit:false),
+            new MetaEntry("write_protected", MetaEntry.ValType.Bool,
+                "Should emulators treat the disk as write-protected?", MetaEntry.BOOL_DESC,
+                canEdit:true),
+            new MetaEntry("volume_number", MetaEntry.ValType.Int,
+                "Disk volume number, for 5.25\" disks.",
+                "Integer value, 0-254, or -1 to unset.", canEdit:true),
         };
 
         // IMetadata
@@ -1002,10 +1009,10 @@ namespace DiskArc.Disk {
                     if (verbose) {
                         switch (ImageFormat) {
                             case 0:
-                                value += " (DOS order)";
+                                value += " (DOS sectors)";
                                 break;
                             case 1:
-                                value += " (ProDOS order)";
+                                value += " (ProDOS blocks)";
                                 break;
                             case 2:
                                 value += " (nibbles)";
@@ -1040,7 +1047,27 @@ namespace DiskArc.Disk {
         }
 
         // IMetadata
+        public bool TestMetaValue(string key, string value) {
+            if (key == null || value == null) {
+                return false;
+            }
+            switch (key) {
+                case "comment":
+                    return true;
+                case "write_protected":
+                    return bool.TryParse(value, out bool wpVal);
+                case "volume_number":
+                    return int.TryParse(value, out int intVal);
+                default:
+                    return false;
+            }
+        }
+
+        // IMetadata
         public void SetMetaValue(string key, string value) {
+            if (key == null || value == null) {
+                throw new ArgumentException("key and value must not be null");
+            }
             switch (key) {
                 case "comment":
                     Comment = value;
@@ -1064,16 +1091,7 @@ namespace DiskArc.Disk {
 
         // IMetadata
         public bool DeleteMetaEntry(string key) {
-            switch (key) {
-                case "comment":
-                    Comment = string.Empty;
-                    return true;
-                case "volume_number":
-                    VolumeNumber = -1;
-                    return true;
-                default:
-                    return false;
-            }
+            return false;
         }
 
         #endregion Metadata

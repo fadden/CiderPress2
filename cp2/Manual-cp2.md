@@ -1022,13 +1022,15 @@ Usage: `cp2 set-metadata [options] <ext-archive> <key> [value]`
 The allowed formats for keys and values are different for every file format.
 See the [Metadata](#metadata) section for details.
 
-If no value is provided, the entry will be deleted, if allowed.
+If no value is provided, the entry will be deleted.  This only works for
+user-defined keys (currently only supported by WOZ).
 
 Options: (none)
 
 Examples:
  - `cp2 set-metadata disk.2mg write_protected true`
  - `cp2 sm disk.woz meta:language English`
+ - `cp2 sm disk.2mg comment ""`
 
 ----
 #### `test`

@@ -56,25 +56,53 @@ namespace DiskArc.Disk {
             "3+",   // 0x0100
         };
 
+        private static readonly string NL = Environment.NewLine;
         internal static readonly MetaEntry[] sInfo1List = new MetaEntry[] {
-            new MetaEntry("info_version", MetaEntry.ValType.Int, canEdit:false),
-            new MetaEntry("disk_type", MetaEntry.ValType.Int, canEdit:false),
-            new MetaEntry("write_protected", MetaEntry.ValType.Bool, canEdit:true),
-            new MetaEntry("synchronized", MetaEntry.ValType.Bool, canEdit:false),
-            new MetaEntry("cleaned", MetaEntry.ValType.Bool, canEdit:false),
-            new MetaEntry("creator", MetaEntry.ValType.String, canEdit:false),
+            new MetaEntry("info_version", MetaEntry.ValType.Int,
+                "Version number of the INFO chunk.", "", canEdit:false),
+            new MetaEntry("disk_type", MetaEntry.ValType.Int,
+                "Disk type (1=5.25\", 2=3.5\").", "", canEdit:false),
+            new MetaEntry("write_protected", MetaEntry.ValType.Bool,
+                "Should emulators treat the disk as write-protected?", MetaEntry.BOOL_DESC,
+                canEdit:true),
+            new MetaEntry("synchronized", MetaEntry.ValType.Bool,
+                "Was cross-track sync used during imaging?", "", canEdit:false),
+            new MetaEntry("cleaned", MetaEntry.ValType.Bool,
+                "Have MC3470 fake bits been removed?", "", canEdit:false),
+            new MetaEntry("creator", MetaEntry.ValType.String,
+                "Name of software that created the WOZ file.", "", canEdit:false),
         };
         internal static readonly MetaEntry[] sInfo2List = new MetaEntry[] {
-            new MetaEntry("disk_sides", MetaEntry.ValType.Int, canEdit:false),
-            new MetaEntry("boot_sector_format", MetaEntry.ValType.Int, canEdit:true),
-            new MetaEntry("optimal_bit_timing", MetaEntry.ValType.Int, canEdit:false),
-            new MetaEntry("compatible_hardware", MetaEntry.ValType.Int, canEdit:true),
-            new MetaEntry("required_ram", MetaEntry.ValType.Int, canEdit:true),
-            new MetaEntry("largest_track", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("disk_sides", MetaEntry.ValType.Int,
+                "Number of disk sides in this image.", "", canEdit:false),
+            new MetaEntry("boot_sector_format", MetaEntry.ValType.Int,
+                "Type of boot sector on this disk (5.25\" only).",
+                "0=unknown, 1=16-sector, 2=13-sector, 3=both", canEdit:true),
+            new MetaEntry("optimal_bit_timing", MetaEntry.ValType.Int,
+                "Ideal disk controller bit rate.", "", canEdit:false),
+            new MetaEntry("compatible_hardware", MetaEntry.ValType.Int,
+                "Compatible hardware bit field.",
+                "0x0001 = Apple ][" + NL +
+                "0x0002 = Apple ][ Plus" + NL +
+                "0x0004 = Apple //e (unenhanced)" + NL +
+                "0x0008 = Apple //c" + NL +
+                "0x0010 = Apple //e (enhanced)" + NL +
+                "0x0020 = Apple IIgs" + NL +
+                "0x0040 = Apple //c Plus" + NL +
+                "0x0080 = Apple ///" + NL +
+                "0x0100 = Apple /// Plus",
+                canEdit:true),
+            new MetaEntry("required_ram", MetaEntry.ValType.Int,
+                "Minimum RAM required to run this software, in KiB.",
+                "Integer value, 0-65535.", canEdit:true),
+            new MetaEntry("largest_track", MetaEntry.ValType.Int,
+                "Number of blocks used by the largest track.", "", canEdit:false),
         };
         internal static readonly MetaEntry[] sInfo3List = new MetaEntry[] {
-            new MetaEntry("flux_block", MetaEntry.ValType.Int, canEdit:false),
-            new MetaEntry("largest_flux_track", MetaEntry.ValType.Int, canEdit:false),
+            new MetaEntry("flux_block", MetaEntry.ValType.Int,
+                "Block number where the FLUX chunk resides.", "", canEdit:false),
+            new MetaEntry("largest_flux_track", MetaEntry.ValType.Int,
+                "Number of blocks used by the largest FLUX track.", "", canEdit:false),
         };
 
         /// <summary>
@@ -259,9 +287,31 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Tests whether a value would be accepted by the "set" call.
+        /// </summary>
+        /// <param name="key">Entry key.</param>
+        /// <param name="value">Value to test.</param>
+        /// <returns>True if a set call would succeed.</returns>
+        public bool TestValue(string key, string value) {
+            switch (key) {
+                case "write_protected":
+                    return bool.TryParse(value, out bool wpVal);
+                case "boot_sector_format":
+                    return byte.TryParse(value, out byte bsVal);
+                case "compatible_hardware":
+                    return ushort.TryParse(value, out ushort chVal);
+                case "required_ram":
+                    return ushort.TryParse(value, out ushort rrVal);
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
         /// Sets the value of a metadata entry as a string.
         /// </summary>
         /// <param name="key">Entry key.</param>
+        /// <param name="value">Value to set.</param>
         /// <exception cref="ArgumentException">Invalid key or value.</exception>
         public void SetValue(string key, string value) {
             // Parse the string to a numeric or boolean value, and then set the field.  The

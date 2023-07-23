@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Diagnostics;
 
 namespace DiskArc {
     /// <summary>
@@ -24,12 +25,12 @@ namespace DiskArc {
         /// Metadata entry descriptor.  Immutable.
         /// </summary>
         class MetaEntry {
+            public const string BOOL_DESC = "Value may be \"true\" or \"false\".";
+
             /// <summary>
             /// Entry key.
             /// </summary>
             public string Key { get; private set; }
-
-            public enum ValType { Unknown = 0, String, Bool, Int };
 
             /// <summary>
             /// Type of data that the value holds.
@@ -40,6 +41,19 @@ namespace DiskArc {
             /// or string validity patterns, so this isn't enough to actually validate the input.
             /// </remarks>
             public ValType ValueType { get; private set; }
+            public enum ValType { Unknown = 0, String, Bool, Int };
+
+            /// <summary>
+            /// Human-readable description of the meaning of the key.  This will be empty for
+            /// user-defined keys.
+            /// </summary>
+            public string Description { get; private set; }
+
+            /// <summary>
+            /// Syntax description for the value.  This will be empty for user-defined and
+            /// non-editable keys.
+            /// </summary>
+            public string ValueSyntax { get; private set; }
 
             /// <summary>
             /// True if the entry can be edited.
@@ -56,12 +70,19 @@ namespace DiskArc {
             /// </summary>
             /// <param name="key">Entry key.</param>
             /// <param name="valueType">General type of value.</param>
+            /// <param name="desc">Description of key.</param>
+            /// <param name="syntax">Value syntax.</param>
             /// <param name="canEdit">True if this entry can be edited.</param>
-            public MetaEntry(string key, ValType valueType, bool canEdit) {
+            public MetaEntry(string key, ValType valueType, string desc, string syntax,
+                    bool canEdit) {
                 Key = key;
                 ValueType = valueType;
+                Description = desc;
+                ValueSyntax = syntax;
                 CanEdit = canEdit;
                 CanDelete = false;
+                Debug.Assert(canEdit ^ string.IsNullOrEmpty(syntax),
+                    "syntax iff editable; key=" + key);
             }
 
             /// <summary>
@@ -71,9 +92,12 @@ namespace DiskArc {
             /// <param name="valueType">General type of value.</param>
             /// <param name="canEdit">True if this entry can be edited.</param>
             /// <param name="canDelete">True if this entry can be deleted.</param>
-            public MetaEntry(string key, ValType valueType, bool canEdit, bool canDelete) {
+            public MetaEntry(string key, ValType valueType, string desc, string syntax,
+                    bool canEdit, bool canDelete) {
                 Key = key;
                 ValueType = valueType;
+                Description = desc;
+                ValueSyntax = syntax;
                 CanEdit = canEdit;
                 CanDelete = canDelete;
             }
@@ -86,6 +110,8 @@ namespace DiskArc {
             public MetaEntry(string key) {
                 Key = key;
                 ValueType = ValType.String;
+                Description = string.Empty;
+                ValueSyntax = string.Empty;
                 CanEdit = CanDelete = true;
             }
         }
@@ -106,20 +132,33 @@ namespace DiskArc {
         string? GetMetaValue(string key, bool verbose);
 
         /// <summary>
+        /// Tests whether the value would be accepted as valid for the key.  Entries that are
+        /// not editable always return false.
+        /// </summary>
+        /// <param name="key">Key of entry to test.</param>
+        /// <param name="value">Value to test, in string form.</param>
+        /// <returns>True if the value would be accepted.</returns>
+        bool TestMetaValue(string key, string value);
+
+        /// <summary>
         /// Sets the value for one entry.
         /// </summary>
         /// <param name="key">Key of entry to set.</param>
-        /// <param name="value">Value to set the entry to, in string form.</param>
+        /// <param name="value">Value to set the entry to, in string form.  May be empty, but
+        ///   may not be null.</param>
         /// <exception cref="ArgumentException">Invalid key or invalid value.</exception>
         /// <exception cref="InvalidOperationException">Object is read-only.</exception>
         void SetMetaValue(string key, string value);
 
         /// <summary>
-        /// Deletes an entry.  This will fail if a matching entry doesn't exist, or if the
-        /// entry cannot be deleted.
+        /// Deletes an entry.  This will fail if the entry doesn't exist, or if the entry cannot
+        /// be deleted.
         /// </summary>
         /// <param name="key">Key of entry to delete.</param>
         /// <returns>True if the entry was deleted.</returns>
         bool DeleteMetaEntry(string key);
+
+        // TODO: if the format allows user-supplied metadata keys, we should define some properties
+        // and methods that let the application support entry creation in a format-agnostic fashion.
     }
 }

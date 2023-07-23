@@ -82,27 +82,9 @@ namespace DiskArc.Disk {
         public const string SIDE_KEY = "side";
         public const string IMAGE_DATE_KEY = "image_date";
 
-        /// <summary>
-        /// Standard keys, defined by the WOZ specification.  All WOZ files with a META chunk
-        /// are expected to have these.  They don't have to appear in a specific order.  Some
-        /// fields have a restricted set of values or a rigidly defined format.
-        /// </summary>
-        internal static readonly MetaEntry[] sStandardEntries = new MetaEntry[] {
-            new MetaEntry("title", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("subtitle", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("publisher", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("developer", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("copyright", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("version", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry(LANGUAGE_KEY, MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry(REQUIRES_RAM_KEY, MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry(REQUIRES_MACHINE_KEY, MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("notes", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry(SIDE_KEY, MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("side_name", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry("contributor", MetaEntry.ValType.String, canEdit:true),
-            new MetaEntry(IMAGE_DATE_KEY, MetaEntry.ValType.String, canEdit:true),
-        };
+        private const string META_STRING_SYNTAX =
+            "String may not contain linefeed or tab characters, and may only contain pipe ('|') " +
+            "in specific cases.";
 
         // Valid values for specific keys.
         private static readonly string[] sLanguage = new string[] {
@@ -125,6 +107,46 @@ namespace DiskArc.Disk {
             "2", "2+", "2e", "2c",
             "2e+", "2gs", "2c+", "3",
             "3+",
+        };
+
+        /// <summary>
+        /// Standard keys, defined by the WOZ specification.  All WOZ files with a META chunk
+        /// are expected to have these.  They don't have to appear in a specific order.  Some
+        /// fields have a restricted set of values or a rigidly defined format.
+        /// </summary>
+        internal static readonly MetaEntry[] sStandardEntries = new MetaEntry[] {
+            new MetaEntry("title", MetaEntry.ValType.String,
+                "Name/title of the product.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("subtitle", MetaEntry.ValType.String,
+                "Subtitle of the product.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("publisher", MetaEntry.ValType.String,
+                "Publisher of the software.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("developer", MetaEntry.ValType.String,
+                "Developer of the software. May be a pipe-delimited list.", META_STRING_SYNTAX,
+                canEdit:true),
+            new MetaEntry("copyright", MetaEntry.ValType.String,
+                "Copyright date and holder.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("version", MetaEntry.ValType.String,
+                "Version number of the software.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry(LANGUAGE_KEY, MetaEntry.ValType.String,
+                "Primary language.", "From list: " + ListToString(sLanguage), canEdit:true),
+            new MetaEntry(REQUIRES_RAM_KEY, MetaEntry.ValType.String,
+                "RAM requirements.", "From list: " + ListToString(sRequiresRam), canEdit:true),
+            new MetaEntry(REQUIRES_MACHINE_KEY, MetaEntry.ValType.String,
+                "Pipe-delimited list of computers this runs on.",
+                "From list: " + ListToString(sRequiresMachine), canEdit:true),
+            new MetaEntry("notes", MetaEntry.ValType.String,
+                "Additional notes.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry(SIDE_KEY, MetaEntry.ValType.String,
+                "Physical disk side description.",
+                "Format: \"Disk #, Side[A|B]\".", canEdit:true),
+            new MetaEntry("side_name", MetaEntry.ValType.String,
+                "Name of the disk side.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("contributor", MetaEntry.ValType.String,
+                "Name of person who imaged the disk.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry(IMAGE_DATE_KEY, MetaEntry.ValType.String,
+                "Date and time when the disk was imaged.",
+                "RFC3339 format, e.g. 2018-01-07T05:00:02.511Z", canEdit:true),
         };
 
         /// <summary>
@@ -204,19 +226,16 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Sets the specified entry.  If no entry for the key exists, a new entry will be added.
+        /// Tests whether a value would be accepted by the "set" call.
         /// </summary>
-        /// <param name="key">Key of entry to update.</param>
-        /// <param name="value">New value.</param>
-        /// <exception cref="ArgumentException">Invalid value for standard key, key is null, or
-        ///   value is null.</exception>
-        /// <exception cref="InvalidOperationException">Disk image is read-only.</exception>
-        public void SetValue(string key, string value) {
+        /// <param name="key">Entry key.</param>
+        /// <param name="value">Value to test.</param>
+        /// <returns>True if a set call would succeed.</returns>
+        public bool TestValue(string key, string value, out string errMsg) {
+            errMsg = string.Empty;
             if (key == null || value == null) {
-                throw new ArgumentNullException("Key and value must not be null");
-            }
-            if (IsReadOnly) {
-                throw new InvalidOperationException("Image is read-only");
+                errMsg = "Key and value must not be null";
+                return false;
             }
 
             // Validate the key.  I can't figure out how to make Regex not ignore an end-of-line
@@ -229,12 +248,13 @@ namespace DiskArc.Disk {
             if (value == string.Empty) {
                 mEntries[key] = value;
                 IsDirty = true;
-                return;
+                return true;
             }
             // Test the general form of the value string.  Only tabs and linefeeds are banned.
             matches = VALID_VALUE_REGEX.Matches(value);
             if (matches.Count != 1 || value != matches[0].Groups[0].Value) {
-                throw new ArgumentException("Invalid characters in value: '" + value + "'");
+                errMsg = "Invalid characters in value: '" + value + "'";
+                return false;
             }
 
             // Perform special value validation for certain standard keys.
@@ -242,13 +262,15 @@ namespace DiskArc.Disk {
                 case LANGUAGE_KEY:
                     // Confirm value is a known language.
                     if (!IsInList(value, sLanguage)) {
-                        throw new ArgumentException("Invalid language: '" + value + "'");
+                        errMsg = "Invalid language: '" + value + "'";
+                        return false;
                     }
                     break;
                 case REQUIRES_RAM_KEY:
                     // Confirm value is a valid RAM configuration.
                     if (!IsInList(value, sRequiresRam)) {
-                        throw new ArgumentException("Invalid requires_ram: '" + value + "'");
+                        errMsg = "Invalid requires_ram: '" + value + "'";
+                        return false;
                     }
                     break;
                 case REQUIRES_MACHINE_KEY:
@@ -258,8 +280,8 @@ namespace DiskArc.Disk {
                         // This returns false for empty strings, so we should catch minor
                         // syntactical issues like "2+|2e|" and "||2gs".
                         if (!IsInList(listItem, sRequiresMachine)) {
-                            throw new ArgumentException("Invalid requires_machine list item: '" +
-                                listItem + "'");
+                            errMsg = "Invalid requires_machine list item: '" + listItem + "'";
+                            return false;
                         }
                     }
                     break;
@@ -267,7 +289,8 @@ namespace DiskArc.Disk {
                     // Entry has form "Disk #, Side [A|B]", e.g. "Disk 1, Side A".
                     matches = VALID_SIDE_REGEX.Matches(value);
                     if (matches.Count != 1) {
-                        throw new ArgumentException("Invalid side value: '" + value + "'");
+                        errMsg = "Invalid side value: '" + value + "'";
+                        return false;
                     }
                     break;
                 case IMAGE_DATE_KEY:
@@ -278,16 +301,36 @@ namespace DiskArc.Disk {
                         DateTime test = XmlConvert.ToDateTime(value,
                             XmlDateTimeSerializationMode.Utc);
                     } catch (FormatException) {
-                        throw new ArgumentException("Bad date format: '" + value + "'");
+                        errMsg = "Bad date format: '" + value + "'";
+                        return false;
                     }
                     break;
                 default:
                     // Standard or user-defined key with no restrictions on value, except maybe
                     // that pipe characters are bad.
                     if (value.Contains('|')) {
-                        throw new ArgumentException("Pipe character not allowed for this key");
+                        errMsg = "Pipe character not allowed for this key";
+                        return false;
                     }
                     break;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Sets the specified entry.  If no entry for the key exists, a new entry will be added.
+        /// </summary>
+        /// <param name="key">Key of entry to update.</param>
+        /// <param name="value">New value.</param>
+        /// <exception cref="ArgumentException">Invalid value for standard key, key is null, or
+        ///   value is null.</exception>
+        /// <exception cref="InvalidOperationException">Disk image is read-only.</exception>
+        public void SetValue(string key, string value) {
+            if (IsReadOnly) {
+                throw new InvalidOperationException("Image is read-only");
+            }
+            if (!TestValue(key, value, out string errMsg)) {
+                throw new ArgumentException(errMsg);
             }
 
             // All good.  Add or update the key.
@@ -480,11 +523,11 @@ namespace DiskArc.Disk {
             try {
                 meta.SetValue(null, "value2");
                 throw new Exception("null key allowed");
-            } catch (ArgumentNullException) { /*expected*/ }
+            } catch (ArgumentException) { /*expected*/ }
             try {
                 meta.SetValue("key2", null);
                 throw new Exception("null value allowed");
-            } catch (ArgumentNullException) { /*expected*/ }
+            } catch (ArgumentException) { /*expected*/ }
 #pragma warning restore CS8625
 
             // Test "standard" keys.
@@ -560,6 +603,17 @@ namespace DiskArc.Disk {
             DebugExpect(newMeta!, "publisher", UNI_TEST_STR);
 
             return true;
+        }
+
+        private static string ListToString(string[] list) {
+            StringBuilder sb = new StringBuilder();
+            foreach (string item in list) {
+                if (sb.Length > 0) {
+                    sb.Append(", ");
+                }
+                sb.Append(item);
+            }
+            return sb.ToString();
         }
 
         private static void DebugExpect(Woz_Meta meta, string key, string? expectedValue) {

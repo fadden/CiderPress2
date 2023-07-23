@@ -1089,18 +1089,19 @@ namespace DiskArc.Disk {
             // We need to generate the list of Info entries that are appropriate for the
             // Info.Version.
             foreach (MetaEntry met in Woz_Info.sInfo1List) {
-                entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType, met.CanEdit, false));
+                entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
+                    met.Description, met.ValueSyntax, met.CanEdit, false));
             }
             if (Info.Version > 1) {
                 foreach (MetaEntry met in Woz_Info.sInfo2List) {
-                    entries.Add(
-                        new MetaEntry(INFO_PFX + met.Key, met.ValueType, met.CanEdit, false));
+                    entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
+                        met.Description, met.ValueSyntax, met.CanEdit, false));
                 }
             }
             if (Info.Version > 2) {
                 foreach (MetaEntry met in Woz_Info.sInfo3List) {
-                    entries.Add(
-                        new MetaEntry(INFO_PFX + met.Key, met.ValueType, met.CanEdit, false));
+                    entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
+                        met.Description, met.ValueSyntax, met.CanEdit, false));
                 }
             }
 
@@ -1113,8 +1114,8 @@ namespace DiskArc.Disk {
                 Dictionary<string, string> metaEntries = MetaChunk.GetEntryDict();
                 foreach (MetaEntry met in Woz_Meta.sStandardEntries) {
                     if (metaEntries.ContainsKey(met.Key)) {
-                        entries.Add(
-                            new MetaEntry(META_PFX + met.Key, met.ValueType, met.CanEdit, false));
+                        entries.Add(new MetaEntry(META_PFX + met.Key, met.ValueType,
+                            met.Description, met.ValueSyntax, met.CanEdit, false));
                         metaEntries.Remove(met.Key);
                     }
                 }
@@ -1143,6 +1144,22 @@ namespace DiskArc.Disk {
         }
 
         // IMetadata
+        public bool TestMetaValue(string key, string value) {
+            if (key.StartsWith(INFO_PFX)) {
+                return Info.TestValue(key.Substring(INFO_PFX.Length), value);
+            } else if (key.StartsWith(META_PFX)) {
+                if (MetaChunk != null) {
+                    return MetaChunk.TestValue(key.Substring(META_PFX.Length), value,
+                        out string errMsg);
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        // IMetadata
         public void SetMetaValue(string key, string value) {
             if (key.StartsWith(INFO_PFX)) {
                 Info.SetValue(key.Substring(INFO_PFX.Length), value);
@@ -1150,6 +1167,7 @@ namespace DiskArc.Disk {
                 if (MetaChunk != null) {
                     MetaChunk.SetValue(key.Substring(META_PFX.Length), value);
                 }
+                // else ignore attempt
             } else {
                 throw new ArgumentException("unknown prefix on key '" + key + "'");
             }
@@ -1157,7 +1175,7 @@ namespace DiskArc.Disk {
 
         // IMetadata
         public bool DeleteMetaEntry(string key) {
-            // Cannot delete info: keys.
+            // Cannot delete "info:" keys.
             if (key.StartsWith(META_PFX) && MetaChunk != null) {
                 return MetaChunk.DeleteEntry(key.Substring(META_PFX.Length));
             }

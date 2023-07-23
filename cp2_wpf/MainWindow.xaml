@@ -687,7 +687,7 @@ limitations under the License.
                             <StackPanel Grid.Row="4" Margin="2,8,0,0"
                                         Visibility="{Binding ShowMetadata, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Metadata:"/>
-                                <DataGrid Name="metadataDataGrid"
+                                <DataGrid Name="metadataDataGrid" Margin="0,4,0,0"
                                         ItemsSource="{Binding MetadataList}"
                                         MaxHeight="400"
                                         IsReadOnly="True"
@@ -699,9 +699,36 @@ limitations under the License.
                                         CanUserReorderColumns="False"
                                         VirtualizingStackPanel.VirtualizationMode="Recycling">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Name" Width="150" Binding="{Binding Name}"/>
-                                        <DataGridTextColumn Header="Value" Width="400" Binding="{Binding Value}"/>
+                                        <DataGridTextColumn Header="Name" Width="150" Binding="{Binding Name}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <!-- make the text gray if the item isn't editable, and it's not selected -->
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=IsSelected}" Value="False"/>
+                                                                <Condition Binding="{Binding CanEdit}" Value="False"/>
+                                                            </MultiDataTrigger.Conditions>
+                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                                        </MultiDataTrigger>
+                                                    </Style.Triggers>
+                                                    <Setter Property="ToolTip" Value="{Binding Description}"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="Value" Width="400" Binding="{Binding Value}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="ToolTip" Value="{Binding ValueSyntax}"/>
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
                                     </DataGrid.Columns>
+                                    <!--<DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow">
+                                            <Setter Property="ToolTip" Value="{Binding Description}"/>
+                                        </Style>
+                                    </DataGrid.RowStyle>-->
                                 </DataGrid>
                             </StackPanel>
 

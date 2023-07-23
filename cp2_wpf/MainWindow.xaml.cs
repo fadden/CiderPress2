@@ -879,10 +879,17 @@ namespace cp2_wpf {
         public class MetadataItem {
             public string Name { get; private set; }
             public string Value { get; private set; }
+            public string Description { get; private set; }
+            public string? ValueSyntax { get; private set; }
+            public bool CanEdit { get; private set; }
 
-            public MetadataItem(string name, string value) {
+            public MetadataItem(string name, string value, string description,
+                    string valueSyntax, bool canEdit) {
                 Name = name;
                 Value = value;
+                Description = description;
+                ValueSyntax = string.IsNullOrEmpty(valueSyntax) ? null : valueSyntax;
+                CanEdit = canEdit;
             }
         }
         public ObservableCollection<MetadataItem> MetadataList { get; } =
@@ -900,7 +907,8 @@ namespace cp2_wpf {
                     // Shouldn't be possible.
                     value = "!NOT FOUND!";
                 }
-                MetadataList.Add(new MetadataItem(met.Key, value));
+                MetadataList.Add(new MetadataItem(met.Key, value, met.Description,
+                    met.ValueSyntax, met.CanEdit));
             }
             ShowMetadata = true;
         }
