@@ -1454,6 +1454,12 @@ namespace cp2_wpf {
                 Debug.Assert(false);
                 return;
             }
+            if (diskImage.ChunkAccess == null) {
+                MessageBox.Show(mMainWin,
+                    "Disk format was not recognized, so all blocks are \"bad\".", "Nope",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             ScanBlocksProgress prog = new ScanBlocksProgress(diskImage, AppHook);
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, true);

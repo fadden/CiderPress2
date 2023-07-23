@@ -273,7 +273,7 @@ namespace cp2_wpf {
                     title = "Disk Image Information";
                     mMainWin.SetNotesList(disk.Notes);
 
-                    mMainWin.ShowSectorEditButtons = true;
+                    mMainWin.ShowDiskUtilityButtons = true;
 
                     if (CurrentWorkObject is IMetadata) {
                         mMainWin.SetMetadataList((IMetadata)CurrentWorkObject);
@@ -287,7 +287,7 @@ namespace cp2_wpf {
                     Partition part = (Partition)CurrentWorkObject;
                     title = "Partition Information";
                     // no notes
-                    mMainWin.ShowSectorEditButtons = true;
+                    mMainWin.ShowDiskUtilityButtons = true;
                 }
                 DirectoryTreeItem newItem = new DirectoryTreeItem(null, title, IFileEntry.NO_ENTRY);
                 mMainWin.DirectoryTreeRoot.Add(newItem);
