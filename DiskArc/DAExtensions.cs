@@ -646,5 +646,26 @@ namespace DiskArc {
         }
 
         #endregion
+
+        #region IMetadata
+
+        /// <summary>
+        /// Obtains the MetaEntry object for a given key.
+        /// </summary>
+        /// <param name="key">Key of entry to find.</param>
+        /// <returns>MetaEntry object, or null if the key wasn't found.</returns>
+        public static IMetadata.MetaEntry? GetMetaEntry(this IMetadata meta, string key) {
+            // Generating the full list is less efficient than some other approaches we could use,
+            // but this isn't a high-volume function, and this is simple to maintain.
+            List<IMetadata.MetaEntry> entries = meta.GetMetaEntries();
+            foreach (IMetadata.MetaEntry entry in entries) {
+                if (entry.Key == key) {
+                    return entry;
+                }
+            }
+            return null;
+        }
+
+        #endregion
     }
 }

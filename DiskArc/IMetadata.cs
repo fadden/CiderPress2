@@ -117,6 +117,11 @@ namespace DiskArc {
         }
 
         /// <summary>
+        /// True if we're allowed to add new entries.
+        /// </summary>
+        bool CanAddNewEntries { get; }
+
+        /// <summary>
         /// Generates a list of all metadata entries.
         /// </summary>
         /// <returns></returns>
@@ -157,8 +162,5 @@ namespace DiskArc {
         /// <param name="key">Key of entry to delete.</param>
         /// <returns>True if the entry was deleted.</returns>
         bool DeleteMetaEntry(string key);
-
-        // TODO: if the format allows user-supplied metadata keys, we should define some properties
-        // and methods that let the application support entry creation in a format-agnostic fashion.
     }
 }

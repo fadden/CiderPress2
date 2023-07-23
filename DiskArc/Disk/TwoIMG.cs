@@ -982,8 +982,11 @@ namespace DiskArc.Disk {
                 canEdit:true),
             new MetaEntry("volume_number", MetaEntry.ValType.Int,
                 "Disk volume number, for 5.25\" disks.",
-                "Integer value, 0-254, or -1 to unset.", canEdit:true),
+                "Integer value 0-254, or -1 to unset.", canEdit:true),
         };
+
+        // IMetadata
+        public bool CanAddNewEntries => false;
 
         // IMetadata
         public List<MetaEntry> GetMetaEntries() {

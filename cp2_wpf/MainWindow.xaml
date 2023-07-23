@@ -697,9 +697,10 @@ limitations under the License.
                                         AutoGenerateColumns="False"
                                         HeadersVisibility="Column"
                                         CanUserReorderColumns="False"
-                                        VirtualizingStackPanel.VirtualizationMode="Recycling">
+                                        VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                        MouseDoubleClick="MetadataList_MouseDoubleClick">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Name" Width="150" Binding="{Binding Name}">
+                                        <DataGridTextColumn Header="Key" Width="150" Binding="{Binding Key}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
                                                     <!-- make the text gray if the item isn't editable, and it's not selected -->
@@ -730,6 +731,9 @@ limitations under the License.
                                         </Style>
                                     </DataGrid.RowStyle>-->
                                 </DataGrid>
+                                <Button Margin="0,8,0,0" Width="120" Content="Add New Entry"
+                                        IsEnabled="{Binding CanAddMetadataEntry}"
+                                        Click="Metadata_AddEntryButtonClick"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="5" Margin="2,8,0,0"

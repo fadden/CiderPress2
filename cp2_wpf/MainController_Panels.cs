@@ -962,5 +962,23 @@ namespace cp2_wpf {
                 Mouse.OverrideCursor = null;
             }
         }
+
+        public void HandleMetadataDoubleClick(MainWindow.MetadataItem item, int row, int col) {
+            IMetadata? metaObj = CurrentWorkObject as IMetadata;
+            if (metaObj == null) {
+                Debug.Assert(false);
+                return;
+            }
+            EditMetadata dialog = new EditMetadata(mMainWin, metaObj, item.Key);
+            if (dialog.ShowDialog() == true) {
+                // Save the change, then update the metadata list.
+                metaObj.SetMetaValue(item.Key, dialog.ValueText);
+                mMainWin.UpdateMetadata(item.Key, dialog.ValueText);
+            }
+        }
+
+        public void HandleMetadataAddEntry() {
+            Debug.WriteLine("Add new entry");
+        }
     }
 }

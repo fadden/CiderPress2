@@ -299,7 +299,13 @@ namespace DiskArc.Disk {
                 case "boot_sector_format":
                     return byte.TryParse(value, out byte bsVal);
                 case "compatible_hardware":
-                    return ushort.TryParse(value, out ushort chVal);
+                    // We want to allow hex for this one.
+                    if (StringToValue.TryParseInt(value, out int val, out int intBase)) {
+                        if (val >= 0 && val <= 65535) {
+                            return true;
+                        }
+                    }
+                    return false;
                 case "required_ram":
                     return ushort.TryParse(value, out ushort rrVal);
                 default:
@@ -330,10 +336,11 @@ namespace DiskArc.Disk {
                     BootSectorFormat = bsVal;
                     break;
                 case "compatible_hardware":
-                    if (!ushort.TryParse(value, out ushort chVal)) {
+                    if (!StringToValue.TryParseInt(value, out int chVal, out int intBase) ||
+                            chVal < 0 || chVal > 65535) {
                         throw new ArgumentException("invalid value '" + value + "'");
                     }
-                    CompatibleHardware = chVal;
+                    CompatibleHardware = (ushort)chVal;
                     break;
                 case "required_ram":
                     if (!ushort.TryParse(value, out ushort rrVal)) {

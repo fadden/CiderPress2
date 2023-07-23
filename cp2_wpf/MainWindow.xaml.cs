@@ -876,20 +876,32 @@ namespace cp2_wpf {
             set { mShowMetadata = value; OnPropertyChanged(); }
         }
         private bool mShowMetadata;
-        public class MetadataItem {
-            public string Name { get; private set; }
+        public bool CanAddMetadataEntry {
+            get { return mCanAddMetadataEntry; }
+            set { mCanAddMetadataEntry = value; OnPropertyChanged(); }
+        }
+        private bool mCanAddMetadataEntry;
+
+        public class MetadataItem : INotifyPropertyChanged {
+            public string Key { get; private set; }
             public string Value { get; private set; }
             public string Description { get; private set; }
             public string? ValueSyntax { get; private set; }
             public bool CanEdit { get; private set; }
 
-            public MetadataItem(string name, string value, string description,
+            public MetadataItem(string key, string value, string description,
                     string valueSyntax, bool canEdit) {
-                Name = name;
+                Key = key;
                 Value = value;
                 Description = description;
                 ValueSyntax = string.IsNullOrEmpty(valueSyntax) ? null : valueSyntax;
                 CanEdit = canEdit;
+            }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+            public void SetValue(string value) {
+                Value = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
             }
         }
         public ObservableCollection<MetadataItem> MetadataList { get; } =
@@ -898,11 +910,11 @@ namespace cp2_wpf {
         /// <summary>
         /// Configures the metadata list, displayed on the info panel.
         /// </summary>
-        public void SetMetadataList(IMetadata mdo) {
+        public void SetMetadataList(IMetadata metaObj) {
             MetadataList.Clear();
-            List<IMetadata.MetaEntry> entries = mdo.GetMetaEntries();
+            List<IMetadata.MetaEntry> entries = metaObj.GetMetaEntries();
             foreach (IMetadata.MetaEntry met in entries) {
-                string? value = mdo.GetMetaValue(met.Key, true);
+                string? value = metaObj.GetMetaValue(met.Key, true);
                 if (value == null) {
                     // Shouldn't be possible.
                     value = "!NOT FOUND!";
@@ -911,6 +923,39 @@ namespace cp2_wpf {
                     met.ValueSyntax, met.CanEdit));
             }
             ShowMetadata = true;
+            CanAddMetadataEntry = metaObj.CanAddNewEntries;
+        }
+
+        public void UpdateMetadata(string key, string value) {
+            foreach (MetadataItem item in MetadataList) {
+                if (item.Key == key) {
+                    item.SetValue(value);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles a double-click on the metadata list.
+        /// </summary>
+        private void MetadataList_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+            DataGrid grid = (DataGrid)sender;
+            if (!grid.GetClickRowColItem(e, out int row, out int col, out object? item)) {
+                // Header or empty area; ignore.
+                return;
+            }
+            MetadataItem mdi = (MetadataItem)item;
+            ArchiveTreeItem? arcTreeSel = archiveTree.SelectedItem as ArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.Assert(false, "archive tree is missing selection");
+                return;
+            }
+
+            mMainCtrl.HandleMetadataDoubleClick(mdi, row, col);
+        }
+
+        private void Metadata_AddEntryButtonClick(object sender, RoutedEventArgs e) {
+            mMainCtrl.HandleMetadataAddEntry();
         }
 
         /// <summary>

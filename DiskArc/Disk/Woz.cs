@@ -1083,6 +1083,9 @@ namespace DiskArc.Disk {
         private const string META_PFX = "meta:";
 
         // IMetadata
+        public bool CanAddNewEntries => true;
+
+        // IMetadata
         public List<MetaEntry> GetMetaEntries() {
             List<MetaEntry> entries = new List<MetaEntry>();
 
