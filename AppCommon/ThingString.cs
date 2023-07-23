@@ -245,6 +245,10 @@ namespace AppCommon {
                     return "Deflate";
                 case Defs.CompressionFormat.Bzip2:
                     return "Bzip2";
+                case Defs.CompressionFormat.Shrink:
+                    return "Shrink";
+                case Defs.CompressionFormat.Implode:
+                    return "Implode";
                 default:
                     return "?" + format.ToString();
             }

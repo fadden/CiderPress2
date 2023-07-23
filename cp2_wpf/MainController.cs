@@ -1207,7 +1207,7 @@ namespace cp2_wpf {
                     // Close everything below the current node.
                     Debug.Assert(mWorkTree.CheckHealth());
                     workNode.CloseChildren();
-                    // Close the IFileSystem or IMultiPart object.
+                    // Close the IFileSystem or IMultiPart object inside the disk/partition.
                     if (daObject is IDiskImage) {
                         ((IDiskImage)daObject).CloseContents();
                     } else if (daObject is Partition) {
@@ -1296,7 +1296,15 @@ namespace cp2_wpf {
         /// Handles Action : Replace Partition
         /// </summary>
         public void ReplacePartition() {
-            Partition? dstPartition = CurrentWorkObject as Partition;
+            Debug.Assert(mWorkTree != null);
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.Assert(false);
+                return;
+            }
+            WorkTree.Node workNode = arcTreeSel.WorkTreeNode;
+            Debug.Assert(workNode.DAObject == CurrentWorkObject);
+            Partition? dstPartition = workNode.DAObject as Partition;
             if (dstPartition == null) {
                 Debug.Assert(false);
                 return;
@@ -1382,15 +1390,41 @@ namespace cp2_wpf {
                 }
                 Debug.Assert(diskImage.ChunkAccess != null);
 
-                // TODO: partition close function
+                // Define a function to close the contents of the partition we're replacing.
+                bool wasClosed = false;
+                ReplacePartition.EnableWriteFunc func = delegate () {
+                    // Close everything below the current node.
+                    Debug.Assert(mWorkTree.CheckHealth());
+                    workNode.CloseChildren();
+                    dstPartition.CloseContents();
+                    Debug.Assert(mWorkTree.CheckHealth());
+                    // Drop all child references.
+                    arcTreeSel.Items.Clear();
+                    wasClosed = true;
+                    return true;
+                };
 
                 ReplacePartition dialog = new ReplacePartition(mMainWin, dstPartition,
-                    diskImage.ChunkAccess, mFormatter, AppHook);
+                    diskImage.ChunkAccess, func, mFormatter, AppHook);
                 if (dialog.ShowDialog() == true) {
                     mMainWin.PostNotification("Completed", true);
                 }
 
-                // TODO: reopen partition if needed
+                try {
+                    // TODO: should probably show a progress dialog here
+                    Mouse.OverrideCursor = Cursors.Wait;
+
+                    if (wasClosed) {
+                        // Re-scan the partition.
+                        mWorkTree.ReprocessPartition(workNode);
+                        // Repopulate the archive tree.
+                        foreach (WorkTree.Node childNode in workNode) {
+                            ArchiveTreeItem.ConstructTree(arcTreeSel, childNode);
+                        }
+                    }
+                } finally {
+                    Mouse.OverrideCursor = null;
+                }
             }
         }
 

@@ -179,7 +179,6 @@ namespace FileConv {
             rsrcStream = null;
 
             if (archiveOrFileSystem is IArchive) {
-                // TODO: handle MacZip here
                 IArchive arc = (IArchive)archiveOrFileSystem;
                 if (fileEntry.IsDiskImage) {
                     // Normally we shouldn't be here, but this could happen if the main app

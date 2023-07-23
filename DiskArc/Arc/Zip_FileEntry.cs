@@ -48,6 +48,8 @@ namespace DiskArc.Arc {
         private const ushort DATA_DESC_FLAG = 0x0008;       // bit 3, data descriptor flag
         private const ushort LANGUAGE_ENC_FLAG = 0x0800;    // bit 11, EFS / language encoding flag
         private const int COMP_UNCOMPRESSED = 0;            // comp method == uncompressed
+        private const int COMP_SHRINK = 1;                  // comp method == Shrink
+        private const int COMP_IMPLODE = 6;                 // comp method == Implode
         private const int COMP_DEFLATE = 8;                 // comp method == Deflate
 
         // Compression level for Deflate.  A test with the A2 Romulan CD-ROM showed that
@@ -257,6 +259,10 @@ namespace DiskArc.Arc {
                         return CompressionFormat.Deflate;
                     } else if (CompMethod == COMP_UNCOMPRESSED) {
                         return CompressionFormat.Uncompressed;
+                    } else if (CompMethod == COMP_SHRINK) {
+                        return CompressionFormat.Shrink;
+                    } else if (CompMethod == COMP_IMPLODE) {
+                        return CompressionFormat.Implode;
                     } else {
                         return CompressionFormat.Unknown;
                     }
@@ -716,7 +722,8 @@ namespace DiskArc.Arc {
                     true);
                 return new ArcReadStream(Archive, mCDFH.UncompSize, checker, expander);
             } else {
-                throw new NotImplementedException("Compression format not supported");
+                throw new NotImplementedException("ZIP compression format \"" +
+                    mCDFH.Format + "\" is not supported");
             }
         }
 

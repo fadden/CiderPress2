@@ -412,7 +412,9 @@ namespace cp2 {
         private static bool TryAsArchive(object arcOrFs, IFileEntry entry, string gzipName,
                 string indent, ParamsBag parms) {
             if (entry.IsDubious || entry.IsDamaged) {
-                Console.WriteLine("+++ rejected as archive (damage): " + entry.FullPathName);
+                if (parms.Debug) {
+                    Console.WriteLine("+++ rejected as archive (damage): " + entry.FullPathName);
+                }
                 return false;
             }
             if (!FileIdentifier.HasFileArchiveAttribs(entry, gzipName, out string ext)) {
@@ -454,9 +456,16 @@ namespace cp2 {
                         }
                     }
                 }
-            } catch (Exception ex) when (ex is IOException || ex is InvalidDataException) {
+            } catch (Exception ex) when
+                    (ex is IOException ||
+                    ex is InvalidDataException ||
+                    ex is NotImplementedException) {
                 Console.WriteLine(indent + "Unable to investigate '" +
                     entry.FullPathName + "': " + ex.Message);
+                return false;
+            } catch (Exception ex) {
+                Console.WriteLine(indent + "Unexpected exception examining archive '" +
+                    entry.FullPathName + "': " + ex);
                 return false;
             }
             return true;
@@ -551,9 +560,16 @@ namespace cp2 {
                         }
                     }
                 }
-            } catch (Exception ex) when (ex is IOException || ex is InvalidDataException) {
+            } catch (Exception ex) when
+                    (ex is IOException ||
+                    ex is InvalidDataException ||
+                    ex is NotImplementedException) {
                 Console.WriteLine(indent + "Unable to investigate '" +
                     entry.FullPathName + "': " + ex.Message);
+                return false;
+            } catch (Exception ex) {
+                Console.WriteLine(indent + "Unexpected exception examining disk '" +
+                    entry.FullPathName + "': " + ex);
                 return false;
             }
             return true;

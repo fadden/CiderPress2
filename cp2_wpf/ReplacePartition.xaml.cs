@@ -81,19 +81,33 @@ namespace cp2_wpf {
         }
         private Visibility mSizeDiffVisibility;
 
+        public delegate bool EnableWriteFunc();
+        private EnableWriteFunc mEnableWriteFunc;
+
         private Partition mDstPartition;
         private IChunkAccess mSrcChunks;
         private AppHook mAppHook;
 
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="owner">Parent window.</param>
+        /// <param name="dstPartition">Partition to be overwritten.</param>
+        /// <param name="srcChunks">Chunk data source.</param>
+        /// <param name="enableWriteFunc">Function to call to enable writes.</param>
+        /// <param name="formatter">Text formatter.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <exception cref="NotImplementedException"></exception>
         public ReplacePartition(Window owner, Partition dstPartition, IChunkAccess srcChunks,
-                Formatter formatter, AppHook appHook) {
+                EnableWriteFunc enableWriteFunc, Formatter formatter, AppHook appHook) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
             mDstPartition = dstPartition;
             mSrcChunks = srcChunks;
+            mEnableWriteFunc = enableWriteFunc;
             mAppHook = appHook;
 
             IChunkAccess dstChunks = dstPartition.ChunkAccess;
@@ -147,6 +161,7 @@ namespace cp2_wpf {
                         "The leftover space will likely be unusable.";
                     mIsValid = true;
                 } else {
+                    // Not allowed.
                     mSizeDiffText = "The source image is larger than the destination.";
                 }
             }
@@ -154,16 +169,21 @@ namespace cp2_wpf {
                 mSizeDiffForeground = mErrorLabelColor;
             }
 
-            // TODO: pass EnableWriteFunc delegate
-            // TODO: do we need to fix ReprocessPartition behavior to re-scan?  Maybe
-            //  FindEmbeddedVolumes should always do a full scan instead of shorting out when
-            //  the data is already available?  Or take an optional "force re-scan" arg?
-
             // TODO: warn about DOS hybrids?
         }
 
         private void CopyButton_Click(object sender, RoutedEventArgs e) {
-            // TODO: action
+            if (!mEnableWriteFunc()) {
+                MessageBox.Show(this, "Unable to prepare partition for writing", "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Hand);
+                return;
+            }
+
+            SaveAsDisk.CopyDisk(mSrcChunks, mDstPartition.ChunkAccess, out int errorCount);
+            if (errorCount != 0) {
+                string msg = "Some data could not be read. Total errors: " + errorCount + ".";
+                MessageBox.Show(msg, "Partial Copy", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
 
             DialogResult = true;
         }

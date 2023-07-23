@@ -315,15 +315,23 @@ namespace cp2_wpf {
             return true;
         }
 
-        private void CopyDisk(IChunkAccess srcChunks, IChunkAccess dstChunks, out int errorCount) {
+        /// <summary>
+        /// Copies all tracks/sectors or all blocks from the source to the destination.  It's
+        /// okay if the source is smaller.  Copying by sectors is preferred.  Unreadable sectors
+        /// are copied as zeroes.
+        /// </summary>
+        /// <param name="srcChunks">Source chunk access object.</param>
+        /// <param name="dstChunks">Destination chunk access object.</param>
+        /// <param name="errorCount">Result: number of errors encountered.</param>
+        internal static void CopyDisk(IChunkAccess srcChunks, IChunkAccess dstChunks,
+                out int errorCount) {
             Debug.Assert(!dstChunks.IsReadOnly);
-            if (srcChunks.FormattedLength != dstChunks.FormattedLength) {
-                throw new Exception("Internal error: src/dst size mismatch");
+            if (srcChunks.FormattedLength > dstChunks.FormattedLength) {
+                throw new Exception("Internal error: src size exceeds dst");
             }
 
             errorCount = 0;
-            if (srcChunks.HasSectors) {
-                Debug.Assert(dstChunks.HasSectors);
+            if (srcChunks.HasSectors && dstChunks.HasSectors) {
                 Debug.Assert(srcChunks.NumTracks == dstChunks.NumTracks);
                 Debug.Assert(srcChunks.NumSectorsPerTrack == dstChunks.NumSectorsPerTrack);
 
@@ -344,9 +352,7 @@ namespace cp2_wpf {
                         dstChunks.WriteSector(trk, sct, copyBuf, 0);
                     }
                 }
-            } else {
-                Debug.Assert(srcChunks.HasBlocks && dstChunks.HasBlocks);
-
+            } else if (srcChunks.HasBlocks && dstChunks.HasBlocks) {
                 byte[] copyBuf = new byte[BLOCK_SIZE];
                 uint numBlocks = (uint)(srcChunks.FormattedLength / BLOCK_SIZE);
                 for (uint block = 0; block < numBlocks; block++) {
@@ -361,6 +367,8 @@ namespace cp2_wpf {
 
                     dstChunks.WriteBlock(block, copyBuf, 0);
                 }
+            } else {
+                throw new NotImplementedException();
             }
         }
 

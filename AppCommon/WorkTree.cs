@@ -392,8 +392,12 @@ namespace AppCommon {
                         workNode.AddChild(newNode);
                         return newNode;
                     }
-                } catch (InvalidDataException ex) {
+                } catch (Exception ex) when
+                        (ex is InvalidDataException ||
+                        ex is NotImplementedException) {
                     Debug.WriteLine("Failed to extract " + entry + ": " + ex.Message);
+                } catch (Exception ex) {
+                    mAppHook.LogE("Unexpected exception: " + ex);
                 }
                 return null;
             } else if (fs != null) {
@@ -626,6 +630,12 @@ namespace AppCommon {
                 } catch (InvalidDataException ex) {
                     Debug.WriteLine("Failed to extract " + entry + ": " + ex.Message);
                     // continue with next entry
+                } catch (NotImplementedException ex) {
+                    // Could be unknown compression format, e.g. ZIP.
+                    mAppHook.LogW("Failed to extract " + entry + ": " + ex.Message);
+                } catch (Exception ex) {
+                    mAppHook.LogE("Unexpected exception while scanning a file archive entry: " +
+                        ex);
                 }
             }
         }

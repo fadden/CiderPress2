@@ -329,6 +329,8 @@ namespace cp2_wpf {
                     }
                 }
                 convComboBox.SelectedIndex = newIndex;
+            } else {
+                HideConvControls();
             }
 
             Title = entry.FileName + " - File Viewer";
@@ -979,16 +981,7 @@ namespace cp2_wpf {
             mConvOptions.Clear();
             LoadExportOptions(conv, mConvOptions);
 
-            foreach (ControlMapItem item in mCustomCtrls) {
-                item.HideControl();
-
-                if (item is RadioButtonGroupItem) {
-                    ToggleButtonMapItem[] items = ((RadioButtonGroupItem)item).ButtonItems;
-                    foreach (ToggleButtonMapItem tbItem in items) {
-                        tbItem.HideControl();
-                    }
-                }
-            }
+            HideConvControls();
 
             // Show or hide the "no options" message.
             if (conv.OptionDefs.Count == 0) {
@@ -1029,6 +1022,23 @@ namespace cp2_wpf {
             }
 
             mIsConfiguring = false;
+        }
+
+        /// <summary>
+        /// Hides all of the custom controls.
+        /// </summary>
+        private void HideConvControls() {
+            foreach (ControlMapItem item in mCustomCtrls) {
+                item.HideControl();
+
+                if (item is RadioButtonGroupItem) {
+                    ToggleButtonMapItem[] items = ((RadioButtonGroupItem)item).ButtonItems;
+                    foreach (ToggleButtonMapItem tbItem in items) {
+                        tbItem.HideControl();
+                    }
+                }
+            }
+            noOptions.Visibility = Visibility.Visible;
         }
 
         /// <summary>

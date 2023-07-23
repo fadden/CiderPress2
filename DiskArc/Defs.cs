@@ -244,6 +244,10 @@ namespace DiskArc {
             Deflate = 6,
             Bzip2 = 7,
 
+            // Some old ZIP archive types.
+            Shrink = 21,
+            Implode = 26,
+
             Unknown = 0x7e,
             Default = 0x7f
         }
