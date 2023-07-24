@@ -161,13 +161,17 @@ namespace FileConv {
             new List<OptionDefinition>();
 
         /// <summary>
-        /// File attributes.
+        /// File attributes of the file being converted.
         /// </summary>
         protected FileAttribs FileAttrs { get; set; }
 
         /// <summary>
         /// Data fork stream; may be null.
         /// </summary>
+        /// <remarks>
+        /// <para>If this is coming from a disk image, this will be a DiskFileStream, which has
+        /// special handling for sparse files.</para>
+        /// </remarks>
         protected Stream? DataStream { get; set; }
 
         /// <summary>
@@ -198,6 +202,7 @@ namespace FileConv {
         /// <param name="rsrcStream">Resource fork stream; may be null.</param>
         /// <param name="resMgr">Resource manager; may be null.</param>
         /// <param name="convFlags">Conversion flags.</param>
+        /// <param name="appHook">Application hook reference.</param>
         public Converter(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook) {
             FileAttrs = attrs;
@@ -207,7 +212,7 @@ namespace FileConv {
             Flags = convFlags;
             mAppHook = appHook;
 
-            // Leave Applic set to "not".  The derived class needs to call TestApplicability()
+            // Leave Applic set to "unknown".  The derived class needs to call TestApplicability()
             // at the end of its constructor.
         }
 
@@ -223,8 +228,7 @@ namespace FileConv {
         /// <remarks>
         /// <para>The data streams are passed in for the benefit of archive formats, for which the
         /// data must be uncompressed to a temporary file.  It's also useful for MacZip, which
-        /// has the data and resource forks in separate entries.  The converter can open the
-        /// original file if desired, e.g. to access the "raw" form of DOS files.</para>
+        /// has the data and resource forks in separate entries.</para>
         /// <para>The streams must be seeked to the start by the converter.</para>
         /// </remarks>
         /// <param name="options">Configuration options.</param>

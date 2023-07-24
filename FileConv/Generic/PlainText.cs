@@ -37,7 +37,7 @@ namespace FileConv.Generic {
             new List<OptionDefinition>() {
                 new OptionDefinition(OPT_PRINT, "Show ctrl chars",
                     OptionDefinition.OptType.Boolean, "true"),
-                new OptionDefinition(OPT_CHAR, "Char encoding",
+                new OptionDefinition(OPT_CHAR, "Char Encoding",
                     OptionDefinition.OptType.Multi, ConvUtil.CHAR_MODE_HIGH_ASCII,
                     ConvUtil.ExportCharSrcTags, ConvUtil.ExportCharSrcDescrs),
             };

@@ -31,7 +31,7 @@ namespace FileConv.Generic {
 
         public override List<OptionDefinition> OptionDefs { get; protected set; } =
             new List<OptionDefinition>() {
-                new OptionDefinition(OPT_CHAR, "Char conversion",
+                new OptionDefinition(OPT_CHAR, "Char Encoding",
                     OptionDefinition.OptType.Multi, ConvUtil.CHAR_MODE_HIGH_ASCII,
                     ConvUtil.ExportCharSrcTags, ConvUtil.ExportCharSrcDescrs),
             };

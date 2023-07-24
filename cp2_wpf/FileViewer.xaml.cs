@@ -22,8 +22,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Documents;
 
 using CommonUtil;
@@ -32,6 +30,7 @@ using DiskArc.FS;
 using FileConv;
 using Microsoft.Win32;
 using static FileConv.Converter;
+using static cp2_wpf.ConfigOptCtrl;
 
 namespace cp2_wpf {
     /// <summary>
@@ -226,7 +225,6 @@ namespace cp2_wpf {
             mAppHook = appHook;
 
             mConvOptions = new Dictionary<string, string>();
-            // TODO: init mLocalSettings from global app settings
 
             CreateControlMap();
         }
@@ -330,7 +328,8 @@ namespace cp2_wpf {
                 }
                 convComboBox.SelectedIndex = newIndex;
             } else {
-                HideConvControls();
+                HideConvControls(mCustomCtrls);
+                noOptions.Visibility = Visibility.Visible;
             }
 
             Title = entry.FileName + " - File Viewer";
@@ -661,271 +660,7 @@ namespace cp2_wpf {
 
         #region Configure
 
-        private const string EXPORT_CONFIG_PREFIX = "export-conv-";
-
-        /// <summary>
-        /// Base class for mappable control items.
-        /// </summary>
-        private abstract class ControlMapItem : INotifyPropertyChanged {
-            public string OptTag { get; protected set; } = string.Empty;
-
-            public FrameworkElement VisElem { get; }
-
-            public delegate void UpdateOption(string tag, string newValue);
-            protected UpdateOption Updater { get; }
-
-            // INotifyPropertyChanged
-            public event PropertyChangedEventHandler? PropertyChanged;
-            protected void OnPropertyChanged([CallerMemberName] string propertyName = "") {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
-
-            /// <summary>
-            /// Configures visibility.
-            /// </summary>
-            public Visibility ItemVis {
-                get { return mVisibility; }
-                set {
-                    if (mVisibility != value) {
-                        mVisibility = value;
-                        OnPropertyChanged();
-                        //Debug.WriteLine("VIS " + this + " -> " + mVisibility);
-                    }
-                }
-            }
-            private Visibility mVisibility;
-
-            /// <summary>
-            /// True if this item is available for assignment.
-            /// </summary>
-            public bool IsAvailable { get { return ItemVis != Visibility.Visible; } }
-
-            public ControlMapItem(UpdateOption updater, FrameworkElement visElem) {
-                Updater = updater;
-                VisElem = visElem;
-
-                Binding binding = new Binding("ItemVis") { Source = this };
-                visElem.SetBinding(FrameworkElement.VisibilityProperty, binding);
-            }
-
-            public abstract void AssignControl(string tag, string uiString, string defVal,
-                string? radioVal = null);
-
-            public void HideControl() {
-                ItemVis = Visibility.Collapsed;
-            }
-
-            public override string ToString() {
-                return "[CMI: Tag=" + OptTag + "]";
-            }
-        }
-
-        /// <summary>
-        /// ToggleButton item (CheckBox, RadioButton).  Single control.
-        /// </summary>
-        private class ToggleButtonMapItem : ControlMapItem {
-            public ToggleButton Ctrl { get; }
-
-            public string? RadioVal { get; private set; }
-
-            /// <summary>
-            /// Change toggle state.
-            /// </summary>
-            public bool BoolValue {
-                get { return mBoolValue; }
-                set {
-                    if (mBoolValue != value) {
-                        mBoolValue = value;
-                        OnPropertyChanged();
-                        //Debug.WriteLine("VAL: " + this + " --> " + value);
-                        if (RadioVal != null) {
-                            // Radio buttons only send an update when they become true, and
-                            // need to send their tag instead of a boolean.
-                            if (value == true) {
-                                Updater(OptTag, RadioVal);
-                            }
-                        } else {
-                            // Checkboxes always update.
-                            Updater(OptTag, value.ToString());
-                        }
-                    }
-                }
-            }
-            private bool mBoolValue;
-
-            /// <summary>
-            /// Label string in the UI.
-            /// </summary>
-            public string UIString {
-                get { return mUIString; }
-                set {
-                    if (mUIString != value) {
-                        mUIString = value;
-                        OnPropertyChanged();
-                    }
-                }
-            }
-            private string mUIString = string.Empty;
-
-            public ToggleButtonMapItem(UpdateOption updater, ToggleButton ctrl)
-                    : base(updater, ctrl) {
-                Ctrl = ctrl;
-
-                Binding binding = new Binding("BoolValue") { Source = this };
-                ctrl.SetBinding(ToggleButton.IsCheckedProperty, binding);
-                binding = new Binding("UIString") { Source = this };
-                ctrl.SetBinding(ToggleButton.ContentProperty, binding);
-            }
-
-            public override void AssignControl(string tag, string uiString, string defVal,
-                    string? radioVal = null) {
-                OptTag = tag;
-                UIString = uiString;
-                RadioVal = radioVal;
-
-                ItemVis = Visibility.Visible;
-                if (bool.TryParse(defVal, out bool value)) {
-                    BoolValue = value;
-                }
-            }
-
-            public override string ToString() {
-                return "[TBMI name=" + Ctrl.Name + " tag=" + OptTag + "]";
-            }
-        }
-
-        /// <summary>
-        /// String input item.  These have three parts: a StackPanel wrapped around a TextBlock
-        /// for the label and a TextBox for the input.
-        /// </summary>
-        private class TextBoxMapItem : ControlMapItem {
-            public StackPanel Panel { get; private set; }
-            public TextBlock Label { get; private set; }
-            public TextBox Box { get; private set; }
-
-            /// <summary>
-            /// Input field state.
-            /// </summary>
-            public string StringValue {
-                get { return mStringValue; }
-                set {
-                    if (mStringValue != value) {
-                        mStringValue = value;
-                        OnPropertyChanged();
-                        //Debug.WriteLine("VAL: " + this + " --> '" + value + "'");
-                        Updater(OptTag, value);
-                    }
-                }
-            }
-            private string mStringValue = string.Empty;
-
-            /// <summary>
-            /// Label string, to the left of the input box.
-            /// </summary>
-            public string UIString {
-                get { return mUIString; }
-                set {
-                    // Add a colon to make it look nicer.
-                    string modValue = value + ':';
-                    if (mUIString != modValue) {
-                        mUIString = modValue;
-                        OnPropertyChanged();
-                    }
-                }
-            }
-            private string mUIString = string.Empty;
-
-            public TextBoxMapItem(UpdateOption updater, StackPanel panel, TextBlock label,
-                    TextBox box) : base(updater,panel) {
-                Panel = panel;
-                Label = label;
-                Box = box;
-
-                Binding binding = new Binding("StringValue") {
-                    Source = this,
-                    UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
-                };
-                box.SetBinding(TextBox.TextProperty, binding);
-                binding = new Binding("UIString") { Source = this };
-                label.SetBinding(TextBlock.TextProperty, binding);
-            }
-
-            public override void AssignControl(string tag, string uiString, string defVal,
-                    string? unused = null) {
-                OptTag = tag;
-                UIString = uiString;
-                ItemVis = Visibility.Visible;
-                StringValue = defVal;
-            }
-
-            public override string ToString() {
-                return "[TBMI name=" + Box.Name + " tag=" + OptTag + "]";
-            }
-        }
-
-        /// <summary>
-        /// Radio button group.  Contains multiple toggle button items.
-        /// </summary>
-        private class RadioButtonGroupItem : ControlMapItem {
-            public GroupBox Group { get; private set; }
-
-            public ToggleButtonMapItem[] ButtonItems { get; }
-
-            /// <summary>
-            /// Input field state.
-            /// </summary>
-            public string StringValue {
-                get { return mStringValue; }
-                set {
-                    if (mStringValue != value) {
-                        mStringValue = value;
-                        OnPropertyChanged();
-                        //Debug.WriteLine("VAL: " + this + " --> '" + value + "'");
-                        Updater(OptTag, value);
-                    }
-                }
-            }
-            private string mStringValue = string.Empty;
-
-            /// <summary>
-            /// Label for the group box.
-            /// </summary>
-            public string UIString {
-                get { return mUIString; }
-                set {
-                    if (mUIString != value) {
-                        mUIString = value;
-                        OnPropertyChanged();
-                    }
-                }
-            }
-            private string mUIString = string.Empty;
-
-            public RadioButtonGroupItem(UpdateOption updater, GroupBox groupBox,
-                    RadioButton[] buttons) : base(updater, groupBox) {
-                Group = groupBox;
-
-                Binding binding = new Binding("UIString") { Source = this };
-                groupBox.SetBinding(GroupBox.HeaderProperty, binding);
-
-                ButtonItems = new ToggleButtonMapItem[buttons.Length];
-                for (int i = 0; i < buttons.Length; i++) {
-                    RadioButton button = buttons[i];
-                    ButtonItems[i] = new ToggleButtonMapItem(updater, button);
-                }
-            }
-
-            public override void AssignControl(string tag, string uiString, string defVal,
-                    string? unused = null) {
-                OptTag = tag;
-                UIString = uiString;
-                ItemVis = Visibility.Visible;
-            }
-
-            public override string ToString() {
-                return "[RGBI name=" + Group.Name + " tag=" + OptTag + "]";
-            }
-        }
+        private const string VIEW_CONFIG_PREFIX = "view-conv-";
 
         private List<ControlMapItem> mCustomCtrls = new List<ControlMapItem>();
 
@@ -945,26 +680,6 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Loads the option dictionary with default values and values from the app settings.
-        /// </summary>
-        /// <param name="conv">Converter to configure for.</param>
-        private void LoadExportOptions(Converter conv, Dictionary<string, string> dict) {
-            foreach (OptionDefinition optDef in conv.OptionDefs) {
-                string optTag = optDef.OptTag;
-                dict[optTag] = optDef.DefaultVal;
-            }
-
-            string optStr = AppSettings.Global.GetString(EXPORT_CONFIG_PREFIX + conv.Tag,
-                string.Empty);
-            if (!string.IsNullOrEmpty(optStr)) {
-                if (!ConvConfig.ParseOptString(optStr, dict)) {
-                    Debug.Assert(false, "failed to parse option string for " + conv.Tag + ": '" +
-                        optStr + "'");
-                }
-            }
-        }
-
-        /// <summary>
         /// Configures the controls for a specific converter.
         /// </summary>
         /// <remarks>
@@ -978,10 +693,10 @@ namespace cp2_wpf {
 
             // Configure options for every control.  If not present in the config file, set
             // the control's default.
-            mConvOptions.Clear();
-            LoadExportOptions(conv, mConvOptions);
+            mConvOptions = ConfigOptCtrl.LoadExportOptions(conv.OptionDefs, VIEW_CONFIG_PREFIX,
+                conv.Tag);
 
-            HideConvControls();
+            ConfigOptCtrl.HideConvControls(mCustomCtrls);
 
             // Show or hide the "no options" message.
             if (conv.OptionDefs.Count == 0) {
@@ -990,67 +705,9 @@ namespace cp2_wpf {
                 noOptions.Visibility = Visibility.Collapsed;
             }
 
-            foreach (OptionDefinition optDef in conv.OptionDefs) {
-                string defaultVal = mConvOptions[optDef.OptTag];
-
-                ControlMapItem item;
-                switch (optDef.Type) {
-                    case OptionDefinition.OptType.Boolean:
-                        item = FindFirstAvailable(typeof(ToggleButtonMapItem));
-                        item.AssignControl(optDef.OptTag, optDef.OptLabel, defaultVal);
-                        break;
-                    case OptionDefinition.OptType.IntValue:
-                        item = FindFirstAvailable(typeof(TextBoxMapItem));
-                        item.AssignControl(optDef.OptTag, optDef.OptLabel, defaultVal);
-                        break;
-                    case OptionDefinition.OptType.Multi:
-                        RadioButtonGroupItem rbg =
-                            (RadioButtonGroupItem)FindFirstAvailable(typeof(RadioButtonGroupItem));
-                        rbg.AssignControl(optDef.OptTag, optDef.OptLabel, defaultVal);
-                        // If we run out of buttons we'll crash.
-                        for (int i = 0; i < optDef.MultiTags!.Length; i++) {
-                            string rbTag = optDef.MultiTags[i];
-                            string rbLabel = optDef.MultiDescrs![i];
-                            // Always set the first button to ensure we have something set.
-                            string isSet = (i == 0 || rbTag == defaultVal).ToString();
-                            rbg.ButtonItems[i].AssignControl(optDef.OptTag, rbLabel, isSet, rbTag);
-                        }
-                        break;
-                    default:
-                        throw new NotImplementedException("Unknown optdef type " + optDef.Type);
-                }
-            }
+            ConfigOptCtrl.ConfigureControls(mCustomCtrls, conv.OptionDefs, mConvOptions);
 
             mIsConfiguring = false;
-        }
-
-        /// <summary>
-        /// Hides all of the custom controls.
-        /// </summary>
-        private void HideConvControls() {
-            foreach (ControlMapItem item in mCustomCtrls) {
-                item.HideControl();
-
-                if (item is RadioButtonGroupItem) {
-                    ToggleButtonMapItem[] items = ((RadioButtonGroupItem)item).ButtonItems;
-                    foreach (ToggleButtonMapItem tbItem in items) {
-                        tbItem.HideControl();
-                    }
-                }
-            }
-            noOptions.Visibility = Visibility.Visible;
-        }
-
-        /// <summary>
-        /// Finds the first available control of the specified type.  If none are available, crash.
-        /// </summary>
-        private ControlMapItem FindFirstAvailable(Type ctrlType) {
-            foreach (ControlMapItem item in mCustomCtrls) {
-                if (item.GetType() == ctrlType && item.IsAvailable) {
-                    return item;
-                }
-            }
-            throw new NotImplementedException("Not enough instances of " + ctrlType);
         }
 
         private bool mIsConfiguring;
@@ -1073,7 +730,7 @@ namespace cp2_wpf {
             mConvOptions[tag] = newValue;
 
             string optStr = ConvConfig.GenerateOptString(mConvOptions);
-            string settingKey = EXPORT_CONFIG_PREFIX + item.Converter.Tag;
+            string settingKey = VIEW_CONFIG_PREFIX + item.Converter.Tag;
 
             // Enable the button if the config string doesn't match what's in the app settings.
             IsSaveDefaultsEnabled =
@@ -1098,7 +755,7 @@ namespace cp2_wpf {
             Debug.Assert(item != null);
 
             string optStr = ConvConfig.GenerateOptString(mConvOptions);
-            string settingKey = EXPORT_CONFIG_PREFIX + item.Converter.Tag;
+            string settingKey = VIEW_CONFIG_PREFIX + item.Converter.Tag;
             AppSettings.Global.SetString(settingKey, optStr);
             IsSaveDefaultsEnabled = false;
         }
