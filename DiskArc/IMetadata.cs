@@ -140,6 +140,10 @@ namespace DiskArc {
         /// Tests whether the value would be accepted as valid for the key.  Entries that are
         /// not editable always return false.
         /// </summary>
+        /// <remarks>
+        /// <para>If the key does not exist, and adding new keys is allowable, this will return
+        /// true so long as the syntax of both key and value is valid.</para>
+        /// </remarks>
         /// <param name="key">Key of entry to test.</param>
         /// <param name="value">Value to test, in string form.</param>
         /// <returns>True if the value would be accepted.</returns>

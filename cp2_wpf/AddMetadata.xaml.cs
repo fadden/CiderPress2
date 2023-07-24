@@ -25,9 +25,9 @@ using static DiskArc.IMetadata;
 
 namespace cp2_wpf {
     /// <summary>
-    /// Edit an existing metadata entry.
+    /// Add a new metadata entry.
     /// </summary>
-    public partial class EditMetadata : Window, INotifyPropertyChanged {
+    public partial class AddMetadata : Window, INotifyPropertyChanged {
         // INotifyPropertyChanged
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "") {
@@ -44,19 +44,13 @@ namespace cp2_wpf {
         private bool mIsValid;
 
         /// <summary>
-        /// True if the entry can be deleted.
+        /// Current value of the key text.
         /// </summary>
-        public bool CanDelete { get; private set; }
-
-        /// <summary>
-        /// True if the user has requested that the entry be deleted.
-        /// </summary>
-        public bool DoDelete { get; private set; } = false;
-
-        /// <summary>
-        /// Entry key, for the read-only text box.
-        /// </summary>
-        public string KeyText { get; set; }
+        public string KeyText {
+            get { return mKeyText; }
+            set { mKeyText = value; OnPropertyChanged(); UpdateControls(); }
+        }
+        private string mKeyText;
 
         /// <summary>
         /// Current value of the value text.
@@ -65,13 +59,20 @@ namespace cp2_wpf {
             get { return mValueText; }
             set { mValueText = value; OnPropertyChanged(); UpdateControls(); }
         }
-        private string mValueText;
+        private string mValueText = string.Empty;
 
-        public string DescriptionText { get; private set; }
+        public string KeySyntaxText { get; private set; }
         public string ValueSyntaxText { get; private set; }
+
 
         private Brush mDefaultLabelColor = SystemColors.WindowTextBrush;
         private Brush mErrorLabelColor = Brushes.Red;
+
+        public Brush KeySyntaxForeground {
+            get { return mKeySyntaxForeground; }
+            set { mKeySyntaxForeground = value; OnPropertyChanged(); }
+        }
+        private Brush mKeySyntaxForeground = SystemColors.WindowTextBrush;
 
         public Brush ValueSyntaxForeground {
             get { return mValueSyntaxForeground; }
@@ -79,78 +80,55 @@ namespace cp2_wpf {
         }
         private Brush mValueSyntaxForeground = SystemColors.WindowTextBrush;
 
+        public Visibility NonUniqueVisibility {
+            get { return mNonUniqueVisibility; }
+            set { mNonUniqueVisibility = value; OnPropertyChanged(); }
+        }
+        private Visibility mNonUniqueVisibility;
+
         /// <summary>
         /// Metadata holder.
         /// </summary>
         private IMetadata mMetaObj;
 
-        /// <summary>
-        /// Entry being edited.
-        /// </summary>
-        private MetaEntry mMetaEntry;
 
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="owner">Parent window.</param>
-        /// <param name="metaObj">Metadata holder.</param>
-        /// <param name="key">Key of entry to edit.</param>
-        public EditMetadata(Window owner, IMetadata metaObj, string key) {
+        public AddMetadata(Window owner, IMetadata metaObj) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
             mMetaObj = metaObj;
-            MetaEntry? entry = metaObj.GetMetaEntry(key);
-            if (entry == null) {
-                Debug.Assert(false);
-                throw new ArgumentException("couldn't find MetaEntry");
-            }
-            mMetaEntry = entry;
+            mKeyText = "meta:new_key";
+            // If we support something other than WOZ, we'll need to fix this.
+            KeySyntaxText =
+                "Keys are comprised of ASCII letters, numbers, and the underscore ('_')." +
+                Environment.NewLine +
+                "WOZ metadata keys are prefixed with \"meta:\".";
 
-            KeyText = key;
-            mValueText = metaObj.GetMetaValue(key, false)!;
-            if (string.IsNullOrEmpty(entry.Description)) {
-                DescriptionText = "User-defined entry.";
-            } else {
-                DescriptionText = entry.Description;
-            }
-            CanDelete = entry.CanDelete;
+            ValueSyntaxText = "WOZ values may have any characters except linefeed and tab.";
 
-            if (!entry.CanEdit) {
-                ValueSyntaxText = "This entry can't be edited.";
-                valueTextBox.IsReadOnly = true;
-            } else {
-                ValueSyntaxText = entry.ValueSyntax;
-            }
             UpdateControls();
         }
 
-        /// <summary>
-        /// When window finishes rendering, put the focus on the value text box, with all
-        /// of the text selected.
-        /// </summary>
         private void Window_ContentRendered(object sender, EventArgs e) {
-            if (mMetaEntry.CanEdit) {
-                valueTextBox.SelectAll();
-            }
-            valueTextBox.Focus();
+            keyTextBox.Select(5, mKeyText.Length - 5);
+            keyTextBox.Focus();
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
             DialogResult = true;
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e) {
-            // Do we want to pop up a confirmation message here?
-            DoDelete = true;
-            DialogResult = true;
-        }
-
         private void UpdateControls() {
-            IsValid = mMetaObj.TestMetaValue(mMetaEntry.Key, ValueText);
-            ValueSyntaxForeground = IsValid ? mDefaultLabelColor : mErrorLabelColor;
+            bool isOkay = mMetaObj.TestMetaValue(KeyText, ValueText);
+            bool isUnique = mMetaObj.GetMetaValue(KeyText, false) == null;
+            IsValid = isOkay && isUnique;
+            KeySyntaxForeground = isOkay ? mDefaultLabelColor : mErrorLabelColor;
+            // We can't differentiate between bad keys and bad values, but it's pretty hard
+            // to make a bad value.
+            NonUniqueVisibility = isUnique ? Visibility.Collapsed : Visibility.Visible;
+
+            //Debug.WriteLine("key=" + KeyText + " value=" + ValueText + " valid=" + IsValid);
         }
     }
 }

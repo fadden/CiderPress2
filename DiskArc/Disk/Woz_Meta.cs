@@ -242,12 +242,11 @@ namespace DiskArc.Disk {
             // linefeed, so we explicitly confirm that the captured group matches the original.
             MatchCollection matches = VALID_KEY_REGEX.Matches(key);
             if (matches.Count != 1 || key != matches[0].Groups[0].Value) {
-                throw new ArgumentException("Invalid key: '" + key + "'");
+                errMsg = "Invalid key: '" + key + "'";
+                return false;
             }
             // Empty values are always allowed, even for the special keys.
             if (value == string.Empty) {
-                mEntries[key] = value;
-                IsDirty = true;
                 return true;
             }
             // Test the general form of the value string.  Only tabs and linefeeds are banned.

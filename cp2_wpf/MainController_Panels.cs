@@ -31,6 +31,7 @@ using DiskArc.Disk;
 using DiskArc.FS;
 using DiskArc.Multi;
 using static DiskArc.Defs;
+using static DiskArc.IMetadata;
 
 //
 // The user can select a new directory in the tree by clicking on an entry.  If they double-click
@@ -971,14 +972,53 @@ namespace cp2_wpf {
             }
             EditMetadata dialog = new EditMetadata(mMainWin, metaObj, item.Key);
             if (dialog.ShowDialog() == true) {
-                // Save the change, then update the metadata list.
-                metaObj.SetMetaValue(item.Key, dialog.ValueText);
-                mMainWin.UpdateMetadata(item.Key, dialog.ValueText);
+                if (dialog.DoDelete) {
+                    metaObj.DeleteMetaEntry(dialog.KeyText);
+                    mMainWin.RemoveMetadata(item.Key);
+                } else {
+                    // Save the change, then update the metadata list.
+                    metaObj.SetMetaValue(item.Key, dialog.ValueText);
+                    mMainWin.UpdateMetadata(item.Key, dialog.ValueText);
+                }
+                if (metaObj is IDiskImage) {
+                    ((IDiskImage)metaObj).Flush();
+                }
             }
         }
 
         public void HandleMetadataAddEntry() {
-            Debug.WriteLine("Add new entry");
+            IMetadata? metaObj = CurrentWorkObject as IMetadata;
+            if (metaObj == null) {
+                Debug.Assert(false);
+                return;
+            }
+            if (metaObj is Woz) {
+                // Add a META chunk if one doesn't already exist.
+                Woz woz = (Woz)metaObj;
+                if (!woz.HasMeta) {
+                    woz.AddMETA();
+                    mMainWin.SetMetadataList(metaObj);  // regenerate the full list
+                }
+            }
+
+            AddMetadata dialog = new AddMetadata(mMainWin, metaObj);
+            if (dialog.ShowDialog() == true) {
+                metaObj.SetMetaValue(dialog.KeyText, dialog.ValueText);
+                if (metaObj is IDiskImage) {
+                    ((IDiskImage)metaObj).Flush();
+                }
+
+                // Get the new MetaEntry and add it to the display list.  This adds it to the
+                // end, which is sort of nice because it means it will appear where it's expected.
+                // The sort order of user-defined entries isn't defined, so if we regenerate the
+                // full list it could end up anywhere after the standard entries.
+                MetaEntry? entry = metaObj.GetMetaEntry(dialog.KeyText);
+                if (entry == null) {
+                    Debug.Assert(false);
+                } else {
+                    mMainWin.AddMetadata(entry, dialog.ValueText);
+                }
+            }
         }
     }
 }

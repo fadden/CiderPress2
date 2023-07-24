@@ -32,6 +32,7 @@ using CommonUtil;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Multi;
+using static DiskArc.IMetadata;
 
 namespace cp2_wpf {
     /// <summary>
@@ -885,7 +886,7 @@ namespace cp2_wpf {
         public class MetadataItem : INotifyPropertyChanged {
             public string Key { get; private set; }
             public string Value { get; private set; }
-            public string Description { get; private set; }
+            public string? Description { get; private set; }
             public string? ValueSyntax { get; private set; }
             public bool CanEdit { get; private set; }
 
@@ -893,7 +894,7 @@ namespace cp2_wpf {
                     string valueSyntax, bool canEdit) {
                 Key = key;
                 Value = value;
-                Description = description;
+                Description = string.IsNullOrEmpty(description) ? null : description;
                 ValueSyntax = string.IsNullOrEmpty(valueSyntax) ? null : valueSyntax;
                 CanEdit = canEdit;
             }
@@ -933,6 +934,24 @@ namespace cp2_wpf {
                     break;
                 }
             }
+        }
+
+        public void AddMetadata(IMetadata.MetaEntry met, string value) {
+            MetadataList.Add(new MetadataItem(met.Key, value, met.Description,
+                met.ValueSyntax, met.CanEdit));
+        }
+
+        public void RemoveMetadata(string key) {
+            bool found = false;
+            for (int i = 0; i < MetadataList.Count; i++) {
+                MetadataItem item = MetadataList[i];
+                if (item.Key == key) {
+                    MetadataList.RemoveAt(i);
+                    found = true;
+                    break;
+                }
+            }
+            Debug.Assert(found);
         }
 
         /// <summary>
@@ -1068,9 +1087,12 @@ namespace cp2_wpf {
 
             // We could do this in XAML, but something this simple is easier to do here.
             //
-            // It's unclear whether changing the Visibility is actually useful, and it's
-            // mildly wrong: if you do two quick operations, the message gets hidden when
-            // the first animation completes.
+            // Toggling the element's visibility isn't strictly necessary.  It matters for
+            // mouse clicks, but we don't really want to receive those even when it's visible.
+            // Setting IsHitTestVisible=False prevents clicks from registering.
+            //
+            // Updating the Visibility requires more than just collapsing at the end: if you do
+            // two quick operations, the message gets hidden when the first animation completes.
             //toastMessage.Visibility = Visibility.Visible;
             DoubleAnimation doubAnim =
                 new DoubleAnimation(1.0, 0.0, new Duration(TimeSpan.FromSeconds(DURATION_SEC)));

@@ -764,8 +764,11 @@ limitations under the License.
                         <Button Content="Insert FIND dialog here"/>
                     </Border>
 
-                    <!-- fade-out notification, used when events complete -->
-                    <Grid Name="toastMessage" Opacity="0" Visibility="Visible">
+                    <!-- fade-out notification "toast", used when events complete -->
+                    <!-- This must be the last thing defined in the Grid so that it appears on
+                    top of other elements, but doing so means that it will consume clicks unless
+                    we set IsHitTestVisible to False. -->
+                    <Grid Name="toastMessage" Opacity="0" Visibility="Visible" IsHitTestVisible="False">
                         <Border Name="toastBorder" Width="200" Height="40" Margin="0,0,0,20"
                                 BorderBrush="Blue" BorderThickness="0,2,0,2"
                                 Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
