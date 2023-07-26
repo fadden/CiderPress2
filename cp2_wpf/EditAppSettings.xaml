@@ -41,7 +41,9 @@ limitations under the License.
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="4"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="4"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
@@ -51,8 +53,8 @@ limitations under the License.
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Column="0" Grid.Row="0">
-                        <GroupBox Header="Auto-Open Depth" Padding="2,4" Margin="4,0,0,0">
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="4,0,0,0">
+                        <GroupBox Header="Auto-Open Depth" Padding="2,4">
                             <StackPanel>
                                 <RadioButton Content="Shallow"
                                              ToolTip="Don't scan for disks and archives"
@@ -66,9 +68,22 @@ limitations under the License.
                             </StackPanel>
                         </GroupBox>
 
-                        <CheckBox Content="Enable MacZip handling" Margin="4,4,0,0"
+                        <CheckBox Content="Enable MacZip handling" Margin="0,4,0,0"
                                   ToolTip="Combine __MACOSX pairs automatically"
                                   IsChecked="{Binding EnableMacZip}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="2">
+                        <GroupBox Header="Import/Export Conversion" Padding="2,4">
+                            <StackPanel>
+                                <Button Content="Configure Import Options" Width="160"
+                                        HorizontalAlignment="Left"
+                                        Click="ConfigureImportOptions_Click"/>
+                                <Button Content="Configure Export Options" Width="160" Margin="0,4,0,0"
+                                        HorizontalAlignment="Left"
+                                        Click="ConfigureExportOptions_Click"/>
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
 
                     <CheckBox Grid.Column="0" Grid.Row="4" Content="Enable DEBUG menu" Margin="4,16,0,0"

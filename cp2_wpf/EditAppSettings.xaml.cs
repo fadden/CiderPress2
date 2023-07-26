@@ -149,6 +149,16 @@ namespace cp2_wpf {
             }
         }
 
+        private void ConfigureImportOptions_Click(object sender, RoutedEventArgs e) {
+            EditConvertOpts dialog = new EditConvertOpts(this, false);
+            dialog.ShowDialog();
+        }
+
+        private void ConfigureExportOptions_Click(object sender, RoutedEventArgs e) {
+            EditConvertOpts dialog = new EditConvertOpts(this, true);
+            dialog.ShowDialog();
+        }
+
         public bool EnableDebugMenu {
             get { return mSettings.GetBool(AppSettings.DEBUG_MENU_ENABLED, false); }
             set {

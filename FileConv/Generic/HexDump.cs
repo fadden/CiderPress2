@@ -24,8 +24,12 @@ using static DiskArc.Defs;
 namespace FileConv.Generic {
     public class HexDump : Converter {
         public const string TAG = "hex";
+        public const string LABEL = "Hex Dump";
+        public const string DESCRIPTION =
+            "Generates a hex dump for file data.  The text conversion is configurable.";
         public override string Tag => TAG;
-        public override string Label => "Hex Dump";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         public const string OPT_CHAR = "char";
 

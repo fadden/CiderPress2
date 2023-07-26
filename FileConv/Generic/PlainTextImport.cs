@@ -27,8 +27,15 @@ namespace FileConv.Generic {
     /// </summary>
     public class PlainTextImport : Importer {
         public const string TAG = "text";
+        public const string LABEL = "Plain Text";
+        public const string DESCRIPTION =
+            "Converts a text document for use on an Apple II or vintage Macintosh.  " +
+            "End-of-line markers are converted to carriage returns.  The handling of non-ASCII " +
+            "characters is configurable.  Files imported to DOS disks will be stored as " +
+            "high ASCII.";
         public override string Tag => TAG;
-        public override string Label => "Plain Text";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         public const string OPT_INCHAR = "inchar";
         public const string OPT_OUTCHAR = "outchar";

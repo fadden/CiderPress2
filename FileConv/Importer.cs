@@ -34,9 +34,15 @@ namespace FileConv {
         public abstract string Tag { get; }
 
         /// <summary>
-        /// Human-readable label, for UI presentation.
+        /// Human-readable label, for use in UI controls like pop-up menus.
         /// </summary>
         public abstract string Label { get; }
+
+        /// <summary>
+        /// Verbose description of the converter's purpose and features.  May span multiple
+        /// lines, using '\n' as line break.  The full Unicode character set is allowed.
+        /// </summary>
+        public abstract string Description { get; }
 
         /// <summary>
         /// True if the converted file will have a data fork.

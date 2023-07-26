@@ -31,8 +31,13 @@ namespace FileConv.Code {
     /// </remarks>
     public class Applesoft : Converter {
         public const string TAG = "bas";
+        public const string LABEL = "Applesoft BASIC";
+        public const string DESCRIPTION =
+            "Converts Applesoft BASIC programs to a text listing, with optional syntax " +
+            "highlighting.  The output is identical to the LIST command.";
         public override string Tag => TAG;
-        public override string Label => "Applesoft BASIC";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         private const string OPT_HI = "hi";
         private const string OPT_PRINT = "print";

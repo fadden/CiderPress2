@@ -16,7 +16,6 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-
 using CommonUtil;
 
 namespace FileConv {
@@ -45,6 +44,8 @@ namespace FileConv {
         private class ConverterEntry {
             // Tag from class TAG constant.
             public string Tag { get; private set; }
+            public string Label { get; private set; }
+            public string Description { get; private set; }
 
             // Converter subclass.
             private Type mImplClass;
@@ -58,6 +59,8 @@ namespace FileConv {
                 mImplClass = implClass;
 
                 Tag = (string)implClass.GetField("TAG")!.GetValue(null)!;
+                Label = (string)implClass.GetField("LABEL")!.GetValue(null)!;
+                Description = (string)implClass.GetField("DESCRIPTION")!.GetValue(null)!;
 
                 // Cache a reference to the constructor.
                 ConstructorInfo? ctor = implClass.GetConstructor(
@@ -94,6 +97,28 @@ namespace FileConv {
             List<string> keys = sTagList.Keys.ToList();
             keys.Sort();
             return keys;
+        }
+
+        /// <summary>
+        /// Returns the number of known export converters.
+        /// </summary>
+        public static int GetCount() {
+            return sConverters.Length;
+        }
+
+        /// <summary>
+        /// Returns information for the Nth converter.
+        /// </summary>
+        /// <param name="index">Index of converter to query.</param>
+        /// <param name="tag">Result: config file tag.</param>
+        /// <param name="label">Result: UI label.</param>
+        /// <param name="description">Result: long description.</param>
+        public static void GetConverterInfo(int index, out string tag, out string label,
+                out string description) {
+            ConverterEntry entry = sConverters[index];
+            tag = entry.Tag;
+            label = entry.Label;
+            description = entry.Description;
         }
 
         /// <summary>

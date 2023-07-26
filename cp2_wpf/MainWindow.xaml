@@ -824,6 +824,9 @@ limitations under the License.
                                                   IsChecked="{Binding IsChecked_AddPreserveNAPS}"/>
                                     </StackPanel>
                                 </GroupBox>
+
+                                <Button Content="Configure Import Options"
+                                        Click="ConfigureImportOptions_Click"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Margin="0,20,0,0"
@@ -848,6 +851,8 @@ limitations under the License.
                                                      IsChecked="{Binding IsChecked_ExtPreserveNAPS}"/>
                                     </StackPanel>
                                 </GroupBox>
+                                <Button Content="Configure Export Options"
+                                        Click="ConfigureExportOptions_Click"/>
                             </StackPanel>
 
                         </Grid>

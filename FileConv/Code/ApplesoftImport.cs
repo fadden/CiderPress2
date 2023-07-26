@@ -29,8 +29,13 @@ namespace FileConv.Code {
     /// </remarks>
     public class ApplesoftImport : Importer {
         public const string TAG = "bas";
+        public const string LABEL = "Applesoft BASIC";
+        public const string DESCRIPTION =
+            "Converts an Applesoft BASIC program listing to tokenized form, ready for execution " +
+            "on an Apple II.  Accepts control characters in printable or non-printable form.";
         public override string Tag => TAG;
-        public override string Label => "Applesoft BASIC";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         private const string TXT_EXT = ".txt";
         private const string BAS_EXT = ".bas";

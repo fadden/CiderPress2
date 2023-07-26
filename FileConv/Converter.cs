@@ -37,9 +37,15 @@ namespace FileConv {
         public abstract string Tag { get; }
 
         /// <summary>
-        /// Human-readable label, for UI presentation.
+        /// Human-readable label, for use in UI controls like pop-up menus.
         /// </summary>
         public abstract string Label { get; }
+
+        /// <summary>
+        /// Verbose description of the converter's purpose and features.  May span multiple
+        /// lines, using '\n' as line break.  The full Unicode character set is allowed.
+        /// </summary>
+        public abstract string Description { get; }
 
         /// <summary>
         /// Converter applicability ratings, from worst to best.
@@ -272,7 +278,8 @@ namespace FileConv {
         }
 
         /// <summary>
-        /// Parses a boolean option.
+        /// Parses a boolean option.  Returns the default value if the option is not defined
+        /// or is not "true" or "false" (case-insensitive).
         /// </summary>
         public static bool GetBoolOption(Dictionary<string, string> options, string optName,
                 bool defaultVal) {
@@ -286,7 +293,8 @@ namespace FileConv {
         }
 
         /// <summary>
-        /// Parses a decimal integer option.
+        /// Parses a decimal integer option.  Returns the default value if the option is not
+        /// defined or is not an integer.
         /// </summary>
         public static int GetIntOption(Dictionary<string, string> options, string optName,
                 int defaultVal) {
@@ -300,7 +308,7 @@ namespace FileConv {
         }
 
         /// <summary>
-        /// Parses a string option.
+        /// Parses a string option.  Returns the default value if the option is not defined.
         /// </summary>
         public static string GetStringOption(Dictionary<string, string> options, string optName,
                 string defaultVal) {

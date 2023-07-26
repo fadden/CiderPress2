@@ -26,8 +26,12 @@ namespace FileConv.Gfx {
     /// </summary>
     public class SuperHiRes_Brooks : Converter {
         public const string TAG = "shr3200";
+        public const string LABEL = "Super Hi-Res 3200-Color Screen Image";
+        public const string DESCRIPTION =
+            "Converts an Apple IIgs Brooks-format 3200-color super hi-res image to a bitmap.";
         public override string Tag => TAG;
-        public override string Label => "Super Hi-Res 3200-Color Screen Image";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         public const int EXPECTED_LEN = 38400;
 

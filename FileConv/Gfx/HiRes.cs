@@ -25,8 +25,12 @@ namespace FileConv.Gfx {
     /// </summary>
     public class HiRes : Converter {
         public const string TAG = "hgr";
+        public const string LABEL = "Hi-Res Graphics";
+        public const string DESCRIPTION =
+            "Converts a standard hi-res screen to a bitmap.";
         public override string Tag => TAG;
-        public override string Label => "Hi-Res Graphics";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         public const string OPT_BW = "bw";
 

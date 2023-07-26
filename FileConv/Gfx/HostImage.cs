@@ -26,8 +26,12 @@ namespace FileConv.Gfx {
     /// </summary>
     public class HostImage : Converter {
         public const string TAG = "host";
+        public const string LABEL = "Host Image";
+        public const string DESCRIPTION =
+            "Converts a modern image format, such as GIF or JPEG, to a bitmap for viewing.";
         public override string Tag => TAG;
-        public override string Label => "Host Image";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         private HostConv.FileKind mKind;
 

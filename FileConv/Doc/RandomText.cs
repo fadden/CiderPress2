@@ -33,8 +33,16 @@ namespace FileConv.Doc {
     /// </remarks>
     public class RandomText : Converter {
         public const string TAG = "rtext";
+        public const string LABEL = "Random-Access Text";
+        public const string DESCRIPTION =
+            "Converts a DOS or ProDOS random-access text file to spreadsheet form.  Each " +
+            "record is output as a row.  Multiple entries within a single record (separated " +
+            "by carriage returns) are output as columns within that row. The length option " +
+            "may be set to a positive integer value, or left blank to use the file's " +
+            "auxiliary type.";
         public override string Tag => TAG;
-        public override string Label => "Random-Access Text";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         public const string OPT_LEN = "len";
 

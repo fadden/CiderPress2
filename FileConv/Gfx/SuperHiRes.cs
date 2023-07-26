@@ -25,8 +25,12 @@ namespace FileConv.Gfx {
     /// </summary>
     public class SuperHiRes : Converter {
         public const string TAG = "shr";
+        public const string LABEL = "Super Hi-Res Screen Image";
+        public const string DESCRIPTION =
+            "Converts a standard Apple IIgs super hi-res image to a bitmap.";
         public override string Tag => TAG;
-        public override string Label => "Super Hi-Res Screen Image";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         public const int EXPECTED_LEN = 32768;
 

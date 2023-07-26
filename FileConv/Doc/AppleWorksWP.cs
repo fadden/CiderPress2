@@ -21,8 +21,12 @@ using DiskArc;
 namespace FileConv.Doc {
     public class AppleWorksWP : Converter {
         public const string TAG = "awp";
+        public const string LABEL = "AppleWorks WP";
+        public const string DESCRIPTION =
+            "Converts an AppleWorks Word Processor document to formatted text.";
         public override string Tag => TAG;
-        public override string Label => "AppleWorks WP";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
 
         public AppleWorksWP(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,

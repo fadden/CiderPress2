@@ -26,8 +26,12 @@ namespace FileConv.Doc {
     /// </summary>
     public class Teach : Converter {
         public const string TAG = "teach";
+        public const string LABEL = "Teach Document";
+        public const string DESCRIPTION =
+            "Converts an Apple IIgs Teach Document to formatted text.";
         public override string Tag => TAG;
-        public override string Label => "Teach Document";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         private const ushort TEACH_AUX_TYPE = 0x5445;       // 'TE', for TextEdit or TEach
         private const int RSTYLEBLOCK = 0x8012;

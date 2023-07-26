@@ -1309,6 +1309,16 @@ namespace cp2_wpf {
             }
         }
 
+        private void ConfigureImportOptions_Click(object sender, RoutedEventArgs e) {
+            EditConvertOpts dialog = new EditConvertOpts(this, false);
+            dialog.ShowDialog();
+        }
+
+        private void ConfigureExportOptions_Click(object sender, RoutedEventArgs e) {
+            EditConvertOpts dialog = new EditConvertOpts(this, true);
+            dialog.ShowDialog();
+        }
+
         /// <summary>
         /// Triggers OnPropertyChanged for all of the side-panel options.  Call this after the
         /// settings object is loaded or updated.

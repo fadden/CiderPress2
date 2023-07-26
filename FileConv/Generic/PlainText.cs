@@ -27,8 +27,14 @@ namespace FileConv.Generic {
     /// </summary>
     public class PlainText : Converter {
         public const string TAG = "text";
+        public const string LABEL = "Plain Text";
+        public const string DESCRIPTION =
+            "Plain text converter.  Converts end-of-line markers to the local convention, " +
+            "and converts non-ASCII characters according to the current configuration options. " +
+            "Control characters may be converted to printable form or output raw.";
         public override string Tag => TAG;
-        public override string Label => "Plain Text";
+        public override string Label => LABEL;
+        public override string Description => DESCRIPTION;
 
         public const string OPT_CHAR = "char";
         public const string OPT_PRINT = "print";

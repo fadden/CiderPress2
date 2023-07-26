@@ -158,7 +158,7 @@ limitations under the License.
             </Grid.ColumnDefinitions>
 
             <!-- left side: converter selection and additional options -->
-            <StackPanel Grid.Column="0" Orientation="Vertical">
+            <StackPanel Grid.Column="0">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Conversion:" Margin="0,2,4,0"/>
                     <ComboBox Name="convComboBox" Width="200" HorizontalAlignment="Left"
