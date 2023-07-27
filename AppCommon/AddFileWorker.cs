@@ -563,8 +563,8 @@ namespace AppCommon {
         }
 
         /// <summary>
-        /// Copies a part (i.e fork) of a file to a stream.  The file source may be a plain
-        /// or structured file.
+        /// Copies a part (i.e fork) of a file to a disk image file stream.  The file source may
+        /// be a plain or structured file.
         /// </summary>
         /// <param name="fullPath">Path to source.</param>
         /// <param name="sourceType">Source type; could be plain or ADF/AS.</param>

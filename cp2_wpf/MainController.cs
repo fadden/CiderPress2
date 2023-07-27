@@ -36,6 +36,7 @@ using DiskArc.Arc;
 using DiskArc.FS;
 using DiskArc.Multi;
 using static DiskArc.Defs;
+using FileConv;
 
 namespace cp2_wpf {
     /// <summary>
@@ -174,6 +175,9 @@ namespace cp2_wpf {
         /// </summary>
         /// <returns>True if it's okay for the window to close, false to cancel it.</returns>
         public bool WindowClosing() {
+            // Force save on exit, because some things may not force an immediate settings change.
+            AppSettings.Global.IsDirty = true;
+
             SaveAppSettings();
             if (!CloseWorkFile()) {
                 return false;
@@ -207,6 +211,8 @@ namespace cp2_wpf {
                 ExtractFileWorker.PreserveMode.NAPS);
             settings.SetBool(AppSettings.EXT_RAW_ENABLED, false);
             settings.SetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false);
+
+            settings.SetString(AppSettings.CONV_IMPORT_TAG, "text");
 
             // Load settings from file and merge them in.
             string settingsPath =
@@ -249,6 +255,10 @@ namespace cp2_wpf {
                 (int)mMainWin.WorkTreePanelHeightRatio);
 
             mMainWin.CaptureColumnWidths();
+
+            settings.SetString(AppSettings.CONV_IMPORT_TAG, mMainWin.ImportConvTag);
+            settings.SetString(AppSettings.CONV_EXPORT_TAG, mMainWin.ExportConvTag);
+            settings.SetBool(AppSettings.CONV_EXPORT_BEST, mMainWin.IsExportBestChecked);
 
             string settingsPath =
                 Path.Combine(WinUtil.GetRuntimeDataDir(), AppSettings.SETTINGS_FILE_NAME);
@@ -856,7 +866,7 @@ namespace cp2_wpf {
                 return;
             }
             Debug.WriteLine("Add files:");
-            AddPaths(fileDlg.FileNames);
+            AddPaths(fileDlg.FileNames, null);
         }
 
         /// <summary>
@@ -867,10 +877,10 @@ namespace cp2_wpf {
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
-            AddPaths(pathNames);
+            AddPaths(pathNames, null);
         }
 
-        private void AddPaths(string[] pathNames) {
+        private void AddPaths(string[] pathNames, ConvConfig.FileConvSpec? importSpec) {
             foreach (string path in pathNames) {
                 Debug.WriteLine("  " + path);
             }
@@ -885,10 +895,10 @@ namespace cp2_wpf {
             // same directory name.
             string basePath = Path.GetDirectoryName(pathNames[0])!;
 
-            AddFileSet.AddOpts addOpts = ConfigureAddOpts(false);
+            AddFileSet.AddOpts addOpts = ConfigureAddOpts(importSpec != null);
             AddFileSet fileSet;
             try {
-                fileSet = new AddFileSet(basePath, pathNames, addOpts, null, AppHook);
+                fileSet = new AddFileSet(basePath, pathNames, addOpts, importSpec, AppHook);
             } catch (IOException ex) {
                 ShowFileError(ex.Message);
                 return;
@@ -924,14 +934,15 @@ namespace cp2_wpf {
             SettingsHolder settings = AppSettings.Global;
             AddFileSet.AddOpts addOpts = new AddFileSet.AddOpts();
             if (isImport) {
+                // Anything stored with preserved attributes should be added, not imported.
                 addOpts.ParseADF = addOpts.ParseAS = addOpts.ParseNAPS = addOpts.CheckNamed =
                     addOpts.CheckFinderInfo = false;
             } else {
                 addOpts.ParseADF = settings.GetBool(AppSettings.ADD_PRESERVE_ADF, true);
                 addOpts.ParseAS = settings.GetBool(AppSettings.ADD_PRESERVE_AS, true);
                 addOpts.ParseNAPS = settings.GetBool(AppSettings.ADD_PRESERVE_NAPS, true);
-                addOpts.CheckNamed = false;
-                addOpts.CheckFinderInfo = false;
+                addOpts.CheckNamed = false;         // not for Windows
+                addOpts.CheckFinderInfo = false;    // not for Windows
             }
             addOpts.Recurse = settings.GetBool(AppSettings.ADD_RECURSE_ENABLED, true);
             addOpts.StripExt = settings.GetBool(AppSettings.ADD_STRIP_EXT_ENABLED, true);
@@ -1246,9 +1257,40 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Actions : Export Files
+        /// </summary>
+        public void ExportFiles() {
+            string convTag =
+                mMainWin.IsExportBestChecked ? ConvConfig.BEST : mMainWin.ExportConvTag;
+            string settingKey = AppSettings.EXPORT_SETTING_PREFIX + convTag;
+            string convSettings = AppSettings.Global.GetString(settingKey, string.Empty);
+
+            ConvConfig.FileConvSpec? spec;
+            if (string.IsNullOrEmpty(convSettings)) {
+                spec = ConvConfig.CreateSpec(convTag);
+            } else {
+                spec = ConvConfig.CreateSpec(convTag + "," + convSettings);
+            }
+            if (spec == null) {
+                // String parsing failure.  Use default options.
+                Debug.Assert(false);
+                AppHook.LogW("Failed to parse converter settings for " + convTag + " '" +
+                    convSettings + "'");
+                spec = ConvConfig.CreateSpec(convTag);
+                Debug.Assert(spec != null);
+            }
+            Debug.WriteLine("Export spec: " + spec);
+            HandleExtractExport(spec);
+        }
+
+        /// <summary>
         /// Handles Actions : Extract Files
         /// </summary>
         public void ExtractFiles() {
+            HandleExtractExport(null);
+        }
+
+        private void HandleExtractExport(ConvConfig.FileConvSpec? exportSpec) {
             if (!GetFileSelection(omitDir: false, omitOpenArc: false, closeOpenArc: true,
                     oneMeansAll: false, out object? archiveOrFileSystem,
                     out IFileEntry selectionDir, out List<IFileEntry>? selected, out int unused)) {
@@ -1263,7 +1305,8 @@ namespace cp2_wpf {
             string initialDir = AppSettings.Global.GetString(AppSettings.LAST_EXTRACT_DIR, @"C:\");
 
             BrowseForFolder folderDialog = new BrowseForFolder();
-            string? outputDir = folderDialog.SelectFolder("Select destination for extracted files:",
+            string? outputDir = folderDialog.SelectFolder("Select destination for " +
+                (exportSpec == null ? "extracted" : "exported") + " files:",
                 initialDir, mMainWin);
             if (outputDir == null) {
                 return;
@@ -1273,7 +1316,7 @@ namespace cp2_wpf {
             settings.SetString(AppSettings.LAST_EXTRACT_DIR, outputDir);
 
             ExtractProgress prog = new ExtractProgress(archiveOrFileSystem, selectionDir,
-                    selected, outputDir, AppHook) {
+                    selected, outputDir, exportSpec, AppHook) {
                 Preserve = settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
                     ExtractFileWorker.PreserveMode.None),
                 EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
@@ -1286,14 +1329,25 @@ namespace cp2_wpf {
             // Do the extraction on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
-                mMainWin.PostNotification("Extraction successful", true);
+                if (exportSpec != null) {
+                    mMainWin.PostNotification("Extraction successful", true);
+                } else {
+                    mMainWin.PostNotification("Export successful", true);
+                }
             } else {
                 mMainWin.PostNotification("Cancelled", false);
             }
         }
 
         /// <summary>
-        /// Handles Action : Replace Partition
+        /// Handles Actions : Export Files
+        /// </summary>
+        public void ImportFiles() {
+            Debug.WriteLine("TODO: import");
+        }
+
+        /// <summary>
+        /// Handles Actions : Replace Partition
         /// </summary>
         public void ReplacePartition() {
             Debug.Assert(mWorkTree != null);
@@ -1429,7 +1483,7 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Handles Action : Save As Disk Image
+        /// Handles Actions : Save As Disk Image
         /// </summary>
         public void SaveAsDiskImage() {
             IChunkAccess? chunks = GetCurrentWorkChunks();
@@ -1446,7 +1500,7 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Handles Action : Scan For Bad Blocks
+        /// Handles Actions : Scan For Bad Blocks
         /// </summary>
         public void ScanForBadBlocks() {
             IDiskImage? diskImage = CurrentWorkObject as IDiskImage;

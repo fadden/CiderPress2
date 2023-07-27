@@ -78,6 +78,7 @@ namespace cp2_wpf {
             mSettings = settings;
 
             if (isExport) {
+                Title = "Edit Export Conversion Options";
                 mSettingPrefix = AppSettings.EXPORT_SETTING_PREFIX;
                 for (int i = 0; i < ExportFoundry.GetCount(); i++) {
                     ExportFoundry.GetConverterInfo(i, out string tag, out string label,
@@ -87,6 +88,7 @@ namespace cp2_wpf {
                     ConverterList.Add(item);
                 }
             } else {
+                Title = "Edit Import Conversion Options";
                 mSettingPrefix = AppSettings.IMPORT_SETTING_PREFIX;
                 for (int i = 0; i < ImportFoundry.GetCount(); i++) {
                     ImportFoundry.GetConverterInfo(i, out string tag, out string label,

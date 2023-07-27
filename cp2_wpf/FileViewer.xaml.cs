@@ -29,7 +29,6 @@ using DiskArc;
 using DiskArc.FS;
 using FileConv;
 using Microsoft.Win32;
-using static FileConv.Converter;
 using static cp2_wpf.ConfigOptCtrl;
 
 namespace cp2_wpf {

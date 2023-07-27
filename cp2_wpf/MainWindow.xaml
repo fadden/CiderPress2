@@ -22,7 +22,7 @@ limitations under the License.
         xmlns:local="clr-namespace:cp2_wpf"
         mc:Ignorable="d"
         Title="CiderPress II"
-        Width="1200" Height="800" MinWidth="640" MinHeight="480" ResizeMode="CanResizeWithGrip"
+        Width="1200" Height="800" MinWidth="640" MinHeight="660" ResizeMode="CanResizeWithGrip"
         SourceInitialized="Window_SourceInitialized"
         Loaded="Window_Loaded"
         LocationChanged="Window_LocationChanged"
@@ -92,7 +92,13 @@ limitations under the License.
             <RoutedUICommand x:Key="EditDirAttributesCmd" Text="Edit Directory Attributes..."/>
             <RoutedUICommand x:Key="EditSectorsCmd" Text="Edit Sectors..."/>
             <RoutedUICommand x:Key="ExitCmd" Text="E_xit"/>
-            <RoutedUICommand x:Key="ExtractFilesCmd" Text="_Extract Files..."/>
+            <RoutedUICommand x:Key="ExportFilesCmd" Text="E_xport Files..."/>
+            <RoutedUICommand x:Key="ExtractFilesCmd" Text="_Extract Files...">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+E</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
+            <RoutedUICommand x:Key="ImportFilesCmd" Text="Import Files..."/>
             <RoutedUICommand x:Key="NavToParentCmd" Text="Go To Parent Directory">
                 <RoutedUICommand.InputGestures>
                     <!-- Ctrl+Up is taken by the standard controls (moves the scrollbar) -->
@@ -137,7 +143,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource AboutCmd}"
                         Executed="AboutCmd_Executed"/>
         <CommandBinding Command="{StaticResource AddFilesCmd}"
-                        CanExecute="IsFileAreaShowing" Executed="AddFilesCmd_Executed"/>
+                        CanExecute="IsWritableFileAreaShowing" Executed="AddFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource CloseCmd}"
                         CanExecute="IsFileOpen" Executed="CloseCmd_Executed"/>
         <CommandBinding Command="{StaticResource CloseSubTreeCmd}"
@@ -162,10 +168,14 @@ limitations under the License.
                         CanExecute="CanEditSectors" Executed="EditSectorsCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExitCmd}"
                         Executed="ExitCmd_Executed"/>
+        <CommandBinding Command="{StaticResource ExportFilesCmd}"
+                        CanExecute="AreFileEntriesSelected" Executed="ExportFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExtractFilesCmd}"
                         CanExecute="AreFileEntriesSelected" Executed="ExtractFilesCmd_Executed"/>
         <CommandBinding Command="Help"
                         Executed="HelpCmd_Executed"/>
+        <CommandBinding Command="{StaticResource ImportFilesCmd}"
+                        CanExecute="IsWritableFileAreaShowing" Executed="ImportFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource NavToParentCmd}"
                         CanExecute="CanNavToParent" Executed="NavToParentCmd_Executed"/>
         <CommandBinding Command="{StaticResource NewDiskImageCmd}"
@@ -240,7 +250,9 @@ limitations under the License.
             <MenuItem Header="_Actions">
                 <MenuItem Command="{StaticResource ViewFilesCmd}"/>
                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
+                <MenuItem Command="{StaticResource ImportFilesCmd}"/>
                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
+                <MenuItem Command="{StaticResource ExportFilesCmd}"/>
                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
                 <MenuItem Command="{StaticResource TestFilesCmd}"/>
                 <MenuItem Command="{StaticResource EditAttributesCmd}"/>
@@ -606,7 +618,9 @@ limitations under the License.
                             <ContextMenu>
                                 <MenuItem Command="{StaticResource ViewFilesCmd}"/>
                                 <MenuItem Command="{StaticResource AddFilesCmd}"/>
+                                <MenuItem Command="{StaticResource ImportFilesCmd}"/>
                                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
+                                <MenuItem Command="{StaticResource ExportFilesCmd}"/>
                                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
                                 <MenuItem Command="{StaticResource TestFilesCmd}"/>
                                 <MenuItem Command="{StaticResource EditAttributesCmd}"/>
@@ -784,9 +798,9 @@ limitations under the License.
                 <Border Grid.Column="4" BorderThickness="1" BorderBrush="LightGray" Margin="2,0,0,0">
                     <DockPanel>
                         <Button DockPanel.Dock="Bottom" Content="Show/Hide Settings" Width="140" Margin="2,0,0,2"
-                            HorizontalAlignment="Right" Click="ShowHideOptionsButton_Click">
+                            HorizontalAlignment="Center" Click="ShowHideOptionsButton_Click">
                             <Button.LayoutTransform>
-                                <RotateTransform Angle="90"/>
+                                <RotateTransform Angle="{Binding ShowHideRotation}"/>
                             </Button.LayoutTransform>
                         </Button>
                         <Grid Name="optionsPanel"  DockPanel.Dock="Top" Width="200"
@@ -810,10 +824,9 @@ limitations under the License.
                                           IsChecked="{Binding IsChecked_AddCompress}"/>
                                 <CheckBox Content="Strip Paths"
                                           IsChecked="{Binding IsChecked_AddStripPaths}"/>
-                                <CheckBox Content="Strip Redundant Extensions"
-                                          IsChecked="{Binding IsChecked_AddStripExt}"/>
                                 <CheckBox Content="Raw (for DOS 3.x)"
                                           IsChecked="{Binding IsChecked_AddRaw}"/>
+
                                 <GroupBox Header="Preservation Handling" Padding="0,2,0,0">
                                     <StackPanel>
                                         <CheckBox Content="AppleSingle"
@@ -825,8 +838,19 @@ limitations under the License.
                                     </StackPanel>
                                 </GroupBox>
 
-                                <Button Content="Configure Import Options"
-                                        Click="ConfigureImportOptions_Click"/>
+                                <GroupBox Header="Import Configuration" Padding="0,2,0,0">
+                                    <StackPanel>
+                                        <CheckBox Content="Strip Redundant Extensions"
+                                              IsChecked="{Binding IsChecked_AddStripExt}"/>
+                                        <TextBlock Text="Conversion mode:" Margin="0,4,0,0"/>
+                                        <ComboBox Margin="0,4,0,0" Name="importCfgCombo"
+                                                  ItemsSource="{Binding ImportConverters}"
+                                                  DisplayMemberPath="Label"/>
+                                        <Button Margin="0,4,0,0" Width="140"
+                                                Content="Conversion Settings"
+                                                Click="ConfigureImportSettings_Click"/>
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Margin="0,20,0,0"
@@ -839,6 +863,7 @@ limitations under the License.
                                           IsChecked="{Binding IsChecked_ExtStripPaths}"/>
                                 <CheckBox Content="Raw (for DOS 3.x)"
                                           IsChecked="{Binding IsChecked_ExtRaw}"/>
+
                                 <GroupBox Header="Preservation Mode" Padding="0,2,0,0">
                                     <StackPanel>
                                         <RadioButton Content="None" GroupName="ExtPreserve"
@@ -851,8 +876,29 @@ limitations under the License.
                                                      IsChecked="{Binding IsChecked_ExtPreserveNAPS}"/>
                                     </StackPanel>
                                 </GroupBox>
-                                <Button Content="Configure Export Options"
-                                        Click="ConfigureExportOptions_Click"/>
+
+                                <GroupBox Header="Export Configuration" Padding="0,2,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Conversion mode:"/>
+                                        <RadioButton Content="Best" GroupName="ExportCfg" Margin="0,4,0,0"
+                                                     IsChecked="{Binding IsExportBestChecked}"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <RadioButton Grid.Column="0" Margin="0,8,0,0"
+                                                         Content="" GroupName="ExportCfg"
+                                                         IsChecked="{Binding IsExportComboChecked}"/>
+                                            <ComboBox Grid.Column="1" Name="exportCfgCombo" Margin="0,4,0,0"
+                                                      ItemsSource="{Binding ExportConverters}"
+                                                      DisplayMemberPath="Label"/>
+                                        </Grid>
+                                        <Button Margin="0,4,0,0" Width="140"
+                                                Content="Conversion Settings"
+                                                Click="ConfigureExportSettings_Click"/>
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
 
                         </Grid>

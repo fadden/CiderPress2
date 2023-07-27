@@ -32,7 +32,7 @@ using CommonUtil;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Multi;
-using static DiskArc.IMetadata;
+using FileConv;
 
 namespace cp2_wpf {
     /// <summary>
@@ -243,6 +243,9 @@ namespace cp2_wpf {
             // Hack to put the focus on the selected item in the file list DataGrid.
             fileListDataGrid.ItemContainerGenerator.StatusChanged +=
                 ItemContainerGenerator_StatusChanged;
+
+            // Populate the import/export mode selection controls
+            InitImportExportConfig();
         }
 
         private void AddColumnWidthChangeCallback(PropertyDescriptor pd, DataGrid dg) {
@@ -384,8 +387,9 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen);
         }
 
-        private void IsFileAreaShowing(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList);
+        private void IsWritableFileAreaShowing(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+                ShowCenterFileList);
         }
         private void IsWritableSingleEntrySelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
@@ -494,11 +498,17 @@ namespace cp2_wpf {
             // Close the main window.  This operation can be cancelled by the user.
             Close();
         }
+        private void ExportFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.ExportFiles();
+        }
         private void ExtractFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.ExtractFiles();
         }
         private void HelpCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.HelpHelp();
+        }
+        private void ImportFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.ImportFiles();
         }
         private void NavToParentCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.NavToParent();
@@ -1176,9 +1186,16 @@ namespace cp2_wpf {
         /// </summary>
         public bool ShowOptionsPanel {
             get { return mShowOptionsPanel; }
-            set { mShowOptionsPanel = value; OnPropertyChanged(); }
+            set {
+                mShowOptionsPanel = value;
+                OnPropertyChanged();
+                ShowHideRotation = value ? 0 : 90;
+                OnPropertyChanged(nameof(ShowHideRotation));
+            }
         }
         private bool mShowOptionsPanel = true;
+
+        public double ShowHideRotation { get; private set; }
 
         private void ShowHideOptionsButton_Click(object sender, RoutedEventArgs e) {
             ShowOptionsPanel = !ShowOptionsPanel;
@@ -1309,7 +1326,78 @@ namespace cp2_wpf {
             }
         }
 
-        private void ConfigureImportOptions_Click(object sender, RoutedEventArgs e) {
+        public class ConvItem {
+            public string Tag { get; private set; }
+            public string Label { get; private set; }
+
+            public ConvItem(string tag, string label) {
+                Tag = tag;
+                Label = label;
+            }
+        }
+
+        public List<ConvItem> ImportConverters { get; } = new List<ConvItem>();
+        public string ImportConvTag {
+            get {
+                return ((ConvItem)importCfgCombo.SelectedItem).Tag;
+            }
+            set {
+                foreach (ConvItem item in ImportConverters) {
+                    if (item.Tag == value) {
+                        importCfgCombo.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+        }
+        public List<ConvItem> ExportConverters { get; } = new List<ConvItem>();
+        public string ExportConvTag {
+            get {
+                return ((ConvItem)exportCfgCombo.SelectedItem).Tag;
+            }
+            set {
+                foreach (ConvItem item in ExportConverters) {
+                    if (item.Tag == value) {
+                        exportCfgCombo.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+        }
+        public bool IsExportBestChecked { get; set; }
+        public bool IsExportComboChecked { get; set; }
+
+        /// <summary>
+        /// Initializes the import/export configuration selection controls.
+        /// </summary>
+        private void InitImportExportConfig() {
+            for (int i = 0; i < ImportFoundry.GetCount(); i++) {
+                ImportFoundry.GetConverterInfo(i, out string tag, out string label,
+                    out string description, out List<Converter.OptionDefinition> optionDefs);
+                ConvItem item = new ConvItem(tag, label);
+                ImportConverters.Add(item);
+            }
+            ImportConverters.Sort(delegate (ConvItem item1, ConvItem item2) {
+                return string.Compare(item1.Label, item2.Label);
+            });
+
+            for (int i = 0; i < ExportFoundry.GetCount(); i++) {
+                ExportFoundry.GetConverterInfo(i, out string tag, out string label,
+                    out string description, out List<Converter.OptionDefinition> optionDefs);
+                ConvItem item = new ConvItem(tag, label);
+                ExportConverters.Add(item);
+            }
+            ExportConverters.Sort(delegate (ConvItem item1, ConvItem item2) {
+                return string.Compare(item1.Label, item2.Label);
+            });
+
+            // Set initial configuration.  This should be updated when settings are read.
+            IsExportBestChecked = true;
+            importCfgCombo.SelectedIndex = 0;
+            exportCfgCombo.SelectedIndex = 0;
+        }
+
+        private void ConfigureImportSettings_Click(object sender, RoutedEventArgs e) {
             SettingsHolder settings = new SettingsHolder(AppSettings.Global);
             EditConvertOpts dialog = new EditConvertOpts(this, false, settings);
             if (dialog.ShowDialog() == true) {
@@ -1317,7 +1405,7 @@ namespace cp2_wpf {
             }
         }
 
-        private void ConfigureExportOptions_Click(object sender, RoutedEventArgs e) {
+        private void ConfigureExportSettings_Click(object sender, RoutedEventArgs e) {
             SettingsHolder settings = new SettingsHolder(AppSettings.Global);
             EditConvertOpts dialog = new EditConvertOpts(this, true, settings);
             if (dialog.ShowDialog() == true) {
@@ -1341,8 +1429,10 @@ namespace cp2_wpf {
             IsChecked_ExtRaw = IsChecked_ExtRaw;
             IsChecked_ExtStripPaths = IsChecked_ExtStripPaths;
 
+            SettingsHolder settings = AppSettings.Global;
+
             ExtractFileWorker.PreserveMode preserve =
-                AppSettings.Global.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
                     ExtractFileWorker.PreserveMode.None);
             switch (preserve) {
                 case ExtractFileWorker.PreserveMode.ADF:
@@ -1360,6 +1450,16 @@ namespace cp2_wpf {
                     IsChecked_ExtPreserveNone = true;
                     break;
             }
+
+            ImportConvTag = settings.GetString(AppSettings.CONV_IMPORT_TAG, string.Empty);
+            ExportConvTag = settings.GetString(AppSettings.CONV_EXPORT_TAG, string.Empty);
+            if (settings.GetBool(AppSettings.CONV_EXPORT_BEST, true)) {
+                IsExportBestChecked = true;
+            } else {
+                IsExportComboChecked = true;
+            }
+            OnPropertyChanged(nameof(IsExportBestChecked));
+            OnPropertyChanged(nameof(IsExportComboChecked));
         }
 
         #endregion Options Panel

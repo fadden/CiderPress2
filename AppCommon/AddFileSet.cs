@@ -178,6 +178,13 @@ namespace AppCommon {
         /// <summary>
         /// File import converter.
         /// </summary>
+        /// <remarks>
+        /// TODO: we currently have a single Importer defined for all files.  If we want to
+        /// support a "best" option that switches on file extension we'll need to make this
+        /// per-file (possibly creating one copy of each Importer and sharing the instance).
+        /// We can't defer the decision until later because we need to know which forks are
+        /// going to be created.
+        /// </remarks>
         internal FileConv.Importer? Importer { get; private set; }
 
         /// <summary>
@@ -196,6 +203,7 @@ namespace AppCommon {
         /// <param name="basePath">Base directory, for relative paths.</param>
         /// <param name="pathNames">List of full or relative pathnames.</param>
         /// <param name="options">Options.</param>
+        /// <param name="importSpec">For import operations, the conversion spec.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <exception cref="ArgumentException">Bad base path.</exception>
         /// <exception cref="DirectoryNotFoundException"><paramref name="basePath"/> does not
@@ -208,6 +216,8 @@ namespace AppCommon {
             mAppHook = appHook;
 
             if (importSpec != null) {
+                // This is an "import" operation.  All of the preservation parsing options
+                // should be false, since our inputs should be host files.
                 Importer = FileConv.ImportFoundry.GetConverter(importSpec.Tag, appHook);
                 if (Importer == null) {
                     throw new ArgumentException("unknown import converter '" +

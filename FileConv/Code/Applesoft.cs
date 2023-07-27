@@ -34,7 +34,8 @@ namespace FileConv.Code {
         public const string LABEL = "Applesoft BASIC";
         public const string DESCRIPTION =
             "Converts Applesoft BASIC programs to a text listing, with optional syntax " +
-            "highlighting.  The output is identical to the LIST command.";
+            "highlighting.  The output is identical to the LIST command.  Control characters " +
+            "can be converted to printable form.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
@@ -51,7 +52,7 @@ namespace FileConv.Code {
             };
 
         /// <summary>
-        /// Maximum possible length, assuming the program must fit in RAM.
+        /// Maximum conceivable length, assuming the program must fit in RAM.
         /// </summary>
         private const int MAX_LEN = 48 * 1024;
 

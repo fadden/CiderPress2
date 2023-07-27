@@ -91,6 +91,13 @@ namespace cp2_wpf.Actions {
                     bkWorker.ReportProgress(0, failMsg);
                     failMsg.WaitForResult();
                     break;
+                case CallbackFacts.Reasons.ConversionFailure:
+                    WorkProgress.MessageBoxQuery cfailMsg =
+                        new WorkProgress.MessageBoxQuery("Conversion failed: " + what.FailMessage,
+                            "Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    bkWorker.ReportProgress(0, cfailMsg);
+                    cfailMsg.WaitForResult();
+                    break;
             }
             return result;
         }

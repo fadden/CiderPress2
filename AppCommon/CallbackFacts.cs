@@ -60,6 +60,10 @@ namespace AppCommon {
             // Options: Continue, Cancel
             OverwriteFailure,
 
+            // An import or export conversion failed.
+            // Options: Continue, Cancel
+            ConversionFailure,
+
             // Operation has failed completely.  Reason in Message.
             // Options: Cancel
             Failure,

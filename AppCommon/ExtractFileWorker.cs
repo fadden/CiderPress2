@@ -629,11 +629,12 @@ namespace AppCommon {
                     conv = ExportFoundry.GetConverter(exportSpec.Tag, attrs, dataCopy, rsrcCopy,
                         mAppHook);
                     if (conv == null) {
-                        ReportFailure("no converter found for tag '" + exportSpec.Tag + "'");
+                        ReportConvFailure("no converter found for tag '" + exportSpec.Tag + "'");
                         return false;
                     }
                     if (conv.Applic <= Converter.Applicability.Not) {
-                        ReportFailure("converter is not suitable for '" + attrs.FileNameOnly + "'");
+                        ReportConvFailure("converter is not suitable for '" +
+                            attrs.FileNameOnly + "'");
                         return false;
                     }
                 }
@@ -642,7 +643,8 @@ namespace AppCommon {
                 IConvOutput convOutput = conv.ConvertFile(exportSpec.Options);
                 // TODO: show converter notes if --show-notes is set
                 if (convOutput is ErrorText) {
-                    ReportFailure("conversion failed: " + ((ErrorText)convOutput).Text.ToString());
+                    ReportConvFailure("conversion failed: " +
+                        ((ErrorText)convOutput).Text.ToString());
                     return false;
                 } else if (convOutput is FancyText && !((FancyText)convOutput).PreferSimple) {
                     string rtfPath = extractPath + ".rtf";
@@ -685,11 +687,11 @@ namespace AppCommon {
                         PNGGenerator.Generate((IBitmap)convOutput, outStream);
                     }
                 } else if (convOutput is HostConv) {
-                    ReportFailure("GIF/JPEG/PNG should be extracted, not exported");
+                    ReportConvFailure("GIF/JPEG/PNG should be extracted, not exported");
                     return false;
                 } else {
                     Debug.Assert(false, "unknown IConvOutput impl " + convOutput);
-                    ReportFailure("got weird output object: " + convOutput);
+                    ReportConvFailure("got weird output object: " + convOutput);
                     return false;
                 }
             } catch {
@@ -721,6 +723,12 @@ namespace AppCommon {
 
         private void ReportFailure(string msg) {
             CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Failure);
+            facts.FailMessage = msg;
+            mFunc(facts);
+        }
+
+        private void ReportConvFailure(string msg) {
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.ConversionFailure);
             facts.FailMessage = msg;
             mFunc(facts);
         }

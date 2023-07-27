@@ -102,8 +102,8 @@ namespace FileConv {
                 return null;
             }
 
-            string cmdName = matches[0].Groups[1].Value;
-            FileConvSpec spec = new FileConvSpec(cmdName);
+            string convTag = matches[0].Groups[1].Value;
+            FileConvSpec spec = new FileConvSpec(convTag);
 
             int optCount = matches[0].Groups[3].Captures.Count;
             for (int i = 0; i < optCount; i++) {

@@ -22,6 +22,7 @@ using AppCommon;
 using CommonUtil;
 using cp2_wpf.WPFCommon;
 using DiskArc;
+using FileConv;
 
 namespace cp2_wpf.Actions {
     /// <summary>
@@ -32,6 +33,7 @@ namespace cp2_wpf.Actions {
         private IFileEntry mSelectionDir;
         private List<IFileEntry> mSelected;
         private string mOutputDir;
+        ConvConfig.FileConvSpec? mExportSpec;
         private AppHook mAppHook;
 
         public ExtractFileWorker.PreserveMode Preserve { get; set; }
@@ -41,11 +43,13 @@ namespace cp2_wpf.Actions {
 
 
         public ExtractProgress(object archiveOrFileSystem, IFileEntry selectionDir,
-                List<IFileEntry> selected, string outputDir, AppHook appHook) {
+                List<IFileEntry> selected, string outputDir,
+                ConvConfig.FileConvSpec? exportSpec, AppHook appHook) {
             mArchiveOrFileSystem = archiveOrFileSystem;
             mSelectionDir = selectionDir;
             mSelected = selected;
             mOutputDir = outputDir;
+            mExportSpec = exportSpec;
             mAppHook = appHook;
         }
 
@@ -71,7 +75,7 @@ namespace cp2_wpf.Actions {
 
                 if (mArchiveOrFileSystem is IArchive) {
                     IArchive arc = (IArchive)mArchiveOrFileSystem;
-                    if (!extWorker.ExtractFromArchive(arc, mSelected, null,
+                    if (!extWorker.ExtractFromArchive(arc, mSelected, mExportSpec,
                             out bool wasCancelled)) {
                         // failed
                         if (wasCancelled) {
@@ -82,7 +86,7 @@ namespace cp2_wpf.Actions {
                     }
                 } else if (mArchiveOrFileSystem is IFileSystem) {
                     IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                    if (!extWorker.ExtractFromDisk(fs, mSelected, mSelectionDir, null,
+                    if (!extWorker.ExtractFromDisk(fs, mSelected, mSelectionDir, mExportSpec,
                             out bool wasCancelled)) {
                         // failed
                         if (wasCancelled) {

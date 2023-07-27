@@ -1464,7 +1464,9 @@ ignored.  (If you want to get a hex dump of the resource fork, extract it.)
 
 
 Import specifications work the same as export specifications, though there is
-no `best` conversion.
+no `best` conversion.  All attribute preservation parsing options (NAPS,
+AppleSingle, etc.) will be disabled, because the input files are expected to
+be host files.
 
 The available converters are:
  - `bas`: convert Applesoft BASIC listing back to a tokenized program (only

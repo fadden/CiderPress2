@@ -208,6 +208,9 @@ namespace cp2 {
                     Console.Error.WriteLine("Unable to overwrite existing file: " +
                         what.FailMessage + ": '" + what.OrigPathName + "'");
                     break;
+                case CallbackFacts.Reasons.ConversionFailure:
+                    Console.Error.WriteLine("Conversion failure: " + what.FailMessage);
+                    break;
                 case CallbackFacts.Reasons.Failure:
                     Console.Error.WriteLine(what.FailMessage);
                     break;

@@ -24,7 +24,8 @@ namespace FileConv {
     /// </summary>
     /// <remarks>
     /// <para>These may be executed as part of adding files to a file archive, which means they
-    /// need to work from an IFileSource.  The conversion may be run more than once.</para>
+    /// need to work from an IFileSource.  The conversion may be run more than once.  A single
+    /// instance may be used to convert multiple input files.</para>
     /// </remarks>
     public abstract class Importer {
         /// <summary>

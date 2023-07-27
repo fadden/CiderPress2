@@ -66,6 +66,10 @@ namespace cp2_wpf {
         public const string EXT_STRIP_PATHS_ENABLED = "ext-strip-paths-enabled";
         public const string EXT_PRESERVE_MODE = "ext-preserve-mode";
 
+        public const string CONV_IMPORT_TAG = "conv-import-tag";
+        public const string CONV_EXPORT_TAG = "conv-export-tag";
+        public const string CONV_EXPORT_BEST = "conv-export-best";
+
         // New archive/disk.
         public const string NEW_ARC_MODE = "new-arc-mode";
         public const string NEW_DISK_SIZE = "new-disk-size";
