@@ -405,6 +405,11 @@ namespace cp2_wpf {
         }
         private void CanNavToParent(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                ((mMainCtrl.IsHierarchicalFileSystemSelected && !mMainCtrl.IsSelectedDirRoot) ||
+                !mMainCtrl.IsSelectedArchiveRoot));
+        }
+        private void CanNavToParentDir(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsHierarchicalFileSystemSelected && !mMainCtrl.IsSelectedDirRoot);
         }
 
@@ -512,7 +517,10 @@ namespace cp2_wpf {
             mMainCtrl.ImportFiles();
         }
         private void NavToParentCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            mMainCtrl.NavToParent();
+            mMainCtrl.NavToParent(false);
+        }
+        private void NavToParentDirCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.NavToParent(true);
         }
         private void NewDiskImageCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.NewDiskImage();

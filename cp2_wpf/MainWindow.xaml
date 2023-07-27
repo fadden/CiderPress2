@@ -99,12 +99,13 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="ImportFilesCmd" Text="Import Files..."/>
-            <RoutedUICommand x:Key="NavToParentCmd" Text="Go To Parent Directory">
+            <RoutedUICommand x:Key="NavToParentCmd" Text="Go To Parent">
                 <RoutedUICommand.InputGestures>
                     <!-- Ctrl+Up is taken by the standard controls (moves the scrollbar) -->
                     <KeyGesture>Alt+Up</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
+            <RoutedUICommand x:Key="NavToParentDirCmd" Text="Go To Parent Directory"/>
             <RoutedUICommand x:Key="NewDiskImageCmd" Text="New _Disk Image...">
                 <RoutedUICommand.InputGestures>
                     <KeyGesture>Ctrl+N</KeyGesture>
@@ -178,6 +179,8 @@ limitations under the License.
                         CanExecute="CanAddFiles" Executed="ImportFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource NavToParentCmd}"
                         CanExecute="CanNavToParent" Executed="NavToParentCmd_Executed"/>
+        <CommandBinding Command="{StaticResource NavToParentDirCmd}"
+                        CanExecute="CanNavToParentDir" Executed="NavToParentDirCmd_Executed"/>
         <CommandBinding Command="{StaticResource NewDiskImageCmd}"
                         Executed="NewDiskImageCmd_Executed"/>
         <CommandBinding Command="{StaticResource NewFileArchiveCmd}"
@@ -275,6 +278,7 @@ limitations under the License.
                 <MenuItem Command="{StaticResource ShowInfoCmd}"/>
             </MenuItem>
             <MenuItem Header="_Navigate">
+                <MenuItem Command="{StaticResource NavToParentDirCmd}"/>
                 <MenuItem Command="{StaticResource NavToParentCmd}"/>
             </MenuItem>
             <MenuItem Header="_Help">
@@ -314,7 +318,7 @@ limitations under the License.
                     <ContentControl Template="{StaticResource icon_ClearSort}"/>
                 </Button>
                 <Button Command="{StaticResource NavToParentCmd}"
-                        ToolTip="Move to parent directory">
+                        ToolTip="Move to parent">
                     <ContentControl Template="{StaticResource icon_Upload}"/>
                 </Button>
 

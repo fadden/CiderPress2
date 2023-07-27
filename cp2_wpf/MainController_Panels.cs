@@ -211,6 +211,16 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// True if the entry selected in the archive tree is at the root (the host file).
+        /// </summary>
+        public bool IsSelectedArchiveRoot {
+            get {
+                ArchiveTreeItem? arcSel = mMainWin.SelectedArchiveTreeItem;
+                return (arcSel != null && arcSel.Parent == null);
+            }
+        }
+
+        /// <summary>
         /// True if the item selected in the archive tree view is a closable sub-tree.
         /// </summary>
         public bool IsClosableTreeSelected {

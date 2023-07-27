@@ -306,12 +306,24 @@ namespace cp2_wpf {
             }
         }
 
-        public void NavToParent() {
+        public void NavToParent(bool dirOnly) {
             DirectoryTreeItem? dirSel = mMainWin.SelectedDirectoryTreeItem;
-            if (dirSel == null || dirSel.Parent == null) {
+            if (dirSel == null) {
                 return;
             }
-            dirSel.Parent.IsSelected = true;
+            if (dirSel.Parent != null) {
+                dirSel.Parent.IsSelected = true;
+                DirectoryTreeItem.BringItemIntoView(mMainWin.directoryTree, dirSel.Parent);
+            } else if (!dirOnly) {
+                ArchiveTreeItem? arcSel = mMainWin.SelectedArchiveTreeItem;
+                if (arcSel == null) {
+                    return;
+                }
+                if (arcSel.Parent != null) {
+                    arcSel.Parent.IsSelected = true;
+                    ArchiveTreeItem.BringItemIntoView(mMainWin.archiveTree, arcSel.Parent);
+                }
+            }
         }
 
         public void NewDiskImage() {
