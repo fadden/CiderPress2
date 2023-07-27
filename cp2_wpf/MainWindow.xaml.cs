@@ -1310,13 +1310,19 @@ namespace cp2_wpf {
         }
 
         private void ConfigureImportOptions_Click(object sender, RoutedEventArgs e) {
-            EditConvertOpts dialog = new EditConvertOpts(this, false);
-            dialog.ShowDialog();
+            SettingsHolder settings = new SettingsHolder(AppSettings.Global);
+            EditConvertOpts dialog = new EditConvertOpts(this, false, settings);
+            if (dialog.ShowDialog() == true) {
+                AppSettings.Global.MergeSettings(settings);
+            }
         }
 
         private void ConfigureExportOptions_Click(object sender, RoutedEventArgs e) {
-            EditConvertOpts dialog = new EditConvertOpts(this, true);
-            dialog.ShowDialog();
+            SettingsHolder settings = new SettingsHolder(AppSettings.Global);
+            EditConvertOpts dialog = new EditConvertOpts(this, true, settings);
+            if (dialog.ShowDialog() == true) {
+                AppSettings.Global.MergeSettings(settings);
+            }
         }
 
         /// <summary>

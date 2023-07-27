@@ -35,6 +35,9 @@ namespace FileConv.Gfx {
 
         private HostConv.FileKind mKind;
 
+
+        private HostImage() { }
+
         public HostImage(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook)
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {

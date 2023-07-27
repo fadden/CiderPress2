@@ -53,6 +53,8 @@ namespace FileConv.Doc {
             };
 
 
+        private RandomText() { }
+
         public RandomText(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook)
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {

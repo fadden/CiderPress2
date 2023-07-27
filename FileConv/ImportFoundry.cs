@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+
 using CommonUtil;
 
 namespace FileConv {
@@ -46,6 +47,7 @@ namespace FileConv {
             public string Tag { get; private set; }
             public string Label { get; private set; }
             public string Description { get; private set; }
+            public List<Converter.OptionDefinition> OptionDefs { get; private set; }
 
             // Converter subclass.
             private Type mImplClass;
@@ -58,9 +60,16 @@ namespace FileConv {
 
                 mImplClass = implClass;
 
-                Tag = (string)implClass.GetField("TAG")!.GetValue(null)!;
-                Label = (string)implClass.GetField("LABEL")!.GetValue(null)!;
-                Description = (string)implClass.GetField("DESCRIPTION")!.GetValue(null)!;
+                ConstructorInfo? nullCtor = implClass.GetConstructor(
+                    BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>());
+                if (nullCtor == null) {
+                    throw new Exception("Unable to find nullary ctor in " + implClass.FullName);
+                }
+                object instance = nullCtor.Invoke(Array.Empty<object>());
+                Tag = ((Importer)instance).Tag;
+                Label = ((Importer)instance).Label;
+                Description = ((Importer)instance).Description;
+                OptionDefs = ((Importer)instance).OptionDefs;
 
                 // Cache a reference to the constructor.
                 ConstructorInfo? ctor = implClass.GetConstructor(
@@ -114,11 +123,12 @@ namespace FileConv {
         /// <param name="label">Result: UI label.</param>
         /// <param name="description">Result: long description.</param>
         public static void GetConverterInfo(int index, out string tag, out string label,
-                out string description) {
+                out string description, out List<Converter.OptionDefinition> optionDefs) {
             ConverterEntry entry = sConverters[index];
             tag = entry.Tag;
             label = entry.Label;
             description = entry.Description;
+            optionDefs = entry.OptionDefs;
         }
 
         /// <summary>

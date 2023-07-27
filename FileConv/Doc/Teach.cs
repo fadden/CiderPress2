@@ -36,6 +36,9 @@ namespace FileConv.Doc {
         private const ushort TEACH_AUX_TYPE = 0x5445;       // 'TE', for TextEdit or TEach
         private const int RSTYLEBLOCK = 0x8012;
 
+
+        private Teach() { }
+
         public Teach(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook)
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {

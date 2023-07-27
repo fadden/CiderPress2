@@ -89,6 +89,8 @@ namespace FileConv.Code {
         private static readonly int COLOR_COLON = ConvUtil.MakeRGB(0xff, 0x00, 0x00);
 
 
+        private Applesoft() { }
+
         public Applesoft(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook)
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {

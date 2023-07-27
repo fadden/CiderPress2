@@ -52,6 +52,9 @@ namespace FileConv.Generic {
 
         private const string TXT_EXT = ".txt";
 
+
+        private PlainTextImport() { }
+
         public PlainTextImport(AppHook appHook) : base(appHook) {
             HasDataFork = true;
             HasRsrcFork = false;
@@ -102,7 +105,7 @@ namespace FileConv.Generic {
                 dstMode = ConvUtil.ImportCharDst.ASCII;
             }
             if (dstMode == ConvUtil.ImportCharDst.ASCII && dataOutStream is DOS_FileDesc) {
-                mAppHook.LogI("Switching output mode from ASCII to HighASCII");
+                mAppHook!.LogI("Switching output mode from ASCII to HighASCII");
                 dstMode = ConvUtil.ImportCharDst.HighASCII;
             }
 

@@ -34,6 +34,9 @@ namespace FileConv.Gfx {
 
         public const int EXPECTED_LEN = 32768;
 
+
+        private SuperHiRes() { }
+
         public SuperHiRes(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook)
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {

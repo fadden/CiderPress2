@@ -44,6 +44,8 @@ namespace FileConv.Gfx {
         private const int MIN_LEN = EXPECTED_LEN - 8;
         private const int MAX_LEN = EXPECTED_LEN + 1;
 
+        private HiRes() { }
+
         public HiRes(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook)
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {

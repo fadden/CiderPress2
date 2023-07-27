@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -25,6 +26,8 @@ using System.Windows.Input;
 using AppCommon;
 using CommonUtil;
 using FileConv;
+using static cp2_wpf.ConfigOptCtrl;
+using static FileConv.Converter;
 
 namespace cp2_wpf {
     /// <summary>
@@ -50,34 +53,46 @@ namespace cp2_wpf {
             public string Tag { get; private set; }
             public string Label { get; private set; }
             public string Description { get; private set; }
+            public List<Converter.OptionDefinition> OptionDefs { get; protected set; }
 
-            public ConverterListItem(string tag, string label, string description) {
+            public ConverterListItem(string tag, string label, string description,
+                    List<Converter.OptionDefinition> optionDefs) {
                 Tag = tag;
                 Label = label;
                 Description = description;
+                OptionDefs = optionDefs;
             }
         }
 
         public List<ConverterListItem> ConverterList { get; } = new List<ConverterListItem>();
 
+        private SettingsHolder mSettings;
+        private string mSettingPrefix;
 
-        public EditConvertOpts(Window owner, bool isExport) {
+
+        public EditConvertOpts(Window owner, bool isExport, SettingsHolder settings) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
+            mSettings = settings;
+
             if (isExport) {
+                mSettingPrefix = AppSettings.EXPORT_SETTING_PREFIX;
                 for (int i = 0; i < ExportFoundry.GetCount(); i++) {
                     ExportFoundry.GetConverterInfo(i, out string tag, out string label,
-                        out string description);
-                    ConverterListItem item = new ConverterListItem(tag, label, description);
+                        out string description, out List<OptionDefinition> optionDefs);
+                    ConverterListItem item =
+                        new ConverterListItem(tag, label, description, optionDefs);
                     ConverterList.Add(item);
                 }
             } else {
+                mSettingPrefix = AppSettings.IMPORT_SETTING_PREFIX;
                 for (int i = 0; i < ImportFoundry.GetCount(); i++) {
                     ImportFoundry.GetConverterInfo(i, out string tag, out string label,
-                        out string description);
-                    ConverterListItem item = new ConverterListItem(tag, label, description);
+                        out string description, out List<OptionDefinition> optionDefs);
+                    ConverterListItem item =
+                        new ConverterListItem(tag, label, description, optionDefs);
                     ConverterList.Add(item);
                 }
             }
@@ -86,6 +101,8 @@ namespace cp2_wpf {
                 return string.Compare(item1.Label, item2.Label);
             });
             converterCombo.SelectedIndex = 0;
+
+            CreateControlMap();
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
@@ -101,6 +118,83 @@ namespace cp2_wpf {
 
             // Set the description, replacing any newline chars with the system's preferred EOL.
             DescriptionText = selItem.Description.Replace("\n", Environment.NewLine);
+
+            ConfigureControls(selItem.Tag, selItem.OptionDefs);
+        }
+
+
+        private List<ControlMapItem> mCustomCtrls = new List<ControlMapItem>();
+        private Dictionary<string, string> mConvOptions = new Dictionary<string, string>();
+
+        /// <summary>
+        /// Creates a map of the configurable controls.  The controls are defined in the
+        /// "options" section of the XAML.
+        /// </summary>
+        private void CreateControlMap() {
+            mCustomCtrls.Add(new ToggleButtonMapItem(UpdateOption, checkBox1));
+            mCustomCtrls.Add(new ToggleButtonMapItem(UpdateOption, checkBox2));
+            mCustomCtrls.Add(new ToggleButtonMapItem(UpdateOption, checkBox3));
+            mCustomCtrls.Add(new TextBoxMapItem(UpdateOption, stringInput1, stringInput1_Label,
+                stringInput1_Box));
+            mCustomCtrls.Add(new RadioButtonGroupItem(UpdateOption, multiGroup1,
+                new RadioButton[] { radioButton1_1, radioButton1_2, radioButton1_3,
+                    radioButton1_4 }));
+        }
+
+        /// <summary>
+        /// Configures the controls for a specific converter.
+        /// </summary>
+        /// <remarks>
+        /// The initial default value is determined by the option's default value and the
+        /// local settings.
+        /// </remarks>
+        /// <param name="conv">Converter to configure for.</param>
+        private void ConfigureControls(string convTag, List<OptionDefinition> optDefs) {
+            Debug.WriteLine("Configure controls for " + convTag);
+            mIsConfiguring = true;
+
+            // Configure options for every control.  If not present in the config file, set
+            // the control's default.
+            mConvOptions = ConfigOptCtrl.LoadExportOptions(optDefs, mSettingPrefix, convTag);
+
+            ConfigOptCtrl.HideConvControls(mCustomCtrls);
+
+            // Show or hide the "no options" message.
+            if (optDefs.Count == 0) {
+                noOptions.Visibility = Visibility.Visible;
+            } else {
+                noOptions.Visibility = Visibility.Collapsed;
+            }
+
+            ConfigOptCtrl.ConfigureControls(mCustomCtrls, optDefs, mConvOptions);
+
+            mIsConfiguring = false;
+        }
+
+        private bool mIsConfiguring;
+
+        /// <summary>
+        /// Updates an option as the result of UI interaction.
+        /// </summary>
+        /// <param name="tag">Tag of option to update.</param>
+        /// <param name="newValue">New value.</param>
+        private void UpdateOption(string tag, string newValue) {
+            if (mIsConfiguring) {
+                Debug.WriteLine("Ignoring initial set '" + tag + "' = '" + newValue + "'");
+                return;
+            }
+
+            // Get converter tag, so we can form the settings file key.
+            ConverterListItem? selItem = converterCombo.SelectedItem as ConverterListItem;
+            Debug.Assert(selItem != null);
+            string settingKey = mSettingPrefix + selItem.Tag;
+
+            // Update the setting and generate the new config string.
+            mConvOptions[tag] = newValue;
+            string optStr = ConvConfig.GenerateOptString(mConvOptions);
+
+            // Save it to our local copy of the settings.
+            mSettings.SetString(settingKey, optStr);
         }
     }
 }

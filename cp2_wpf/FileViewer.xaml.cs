@@ -660,7 +660,6 @@ namespace cp2_wpf {
 
         #region Configure
 
-        private const string VIEW_CONFIG_PREFIX = "view-conv-";
 
         private List<ControlMapItem> mCustomCtrls = new List<ControlMapItem>();
 
@@ -693,8 +692,8 @@ namespace cp2_wpf {
 
             // Configure options for every control.  If not present in the config file, set
             // the control's default.
-            mConvOptions = ConfigOptCtrl.LoadExportOptions(conv.OptionDefs, VIEW_CONFIG_PREFIX,
-                conv.Tag);
+            mConvOptions = ConfigOptCtrl.LoadExportOptions(conv.OptionDefs,
+                AppSettings.VIEW_SETTING_PREFIX, conv.Tag);
 
             ConfigOptCtrl.HideConvControls(mCustomCtrls);
 
@@ -723,21 +722,23 @@ namespace cp2_wpf {
                 return;
             }
 
-            mConvOptions[tag] = newValue;
-
+            // Get converter tag, so we can form the settings file key.
             ConverterComboItem? item = (ConverterComboItem)convComboBox.SelectedItem;
             Debug.Assert(item != null);
-            mConvOptions[tag] = newValue;
+            string settingKey = AppSettings.VIEW_SETTING_PREFIX + item.Converter.Tag;
 
+            // Update setting, and generate the new setting string.
+            mConvOptions[tag] = newValue;
             string optStr = ConvConfig.GenerateOptString(mConvOptions);
-            string settingKey = VIEW_CONFIG_PREFIX + item.Converter.Tag;
 
             // Enable the button if the config string doesn't match what's in the app settings.
+            // We don't actually update the settings here.
             IsSaveDefaultsEnabled =
                 (AppSettings.Global.GetString(settingKey, string.Empty) != optStr);
             //Debug.WriteLine("CMP '" + AppSettings.Global.GetString(settingKey, string.Empty) +
             //    "' vs '" + optStr + "'");
 
+            // Update the formatted file output.
             FormatFile();
         }
 
@@ -755,7 +756,7 @@ namespace cp2_wpf {
             Debug.Assert(item != null);
 
             string optStr = ConvConfig.GenerateOptString(mConvOptions);
-            string settingKey = VIEW_CONFIG_PREFIX + item.Converter.Tag;
+            string settingKey = AppSettings.VIEW_SETTING_PREFIX + item.Converter.Tag;
             AppSettings.Global.SetString(settingKey, optStr);
             IsSaveDefaultsEnabled = false;
         }

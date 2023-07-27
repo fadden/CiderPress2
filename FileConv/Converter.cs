@@ -169,7 +169,8 @@ namespace FileConv {
         /// <summary>
         /// File attributes of the file being converted.
         /// </summary>
-        protected FileAttribs FileAttrs { get; set; }
+        protected FileAttribs FileAttrs { get; set; } = NO_ATTRS;
+        private static readonly FileAttribs NO_ATTRS = new FileAttribs();
 
         /// <summary>
         /// Data fork stream; may be null.
@@ -196,9 +197,14 @@ namespace FileConv {
         /// </summary>
         protected ConvFlags Flags { get; set; }
 
-        protected AppHook mAppHook;
+        protected AppHook? mAppHook;
         protected bool mRsrcAsHex;
 
+
+        /// <summary>
+        /// Nullary constructor, so we can extract converter properties.
+        /// </summary>
+        protected Converter() { }
 
         /// <summary>
         /// Constructor.
@@ -250,12 +256,12 @@ namespace FileConv {
             }
             if (mRsrcAsHex) {
                 // When in hex dump mode, we dump both forks as hex.
-                HexDump hex = new HexDump(FileAttrs, RsrcStream, null, ResMgr, Flags, mAppHook);
+                HexDump hex = new HexDump(FileAttrs, RsrcStream, null, ResMgr, Flags, mAppHook!);
                 return hex.ConvertFile(options);
             } else if (ResMgr == null) {
                 // Resource fork parsing failed, dump as plain text.
                 PlainText conv =
-                    new PlainText(FileAttrs, RsrcStream, null, ResMgr, Flags, mAppHook);
+                    new PlainText(FileAttrs, RsrcStream, null, ResMgr, Flags, mAppHook!);
                 return conv.ConvertFile(options);
             } else {
                 // Dump resource fork contents.

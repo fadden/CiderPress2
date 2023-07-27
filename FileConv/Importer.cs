@@ -61,8 +61,13 @@ namespace FileConv {
         public virtual List<OptionDefinition> OptionDefs { get; protected set; } =
             new List<OptionDefinition>();
 
-        protected AppHook mAppHook;
+        protected AppHook? mAppHook;
 
+
+        /// <summary>
+        /// Nullary constructor, so we can extract importer properties.
+        /// </summary>
+        protected Importer() { }
 
         /// <summary>
         /// Constructor.

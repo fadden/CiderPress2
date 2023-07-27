@@ -52,8 +52,10 @@ namespace FileConv.Code {
         private const int MAX_TOKENIZED_LINE_LEN = 32768;
 
 
+        private ApplesoftImport() { }
+
         public ApplesoftImport(AppHook appHook) : base (appHook) {
-            mAppHook.LogD("Importing Applesoft");
+            appHook.LogD("Importing Applesoft");
             Debug.Assert(DebugTestTokenLookup());
         }
 

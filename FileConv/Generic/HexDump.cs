@@ -50,6 +50,8 @@ namespace FileConv.Generic {
         private byte[] mDataBuf = new byte[32768];
 
 
+        private HexDump() { }
+
         public HexDump(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
                 ResourceMgr? resMgr, ConvFlags convFlags, AppHook appHook)
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {

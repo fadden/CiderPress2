@@ -84,6 +84,7 @@ namespace CommonUtil {
             foreach (KeyValuePair<string, string> kvp in newSettings.mSettings) {
                 mSettings[kvp.Key] = kvp.Value;     // add or replace
             }
+            // We could be more careful here and only raise IsDirty if we actually change a value.
             IsDirty = true;
         }
 

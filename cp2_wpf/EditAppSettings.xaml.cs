@@ -150,13 +150,21 @@ namespace cp2_wpf {
         }
 
         private void ConfigureImportOptions_Click(object sender, RoutedEventArgs e) {
-            EditConvertOpts dialog = new EditConvertOpts(this, false);
-            dialog.ShowDialog();
+            SettingsHolder settings = new SettingsHolder(mSettings);
+            EditConvertOpts dialog = new EditConvertOpts(this, false, settings);
+            if (dialog.ShowDialog() == true) {
+                mSettings.MergeSettings(settings);
+                IsDirty = mSettings.IsDirty;
+            }
         }
 
         private void ConfigureExportOptions_Click(object sender, RoutedEventArgs e) {
-            EditConvertOpts dialog = new EditConvertOpts(this, true);
-            dialog.ShowDialog();
+            SettingsHolder settings = new SettingsHolder(mSettings);
+            EditConvertOpts dialog = new EditConvertOpts(this, true, settings);
+            if (dialog.ShowDialog() == true) {
+                mSettings.MergeSettings(settings);
+                IsDirty = mSettings.IsDirty;
+            }
         }
 
         public bool EnableDebugMenu {

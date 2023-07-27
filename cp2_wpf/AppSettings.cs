@@ -34,6 +34,10 @@ namespace cp2_wpf {
         // Setting name constants.
         //
 
+        public const string VIEW_SETTING_PREFIX = "view-conv-";
+        public const string IMPORT_SETTING_PREFIX = "view-conv-";
+        public const string EXPORT_SETTING_PREFIX = "view-conv-";
+
         // Main window position and panel sizing.
         public const string MAIN_WINDOW_PLACEMENT = "main-window-placement";
         public const string MAIN_LEFT_PANEL_WIDTH = "main-left-panel-width";
