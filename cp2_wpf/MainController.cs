@@ -850,6 +850,10 @@ namespace cp2_wpf {
         /// Handles Actions : Add Files
         /// </summary>
         public void AddFiles() {
+            HandleAddImport(null);
+        }
+
+        private void HandleAddImport(ConvConfig.FileConvSpec? spec) {
             // TODO: need a custom dialog to select files/folders.  All of the nonsense called out
             // in https://github.com/fadden/ciderpress/blob/master/util/SelectFilesDialog.h still
             // exists.  https://stackoverflow.com/q/31059/294248 has some stuff but it's
@@ -866,7 +870,7 @@ namespace cp2_wpf {
                 return;
             }
             Debug.WriteLine("Add files:");
-            AddPaths(fileDlg.FileNames, null);
+            AddPaths(fileDlg.FileNames, spec);
         }
 
         /// <summary>
@@ -877,7 +881,8 @@ namespace cp2_wpf {
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
-            AddPaths(pathNames, null);
+            ConvConfig.FileConvSpec? spec = null;       // TODO: import if configured
+            AddPaths(pathNames, spec);
         }
 
         private void AddPaths(string[] pathNames, ConvConfig.FileConvSpec? importSpec) {
@@ -920,7 +925,11 @@ namespace cp2_wpf {
             // Do the extraction on a background thread so we can show progress.
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
-                mMainWin.PostNotification("Files added", true);
+                if (importSpec == null) {
+                    mMainWin.PostNotification("Files added", true);
+                } else {
+                    mMainWin.PostNotification("Files imported", true);
+                }
             } else {
                 mMainWin.PostNotification("Cancelled", false);
             }
@@ -1343,7 +1352,26 @@ namespace cp2_wpf {
         /// Handles Actions : Export Files
         /// </summary>
         public void ImportFiles() {
-            Debug.WriteLine("TODO: import");
+            string convTag = mMainWin.ImportConvTag;
+            string settingKey = AppSettings.IMPORT_SETTING_PREFIX + convTag;
+            string convSettings = AppSettings.Global.GetString(settingKey, string.Empty);
+
+            ConvConfig.FileConvSpec? spec;
+            if (string.IsNullOrEmpty(convSettings)) {
+                spec = ConvConfig.CreateSpec(convTag);
+            } else {
+                spec = ConvConfig.CreateSpec(convTag + "," + convSettings);
+            }
+            if (spec == null) {
+                // String parsing failure.  Use default options.
+                Debug.Assert(false);
+                AppHook.LogW("Failed to parse converter settings for " + convTag + " '" +
+                    convSettings + "'");
+                spec = ConvConfig.CreateSpec(convTag);
+                Debug.Assert(spec != null);
+            }
+            Debug.WriteLine("Export spec: " + spec);
+            HandleAddImport(spec);
         }
 
         /// <summary>

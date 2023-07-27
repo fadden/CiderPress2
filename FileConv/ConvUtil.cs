@@ -136,7 +136,7 @@ namespace FileConv {
             CHAR_MODE_UTF8, CHAR_MODE_LATIN, CHAR_MODE_CP1252
         };
         public static readonly string[] ImportCharSrcDescrs = new string[] {
-            "UTF-8", "ISO Latin-1", "Win CP252"
+            "UTF-8", "ISO Latin-1", "Win CP1252"
         };
 
         /// <summary>

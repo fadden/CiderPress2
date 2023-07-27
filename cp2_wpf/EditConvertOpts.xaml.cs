@@ -141,6 +141,9 @@ namespace cp2_wpf {
             mCustomCtrls.Add(new RadioButtonGroupItem(UpdateOption, multiGroup1,
                 new RadioButton[] { radioButton1_1, radioButton1_2, radioButton1_3,
                     radioButton1_4 }));
+            mCustomCtrls.Add(new RadioButtonGroupItem(UpdateOption, multiGroup2,
+                new RadioButton[] { radioButton2_1, radioButton2_2, radioButton2_3,
+                    radioButton2_4 }));
         }
 
         /// <summary>

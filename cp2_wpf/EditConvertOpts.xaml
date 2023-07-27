@@ -61,16 +61,28 @@ limitations under the License.
                     <TextBlock Name="stringInput1_Label" Text="Entry label:" Margin="0,0,8,0"/>
                     <TextBox Name="stringInput1_Box" Width="70" Text="100"/>
                 </StackPanel>
-                <GroupBox Name="multiGroup1" Header="Multi Group">
+                <GroupBox Name="multiGroup1" Header="Multi Group 1">
                     <StackPanel>
                         <RadioButton Name="radioButton1_1" GroupName="group1"
                                      Content="Radio 1" Margin="0,2,0,0"/>
                         <RadioButton Name="radioButton1_2" GroupName="group1"
                                      Content="Radio 2" Margin="0,2,0,0"/>
                         <RadioButton Name="radioButton1_3" GroupName="group1"
-                                     Content="Radio 2" Margin="0,2,0,0"/>
+                                     Content="Radio 3" Margin="0,2,0,0"/>
                         <RadioButton Name="radioButton1_4" GroupName="group1"
+                                     Content="Radio 4" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Name="multiGroup2" Header="Multi Group 2">
+                    <StackPanel>
+                        <RadioButton Name="radioButton2_1" GroupName="group2"
+                                     Content="Radio 1" Margin="0,2,0,0"/>
+                        <RadioButton Name="radioButton2_2" GroupName="group2"
                                      Content="Radio 2" Margin="0,2,0,0"/>
+                        <RadioButton Name="radioButton2_3" GroupName="group2"
+                                     Content="Radio 3" Margin="0,2,0,0"/>
+                        <RadioButton Name="radioButton2_4" GroupName="group2"
+                                     Content="Radio 4" Margin="0,2,0,0"/>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

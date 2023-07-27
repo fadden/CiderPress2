@@ -30,9 +30,10 @@ namespace FileConv.Generic {
         public const string LABEL = "Plain Text";
         public const string DESCRIPTION =
             "Converts a text document for use on an Apple II or vintage Macintosh.  " +
-            "End-of-line markers are converted to carriage returns.  The handling of non-ASCII " +
-            "characters is configurable.  Files imported to DOS disks will be stored as " +
-            "high ASCII.";
+            "End-of-line markers are converted to carriage returns.\n\n" +
+            "The handling of non-ASCII characters is configurable, by specifying the host " +
+            "file format and the destination file character encoding.  Files imported to DOS " +
+            "disks will be stored as high ASCII.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
