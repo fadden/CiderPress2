@@ -387,10 +387,6 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen);
         }
 
-        private void IsWritableFileAreaShowing(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
-                ShowCenterFileList);
-        }
         private void IsWritableSingleEntrySelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
                 mMainCtrl.IsSingleEntrySelected);
@@ -398,10 +394,6 @@ namespace cp2_wpf {
         private void AreFileEntriesSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList &&
                 mMainCtrl.AreFileEntriesSelected);
-        }
-        private void AreWritableFileEntriesSelected(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
-                ShowCenterFileList && mMainCtrl.AreFileEntriesSelected);
         }
         private void IsSubTreeSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
@@ -416,6 +408,15 @@ namespace cp2_wpf {
                 mMainCtrl.IsHierarchicalFileSystemSelected && !mMainCtrl.IsSelectedDirRoot);
         }
 
+        private void CanAddFiles(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+                mMainCtrl.IsMultiFileItemSelected && ShowCenterFileList);
+        }
+        private void CanDeleteFiles(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+                mMainCtrl.IsMultiFileItemSelected && ShowCenterFileList &&
+                mMainCtrl.AreFileEntriesSelected);
+        }
         private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.CanEditBlocks);

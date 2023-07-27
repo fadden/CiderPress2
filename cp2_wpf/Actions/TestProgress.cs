@@ -79,17 +79,9 @@ namespace cp2_wpf.Actions {
 
             if (mArchiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)mArchiveOrFileSystem;
-                //if (!Misc.StdChecks(arc, needWrite: false, needMulti: false)) {
-                //    return false;
-                //}
-
                 TestArchive(arc, mSelected, EnableMacOSZip, bkWorker, failures);
             } else {
                 IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                //if (!Misc.StdChecks(fs, needWrite: false, fastScan: false)) {
-                //    return false;
-                //}
-
                 TestFileSystem(fs, mSelected, bkWorker, failures);
 
                 // Don't descend into embedded volumes.  If they want to test those, they can

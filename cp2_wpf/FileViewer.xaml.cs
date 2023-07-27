@@ -730,7 +730,11 @@ namespace cp2_wpf {
             string settingKey = AppSettings.VIEW_SETTING_PREFIX + item.Converter.Tag;
 
             // Update setting, and generate the new setting string.
-            mConvOptions[tag] = newValue;
+            if (string.IsNullOrEmpty(newValue)) {
+                mConvOptions.Remove(tag);
+            } else {
+                mConvOptions[tag] = newValue;
+            }
             string optStr = ConvConfig.GenerateOptString(mConvOptions);
 
             // Enable the button if the config string doesn't match what's in the app settings.

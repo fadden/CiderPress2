@@ -195,10 +195,16 @@ namespace cp2_wpf {
             string settingKey = mSettingPrefix + selItem.Tag;
 
             // Update the setting and generate the new config string.
-            mConvOptions[tag] = newValue;
+            if (string.IsNullOrEmpty(newValue)) {
+                mConvOptions.Remove(tag);
+            } else {
+                mConvOptions[tag] = newValue;
+            }
             string optStr = ConvConfig.GenerateOptString(mConvOptions);
 
             // Save it to our local copy of the settings.
+            // We can't remove it when empty because our changes are getting merged back into a
+            // larger pool of settings.
             mSettings.SetString(settingKey, optStr);
         }
     }

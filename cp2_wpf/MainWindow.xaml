@@ -22,7 +22,7 @@ limitations under the License.
         xmlns:local="clr-namespace:cp2_wpf"
         mc:Ignorable="d"
         Title="CiderPress II"
-        Width="1200" Height="800" MinWidth="640" MinHeight="660" ResizeMode="CanResizeWithGrip"
+        Width="1200" Height="800" MinWidth="640" MinHeight="680" ResizeMode="CanResizeWithGrip"
         SourceInitialized="Window_SourceInitialized"
         Loaded="Window_Loaded"
         LocationChanged="Window_LocationChanged"
@@ -143,7 +143,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource AboutCmd}"
                         Executed="AboutCmd_Executed"/>
         <CommandBinding Command="{StaticResource AddFilesCmd}"
-                        CanExecute="IsWritableFileAreaShowing" Executed="AddFilesCmd_Executed"/>
+                        CanExecute="CanAddFiles" Executed="AddFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource CloseCmd}"
                         CanExecute="IsFileOpen" Executed="CloseCmd_Executed"/>
         <CommandBinding Command="{StaticResource CloseSubTreeCmd}"
@@ -155,7 +155,7 @@ limitations under the License.
         <CommandBinding Command="Cut"
                         CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
         <CommandBinding Command="{StaticResource DeleteFilesCmd}"
-                        CanExecute="AreWritableFileEntriesSelected" Executed="DeleteFilesCmd_Executed"/>
+                        CanExecute="CanDeleteFiles" Executed="DeleteFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
                         Executed="EditAppSettingsCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAttributesCmd}"
@@ -175,7 +175,7 @@ limitations under the License.
         <CommandBinding Command="Help"
                         Executed="HelpCmd_Executed"/>
         <CommandBinding Command="{StaticResource ImportFilesCmd}"
-                        CanExecute="IsWritableFileAreaShowing" Executed="ImportFilesCmd_Executed"/>
+                        CanExecute="CanAddFiles" Executed="ImportFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource NavToParentCmd}"
                         CanExecute="CanNavToParent" Executed="NavToParentCmd_Executed"/>
         <CommandBinding Command="{StaticResource NewDiskImageCmd}"
@@ -840,7 +840,7 @@ limitations under the License.
 
                                 <GroupBox Header="Import Configuration" Padding="0,2,0,0">
                                     <StackPanel>
-                                        <CheckBox Content="Strip Redundant Extensions"
+                                        <CheckBox Content="Strip Redundant Extensions" Margin="0,2,0,0"
                                               IsChecked="{Binding IsChecked_AddStripExt}"/>
                                         <TextBlock Text="Conversion mode:" Margin="0,4,0,0"/>
                                         <ComboBox Margin="0,4,0,0" Name="importCfgCombo"

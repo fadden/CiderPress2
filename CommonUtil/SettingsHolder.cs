@@ -98,6 +98,17 @@ namespace CommonUtil {
         }
 
         /// <summary>
+        /// Removes the setting.
+        /// </summary>
+        /// <param name="name">Name of setting to remove.</param>
+        /// <returns>True if a setting was removed.</returns>
+        public bool Remove(string name) {
+            bool removed = mSettings.Remove(name);
+            IsDirty |= removed;
+            return removed;
+        }
+
+        /// <summary>
         /// Retrieves an integer setting.
         /// </summary>
         /// <param name="name">Setting name.</param>

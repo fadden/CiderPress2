@@ -171,6 +171,22 @@ namespace cp2_wpf {
         public bool IsFileSystemSelected { get { return CurrentWorkObject is IFileSystem; } }
 
         /// <summary>
+        /// True if the item can hold multiple file entries.  True for disk images and
+        /// multi-file archives (not AppleSingle).
+        /// </summary>
+        public bool IsMultiFileItemSelected {
+            get {
+                if (CurrentWorkObject is IFileSystem) {
+                    return true;
+                } else if (CurrentWorkObject is IArchive) {
+                    return !((IArchive)CurrentWorkObject).Characteristics.HasSingleEntry;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
         /// True if the selected item in the archive tree is a hierarchical filesystem
         /// (ProDOS or HFS).
         /// </summary>

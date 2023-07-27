@@ -51,7 +51,7 @@ limitations under the License.
         </ScrollViewer>
 
         <!-- configurable controls; this should match the set in FileViewer.xaml -->
-        <GroupBox Grid.Row="2" Header="Options" MinHeight="120">
+        <GroupBox Grid.Row="2" Header="Options" MinHeight="120" Margin="0,8,0,0">
             <StackPanel>
                 <TextBlock Name="noOptions" Text="(none)" HorizontalAlignment="Center"/>
                 <CheckBox Name="checkBox1" Content="Check 1" Margin="0,2,0,0"/>

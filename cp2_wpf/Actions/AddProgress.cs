@@ -69,7 +69,6 @@ namespace cp2_wpf.Actions {
 
             if (mArchiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)mArchiveOrFileSystem;
-                // TODO: Misc.StdChecks equivalent (maybe in caller?)
                 try {
                     arc.StartTransaction();
                     addWorker.AddFilesToArchive(arc, out bool isCancelled);
@@ -93,7 +92,6 @@ namespace cp2_wpf.Actions {
                 }
             } else if (mArchiveOrFileSystem is IFileSystem) {
                 IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                // TODO: Misc.StdChecks equivalent (maybe in caller?)
                 bool success = true;
                 try {
                     addWorker.AddFilesToDisk(fs, mTargetDir, out bool isCancelled);

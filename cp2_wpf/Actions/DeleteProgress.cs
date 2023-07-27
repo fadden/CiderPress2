@@ -62,7 +62,6 @@ namespace cp2_wpf.Actions {
 
             if (mArchiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)mArchiveOrFileSystem;
-                // TODO: Misc.StdChecks equivalent (maybe in caller?)
                 try {
                     arc.StartTransaction();
                     if (!worker.DeleteFromArchive(arc, mSelected, out bool wasCancelled)) {
