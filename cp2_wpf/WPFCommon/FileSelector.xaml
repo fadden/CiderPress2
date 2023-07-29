@@ -21,7 +21,7 @@ limitations under the License.
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:cp2_wpf.WPFCommon"
         mc:Ignorable="d"
-        Title="Select File..."
+        Title="Select STUFF..."
         Width="800" Height="600" MinWidth="600" MinHeight="400" ResizeMode="CanResizeWithGrip"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
 
@@ -36,11 +36,15 @@ limitations under the License.
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0" Text="Path:" Margin="0,2,0,0"/>
-            <TextBox Grid.Column="1" Margin="4,0,0,0"
+            <Button Grid.Column="1" Margin="4,0,0,0" Click="NavUp_Click">
+                <ContentControl Template="{StaticResource icon_Upload}"/>
+            </Button>
+            <TextBox Grid.Column="2" Margin="4,0,0,0"
                      Text="{Binding PathNameText, FallbackValue=PATH_HERE}"/>
         </Grid>
 
@@ -57,22 +61,27 @@ limitations under the License.
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
 
             <DataGrid Grid.Column="0" Name="specialPathDataGrid"
-                    ItemsSource="{Binding SpecialPathList}"
-                    IsReadOnly="True"
-                    SnapsToDevicePixels="True"
-                    GridLinesVisibility="None"
-                    AutoGenerateColumns="False"
-                    HeadersVisibility="Column"
-                    CanUserReorderColumns="False"
-                    VerticalScrollBarVisibility="Auto"
-                    SelectionMode="Single"
-                    Background="{DynamicResource {x:Static SystemColors.WindowBrush}}"
-                    SelectionChanged="SpecialPathList_SelectionChanged">
+                      ItemsSource="{Binding SpecialPathList}"
+                      IsReadOnly="True"
+                      SnapsToDevicePixels="True"
+                      GridLinesVisibility="None"
+                      AutoGenerateColumns="False"
+                      HeadersVisibility="Column"
+                      CanUserReorderColumns="False"
+                      VerticalScrollBarVisibility="Auto"
+                      SelectionMode="Single"
+                      Background="{DynamicResource {x:Static SystemColors.WindowBrush}}"
+                      SelectionChanged="SpecialPathList_SelectionChanged">
+                <DataGrid.RowStyle>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Margin" Value="0,2"/>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells">
+                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells" CanUserSort="False">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Image Source="{Binding Icon}" Width="20"/>
+                                <Image Source="{Binding Icon}" Width="16"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -81,33 +90,50 @@ limitations under the License.
             </DataGrid>
 
             <DataGrid Grid.Column="2" Name="fileListDataGrid"
-                  ItemsSource="{Binding FileList}"
-                  IsReadOnly="True"
-                  SnapsToDevicePixels="True"
-                  GridLinesVisibility="None"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="Column"
-                  CanUserReorderColumns="False"
-                  VerticalScrollBarVisibility="Visible"
-                  SelectionMode="Extended"
-                  Background="{DynamicResource {x:Static SystemColors.WindowBrush}}"
-                  EnableRowVirtualization="True"
-                  VirtualizingStackPanel.VirtualizationMode="Recycling"
-                  MouseDoubleClick="FileList_MouseDoubleClick"
-                  SelectionChanged="FileList_SelectionChanged">
+                      ItemsSource="{Binding FileList}"
+                      IsReadOnly="True"
+                      SnapsToDevicePixels="True"
+                      GridLinesVisibility="None"
+                      AutoGenerateColumns="False"
+                      HeadersVisibility="Column"
+                      CanUserReorderColumns="False"
+                      VerticalScrollBarVisibility="Auto"
+                      SelectionMode="Extended"
+                      Background="{DynamicResource {x:Static SystemColors.WindowBrush}}"
+                      EnableRowVirtualization="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      Sorting="FileList_Sorting"
+                      MouseDoubleClick="FileList_MouseDoubleClick"
+                      SelectionChanged="FileList_SelectionChanged">
+                <DataGrid.RowStyle>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Margin" Value="0,1"/>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells">
+                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells" CanUserSort="False">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ContentControl Template="{Binding Icon}" Width="16"/>
+                                <Image Source="{Binding Icon}" Width="16"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Name" Width="300" Binding="{Binding DisplayName}"/>
-                    <DataGridTextColumn Header="Date Modified" Width="120"/>
-                    <DataGridTextColumn Header="Size" Width="90"/>
+                    <DataGridTextColumn Header="Date modified" Width="120" Binding="{Binding LastModDate}"/>
+                    <DataGridTextColumn Header="Size" Width="90" Binding="{Binding Size}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="HorizontalAlignment" Value="Right" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
+
+            <TextBlock Grid.Column="2" Visibility="{Binding ErrorVisibility}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Text="{Binding ErrorMessage, FallbackValue=Error_Message}"
+                       TextWrapping="Wrap" FontSize="16"/>
         </Grid>
 
         <DockPanel Grid.Row="3" Grid.Column="0" Margin="0,8,0,0" LastChildFill="False">

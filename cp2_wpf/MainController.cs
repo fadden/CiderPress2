@@ -862,6 +862,9 @@ namespace cp2_wpf {
         /// Handles Actions : Add Files
         /// </summary>
         public void AddFiles() {
+            FileSelector testDialog = new FileSelector(mMainWin);   // DEBUG xyzzy
+            testDialog.ShowDialog();
+            return;
             HandleAddImport(null);
         }
 

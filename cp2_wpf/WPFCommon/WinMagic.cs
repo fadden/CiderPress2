@@ -85,10 +85,9 @@ namespace cp2_wpf.WPFCommon {
         /// <param name="strPath">Path to file.</param>
         /// <param name="query">Icon query type.</param>
         /// <returns>Icon graphic.</returns>
-        public static ImageSource GetIcon(string strPath, IconQuery query) {
+        public static ImageSource GetIcon(string strPath, IconQuery query, bool wantSmall = false) {
             SHFILEINFO info = new SHFILEINFO(true);
             int cbFileInfo = Marshal.SizeOf(info);
-            bool wantSmall = false;
             SHGFI flags = SHGFI.Icon;
             flags |= wantSmall ? SHGFI.SmallIcon : SHGFI.LargeIcon;
             int fileAttribs = 0;
