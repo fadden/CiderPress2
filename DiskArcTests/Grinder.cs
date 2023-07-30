@@ -124,6 +124,21 @@ namespace DiskArcTests {
                 (endWhen - startWhen).TotalMilliseconds + " msec");
         }
 
+        /// <summary>
+        /// Deletes all files and directories, then confirms that no space has been lost.
+        /// </summary>
+        /// <param name="expectedFreeSpace">Expected filesystem free space, in bytes.</param>
+        public void FinalCheck(long expectedFreeSpace) {
+            for (int i = mFiles.Count - 1; i >= 0; i--) {
+                DoRemoveFile(i);
+            }
+            DeleteEmptyDirs(mFileSystem.GetVolDirEntry());
+            if (expectedFreeSpace != mFileSystem.FreeSpace) {
+                throw new Exception("Final free space incorrect: expected=" + expectedFreeSpace +
+                    ", actual=" +  mFileSystem.FreeSpace);
+            }
+        }
+
         private void PreExpand() {
             // Get things started by creating a few directories and some empty files.  If we
             // run out of space here, there's not enough room to run the test, so we don't try

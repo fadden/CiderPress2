@@ -33,8 +33,10 @@ namespace DiskArcTests {
 
             using (IFileSystem fs = Helper.CreateTestImage("Finely Ground Files",
                     FileSystemType.HFS, 65535, appHook, out MemoryStream memFile)) {
+                long initialFree = fs.FreeSpace;
                 Grinder grinder = new Grinder(fs, SEED);
                 grinder.Execute(GRINDER_ITERATIONS);
+                grinder.FinalCheck(initialFree);
 
                 fs.PrepareRawAccess();
                 if (DUMP_TO_FILE) {

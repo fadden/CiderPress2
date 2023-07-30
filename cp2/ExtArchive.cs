@@ -366,7 +366,9 @@ namespace cp2 {
                 // We don't want or need a filename for GZIP, and NuFX disk archives are
                 // treated as disks rather than file archives.  Use the first and only entry.
                 entry = archive.GetFirstEntry();
-                if (archive is GZip) {
+                if (entry == IFileEntry.NO_ENTRY) {
+                    Debug.Assert(false, "no first entry");
+                } else if (archive is GZip) {
                     name = GZip.StripGZExtension(name);
                     ext = Path.GetExtension(name);
                 } else if (archive is NuFX) {

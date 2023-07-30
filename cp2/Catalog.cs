@@ -1051,6 +1051,9 @@ namespace cp2 {
         private static bool SkipLayer(IDisposable thing, string pathName, ParamsBag parms) {
             IArchive archive = (IArchive)thing;
             IFileEntry entry = archive.GetFirstEntry();
+            if (entry == IFileEntry.NO_ENTRY) {
+                return false;
+            }
             FilePart part = FilePart.DataFork;
             string ext;
             if (archive is GZip) {
@@ -1060,7 +1063,6 @@ namespace cp2 {
                 Debug.Assert(entry.IsDiskImage);
                 part = FilePart.DiskImage;
                 ext = ".po";
-
             } else {
                 Debug.Assert(false);
                 return false;

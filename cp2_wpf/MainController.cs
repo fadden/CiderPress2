@@ -805,21 +805,57 @@ namespace cp2_wpf {
             // Generate a selection set.  We want to collect the full set here so we can
             // present the user with dialogs like, "are you sure you want to delete 57 files?",
             // which will be wrong if we don't descend into subdirs.  The various workers can
-            // do the recursion themselves if enabled.
+            // do the recursion themselves if enabled, but there are advantages to doing it here,
+            // and very little performance cost.
             selected = new List<IFileEntry>(treeSel.Count);
-            foreach (FileListItem listItem in treeSel) {
-                IFileEntry entry = listItem.FileEntry;
-                if (entry.IsDirectory) {
-                    if (!omitDir) {
-                        selected.Add(listItem.FileEntry);
-                        AddDirEntries(listItem.FileEntry, selected);
+            if (archiveOrFileSystem is IArchive) {
+                // For file archives, it's valid to delete "directory entries" without deleting
+                // their contents, and the order in which we remove things doesn't matter.  So
+                // we just copy everything in, skipping directories if this is e.g. a "view" op.
+                foreach (FileListItem listItem in treeSel) {
+                    if (omitDir && listItem.FileEntry.IsDirectory) {
+                        continue;
                     }
-                } else {
                     selected.Add(listItem.FileEntry);
                 }
-                if (listItem == selItem) {
-                    firstSel = selected.Count - 1;
+            } else {
+                // For filesystems, we need to scan the subdirectories.  If the display is in
+                // single-directory mode this is easy, but if it's in full-list mode we might
+                // have a directory and a couple of things inside that directory.  We need to
+                // avoid adding entries twice, and we need to ensure that directories appear
+                // before their contents, which requires an explicit sort.
+
+                // Start by creating a dictionary of selected entries, so we can exclude them
+                // during the subdir descent with O(1) lookups.
+                Dictionary<IFileEntry, IFileEntry> knownItems =
+                    new Dictionary<IFileEntry, IFileEntry>();
+                foreach (FileListItem listItem in treeSel) {
+                    knownItems.Add(listItem.FileEntry, listItem.FileEntry);
                 }
+
+                // Add items to the "selected" list.  Descend into subdirectories.
+                foreach (FileListItem listItem in treeSel) {
+                    IFileEntry entry = listItem.FileEntry;
+                    if (entry.IsDirectory) {
+                        if (!omitDir) {
+                            selected.Add(listItem.FileEntry);
+                            AddDirEntries(listItem.FileEntry, knownItems, selected);
+                        }
+                    } else {
+                        selected.Add(listItem.FileEntry);
+                    }
+                    // If this is the first selected item, remember the index.
+                    if (listItem == selItem) {
+                        firstSel = selected.Count - 1;
+                    }
+                }
+
+                // Sort the list of selected items by filename.  The exact sort order doesn't
+                // matter; we just need directories to appear before their contents, which they
+                // should do with any ascending sort (by virtue of the names being shorter).
+                selected.Sort(delegate (IFileEntry entry1, IFileEntry entry2) {
+                    return string.Compare(entry1.FullPathName, entry2.FullPathName);
+                });
             }
             // Selection set may be empty at this point.
 
@@ -849,11 +885,14 @@ namespace cp2_wpf {
             return true;
         }
 
-        private void AddDirEntries(IFileEntry entry, List<IFileEntry> list) {
+        private void AddDirEntries(IFileEntry entry, Dictionary<IFileEntry, IFileEntry> excludes,
+                List<IFileEntry> list) {
             foreach (IFileEntry child in entry) {
-                list.Add(child);
+                if (!excludes.ContainsKey(child)) {
+                    list.Add(child);
+                }
                 if (child.IsDirectory) {
-                    AddDirEntries(child, list);
+                    AddDirEntries(child, excludes, list);
                 }
             }
         }

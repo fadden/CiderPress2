@@ -46,8 +46,10 @@ namespace DiskArcTests {
 
             using (IFileSystem fs = Helper.CreateTestImage("FileGrounds",
                     FileSystemType.ProDOS, 65535, appHook, out MemoryStream memFile)) {
+                long initialFree = fs.FreeSpace;
                 Grinder grinder = new Grinder(fs, SEED);
                 grinder.Execute(GRINDER_ITERATIONS);
+                grinder.FinalCheck(initialFree);
 
                 fs.PrepareRawAccess();
                 //fs.DumpToFile(Helper.DebugFileDir + "check-grind.po");

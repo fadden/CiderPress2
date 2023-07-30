@@ -290,8 +290,8 @@ namespace cp2_wpf {
                     }
                 } else if (item.WorkTreeNode.DAObject is NuFX) {
                     IFileEntry firstEntry = ((NuFX)item.WorkTreeNode.DAObject).GetFirstEntry();
-                    if (!firstEntry.IsDiskImage) {
-                        // Non-disk archive, select it.
+                    if (firstEntry == IFileEntry.NO_ENTRY || !firstEntry.IsDiskImage) {
+                        // Non-disk (or empty) archive, select it.
                         return item;
                     }
                     // Disk archive, go deeper.

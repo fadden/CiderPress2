@@ -491,6 +491,7 @@ namespace AppCommon {
                 using (IArchive archive = AppleSingle.OpenArchive(stream, mAppHook)) {
                     // Extract attributes.
                     IFileEntry asEnt = archive.GetFirstEntry();
+                    Debug.Assert(asEnt != IFileEntry.NO_ENTRY);
                     if (!asEnt.HasDataFork && !asEnt.HasRsrcFork) {
                         mAppHook.LogI("Found content-free AppleSingle file: " + fullPath);
                         return true;        // file has been handled
@@ -565,6 +566,7 @@ namespace AppCommon {
                 using (IArchive archive = AppleSingle.OpenArchive(stream, mAppHook)) {
                     // Extract attributes.  Update timestamps if present in file.
                     IFileEntry dubEnt = archive.GetFirstEntry();
+                    Debug.Assert(dubEnt != IFileEntry.NO_ENTRY);
                     if (TimeStamp.IsValidDate(dubEnt.CreateWhen)) {
                         fileEntry.CreateWhen = dubEnt.CreateWhen;
                     } else {

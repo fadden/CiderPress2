@@ -307,7 +307,7 @@ limitations under the License.
                     <ContentControl Template="{StaticResource icon_MeasureTree}"/>
                 </Button>
                 <Button Command="{StaticResource ShowInfoCmd}"
-                        ToolTip="Show information">
+                        ToolTip="Show information (toggle: Ctrl+I)">
                     <ContentControl Template="{StaticResource icon_StatusInformationOutlineNoColor}"/>
                 </Button>
 
