@@ -27,12 +27,6 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
-// TODO:
-// - use a file watcher to auto-refresh on change?  Or just have a refresh button?
-// - recognize carriage return in path box
-//
-// - permission checks? https://stackoverflow.com/q/1281620/294248
-
 namespace cp2_wpf.WPFCommon {
     /// <summary>
     /// File/folder selection dialog.  The style is similar to the standard file dialogs and
@@ -43,10 +37,10 @@ namespace cp2_wpf.WPFCommon {
     /// native hackery), and SHBrowseForFolder is an abomination.  There's a Vista+ folder
     /// selection dialog enabled with FOS_PICKFOLDERS, but getting to that from managed code is
     /// complicated.</para>
-    /// <para>This is not meant for opening documents with a specific type, for which the
-    /// standard dialog works well.  We could support file extension filters but we don't
-    /// currently need them.  It's also not meant for saving files, so we don't provide
-    /// a way to enter a new filename.</para>
+    /// <para>This is not meant for opening individual documents with a specific type; the
+    /// standard dialog works well for that.  We could support file extension filters but we don't
+    /// currently need them.  This is also not meant for saving individual files, so we don't
+    /// provide a way to enter a new filename.</para>
     /// </remarks>
     public partial class FileSelector : Window, INotifyPropertyChanged {
         //
@@ -55,35 +49,39 @@ namespace cp2_wpf.WPFCommon {
 
         public enum SelMode {
             Unknown = 0,
-            Files,                  // select files
-            FilesAndFolders,        // select both files and folders
-            Folder,                 // select single folder (e.g. for output location)
+            SingleFile,             // select one file
+            SingleFolder,           // select one folder (for output location)
+            FilesAndFolders,        // select a collection of files and folders
         }
 
         /// <summary>
         /// What we allow the user to do.
         /// </summary>
-        public SelMode SelectionMode { get; set; } = SelMode.FilesAndFolders;
-
-        /// <summary>
-        /// True if multiple files can be selected.
-        /// </summary>
-        /// <remarks>
-        /// Not compatible with "Folder" mode.
-        /// </remarks>
-        public bool MultiSelect { get; set; } = false;
+        public SelMode SelectionMode { get; private set; } = SelMode.FilesAndFolders;
 
         /// <summary>
         /// Initial path.  If empty, the current working directory is used.
         /// </summary>
-        public string InitialPath { get; set; } = string.Empty;
+        public string InitialPath { get; private set; } = string.Empty;
 
         //
         // Results.
         //
 
+        /// <summary>
+        /// Base path in which the selected files live.  For Folder mode, this is the selected
+        /// output directory.
+        /// </summary>
         public string BasePath { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// List of selected files, filenames only.
+        /// </summary>
         public string[] SelectedFiles { get; private set; } = new string[0];
+
+        /// <summary>
+        /// List of selected files, full paths.
+        /// </summary>
         public string[] SelectedPaths { get; private set; } = new string[0];
 
         //
@@ -104,6 +102,8 @@ namespace cp2_wpf.WPFCommon {
             set { mIsValid = value; OnPropertyChanged(); }
         }
         private bool mIsValid;
+
+        public string AcceptButtonText { get; private set; }
 
         public string PathNameText {
             get { return mPathNameText; }
@@ -143,6 +143,12 @@ namespace cp2_wpf.WPFCommon {
             public bool IsFolder { get; private set; }
 
             /// <summary>
+            /// True if this entry is hidden.  Hidden entries may be inaccessible (e.g. My Music
+            /// appears in the Documents folder but can't be used that way).
+            /// </summary>
+            public bool IsHidden { get; private set; }
+
+            /// <summary>
             /// File icon.
             /// </summary>
             public ImageSource? Icon { get; private set; }
@@ -167,11 +173,12 @@ namespace cp2_wpf.WPFCommon {
             /// </summary>
             public string Size { get; private set; }
 
-            public ListItem(string pathName, string displayName, bool isFolder,
+            public ListItem(string pathName, string displayName, bool isFolder, bool isHidden,
                     ImageSource? icon, DateTime modWhen, long fileLength) {
                 PathName = pathName;
                 DisplayName = displayName;
                 IsFolder = isFolder;
+                IsHidden = isHidden;
                 Icon = icon;
                 ModWhen = modWhen;
                 LastModDate = modWhen.ToString("g");
@@ -183,6 +190,10 @@ namespace cp2_wpf.WPFCommon {
                     Size = kbLength.ToString("N0") + " KB";
                 }
             }
+
+            public override string ToString() {
+                return "[ListItem: PathName='" + PathName + "']";
+            }
         }
 
         public ObservableCollection<ListItem> SpecialPathList { get; private set; } =
@@ -192,62 +203,124 @@ namespace cp2_wpf.WPFCommon {
             new ObservableCollection<ListItem>();
 
 
-        public FileSelector(Window owner) {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="owner">Parent window.</param>
+        /// <param name="mode">File/folder selection mode.</param>
+        /// <param name="initialPath">Initial path; may be empty to use a default.</param>
+        public FileSelector(Window owner, SelMode mode, string initialPath) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
+            SelectionMode = mode;
+            if (string.IsNullOrEmpty(initialPath)) {
+                InitialPath = Environment.CurrentDirectory;     // prefer My Documents?
+            } else {
+                InitialPath = initialPath;
+            }
+
             switch (SelectionMode) {
-                case SelMode.Files:
-                    if (MultiSelect) {
-                        Title = "Select Files...";
-                    } else {
-                        Title = "Select File...";
-                    }
+                case SelMode.SingleFile:
+                    Title = "Select File...";
+                    AcceptButtonText = "Select";
+                    break;
+                case SelMode.SingleFolder:
+                    Title = "Select Folder...";
+                    AcceptButtonText = "Select Here";
                     break;
                 case SelMode.FilesAndFolders:
-                    if (MultiSelect) {
-                        Title = "Select Files and Folders...";
-                    } else {
-                        Title = "Select File...";
-                    }
-                    break;
-                case SelMode.Folder:
-                    Title = "Select Folder...";
-                    MultiSelect = false;
+                    Title = "Select Files and Folders...";
+                    AcceptButtonText = "Select";
                     break;
                 default:
                     throw new NotImplementedException();
             }
 
-            fileListDataGrid.SelectionMode =
-                MultiSelect ? DataGridSelectionMode.Extended : DataGridSelectionMode.Single;
+            fileListDataGrid.SelectionMode = (SelectionMode == SelMode.FilesAndFolders) ?
+                DataGridSelectionMode.Extended : DataGridSelectionMode.Single;
             if (string.IsNullOrEmpty(InitialPath) || !Directory.Exists(InitialPath)) {
                 mPathNameText = Environment.CurrentDirectory;
             } else {
                 mPathNameText = InitialPath;
             }
+        }
 
+        private void Window_ContentRendered(object sender, EventArgs e) {
             LoadSpecialPaths();
+            mConfiguringPanel = true;
             PathChanged();
+            mConfiguringPanel = false;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
-            DialogResult = true;
-            // TODO
+            AcceptSelection();
         }
 
         private void NewDirectory_Click(object sender, RoutedEventArgs e) {
             // TODO
         }
 
-        private void NavUp_Click(object sender, RoutedEventArgs e) {
-            // TODO
+        /// <summary>
+        /// Pushes the TextBox text change to the property when the user hits Enter.
+        /// </summary>
+        /// <remarks>From <see href="https://stackoverflow.com/a/13289118/294248"/>.  Set this
+        /// as the TextBox's KeyUp event handler.</remarks>
+        private void PathTextBox_KeyUp(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Enter) {
+                TextBox tBox = (TextBox)sender;
+                DependencyProperty prop = TextBox.TextProperty;
+
+                BindingExpression? binding = BindingOperations.GetBindingExpression(tBox, prop);
+                if (binding != null) {
+                    binding.UpdateSource();
+                }
+            }
         }
 
+        /// <summary>
+        /// Navigates up to the parent directory.
+        /// </summary>
+        private void NavUp_Click(object sender, RoutedEventArgs e) {
+            try {
+                // Use GetParent() rather than simply shaving off a component so that we don't
+                // move past the root, which could be a fixed disk like "C:\" or a network
+                // location like "\\webby\fadden".
+                DirectoryInfo? parentInfo = Directory.GetParent(PathNameText);
+                if (parentInfo == null) {
+                    return;
+                }
+                PathNameText = parentInfo.FullName;
+            } catch (Exception ex) {
+                Debug.WriteLine("GetParent threw: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Refreshes the special list and the file list.  The former is only useful for
+        /// removable media.
+        /// </summary>
+        private void Refresh_Click(object sender, RoutedEventArgs e) {
+            LoadSpecialPaths();
+            PathChanged();
+        }
+
+        /// <summary>
+        /// Handles a change to the special path list selection.
+        /// </summary>
         private void SpecialPathList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            if (mConfiguringPanel) {
+                // If we're here because the path changed and we're programmatically updating
+                // the selection, don't do further processing.
+                return;
+            }
+
             // Switch to the new path, if it exists (which it should).
-            ListItem item = (ListItem)((DataGrid)sender).SelectedItem;
+            ListItem? item = (ListItem?)((DataGrid)sender).SelectedItem;
+            if (item == null) {
+                return;
+            }
             string newPath = item.PathName;
             if (Directory.Exists(newPath)) {
                 PathNameText = newPath;
@@ -256,16 +329,51 @@ namespace cp2_wpf.WPFCommon {
             }
         }
 
+        /// <summary>
+        /// Handles a change to the file list selection.
+        /// </summary>
         private void FileList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-            // TODO
-            // File mode: set IsValid if at least one entry is selected
-            // Folder mode: set IsValid if files can be created in the current dir
+            if (SelectionMode == SelMode.SingleFolder) {
+                // We're going to use the current folder, which could be empty.  The choice
+                // of selected item doesn't matter.  We only disable the OK button if there
+                // was an error, e.g. the path doesn't exist.
+                IsValid = true;
+                return;
+            }
+
+            DataGrid grid = (DataGrid)sender;
+            if (grid.SelectedItems.Count == 0) {
+                // Nothing is selected, disable OK button.
+                IsValid = false;
+                return;
+            }
+            // TODO? consider doing a permission check on file creation if we're in
+            // folder-selection mode... https://stackoverflow.com/q/1281620/294248
+
+            if (SelectionMode == SelMode.SingleFile) {
+                // Make sure at least one non-directory item is selected.
+                bool foundFile = false;
+                foreach (object oitem in grid.SelectedItems) {
+                    ListItem item = (ListItem)oitem;
+                    if (!item.IsFolder) {
+                        foundFile = true;
+                        break;
+                    }
+                }
+                if (!foundFile) {
+                    // Only directories are selected, disable OK button.
+                    IsValid = false;
+                    return;
+                }
+            }
+
+            IsValid = true;
         }
 
+        /// <summary>
+        /// Handles a double-click on the file list.
+        /// </summary>
         private void FileList_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
-            // TODO
-            // In single-select mode: if folder, open; if file, select and close dialog.
-            // In multi-select mode: if folder, open; if file, do nothing.
             DataGrid grid = (DataGrid)sender;
             if (!grid.GetClickRowColItem(e, out int row, out int col, out object? citem)) {
                 // Header or empty area; ignore.
@@ -274,6 +382,62 @@ namespace cp2_wpf.WPFCommon {
             ListItem item = (ListItem)citem;
 
             Debug.WriteLine("Double-click on '" + item.PathName + "'");
+            if (fileListDataGrid.SelectedItems.Count == 0) {
+                // Nothing selected, nothing to do.
+            } else if (fileListDataGrid.SelectedItems.Count == 1) {
+                if (item.IsFolder) {
+                    // Single folder double-clicked, move into it.
+                    PathNameText = item.PathName;
+                } else {
+                    // Single file double-clicked, accept.
+                    AcceptSelection();
+                }
+            } else {
+                // Accept all.
+                AcceptSelection();
+            }
+        }
+
+        /// <summary>
+        /// Attempts to accept the current selection as the result.  We can get here via a
+        /// click of the OK button or a double-click.
+        /// </summary>
+        /// <remarks>
+        /// The OK button should be disabled for invalid situations, but double-clicking stuff
+        /// can still land here.
+        /// </remarks>
+        private void AcceptSelection() {
+            BasePath = Path.GetFullPath(PathNameText);      // normalize
+            if (SelectionMode == SelMode.SingleFolder) {
+                DialogResult = true;
+                return;
+            }
+
+            IList gridList = fileListDataGrid.SelectedItems;
+            if (gridList.Count == 0) {
+                Debug.WriteLine("Cannot accept: nothing selected");
+                return;
+            }
+
+            if (SelectionMode == SelMode.SingleFile) {
+                Debug.Assert(gridList.Count == 1);
+                ListItem item = (ListItem)gridList[0]!;
+                SelectedFiles = new string[] { Path.GetFileName(item.PathName) };
+                SelectedPaths = new string[] { item.PathName };
+                DialogResult = true;
+                return;
+            }
+
+            SelectedFiles = new string[gridList.Count];
+            SelectedPaths = new string[gridList.Count];
+            for (int i = 0; i < gridList.Count; i++) {
+                ListItem item = (ListItem)gridList[i]!;
+                SelectedFiles[i] = Path.GetFileName(item.PathName);
+                SelectedPaths[i] = item.PathName;
+            }
+            Debug.WriteLine("Accepted: base='" + BasePath + "', path count=" +
+                SelectedPaths.Length);
+            DialogResult = true;
         }
 
         private static readonly Environment.SpecialFolder[] sSpecialFolders = {
@@ -292,6 +456,7 @@ namespace cp2_wpf.WPFCommon {
         /// reported as "ready".
         /// </remarks>
         private void LoadSpecialPaths() {
+            SpecialPathList.Clear();
             foreach (Environment.SpecialFolder spec in sSpecialFolders) {
                 string path = Environment.GetFolderPath(spec);
                 if (string.IsNullOrEmpty(path)) {
@@ -312,16 +477,21 @@ namespace cp2_wpf.WPFCommon {
                 }
 
                 string path = di.Name;
-                string displayName = di.VolumeLabel + " (" + path + ")";
+                string displayPath = path;
+                if (displayPath.EndsWith('\\')) {
+                    displayPath = displayPath.Substring(0, path.Length - 1);
+                }
+                string displayName = di.VolumeLabel + " (" + displayPath + ")";
                 SpecialPathList.Add(GenerateItem(path, displayName));
             }
 
-            // TODO: add favorites / frequently-used folders?
+            // TODO? add favorites / frequently-used folders
         }
 
         /// <summary>
         /// Generates a list item.
         /// </summary>
+        /// <returns>The new item.</returns>
         private ListItem GenerateItem(string path, string displayName = "") {
             if (string.IsNullOrEmpty(displayName)) {
                 displayName = Path.GetFileName(path);
@@ -333,6 +503,7 @@ namespace cp2_wpf.WPFCommon {
             ListItem item;
             try {
                 FileAttributes attr = File.GetAttributes(path);
+                bool isHidden = (attr & FileAttributes.Hidden) != 0;
                 bool isDirectory = (attr & FileAttributes.Directory) != 0;
                 DateTime modWhen;
                 long length;
@@ -344,20 +515,44 @@ namespace cp2_wpf.WPFCommon {
                     length = new FileInfo(path).Length;
                 }
                 ImageSource icon = WinMagic.GetIcon(path, WinMagic.IconQuery.Specific, true);
-                item = new ListItem(path, displayName, isDirectory, icon, modWhen, length);
+                item =
+                    new ListItem(path, displayName, isDirectory, isHidden, icon, modWhen, length);
             } catch (Exception ex) {
                 Debug.WriteLine("Error processing '" + path + "': " + ex);
-                item = new ListItem(path, displayName, false, null, DateTime.Now, -1);
+                item = new ListItem(path, displayName, false, false, null, DateTime.Now, -1);
             }
             return item;
         }
 
+        private bool mConfiguringPanel = false;
+
         private void PathChanged() {
             Debug.WriteLine("Path is now '" + PathNameText + "'");
-            // TODO
-            //
-            // When folder changes, see if we want to update selection in SpecialPathList
-            // to match.  Use best available prefix.
+            foreach (ListItem specItem in SpecialPathList) {
+                // Check to see if the current path equal to or a prefix of a special path.  This
+                // is a little dodgy but it's not crucial that it work.  We just want to
+                // change the selection in the special file pane when the user navigates into
+                // a special directory.
+                string prefixPath = specItem.PathName;
+                if (!prefixPath.EndsWith(Path.DirectorySeparatorChar)) {
+                    prefixPath += Path.DirectorySeparatorChar;
+                }
+                if (PathNameText.Equals(specItem.PathName,
+                            StringComparison.InvariantCultureIgnoreCase) ||
+                        PathNameText.StartsWith(prefixPath,
+                            StringComparison.InvariantCultureIgnoreCase)) {
+                    if (specialPathDataGrid.SelectedItem != specItem) {
+                        mConfiguringPanel = true;
+                        try {
+                            Debug.WriteLine("Setting left column to " + specItem);
+                            specialPathDataGrid.SelectedItem = specItem;
+                        } finally {
+                            mConfiguringPanel = false;
+                        }
+                    }
+                    break;
+                }
+            }
 
             FileList.Clear();
             ErrorVisibility = Visibility.Collapsed;
@@ -365,34 +560,46 @@ namespace cp2_wpf.WPFCommon {
             string[] entries;
             try {
                 Mouse.OverrideCursor = Cursors.Wait;
-                switch (SelectionMode) {
-                    case SelMode.Files:
-                    case SelMode.FilesAndFolders:
-                        entries = Directory.GetFileSystemEntries(PathNameText);
-                        break;
-                    case SelMode.Folder:
-                        entries = Directory.GetDirectories(PathNameText);
-                        break;
-                    default:
-                    throw new NotImplementedException();
+                try {
+                    switch (SelectionMode) {
+                        case SelMode.SingleFolder:
+                            //entries = Directory.GetDirectories(PathNameText);
+                            //break;
+                        case SelMode.SingleFile:
+                        case SelMode.FilesAndFolders:
+                            entries = Directory.GetFileSystemEntries(PathNameText);
+                            break;
+                        default:
+                        throw new NotImplementedException();
+                    }
+                } catch (Exception ex) {
+                    ShowError("Error: " + ex.Message);
+                    return;
                 }
-            } catch (Exception ex) {
-                ShowError("Error: " + ex.Message);
-                return;
+
+                // Generate the items into a temporary list, and do the initial "default" sort.
+                // (Can we convince the DataGrid to do this for us?)
+                List<ListItem> tmpList = new List<ListItem>(entries.Length);
+                foreach (string entry in entries) {
+                    ListItem newItem = GenerateItem(entry);
+                    if (!newItem.IsHidden) {
+                        tmpList.Add(newItem);
+                    }
+                }
+                tmpList.Sort(new SymbolsListComparer((int)SymbolsListComparer.SortField.Name, true));
+
+                foreach (ListItem item in tmpList) {
+                    FileList.Add(item);
+                }
             } finally {
                 Mouse.OverrideCursor = null;
             }
 
-            // Generate the items into a temporary list, and do the initial "default" sort.
-            // (Can we convince the DataGrid to do this for us?)
-            List<ListItem> tmpList = new List<ListItem>(entries.Length);
-            foreach (string entry in entries) {
-                tmpList.Add(GenerateItem(entry));
-            }
-            tmpList.Sort(new SymbolsListComparer((int)SymbolsListComparer.SortField.Name, true));
-
-            foreach (ListItem item in tmpList) {
-                FileList.Add(item);
+            if (fileListDataGrid.Items.Count > 0) {
+                fileListDataGrid.SelectedIndex = 0;
+                IsValid = true;
+            } else {
+                IsValid = (SelectionMode == SelMode.SingleFolder);
             }
         }
 

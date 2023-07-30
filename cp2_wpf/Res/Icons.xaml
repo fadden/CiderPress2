@@ -439,4 +439,32 @@
         </Viewbox>
     </ControlTemplate>
 
+    <ControlTemplate x:Key="icon_Refresh">
+        <Viewbox Style="{StaticResource DisableFade}"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:System="clr-namespace:System;assembly=mscorlib">
+            <Rectangle Width="16 " Height="16">
+                <Rectangle.Resources>
+                    <SolidColorBrush x:Key="canvas" Opacity="0" />
+                    <SolidColorBrush x:Key="light-blue" Color="#005dba" Opacity="1" />
+                </Rectangle.Resources>
+                <Rectangle.Fill>
+                    <DrawingBrush Stretch="None">
+                        <DrawingBrush.Drawing>
+                            <DrawingGroup>
+                                <DrawingGroup x:Name="canvas">
+                                    <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M16,16H0V0H16Z" />
+                                </DrawingGroup>
+                                <DrawingGroup x:Name="level_1">
+                                    <GeometryDrawing Brush="{DynamicResource light-blue}" Geometry="F1M15,8A7,7,0,1,1,4.44,2H1.5V1h4l.5.5v4H5V2.829a5.983,5.983,0,1,0,5.57-.244l.43-.9A7.031,7.031,0,0,1,15,8Z" />
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingBrush.Drawing>
+                    </DrawingBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Viewbox>
+
+    </ControlTemplate>
 </ResourceDictionary>

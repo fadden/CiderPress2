@@ -46,6 +46,7 @@ namespace cp2_wpf {
         public const string MAIN_FILE_COL_WIDTHS = "main-file-col-widths";
 
         public const string RECENT_FILES_LIST = "recent-files-list";
+        public const string LAST_ADD_DIR = "last-add-dir";
         public const string LAST_EXTRACT_DIR = "last-extract-dir";
 
         // File handling features.

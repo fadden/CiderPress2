@@ -23,7 +23,8 @@ limitations under the License.
         mc:Ignorable="d"
         Title="Select STUFF..."
         Width="800" Height="600" MinWidth="600" MinHeight="400" ResizeMode="CanResizeWithGrip"
-        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        ContentRendered="Window_ContentRendered">
 
     <Grid Margin="8">
         <Grid.RowDefinitions>
@@ -38,6 +39,7 @@ limitations under the License.
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0" Text="Path:" Margin="0,2,0,0"/>
@@ -45,7 +47,12 @@ limitations under the License.
                 <ContentControl Template="{StaticResource icon_Upload}"/>
             </Button>
             <TextBox Grid.Column="2" Margin="4,0,0,0"
-                     Text="{Binding PathNameText, FallbackValue=PATH_HERE}"/>
+                     Text="{Binding PathNameText, FallbackValue=PATH_HERE}"
+                     local:SelectTextOnFocus.Active="True"
+                     KeyUp="PathTextBox_KeyUp"/>
+            <Button Grid.Column="3" Margin="4,0,0,0" Click="Refresh_Click">
+                <ContentControl Template="{StaticResource icon_Refresh}"/>
+            </Button>
         </Grid>
 
         <Rectangle Grid.Row="1" Grid.ColumnSpan="3" Margin="0,4,0,4" Height="1"
@@ -53,12 +60,10 @@ limitations under the License.
 
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="200" MinWidth="50"/>
                 <ColumnDefinition Width="4"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
 
             <DataGrid Grid.Column="0" Name="specialPathDataGrid"
                       ItemsSource="{Binding SpecialPathList}"
@@ -74,11 +79,18 @@ limitations under the License.
                       SelectionChanged="SpecialPathList_SelectionChanged">
                 <DataGrid.RowStyle>
                     <Style TargetType="{x:Type DataGridRow}">
-                        <Setter Property="Margin" Value="0,2"/>
+                        <!-- would like to set Margin, but that leaves an un-clickable area -->
+                        <Setter Property="Height" Value="22"/>
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells" CanUserSort="False">
+                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells"
+                                            CanUserSort="False" CanUserResize="False">
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Image Source="{Binding Icon}" Width="16"/>
@@ -88,6 +100,8 @@ limitations under the License.
                     <DataGridTextColumn Header="Name" Width="170" Binding="{Binding DisplayName}"/>
                 </DataGrid.Columns>
             </DataGrid>
+
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
 
             <DataGrid Grid.Column="2" Name="fileListDataGrid"
                       ItemsSource="{Binding FileList}"
@@ -107,14 +121,20 @@ limitations under the License.
                       SelectionChanged="FileList_SelectionChanged">
                 <DataGrid.RowStyle>
                     <Style TargetType="{x:Type DataGridRow}">
-                        <Setter Property="Margin" Value="0,1"/>
+                        <Setter Property="Height" Value="20"/>
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells" CanUserSort="False">
+                    <DataGridTemplateColumn Header="&#x2022;" Width="SizeToCells"
+                                            CanUserSort="False" CanUserResize="False">
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Image Source="{Binding Icon}" Width="16"/>
+                                <Image Source="{Binding Icon}" Width="16" Height="16"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -138,9 +158,9 @@ limitations under the License.
 
         <DockPanel Grid.Row="3" Grid.Column="0" Margin="0,8,0,0" LastChildFill="False">
             <Button DockPanel.Dock="Right" Content="Cancel" IsCancel="True" Width="70" Margin="4,0,0,0"/>
-            <Button DockPanel.Dock="Right" Content="Select" IsDefault="True" Padding="15,0"
-                    IsEnabled="{Binding IsValid}" Click="OkButton_Click"/>
-            <Button DockPanel.Dock="Left" Content="New Directory" Padding="15,0"
+            <Button DockPanel.Dock="Right" Content="{Binding AcceptButtonText, FallbackValue=OK}"
+                    Padding="15,1" IsEnabled="{Binding IsValid}" Click="OkButton_Click"/>
+            <Button DockPanel.Dock="Left" Content="New Directory" Padding="15,1"
                     Click="NewDirectory_Click"/>
         </DockPanel>
     </Grid>

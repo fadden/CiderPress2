@@ -57,19 +57,19 @@ namespace DiskArc.FS {
                 // The value is generated on each use, so that changes to parent directory
                 // names are handled correctly.
                 string pathName;
-                if (string.IsNullOrEmpty(mFileName)) {
+                if (FileSystem == null) {
+                    pathName = "!INVALID! was: '" + mFileName + "'";
+                } else if (string.IsNullOrEmpty(mFileName)) {
                     pathName = "!FileNameEmpty!";
                 } else if (IsVolumeDirectory) {
                     pathName = ProDOS.SEP_CHAR + mFileName;
                 } else {
+                    Debug.Assert(ContainingDir != IFileEntry.NO_ENTRY);
                     if (((ProDOS_FileEntry)ContainingDir).IsVolumeDirectory) {
                         pathName = mFileName;
                     } else {
                         pathName = ContainingDir.FullPathName + ProDOS.SEP_CHAR + mFileName;
                     }
-                }
-                if (FileSystem == null) {
-                    pathName = "!INVALID! was:" + pathName;
                 }
                 return pathName;
             }

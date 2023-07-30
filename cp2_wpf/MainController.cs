@@ -862,30 +862,27 @@ namespace cp2_wpf {
         /// Handles Actions : Add Files
         /// </summary>
         public void AddFiles() {
-            FileSelector testDialog = new FileSelector(mMainWin);   // DEBUG xyzzy
-            testDialog.ShowDialog();
-            return;
             HandleAddImport(null);
         }
 
         private void HandleAddImport(ConvConfig.FileConvSpec? spec) {
-            // TODO: need a custom dialog to select files/folders.  All of the nonsense called out
-            // in https://github.com/fadden/ciderpress/blob/master/util/SelectFilesDialog.h still
-            // exists.  https://stackoverflow.com/q/31059/294248 has some stuff but it's
-            // mostly Windows Forms or customized system dialogs.  Drag & drop from Explorer is
-            // easier than this.
+            //OpenFileDialog fileDlg = new OpenFileDialog() {
+            //    Filter = WinUtil.FILE_FILTER_ALL,
+            //    FilterIndex = 1,
+            //    Multiselect = true,
+            //    Title = "Select Files to Add (No Directories)"
+            //};
 
-            OpenFileDialog fileDlg = new OpenFileDialog() {
-                Filter = WinUtil.FILE_FILTER_ALL,
-                FilterIndex = 1,
-                Multiselect = true,
-                Title = "Select Files to Add (No Directories)"
-            };
+            string initialDir = AppSettings.Global.GetString(AppSettings.LAST_ADD_DIR,
+                Environment.CurrentDirectory);
+
+            FileSelector fileDlg = new FileSelector(mMainWin, FileSelector.SelMode.FilesAndFolders,
+                    initialDir);
             if (fileDlg.ShowDialog() != true) {
                 return;
             }
-            Debug.WriteLine("Add files:");
-            AddPaths(fileDlg.FileNames, spec);
+            AppSettings.Global.SetString(AppSettings.LAST_ADD_DIR, fileDlg.BasePath);
+            AddPaths(fileDlg.SelectedPaths, spec);
         }
 
         /// <summary>
@@ -901,6 +898,7 @@ namespace cp2_wpf {
         }
 
         private void AddPaths(string[] pathNames, ConvConfig.FileConvSpec? importSpec) {
+            Debug.WriteLine("Add paths (importSpec=" + importSpec + "):");
             foreach (string path in pathNames) {
                 Debug.WriteLine("  " + path);
             }
@@ -1326,15 +1324,22 @@ namespace cp2_wpf {
                 return;
             }
 
-            string initialDir = AppSettings.Global.GetString(AppSettings.LAST_EXTRACT_DIR, @"C:\");
+            string initialDir = AppSettings.Global.GetString(AppSettings.LAST_EXTRACT_DIR,
+                Environment.CurrentDirectory);
 
-            BrowseForFolder folderDialog = new BrowseForFolder();
-            string? outputDir = folderDialog.SelectFolder("Select destination for " +
-                (exportSpec == null ? "extracted" : "exported") + " files:",
-                initialDir, mMainWin);
-            if (outputDir == null) {
+            //BrowseForFolder folderDialog = new BrowseForFolder();
+            //string? outputDir = folderDialog.SelectFolder("Select destination for " +
+            //    (exportSpec == null ? "extracted" : "exported") + " files:",
+            //    initialDir, mMainWin);
+            //if (outputDir == null) {
+            //    return;
+            //}
+            FileSelector fileDialog = new FileSelector(mMainWin, FileSelector.SelMode.SingleFolder,
+                initialDir);
+            if (fileDialog.ShowDialog() != true) {
                 return;
             }
+            string outputDir = fileDialog.BasePath;
 
             SettingsHolder settings = AppSettings.Global;
             settings.SetString(AppSettings.LAST_EXTRACT_DIR, outputDir);
@@ -1354,9 +1359,9 @@ namespace cp2_wpf {
             WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
             if (workDialog.ShowDialog() == true) {
                 if (exportSpec != null) {
-                    mMainWin.PostNotification("Extraction successful", true);
-                } else {
                     mMainWin.PostNotification("Export successful", true);
+                } else {
+                    mMainWin.PostNotification("Extraction successful", true);
                 }
             } else {
                 mMainWin.PostNotification("Cancelled", false);
