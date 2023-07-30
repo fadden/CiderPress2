@@ -259,7 +259,14 @@ namespace cp2_wpf.WPFCommon {
         }
 
         private void NewDirectory_Click(object sender, RoutedEventArgs e) {
-            // TODO
+            if (!Directory.Exists(PathNameText)) {
+                return;
+            }
+            CreateFolder dialog = new CreateFolder(this, PathNameText);
+            if (dialog.ShowDialog() == true) {
+                // Move into the newly-created folder.
+                PathNameText = Path.Combine(PathNameText, dialog.NewFileName);
+            }
         }
 
         /// <summary>
@@ -330,6 +337,32 @@ namespace cp2_wpf.WPFCommon {
         }
 
         /// <summary>
+        /// Handles a mouse click in the special path list.
+        /// </summary>
+        /// <remarks>
+        /// If the user is in .../Documents/SubFolder, and we click on "Documents" in the special
+        /// folders list, it won't go to ".../Documents" because the entry is already selected
+        /// and so no selection-changed event is generated.  We can handle that case here.
+        /// </remarks>
+        private void SpecialPathList_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            DataGrid grid = (DataGrid)sender;
+            if (!grid.GetClickRowColItem(e, out int row, out int col, out object? citem)) {
+                // Header or empty area; ignore.
+                return;
+            }
+            ListItem item = (ListItem)citem;
+            if (grid.SelectedItem == item && PathNameText != item.PathName) {
+                Debug.WriteLine("Handling click change to current selection");
+                string newPath = item.PathName;
+                if (Directory.Exists(newPath)) {
+                    PathNameText = newPath;
+                } else {
+                    Debug.WriteLine("Unable to find path '" + newPath + "'");
+                }
+            }
+        }
+
+        /// <summary>
         /// Handles a change to the file list selection.
         /// </summary>
         private void FileList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
@@ -381,7 +414,7 @@ namespace cp2_wpf.WPFCommon {
             }
             ListItem item = (ListItem)citem;
 
-            Debug.WriteLine("Double-click on '" + item.PathName + "'");
+            //Debug.WriteLine("Double-click on '" + item.PathName + "'");
             if (fileListDataGrid.SelectedItems.Count == 0) {
                 // Nothing selected, nothing to do.
             } else if (fileListDataGrid.SelectedItems.Count == 1) {
@@ -527,12 +560,14 @@ namespace cp2_wpf.WPFCommon {
         private bool mConfiguringPanel = false;
 
         private void PathChanged() {
-            Debug.WriteLine("Path is now '" + PathNameText + "'");
+            //Debug.WriteLine("Path is now '" + PathNameText + "'");
             foreach (ListItem specItem in SpecialPathList) {
                 // Check to see if the current path equal to or a prefix of a special path.  This
                 // is a little dodgy but it's not crucial that it work.  We just want to
                 // change the selection in the special file pane when the user navigates into
                 // a special directory.
+                //
+                // NOTE: this assumes the list is sorted such that the drive letters come last.
                 string prefixPath = specItem.PathName;
                 if (!prefixPath.EndsWith(Path.DirectorySeparatorChar)) {
                     prefixPath += Path.DirectorySeparatorChar;

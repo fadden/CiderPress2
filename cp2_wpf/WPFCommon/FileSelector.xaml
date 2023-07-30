@@ -76,7 +76,8 @@ limitations under the License.
                       VerticalScrollBarVisibility="Auto"
                       SelectionMode="Single"
                       Background="{DynamicResource {x:Static SystemColors.WindowBrush}}"
-                      SelectionChanged="SpecialPathList_SelectionChanged">
+                      SelectionChanged="SpecialPathList_SelectionChanged"
+                      PreviewMouseDown="SpecialPathList_PreviewMouseDown">
                 <DataGrid.RowStyle>
                     <Style TargetType="{x:Type DataGridRow}">
                         <!-- would like to set Margin, but that leaves an un-clickable area -->
