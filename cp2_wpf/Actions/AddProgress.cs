@@ -93,6 +93,7 @@ namespace cp2_wpf.Actions {
             } else if (mArchiveOrFileSystem is IFileSystem) {
                 IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
                 bool success = true;
+                string? failMsg = null;
                 try {
                     addWorker.AddFilesToDisk(fs, mTargetDir, out bool isCancelled);
                     if (isCancelled) {
@@ -101,18 +102,32 @@ namespace cp2_wpf.Actions {
                         success = false;
                     }
                 } catch (ConversionException ex) {
-                    ProgressUtil.ShowMessage("Import error: " + ex.Message, true, bkWorker);
+                    failMsg = "Import error: " + ex.Message;
                     success = false;
                 } catch (Exception ex) {
-                    ProgressUtil.ShowMessage("Error: " + ex.Message, true, bkWorker);
+                    failMsg = "Error: " + ex.Message;
                     success = false;
                 }
+                // Finish writing changes, whether or not the operation succeeded.
                 try {
-                    bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
+                    // If we're failing, leave the problematic filename on screen.
+                    if (failMsg == null) {
+                        bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
+                    }
                     mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
                     ProgressUtil.ShowMessage("Error: update failed: " + ex.Message, true, bkWorker);
                     return false;
+                }
+                if (failMsg != null) {
+                    // We want to defer reporting of failures until after SaveUpdates() runs,
+                    // because otherwise we're pausing for an indefinite period of time with the
+                    // disk image in an inconsistent state.  In particular, if we get a Disk Full
+                    // error and CP2 is killed while the dialog is up, the disk image can have
+                    // blocks marked in-use but no matching file entry (probably because of
+                    // buffering in the IDiskImage stream... flushing the disk image object seems
+                    // to fix things).  Flushing the filesystem object doesn't help.
+                    ProgressUtil.ShowMessage(failMsg, true, bkWorker);
                 }
                 if (!success) {
                     return false;
