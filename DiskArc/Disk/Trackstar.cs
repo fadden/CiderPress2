@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2022 faddenSoft
+ * Copyright 2023 faddenSoft
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,23 +24,27 @@ using static DiskArc.IDiskImage;
 
 namespace DiskArc.Disk {
     /// <summary>
-    /// Plain nibble disk image (".nib"/".nb2").  Only used for 35-track 5.25" floppy disk images.
+    /// Trackstar disk image (".app").  Holds 40-track or 80-track 5.25" floppy disk images.
     /// </summary>
     /// <remarks>
-    /// <para>This format has no CRC or other metadata, so we could write changes directly to
-    /// the file as they are made.  There's little value in doing so, however, so as with other
-    /// nibble formats, all writes are deferred until an explicit Flush.</para>
+    /// <para>Very similar to <see cref="UnadornedNibble525"/>, but with variable-length track
+    /// data and a short header on each track.</para>
+    /// <para>A short ASCII description is included at the start of every track.  We can provide
+    /// access to this through the metadata interface.</para>
     /// </remarks>
-    public class UnadornedNibble525 : IDiskImage, INibbleDataAccess {
-        public const int NIB_TRACK_LENGTH = 6656;
-        public const int NB2_TRACK_LENGTH = 6384;
-        private const int NUM_TRACKS = 35;
+    public class Trackstar : IDiskImage, INibbleDataAccess, IMetadata {
+        private const int TRACK_AREA_LENGTH = 6656;
+        private const int DATA_START_OFFSET = 0x81;
+        private const int MAX_TRACK_LENGTH = TRACK_AREA_LENGTH - (DATA_START_OFFSET + 2);
+        private const int LEN_OFFSET = 0x19fe;
+        private const int MIN_TRACKS = 40;
+        private const int MAX_TRACKS = 80;
 
         private static readonly NibCharacteristics sCharacteristics = new NibCharacteristics(
-            name: "Unadorned 5.25",
+            name: "Trackstar",
             isByteAligned: true,
-            isFixedLength: true,
-            hasPartial525Tracks: false);
+            isFixedLength: false,
+            hasPartial525Tracks: true);
 
         //
         // IDiskImage properties.
@@ -101,36 +105,78 @@ namespace DiskArc.Disk {
 
         private Stream mStream;
         private AppHook mAppHook;
-        private int mTrackLength;
-        private byte[] mFileData;
+        private int mNumTracks;
 
-        private CircularBitBuffer[] mTrackBuffers = new CircularBitBuffer[NUM_TRACKS];
+        /// <summary>
+        /// Class for managing the data in a single track.
+        /// </summary>
+        private class TrackData {
+            /// <summary>
+            /// Track length.
+            /// </summary>
+            public int Length { get; private set; }
+
+            /// <summary>
+            /// Copy of track data, with bytes in "forward" order.  This is the opposite of
+            /// how it is stored in the file.
+            /// </summary>
+            public byte[] FwdBuffer { get; private set; }
+
+            /// <summary>
+            /// Circular bit buffer.  This uses FwdBuffer as storage.
+            /// </summary>
+            public CircularBitBuffer CircBuf { get; private set; }
+
+            public TrackData(byte[] revBuffer, int offset, int length) {
+                FwdBuffer = new byte[length];
+                for (int i = 0; i < length; i++) {
+                    FwdBuffer[i] = revBuffer[offset + length - i - 1];
+                }
+                CircBuf = new CircularBitBuffer(FwdBuffer, 0, 0, length * 8);
+            }
+        }
+        private TrackData[] mTrackData;
+
 
         // IDiskImage-required delegate
         public static bool TestKind(Stream stream, AppHook appHook) {
-            // The contents of an unadorned image are not restricted.  All we have to go on
-            // is the length of the file.
+            // 40 or 80 tracks, each stored in a fixed amount of space.
+            if (stream.Length != TRACK_AREA_LENGTH * MIN_TRACKS &&
+                    stream.Length != TRACK_AREA_LENGTH * MAX_TRACKS) {
+                return false;
+            }
 
-            return stream.Length == NIB_TRACK_LENGTH * NUM_TRACKS ||
-                   stream.Length == NB2_TRACK_LENGTH * NUM_TRACKS;
+            // Run through and check a few bytes.
+            int numTracks = (int)(stream.Length / TRACK_AREA_LENGTH);
+            byte expected = (numTracks == 40) ? (byte)0x00 : (byte)0x01;
+            for (int i = 0; i < numTracks; i++) {
+                stream.Position = i * TRACK_AREA_LENGTH + 0x7f;
+                if (stream.ReadByte() != 0x00) {
+                    return false;
+                }
+                if (stream.ReadByte() != expected) {
+                    return false;
+                }
+                stream.Position = i * TRACK_AREA_LENGTH + LEN_OFFSET;
+                ushort len = RawData.ReadU16LE(stream, out bool ok);
+                if (len > MAX_TRACK_LENGTH) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>
         /// Private constructor.
         /// </summary>
-        private UnadornedNibble525(Stream stream, AppHook appHook) {
+        private Trackstar(Stream stream, AppHook appHook) {
             mStream = stream;
             mAppHook = appHook;
 
-            if (stream.Length == NIB_TRACK_LENGTH * NUM_TRACKS) {
-                mTrackLength = NIB_TRACK_LENGTH;
-            } else if (stream.Length == NB2_TRACK_LENGTH * NUM_TRACKS) {
-                mTrackLength = NB2_TRACK_LENGTH;
-            } else {
-                throw new NotSupportedException("Incompatible data stream");
-            }
+            mNumTracks = (int)(stream.Length / TRACK_AREA_LENGTH);
+            mTrackData = new TrackData[mNumTracks];
+
             IsReadOnly = !stream.CanWrite;
-            mFileData = RawData.EMPTY_BYTE_ARRAY;
         }
 
         /// <summary>
@@ -140,77 +186,14 @@ namespace DiskArc.Disk {
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>Disk image reference.</returns>
         /// <exception cref="NotSupportedException">Incompatible data stream.</exception>
-        public static UnadornedNibble525 OpenDisk(Stream stream, AppHook appHook) {
+        public static Trackstar OpenDisk(Stream stream, AppHook appHook) {
             if (!TestKind(stream, appHook)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
 
-            UnadornedNibble525 disk = new UnadornedNibble525(stream, appHook);
-
-            // Read the entire file into memory.
-            disk.mFileData = new byte[stream.Length];
-            stream.Position = 0;
-            stream.ReadExactly(disk.mFileData, 0, (int)stream.Length);
-
-            // Make sure the disk nibbles all have their high bits set.
-            FixBytes(disk.mFileData, NUM_TRACKS, disk.mTrackLength, disk.Notes);
+            Trackstar disk = new Trackstar(stream, appHook);
+            appHook.LogI("Opening Trackstar image, numTracks=" + disk.mNumTracks);
             disk.CreateBitBuffers();
-            return disk;
-        }
-
-        /// <summary>
-        /// Creates an unadorned 35-track nibble image, with fixed 6656 bytes per track and
-        /// byte-aligned track nibbles (in other words, a .NIB file).
-        /// </summary>
-        /// <param name="stream">Stream into which the new image will be written.  The stream
-        ///   must be readable, writable, and seekable.</param>
-        /// <param name="codec">Disk sector codec.</param>
-        /// <param name="volume">Volume number to use for low-level format.</param>
-        /// <param name="appHook">Application hook reference.</param>
-        /// <returns>Disk image reference.</returns>
-        public static UnadornedNibble525 CreateDisk(Stream stream, SectorCodec codec,
-                byte volume, AppHook appHook) {
-            if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
-                throw new ArgumentException("Invalid stream capabilities");
-            }
-
-            stream.Position = 0;
-            stream.SetLength(NUM_TRACKS * NIB_TRACK_LENGTH);
-            UnadornedNibble525 disk = new UnadornedNibble525(stream, appHook);
-            disk.mFileData = new byte[stream.Length];
-
-            int offset = 0;
-            for (byte trk = 0; trk < NUM_TRACKS; trk++) {
-                byte[] data =
-                    TrackInit.GenerateTrack525(codec, true, volume, trk, out int bitCount);
-                Debug.Assert(bitCount < data.Length * 8);
-                if (data.Length > NIB_TRACK_LENGTH) {
-                    throw new DAException("Generated track is too long: " + data.Length);
-                }
-                Array.Copy(data, 0, disk.mFileData, offset, data.Length);
-                // Fill the rest of the track with faux-sync FFs.
-                for (int i = data.Length; i < NIB_TRACK_LENGTH; i++) {
-                    disk.mFileData[offset + i] = 0xff;
-                }
-                offset += NIB_TRACK_LENGTH;
-            }
-            Debug.Assert(offset == stream.Length);
-
-#if DEBUG
-            foreach (byte nib in disk.mFileData) {
-                if ((nib & 0x80) == 0) {
-                    Debug.Assert(false, "Found byte with high bit clear");
-                }
-            }
-#endif
-
-            disk.CreateBitBuffers();
-
-            // Save the whole thing to the stream.
-            disk.mBufferModFlag.IsSet = true;
-            disk.Flush();
-
-            disk.ChunkAccess = new GatedChunkAccess(new NibbleChunkAccess(disk, codec));
             return disk;
         }
 
@@ -246,7 +229,7 @@ namespace DiskArc.Disk {
         }
 
         // IDiskImage
-        public virtual void CloseContents() {
+        public void CloseContents() {
             if (Contents is IFileSystem) {
                 ((IFileSystem)Contents).Dispose();
             } else if (Contents is IMultiPart) {
@@ -258,7 +241,7 @@ namespace DiskArc.Disk {
             }
         }
 
-        ~UnadornedNibble525() {
+        ~Trackstar() {
             Dispose(false);     // cleanup check
         }
         // IDisposable generic Dispose() implementation.
@@ -279,8 +262,8 @@ namespace DiskArc.Disk {
                 }
                 Contents = null;
             } else {
-                mAppHook.LogW("GC disposing UnadornedNibble525, dirty=" + IsDirty);
-                Debug.Assert(false, "GC disposing UnadornedNibble525, dirty=" + IsDirty +
+                mAppHook.LogW("GC disposing Trackstar, dirty=" + IsDirty);
+                Debug.Assert(false, "GC disposing Trackstar, dirty=" + IsDirty +
                     " created:\r\n" + mCreationStackTrace);
             }
         }
@@ -312,10 +295,9 @@ namespace DiskArc.Disk {
             // We're about to clear the dirty flags, so set this in case it hasn't been yet.
             mIsModified = true;
 
-            // Write entire file.
+            // Write entire file.  Length won't change.
             mStream.Position = 0;
-            mStream.Write(mFileData, 0, mFileData.Length);
-            mStream.Flush();
+            throw new NotImplementedException();        // TODO
 
             // Clear dirty flags.
             mBufferModFlag.IsSet = false;
@@ -326,74 +308,76 @@ namespace DiskArc.Disk {
         /// Creates a CircularBitBuffer object for each track.
         /// </summary>
         private void CreateBitBuffers() {
-            for (int i = 0; i < NUM_TRACKS; i++) {
-                mTrackBuffers[i] = new CircularBitBuffer(mFileData, i * mTrackLength, 0,
-                    mTrackLength * 8, mBufferModFlag, IsReadOnly);
+            byte[] trackBuf = new byte[TRACK_AREA_LENGTH];
+            for (int trk = 0; trk < mNumTracks; trk++) {
+                mStream.Position = trk * TRACK_AREA_LENGTH + LEN_OFFSET;
+                ushort trackLen = RawData.ReadU16LE(mStream, out bool ok);
+                Debug.Assert(trackLen <= MAX_TRACK_LENGTH);     // should've been caught initially
+                if (trackLen == 0) {
+                    trackLen = MAX_TRACK_LENGTH;
+                }
+
+                mStream.Position = trk * TRACK_AREA_LENGTH + DATA_START_OFFSET;
+                mStream.Read(trackBuf, 0, trackLen);
+                mTrackData[trk] = new TrackData(trackBuf, 0, trackLen);
             }
         }
 
-        // INibbleDataAccess
         public bool GetTrackBits(uint trackNum, uint trackFraction,
                 [NotNullWhen(true)] out CircularBitBuffer? cbb) {
             if (trackNum >= SectorCodec.MAX_TRACK_525) {
                 throw new ArgumentOutOfRangeException("Invalid track number: " + trackNum + "/" +
                     trackFraction);
             }
-            if (trackNum >= NUM_TRACKS || trackFraction != 0) {
-                // Track number is valid for this type of disk, but we don't have it.
+            if (trackFraction == 1 || trackFraction == 3 ||
+                    (trackFraction == 2 && mNumTracks != MAX_TRACKS)) {
+                // Never have quarter tracks, and only have half tracks for 80-track images.
                 cbb = null;
                 return false;
             }
 
+            int trackIndex;
+            if (mNumTracks == MAX_TRACKS) {
+                trackIndex = (int)trackNum * 2 + (trackFraction == 0 ? 0 : 1);
+            } else {
+                trackIndex = (int)trackNum;
+            }
+
             // Make a copy of the CBB object, so multiple instances don't share the bit position.
-            cbb = new CircularBitBuffer(mTrackBuffers[trackNum]);
+            cbb = new CircularBitBuffer(mTrackData[trackIndex].CircBuf);
             return true;
         }
 
-        /// <summary>
-        /// Confirms that all disk nibbles have their high bit set.  Any that don't will be
-        /// modified.  If we don't do this, values might look like sync bytes, and adjust the
-        /// bit synchronization of the data stream.
-        /// </summary>
-        /// <remarks>
-        /// A more rigorous test would confirm that all bytes are valid 6&2 values (with $d5/$aa
-        /// included).
-        /// </remarks>
-        internal static void FixBytes(byte[] buffer, int numTracks, int trackLength, Notes notes) {
-            bool zeroesLogged = false;
+        #region Metadata
 
-            int offset = 0;
-            for (int track = 0; track < NUM_TRACKS; track++) {
-                Debug.Assert(offset == track * trackLength);
-                int badNibs = 0;
-                int zeroNibs = 0;
-                for (int i = 0; i < trackLength; i++) {
-                    if (buffer[offset] == 0x00) {
-                        // AppleWin fills out gap 1 with 0x00 bytes to work around issues with
-                        // the ProDOS formatter, which concludes that the drive is spinning too
-                        // slowly if all 6656 bytes are used.  The 0x00 bytes are passed through
-                        // the emulated disk controller, and act as a really, really long
-                        // self-sync byte.  We can handle it the same way -- so long as no bits
-                        // are set, it doesn't throw the nibble latching off.
-                        // https://github.com/AppleWin/AppleWin/issues/1151
-                        // https://github.com/AppleWin/AppleWin/issues/125#issuecomment-342977995
-                        zeroNibs++;
-                    } else if ((buffer[offset] & 0x80) == 0) {
-                        buffer[offset] |= 0x80;
-                        badNibs++;
-                    }
-                    offset++;
-                }
-                if (zeroNibs != 0 && !zeroesLogged) {
-                    notes.AddI("Found " + zeroNibs + " zeroed nibbles on track " + track +
-                        (zeroNibs == 336 ? " (probably formatted by emulator)" : ""));
-                    zeroesLogged = true;    // no need to log this for every track
-                }
-                if (badNibs != 0) {
-                    Debug.WriteLine("Found " + badNibs + " bad nibbles");
-                    notes.AddW("Found " + badNibs + " invalid nibbles on track " + track);
-                }
-            }
+        // IMetadata
+        public bool CanAddNewEntries => false;
+
+        // IMetadata
+        public List<IMetadata.MetaEntry> GetMetaEntries() {
+            return new List<IMetadata.MetaEntry>();
         }
+
+        // IMetadata
+        public string? GetMetaValue(string key, bool verbose) {
+            throw new NotImplementedException();
+        }
+
+        // IMetadata
+        public bool TestMetaValue(string key, string value) {
+            throw new NotImplementedException();
+        }
+
+        // IMetadata
+        public void SetMetaValue(string key, string value) {
+            throw new NotImplementedException();
+        }
+
+        // IMetadata
+        public bool DeleteMetaEntry(string key) {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }

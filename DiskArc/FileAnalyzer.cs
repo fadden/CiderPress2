@@ -494,7 +494,7 @@ namespace DiskArc {
                 case FileKind.NuFX:
                     return NuFX.TestKind(stream, appHook);
                 case FileKind.Trackstar:
-                    return false;       // TODO
+                    return Trackstar.TestKind(stream, appHook);
                 case FileKind.TwoIMG:
                     return TwoIMG.TestKind(stream, appHook);
                 case FileKind.UnadornedSector:
@@ -538,6 +538,9 @@ namespace DiskArc {
             IDiskImage? diskImage = null;
             try {
                 switch (kind) {
+                    case FileKind.Trackstar:
+                        diskImage = Trackstar.OpenDisk(stream, appHook);
+                        break;
                     case FileKind.TwoIMG:
                         diskImage = TwoIMG.OpenDisk(stream, appHook);
                         break;

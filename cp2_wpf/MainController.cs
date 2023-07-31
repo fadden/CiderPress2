@@ -787,6 +787,10 @@ namespace cp2_wpf {
                 }
             }
 
+            // Get the list of selected items.  The behavior is a little strange: if you select
+            // an item in the middle, and then use select-all, the item you selected will be at
+            // the top (unless your selection was at the very bottom).  Everything else will be
+            // in the expected order.
             DataGrid dg = mMainWin.fileListDataGrid;
             IList treeSel = dg.SelectedItems;
             if (treeSel.Count == 0) {
@@ -844,22 +848,23 @@ namespace cp2_wpf {
                     } else {
                         selected.Add(listItem.FileEntry);
                     }
-                    // If this is the first selected item, remember the index.
-                    if (listItem == selItem) {
-                        firstSel = selected.Count - 1;
-                    }
                 }
 
                 // Sort the list of selected items by filename.  The exact sort order doesn't
                 // matter; we just need directories to appear before their contents, which they
                 // should do with any ascending sort (by virtue of the names being shorter).
-                selected.Sort(delegate (IFileEntry entry1, IFileEntry entry2) {
-                    return string.Compare(entry1.FullPathName, entry2.FullPathName);
-                });
+                //
+                // We want to suppress this when viewing files.  This only really matters for
+                // file deletion, so we can use the "omit dir" flag.
+                if (!omitDir) {
+                    selected.Sort(delegate (IFileEntry entry1, IFileEntry entry2) {
+                        return string.Compare(entry1.FullPathName, entry2.FullPathName);
+                    });
+                }
             }
             // Selection set may be empty at this point.
 
-            // Handle open archives.
+            // Handle open archives.  We may need to remove them from the set.
             if (doCheckOpen) {
                 Debug.Assert(omitOpenArc || closeOpenArc);
                 for (int i = 0; i < selected.Count; i++) {
@@ -879,6 +884,18 @@ namespace cp2_wpf {
                             // Leave it in the list.
                             CloseSubTree(treeItem);
                         }
+                    }
+                }
+            }
+
+            // If we're in "one means all" mode, and only one item was selecteed, we need to
+            // identify which member of the selection set we're supposed to display.
+            if (selItem != null) {
+                Debug.Assert(selItem != null);
+                for (int i = 0; i < selected.Count; i++) {
+                    if (selected[i] == ((FileListItem)selItem).FileEntry) {
+                        firstSel = i;
+                        break;
                     }
                 }
             }

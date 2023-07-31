@@ -220,6 +220,7 @@ namespace cp2_wpf {
             Debug.Assert(selected.Count > 0);
             mArchiveOrFileSystem = archiveOrFileSystem;
             mSelected = selected;
+            Debug.Assert(firstSel >= 0 && firstSel < selected.Count);
             mCurIndex = firstSel;
             mAppHook = appHook;
 

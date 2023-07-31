@@ -140,7 +140,18 @@ namespace DiskArc {
                 if (nibbles.GetTrackBits(39, 0, out CircularBitBuffer? trackData)) {
                     // See what the codec can make of it.
                     List<SectorPtr> sectorPtrs = codec.FindSectors(39, 0, trackData);
-                    if (sectorPtrs.Count > 4) {
+
+                    // Some Trackstar images seem to copy track 34 into the storage for
+                    // tracks 35-39, so we find sectors but the address fields consistently
+                    // have the wrong track value.  By checking for address field damage we
+                    // can correctly ignore those tracks.
+                    int goodCount = 0;
+                    foreach (SectorPtr ptr in sectorPtrs) {
+                        if (!ptr.IsAddrDamaged && !ptr.IsDataDamaged) {
+                            goodCount++;
+                        }
+                    }
+                    if (goodCount > 4) {
                         // Seems like there's stuff here.
                         NumTracks = 40;
                     }

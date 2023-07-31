@@ -7,9 +7,16 @@
 
 ## General ##
 
-[ TODO ]
-- captured disk images for hardware
-- 80-track capture of half-tracks
+The Trackstar series of cards, developed by Diamond Computer Systems, allowed an IBM PC-compatible
+computer to work as an Apple II clone.  The cards allowed an Apple II 5.25" disk drive to be
+connected directly, allowing access to copy-protected disks.
+
+The "Trackstar E" model, which emulated an enhanced Apple IIe, provided a way to capture disk
+images in "Trackstore" format.  These ".APP" files (short for Apple, not Application) could
+hold whole tracks and half tracks.
+
+Trackstar images are a slight improvement over unadorned nibble files (.nib), because they allow
+tracks to be variable length.
 
 ## File Layout ##
 
@@ -17,8 +24,8 @@ A file holds 40 or 80 tracks.  Each track occupies $1a00 (6656) bytes.
 ```
 +$0000 / 46: ASCII description of contents, padded with spaces; same on every track
 +$002e / 82: zeroes
-+$0080 /  1: $00 for 40-track image, $01 for 80-track image
-+$0081 /6525: raw nibble data (full bytes, no indication of sync)
++$0080 /  1: $00 for 40-track image, $01 for 80-track image; same on every track
++$0081 /6525: nibble data buffer
 +$19fe /  2: length of track data, or zero if analysis failed
 ```
 
@@ -27,6 +34,9 @@ the declared length should be ignored.  Unusually, the data is stored in descend
 a program that reads forward through the disk should read backward through memory.  (The "junk"
 at the end is stored in ascending order, and is likely leftover data from the disk read that
 wasn't zeroed out.)
+
+The nibble data is whole bytes as read from the disk controller, so self-sync patterns are not
+recoverable.
 
 ## Performance Note ##
 
