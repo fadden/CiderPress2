@@ -1643,6 +1643,12 @@ comment                  | r/w | string; ASCII only
 The volume number is optional, so deleting `volume_number` will remove the
 stored value.  Emulators are expected to use the default (254) in that case.
 
+### Trackstar ###
+
+name                     | acc | description
+------------------------ | --- | -----------
+description              | r/w | ASCII text string, 46 characters max
+
 ### WOZ ###
 
 For a full description of the meanings of the keys and values, see

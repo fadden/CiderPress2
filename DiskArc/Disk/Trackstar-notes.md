@@ -33,7 +33,7 @@ The data starts at +$0081 and continues for up to (6656-129-2=6525) bytes.  The 
 the declared length should be ignored.  Unusually, the data is stored in descending order, so
 a program that reads forward through the disk should read backward through memory.  (The "junk"
 at the end is stored in ascending order, and is likely leftover data from the disk read that
-wasn't zeroed out.)
+wasn't zeroed out.  A quick sample showed that the bytes match those at the start of the track.)
 
 The nibble data is whole bytes as read from the disk controller, so self-sync patterns are not
 recoverable.

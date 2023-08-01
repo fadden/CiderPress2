@@ -25,6 +25,5 @@ Suggested procedure:
  - Write "creation" tests that create disks and fiddle with them.
  - Verify that cp2 can open them.
  - Update cp2 "create-disk-image" to create images.  Update the GUI equivalent.
- - If the disk format has metadata, update the cp2 "get-metadata" and "set-metadata" calls to
-   read/write the fields.
+ - If the disk format has metadata, confirm that cp2 can read/write the fields.
  - Update the cp2 manual with the file extension and metadata information.

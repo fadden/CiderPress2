@@ -240,6 +240,23 @@ namespace cp2 {
                             volumeNum, appHook);
                     }
                     break;
+                case FileKind.Trackstar: {
+                         // Must be 35- or 40-track 5.25".
+                        if (byteSize % trackSize != 0) {
+                            throw new DAException("size must be a multiple of track length (" +
+                                trackSize + ") (try '35trk'?)");
+                        }
+                        int fmtTracks = (int)(byteSize / trackSize);
+                        if (fmtTracks != 35 && fmtTracks != 40) {
+                            throw new DAException("only 35- or 40-track images are allowed");
+                        }
+                        SectorCodec codec = is13Sector ?
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
+                        image = Trackstar.CreateDisk(imgStream, codec, volumeNum, fmtTracks,
+                            appHook);
+                    }
+                    break;
                 case FileKind.TwoIMG: {
                         // We don't create nibble images here.  Create a DOS-ordered sector image
                         // if it looks like a 35/40-track floppy, otherwise create a block image.
@@ -311,8 +328,6 @@ namespace cp2 {
                     break;
                 case FileKind.DiskCopy42:
                     // TODO; only expected to be used for 800KB disks
-                case FileKind.Trackstar:
-                    // TODO; can hold 35-track or 40-track 5.25".
                 default:
                     throw new DAException("File kind not implemented: " + fileKind);
             }

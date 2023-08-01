@@ -16,11 +16,13 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 using CommonUtil;
 using DiskArc.Multi;
 using static DiskArc.Defs;
 using static DiskArc.IDiskImage;
+using static DiskArc.IMetadata;
 
 namespace DiskArc.Disk {
     /// <summary>
@@ -34,11 +36,16 @@ namespace DiskArc.Disk {
     /// </remarks>
     public class Trackstar : IDiskImage, INibbleDataAccess, IMetadata {
         private const int TRACK_AREA_LENGTH = 6656;
+        private const int DESCRIPTION_LENGTH = 46;
+        private const int RESERVED_LENGTH = 82;
         private const int DATA_START_OFFSET = 0x81;
         private const int MAX_TRACK_LENGTH = TRACK_AREA_LENGTH - (DATA_START_OFFSET + 2);
         private const int LEN_OFFSET = 0x19fe;
         private const int MIN_TRACKS = 40;
         private const int MAX_TRACKS = 80;
+
+        // 82 zero bytes.
+        private static readonly byte[] sReserved = new byte[RESERVED_LENGTH];
 
         private static readonly NibCharacteristics sCharacteristics = new NibCharacteristics(
             name: "Trackstar",
@@ -54,7 +61,7 @@ namespace DiskArc.Disk {
 
         public bool IsDubious => false;
 
-        public bool IsDirty { get { return mBufferModFlag.IsSet; } }
+        public bool IsDirty { get { return mBufferModFlag.IsSet || mDescriptionChanged; } }
 
         public bool IsModified {
             get {
@@ -105,7 +112,10 @@ namespace DiskArc.Disk {
 
         private Stream mStream;
         private AppHook mAppHook;
-        private int mNumTracks;
+
+        private int mNumTracks;     // 40 or 80
+        private byte[] mDescription;
+        private bool mDescriptionChanged;
 
         /// <summary>
         /// Class for managing the data in a single track.
@@ -127,12 +137,41 @@ namespace DiskArc.Disk {
             /// </summary>
             public CircularBitBuffer CircBuf { get; private set; }
 
-            public TrackData(byte[] revBuffer, int offset, int length) {
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="inBuffer">Buffer with input data.  May be forward or reverse.</param>
+            /// <param name="offset">Offset to data within buffer.</param>
+            /// <param name="length">Length of data.</param>
+            /// <param name="isRev">True if order of bytes is reversed.</param>
+            /// <param name="modFlag">Shared modification flag.</param>
+            /// <param name="isReadOnly">True if writes should not be allowed.</param>
+            public TrackData(byte[] inBuffer, int offset, int length, bool isRev,
+                    GroupBool modFlag, bool isReadOnly) {
+                Debug.Assert(length <= MAX_TRACK_LENGTH);
+                Length = length;
+
                 FwdBuffer = new byte[length];
-                for (int i = 0; i < length; i++) {
-                    FwdBuffer[i] = revBuffer[offset + length - i - 1];
+                if (isRev) {
+                    for (int i = 0; i < length; i++) {
+                        FwdBuffer[i] = inBuffer[offset + length - i - 1];
+                    }
+                } else {
+                    for (int i = 0; i < length; i++) {
+                        FwdBuffer[i] = inBuffer[offset + i];
+                    }
                 }
-                CircBuf = new CircularBitBuffer(FwdBuffer, 0, 0, length * 8);
+                CircBuf = new CircularBitBuffer(FwdBuffer, 0, 0, length * 8, modFlag, isReadOnly);
+            }
+
+            /// <summary>
+            /// Writes the contents of the data buffer to the stream, in reverse byte order.
+            /// </summary>
+            /// <param name="stream">Stream to write data to.</param>
+            public void WriteReversed(Stream stream) {
+                for (int i = 0; i < Length; i++) {
+                    stream.WriteByte(FwdBuffer[Length - i - 1]);
+                }
             }
         }
         private TrackData[] mTrackData;
@@ -175,6 +214,8 @@ namespace DiskArc.Disk {
 
             mNumTracks = (int)(stream.Length / TRACK_AREA_LENGTH);
             mTrackData = new TrackData[mNumTracks];
+            mDescription = new byte[DESCRIPTION_LENGTH];
+            RawData.MemSet(mDescription, 0, mDescription.Length, 0x20);
 
             IsReadOnly = !stream.CanWrite;
         }
@@ -193,7 +234,62 @@ namespace DiskArc.Disk {
 
             Trackstar disk = new Trackstar(stream, appHook);
             appHook.LogI("Opening Trackstar image, numTracks=" + disk.mNumTracks);
+            stream.Position = 0;
+            stream.Read(disk.mDescription, 0, disk.mDescription.Length);
             disk.CreateBitBuffers();
+            return disk;
+        }
+
+        /// <summary>
+        /// Creates a 5.25" nibble image, formatted with the supplied codec.
+        /// </summary>
+        /// <param name="stream">Stream into which the new image will be written.  The stream
+        ///   must be readable, writable, and seekable.</param>
+        /// <param name="codec">Disk sector codec.</param>
+        /// <param name="volume">Volume number to use for low-level format.</param>
+        /// <param name="fmtTracks">Number of tracks to format.  Must be 35 or 40.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <returns>Disk image reference.</returns>
+        public static Trackstar CreateDisk(Stream stream, SectorCodec codec,
+                byte volume, int fmtTracks, AppHook appHook) {
+            if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
+                throw new ArgumentException("Invalid stream capabilities");
+            }
+            int numTracks;
+            if (fmtTracks == 35 || fmtTracks == 40) {
+                numTracks = 40;
+            } else if (fmtTracks == 80) {
+                numTracks = 80;
+                throw new ArgumentException("Not handling 80 tracks yet");
+            } else {
+                throw new ArgumentException("Invalid track count: " + fmtTracks);
+            }
+
+            stream.Position = 0;
+            stream.SetLength(numTracks * TRACK_AREA_LENGTH);
+            Trackstar disk = new Trackstar(stream, appHook);
+
+            for (byte trk = 0; trk < numTracks; trk++) {
+                byte[] data;
+                if (trk < fmtTracks) {
+                    data = TrackInit.GenerateTrack525(codec, true, volume, trk, out int bitCount);
+                    Debug.Assert(bitCount < data.Length * 8);
+                } else {
+                    // We don't want this track to be recognized as habitable.  We can set the
+                    // length to zero or fill it with junk.  The original Trackstar apparently
+                    // just copied track 34 in here.  I'm not sure which approach is best.
+                    data = new byte[MAX_TRACK_LENGTH];
+                    RawData.MemSet(data, 0, data.Length, 0xff);
+                }
+                if (data.Length > MAX_TRACK_LENGTH) {
+                    throw new DAException("Generated track is too long: " + data.Length);
+                }
+                disk.mTrackData[trk] = new TrackData(data, 0, data.Length, false,
+                    disk.mBufferModFlag, false);
+            }
+            disk.Flush();
+
+            disk.ChunkAccess = new GatedChunkAccess(new NibbleChunkAccess(disk, codec));
             return disk;
         }
 
@@ -297,10 +393,29 @@ namespace DiskArc.Disk {
 
             // Write entire file.  Length won't change.
             mStream.Position = 0;
-            throw new NotImplementedException();        // TODO
+            for (int trk = 0; trk < mNumTracks; trk++) {
+                mStream.Write(mDescription, 0, mDescription.Length);
+                mStream.Write(sReserved, 0, sReserved.Length);
+                if (mNumTracks == MAX_TRACKS) {
+                    mStream.WriteByte(0x01);
+                } else {
+                    mStream.WriteByte(0x00);
+                }
+                TrackData td = mTrackData[trk];
+                td.WriteReversed(mStream);
+                // Pad out the remaining space with FF.  To be true to the original we should
+                // write data from the start of the track in forward order.
+                for (int i = 0; i < MAX_TRACK_LENGTH - td.Length; i++) {
+                    mStream.WriteByte(0xff);
+                }
+                RawData.WriteU16LE(mStream, (ushort)td.Length);
+                Debug.Assert(mStream.Position == (trk + 1) * TRACK_AREA_LENGTH);
+            }
+            mStream.Flush();
 
             // Clear dirty flags.
             mBufferModFlag.IsSet = false;
+            mDescriptionChanged = false;
             Debug.Assert(!IsDirty);
         }
 
@@ -319,7 +434,8 @@ namespace DiskArc.Disk {
 
                 mStream.Position = trk * TRACK_AREA_LENGTH + DATA_START_OFFSET;
                 mStream.Read(trackBuf, 0, trackLen);
-                mTrackData[trk] = new TrackData(trackBuf, 0, trackLen);
+                mTrackData[trk] =
+                    new TrackData(trackBuf, 0, trackLen, true, mBufferModFlag, IsReadOnly);
             }
         }
 
@@ -350,34 +466,84 @@ namespace DiskArc.Disk {
 
         #region Metadata
 
+        private static readonly MetaEntry[] sMetaEntries = new MetaEntry[] {
+            new MetaEntry("description", MetaEntry.ValType.String,
+                "Disk description.", "ASCII string, 46 characters max.", canEdit: true),
+        };
+
         // IMetadata
         public bool CanAddNewEntries => false;
 
         // IMetadata
         public List<IMetadata.MetaEntry> GetMetaEntries() {
-            return new List<IMetadata.MetaEntry>();
+            List<MetaEntry> list = new List<MetaEntry>(sMetaEntries.Length);
+            foreach (MetaEntry met in sMetaEntries) {
+                list.Add(met);
+            }
+            return list;
         }
 
         // IMetadata
         public string? GetMetaValue(string key, bool verbose) {
-            throw new NotImplementedException();
+            if (key != "description") {
+                return null;
+            }
+            try {
+                return Encoding.ASCII.GetString(mDescription).TrimEnd();
+            } catch (Exception ex) {
+                Debug.WriteLine("ASCII conversion failed: " + ex.Message);
+                return null;
+            }
+        }
+
+        private static byte[]? StringToDescription(string value) {
+            try {
+                byte[] ascii = Encoding.ASCII.GetBytes(value.TrimEnd());
+                if (ascii.Length > DESCRIPTION_LENGTH) {
+                    return null;
+                }
+
+                byte[] description = new byte[DESCRIPTION_LENGTH];
+                Array.Copy(ascii, description, ascii.Length);
+                // Pad the field with spaces.
+                for (int i = ascii.Length; i < description.Length; i++) {
+                    description[i] = 0x20;
+                }
+                return description;
+            } catch {
+                return null;
+            }
         }
 
         // IMetadata
         public bool TestMetaValue(string key, string value) {
-            throw new NotImplementedException();
+            if (key != "description" || value == null) {
+                return false;
+            }
+            return StringToDescription(value) != null;
         }
 
         // IMetadata
         public void SetMetaValue(string key, string value) {
-            throw new NotImplementedException();
+            if (key == null || value == null) {
+                throw new ArgumentException("key and value must not be null");
+            }
+            if (key != "description") {
+                throw new ArgumentException("invalid key '" + key + "'");
+            }
+            byte[]? description = StringToDescription(value);
+            if (description == null) {
+                throw new ArgumentException("invalid value '" + value + "'");
+            }
+            mDescription = description;
+            mDescriptionChanged = true;
         }
 
         // IMetadata
         public bool DeleteMetaEntry(string key) {
-            throw new NotImplementedException();
+            return false;
         }
 
-        #endregion
+        #endregion Metadata
     }
 }

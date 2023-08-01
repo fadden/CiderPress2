@@ -20,7 +20,6 @@ using DiskArc;
 using DiskArc.Disk;
 using static DiskArc.Defs;
 
-
 namespace DiskArcTests {
     /// <summary>
     /// Test some Trackstar disk images created by original hardware or by other programs.
@@ -28,6 +27,16 @@ namespace DiskArcTests {
     public class TestTrackstar_Prefab : ITest {
         public static void TestVarious(AppHook appHook) {
             Helper.SimpleDiskCheck("trackstar/DOS33MAS.APP", FileKind.Trackstar, 19, appHook);
+        }
+
+        public static void TestMeta(AppHook appHook) {
+            using (Stream dataFile = Helper.OpenTestFile("trackstar/DOS33MAS.APP", true, appHook)) {
+                using (Trackstar disk = Trackstar.OpenDisk(dataFile, appHook)) {
+                    string? desc = disk.GetMetaValue("description", false);
+                    Helper.ExpectString("Apple DOS 3.3 System Master - January 1, 1983",
+                        desc, "incorrect metadata");
+                }
+            }
         }
     }
 }

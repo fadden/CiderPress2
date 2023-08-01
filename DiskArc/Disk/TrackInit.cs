@@ -40,7 +40,7 @@ namespace DiskArc.Disk {
 
         /// <summary>
         /// Generates a newly-initialized GCR track for a 5.25" floppy disk.  The returned buffer
-        /// will be DEFAULT_LENGTH_525 bytes long.
+        /// will be <see cref="DEFAULT_LENGTH_525"/> bytes long.
         /// </summary>
         /// <remarks>
         /// <para>The length required to hold the sector data is returned in "bitCount".  The
