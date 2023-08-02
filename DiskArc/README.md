@@ -1,5 +1,21 @@
 # DiskArc Library #
 
+Contents:
+ - [Introduction](#introduction)
+ - [About Disk Images](#about-disk-images)
+   - [About Filesystems](#about-filesystems)
+ - [About File Archives](#about-file-archives)
+   - [Single-File vs. Multi-File Archives](#single-file-vs-multi-file-archives)
+ - [Library Fun Facts](#library-fun-facts)
+   - [IDisposable](#idisposable)
+   - [Extension Methods](#extension-methods)
+ - [Disk Image Implementation Notes](#disk-image-implementation-notes)
+ - [Filesystem Implementation Notes](#filesystem-implementation-notes)
+ - [Archive Implementation Notes](#archive-implementation-notes)
+
+
+## Introduction ##
+
 The DiskArc library provides access to the contents of disk images and file archives.  The
 focus is on Apple II and "vintage" Macintosh systems.
 
@@ -43,6 +59,7 @@ The relationships are more complicated than shown, e.g. most `Partitions` have a
 and filesystems with embedded volumes have an `IMultiPart`.  Note `IFileEntry` is used for both
 filesystems and file archives.
 
+
 ## About Disk Images ##
 
 Disk images are files that contain the contents of a floppy disk, hard drive, CD-ROM, or other
@@ -77,6 +94,12 @@ the host filesystem: read, write, seek, truncate, etc.  The calls may behave a l
 differently due to limitations of the filesystem, but the expectation is that the object can be
 passed to any code that takes a `Stream`.
 
+A number of disk formats, including DiskCopy, Trackstar, 2IMG, and WOZ, have metadata fields.
+In most cases this is a simple description string, though WOZ allows the addition of arbitrary
+values.  These are managed with the `IMetadata` interface.  The data structures are sufficiently
+self-describing that no change to the applications should be necessary when adding or altering
+the handling of metadata.
+
 ### About Filesystems ###
 
 The filesystem implementations are initially in "raw access" mode.  This allows direct access to
@@ -102,6 +125,7 @@ operating system (ProDOS, Pascal, or CP/M) sits on tracks 0-16.  The filesystem 
 represents the "primary" filesystem, with the embedded filesystems available through a
 secondary API.
 
+
 ## About File Archives ##
 
 File archives hold a collection of files and their associated attributes, such as file types
@@ -112,6 +136,10 @@ are performed by opening a transaction, making the desired edits, and then commi
 transaction.  An updated copy of the archive is written to a new file, which replaces the original
 when the entire transaction completes successfully.  If the transaction is cancelled or fails,
 the original file remains unmodified.
+
+(The interface defines a way for simple changes, such as file type updates, to be made without
+rewriting the entire file.  In practice, this adds a lot of complexity for little benefit.  Only
+Binary II supports this.)
 
 Entries in an archive are returned as an archive-specific implementation of `IFileEntry`.  The
 library provides a way to make trivial changes, such as altering a file type, directly to the
@@ -146,6 +174,7 @@ extended attributes are stored as two entries.  The second entry's path is prefi
 `__MACOSX`, and the filename is prefixed with `._`, forming an AppleDouble "header" file.  The
 DiskArc library doesn't give these special treatment.  It's up to the application to decide how
 it wants to work with these archives.
+
 
 ## Library Fun Facts ##
 
@@ -236,14 +265,21 @@ it's unmounted, so that a consistency check can be performed automatically after
 Any such changes must not be written to disk unless the caller explicitly changes something else,
 e.g. altering a file date could also cause the storage size to be corrected.
 
-Exceptions:
+Exception classes:
  - IOException and sub-classes mean "something unexpected happened during an operation".
+   - Custom IOException sub-classes: `BadBlockException`, `DiskFullException`
  - ArgumentException and sub-classes mean you passed bad arguments in.
  - DAException mean mis-use of APIs, like trying to switch to raw-access mode
    with files open, or an internal error.
 
 Disk analyzer tries to find a filesystem that fills a certain space.  It will not look for
 DOS 3.3 in a 32MB volume, or ProDOS in a 40MB volume.
+
+
+## Disk Image Implementation Notes ##
+
+The description field for DiskCopy, Trackstar, and 2IMG is editable via the metadata interface.
+
 
 ## Filesystem Implementation Notes ##
 
@@ -358,8 +394,42 @@ The DiskArc library does not prevent duplicate entries from being created unless
 format specifically disallows duplicates.  Currently, none do.  (The Binary II code will
 complain though.)  Applications are free to impose more stringent requirements.
 
-#### TBD
-- AppleSingle doesn't require any actual data, but is currently configured to provide an
-  empty data fork because all of the instances I've seen have that.
-- GZIP requires data.
-- GZIP DataLength will be -1; use GetPartInfo() instead, but don't use value to size a buffer.
+Applications should do case-insensitive comparisons when checking for duplicates, since most
+vintage filesystems are case-insensitive.
+
+### AppleSingle ###
+
+Versions 1 and 2 are fully supported.
+
+While the format doesn't require that either file fork be present, all of the examples I've found
+include a data fork.  The code is currently configured to generate a zero-length data fork if
+the file doesn't have one.
+
+### Binary II ###
+
+The format is fully supported, including the use of Squeeze compression.  However, bear in mind
+that Binary II was intended as a simple file transmission wrapper, not as a full file
+archive format.
+
+### gzip ###
+
+All entries must have a data part, though it can be zero length.  Data is always compressed,
+even if the compression makes it larger.
+
+An obscure feature of gzip allows multiple files to be concatenated together.  This is expected
+to behave the same as if it were a single file that had been compressed all at once.  This means
+that the uncompressed data length stored at the end of the file may or may not reflect the full
+length of the file contents.  For this reason, the reported DataLength is always -1.  If you
+want to assume it's a single-entry file, you can get the last data length field via the
+`GetPartInfo()` method.
+
+The only way to accurately determine the uncompressed length of a gzip file is to uncompress it.
+
+### NuFX (ShrinkIt) ###
+
+The implementation is less general than that in NufxLib, but it should handle all of the
+situations that will actually come up in real life.
+
+### ZIP ###
+
+Currently, only the basic MS-DOS timestamps are supported.

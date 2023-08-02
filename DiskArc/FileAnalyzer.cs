@@ -287,7 +287,7 @@ namespace DiskArc {
                     okayForCreate = false;      // ambiguous
                     fileKind1 = FileKind.UnadornedSector;
                     orderHint1 = SectorOrder.DOS_Sector;
-                    fileKind2 = FileKind.DiskCopy42;
+                    fileKind2 = FileKind.DiskCopy;
                     break;
                 case ".nib":
                     fileKind1 = FileKind.UnadornedNibble525;
@@ -315,7 +315,7 @@ namespace DiskArc {
                 case ".dc":
                 case ".dc6":
                 case ".image":
-                    fileKind1 = FileKind.DiskCopy42;
+                    fileKind1 = FileKind.DiskCopy;
                     fileKind2 = FileKind.UnadornedSector;
                     orderHint1 = SectorOrder.ProDOS_Block;
                     break;
@@ -454,7 +454,7 @@ namespace DiskArc {
             FileKind.NuFX,
             FileKind.GZip,
             FileKind.AppleSingle,
-            FileKind.DiskCopy42,
+            FileKind.DiskCopy,
             FileKind.ACU,
             FileKind.Binary2,       // test after NuFX (.BXY > .BNY)
             // These are less definite, depending primarily on the size of the file.
@@ -487,8 +487,8 @@ namespace DiskArc {
                     return Binary2.TestKind(stream, appHook);
                 case FileKind.DDD:
                     return false;       // TODO
-                case FileKind.DiskCopy42:
-                    return false;       // TODO
+                case FileKind.DiskCopy:
+                    return DiskCopy.TestKind(stream, appHook);
                 case FileKind.GZip:
                     return GZip.TestKind(stream, appHook);
                 case FileKind.NuFX:
@@ -538,6 +538,9 @@ namespace DiskArc {
             IDiskImage? diskImage = null;
             try {
                 switch (kind) {
+                    case FileKind.DiskCopy:
+                        diskImage = DiskCopy.OpenDisk(stream, appHook);
+                        break;
                     case FileKind.Trackstar:
                         diskImage = Trackstar.OpenDisk(stream, appHook);
                         break;

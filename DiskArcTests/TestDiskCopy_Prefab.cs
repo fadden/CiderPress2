@@ -22,19 +22,20 @@ using static DiskArc.Defs;
 
 namespace DiskArcTests {
     /// <summary>
-    /// Test some Trackstar disk images created by original hardware or by other programs.
+    /// Test some DiskCopy disk images created by other programs.
     /// </summary>
-    public class TestTrackstar_Prefab : ITest {
+    public class TestDiskCopy_Prefab : ITest {
         public static void TestVarious(AppHook appHook) {
-            Helper.SimpleDiskCheck("trackstar/DOS33MAS.APP", FileKind.Trackstar, 19, appHook);
+            Helper.SimpleDiskCheck("diskcopy/Installer Disk 1.image",
+                FileKind.DiskCopy, 8, appHook);
         }
 
         public static void TestMeta(AppHook appHook) {
-            using (Stream dataFile = Helper.OpenTestFile("trackstar/DOS33MAS.APP", true, appHook)) {
-                using (Trackstar disk = Trackstar.OpenDisk(dataFile, appHook)) {
-                    string? desc = disk.GetMetaValue(Trackstar.DESCRIPTION_NAME, false);
-                    Helper.ExpectString("Apple DOS 3.3 System Master - January 1, 1983",
-                        desc, "incorrect metadata");
+            using (Stream dataFile = Helper.OpenTestFile("diskcopy/Installer Disk 1.image", true,
+                    appHook)) {
+                using (DiskCopy disk = DiskCopy.OpenDisk(dataFile, appHook)) {
+                    string? desc = disk.GetMetaValue(DiskCopy.DESCRIPTION_NAME, false);
+                    Helper.ExpectString("Installer Disk 1", desc, "incorrect metadata");
                 }
             }
         }

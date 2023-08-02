@@ -64,7 +64,7 @@ namespace DiskArcTests {
             // Modify metadata only.
             using (Trackstar disk = Trackstar.OpenDisk(diskStream, appHook)) {
                 disk.AnalyzeDisk();
-                disk.SetMetaValue("description", TEST_DESC_STR);
+                disk.SetMetaValue(Trackstar.DESCRIPTION_NAME, TEST_DESC_STR);
             }
 
             // Verify disk and file contents.
@@ -87,7 +87,7 @@ namespace DiskArcTests {
                     }
                 }
 
-                string? meta = disk.GetMetaValue("description", false);
+                string? meta = disk.GetMetaValue(Trackstar.DESCRIPTION_NAME, false);
                 Helper.ExpectString(TEST_DESC_STR, meta, "wrong metadata");
             }
         }

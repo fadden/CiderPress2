@@ -287,6 +287,8 @@ namespace DiskArc.Disk {
 
             public enum ImageFormat { DOS_Floppy = 0, ProDOS_Disk = 1, Nibble_Floppy = 2 };
 
+            public Header() { }
+
             /// <summary>
             /// Creates a Header object for a new disk image.
             /// </summary>
@@ -574,7 +576,7 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Open a disk image file.
+        /// Opens a disk image file.
         /// </summary>
         /// <param name="stream">Disk image data stream.</param>
         /// <param name="appHook">Application hook reference.</param>

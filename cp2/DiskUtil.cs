@@ -326,7 +326,7 @@ namespace cp2 {
                         }
                     }
                     break;
-                case FileKind.DiskCopy42:
+                case FileKind.DiskCopy:
                     // TODO; only expected to be used for 800KB disks
                 default:
                     throw new DAException("File kind not implemented: " + fileKind);

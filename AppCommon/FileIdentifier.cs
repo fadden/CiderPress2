@@ -112,8 +112,8 @@ namespace AppCommon {
             byte proType = 0;
             ushort proAux = 0;
             if (entry.HasHFSTypes) {
-                if (entry.HFSCreator == DiskArc.Disk.DiskCopy.HFS_CREATOR &&
-                        entry.HFSFileType == DiskArc.Disk.DiskCopy.HFS_FILE_TYPE) {
+                if (/*entry.HFSCreator == FileAttribs.CREATOR_DCPY &&*/
+                        entry.HFSFileType == FileAttribs.TYPE_DIMG) {
                     looksGood = true;
                 } else {
                     hasProType = FileAttribs.ProDOSFromHFS(entry.HFSFileType, entry.HFSCreator,
@@ -136,7 +136,7 @@ namespace AppCommon {
                 ext = Path.GetExtension(GZip.StripGZExtension(gzipName));
             } else {
                 ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
-                if (string.IsNullOrEmpty(ext)) {
+                if (string.IsNullOrEmpty(ext) && !looksGood) {
                     return false;
                 }
             }

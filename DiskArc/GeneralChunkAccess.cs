@@ -33,6 +33,8 @@ namespace DiskArc {
 
         public bool IsReadOnly { get; private set; }
         public bool IsModified { get; set; }
+        public long ReadCount { get; private set; }
+        public long WriteCount { get; private set; }
 
         public long FormattedLength { get; private set; }
         public uint NumTracks { get; private set; }
@@ -239,7 +241,7 @@ namespace DiskArc {
             } else if (actual != SECTOR_SIZE) {
                 throw new IOException("Read partial sector (actual=" + actual + ")");
             }
-            DAUtil.TotalReads++;
+            ReadCount++;
         }
 
         // IChunkAccess
@@ -294,7 +296,7 @@ namespace DiskArc {
                     throw new IOException("Read partial block (actual=" + actual + ")");
                 }
             }
-            DAUtil.TotalReads++;
+            ReadCount++;
         }
 
         // IChunkAccess
@@ -335,7 +337,7 @@ namespace DiskArc {
             mFile.Seek(mStartOffset + fileOffset, SeekOrigin.Begin);
             mFile.Write(data, offset, SECTOR_SIZE);
             IsModified = true;
-            DAUtil.TotalWrites++;
+            WriteCount++;
         }
 
         // IChunkAccess
@@ -382,7 +384,7 @@ namespace DiskArc {
                 mFile.Write(data, offset, BLOCK_SIZE);
             }
             IsModified = true;
-            DAUtil.TotalWrites++;
+            WriteCount++;
         }
 
         // IChunkAccess

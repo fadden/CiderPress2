@@ -87,7 +87,8 @@ namespace DiskArc {
             GCR_525,                    // single-sided, 35-40 tracks (140KB+)
             GCR_SSDD35,                 // single-sided, 80 tracks (400KB), 524 bytes/block
             GCR_DSDD35,                 // double-sided, 80 tracks (800KB), 524 bytes/block
-            MFM_DSHD35,                 // double-sided high-density (1.44MB), 512 bytes/block
+            MFM_DSDD35,                 // double-sided double-density (720KB), 9 sectors/track
+            MFM_DSHD35,                 // double-sided high-density (1.44MB), 18 sectors/track
         }
 
         /// <summary>
@@ -114,7 +115,7 @@ namespace DiskArc {
             UnadornedNibble525,         // .nib, .nb2, .raw*
             Woz,                        // .woz
             TwoIMG,                     // .2mg, .2img
-            DiskCopy42,                 // .dsk*, .dc
+            DiskCopy,                   // .dsk*, .dc
             Trackstar,                  // .app
             // ? Sim //e HDV
             // ? FDI
@@ -139,7 +140,7 @@ namespace DiskArc {
                 case FileKind.UnadornedNibble525:
                 case FileKind.Woz:
                 case FileKind.TwoIMG:
-                case FileKind.DiskCopy42:
+                case FileKind.DiskCopy:
                 case FileKind.Trackstar:
                     return true;
                 default:

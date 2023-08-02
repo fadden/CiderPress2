@@ -88,9 +88,21 @@ namespace DiskArc {
         /// <para>The state of this flag has no impact on the operation of IChunkAccess instances.
         /// This exists purely for the benefit of applications, so that they can tell when a disk
         /// image has been modified (perhaps to show a "save needed" indicator, or know that a
-        /// disk image must be recompressed into an archive).</para>
+        /// disk image must be recompressed into an archive).  Because this can be set freely
+        /// by the application, IDiskImage implementations should not rely on this as a dirty
+        /// block indicator.</para>
         /// </remarks>
         bool IsModified { get; set; }
+
+        /// <summary>
+        /// Block/sector read counter.  Incremented whenever a read is made.
+        /// </summary>
+        long ReadCount { get; }
+
+        /// <summary>
+        /// Block/sector write counter.  Incremented whenever a write is made.
+        /// </summary>
+        long WriteCount { get; }
 
         /// <summary>
         /// The total formatted size of the media, in bytes.

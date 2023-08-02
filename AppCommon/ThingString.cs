@@ -49,7 +49,9 @@ namespace AppCommon {
         /// Returns a short (&lt;= 9 char) string with a disk image class name.
         /// </summary>
         public static string IDiskImage(IDiskImage disk) {
-            if (disk is Trackstar) {
+            if (disk is DiskCopy) {
+                return "DiskCopy";
+            } else if (disk is Trackstar) {
                 return "Trackstar";
             } else if (disk is TwoIMG) {
                 return "2IMG";
@@ -203,7 +205,7 @@ namespace AppCommon {
                     return "WOZ";
                 case Defs.FileKind.TwoIMG:
                     return "2IMG";
-                case Defs.FileKind.DiskCopy42:
+                case Defs.FileKind.DiskCopy:
                     return "DiskCopy 4.2";
                 case Defs.FileKind.Trackstar:
                     return "Trackstar";
@@ -269,8 +271,10 @@ namespace AppCommon {
                     return "GCR SS/DD 3.5\"";
                 case Defs.MediaKind.GCR_DSDD35:
                     return "GCR DS/DD 3.5\"";
+                case Defs.MediaKind.MFM_DSDD35:
+                    return "MFM DS/DD 3.5\" 720KB";
                 case Defs.MediaKind.MFM_DSHD35:
-                    return "MFM DS/HD 3.5\"";
+                    return "MFM DS/HD 3.5\" 1440KB";
                 default:
                     return "?" + kind.ToString();
             }

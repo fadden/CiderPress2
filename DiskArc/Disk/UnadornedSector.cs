@@ -262,10 +262,10 @@ namespace DiskArc.Disk {
                 return false;
             }
             ChunkAccess = new GatedChunkAccess(chunks);
+
             if (depth == AnalysisDepth.ChunksOnly) {
                 return true;
             }
-
             // Figure out the disk layout.
             if (!FileAnalyzer.AnalyzeFileSystem(chunks, true, mAppHook,
                     out IDiskContents? contents)) {

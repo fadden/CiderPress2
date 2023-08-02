@@ -942,6 +942,11 @@ namespace cp2 {
             if (Directory.Exists(pathName)) {
                 ProcessDirectory(pathName, parms);
             } else if (File.Exists(pathName)) {
+                if (!parms.Classic && Path.GetFileName(pathName).StartsWith("._")) {
+                    // Probably an AppleDouble header; skip it.  We're only interested in the
+                    // contents of disk images, not the attributes associated with them.
+                    return true;
+                }
                 try {
                     using FileStream arcFile = new FileStream(pathName, FileMode.Open,
                         FileAccess.Read, FileShare.Read);

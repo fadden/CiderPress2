@@ -34,6 +34,8 @@ namespace DiskArc.Multi {
             get { return mBase.IsModified; }
             set { mBase.IsModified = value; }
         }
+        public long ReadCount => mBase.ReadCount;
+        public long WriteCount => mBase.WriteCount;
 
         public long FormattedLength { get; private set; }
 

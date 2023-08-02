@@ -1352,7 +1352,7 @@ to decide what sort of file to create.
  - ".woz" - WOZ format nibble image, for 5.25" (35- or 40-track)
    or 3.5" (SSDD or DSDD) disks
  - ".2mg", ".2img" - DOS-order 16-sector disks, or ProDOS-order blocks
- - ".dc", ".image" - DiskCopy 4.2 3.5" disk block image
+ - ".dc", ".image" - DiskCopy 4.2 3.5" floppy block image
  - ".app" - Trackstar 5.25" (35- or 40-track) disk nibble image
  - ".sdk" - NuFX (ShrinkIt) disk archive
  - ".zip" - ZIP file archive
@@ -1630,6 +1630,18 @@ whether the key is read-only or read/write.
 
 Boolean values may be set to "true" or "false".
 
+### DiskCopy 4.2 ###
+
+name                     | acc | description
+------------------------ | --- | -----------
+description              | r/w | Mac OS Roman text string, 63 characters max
+
+### Trackstar ###
+
+name                     | acc | description
+------------------------ | --- | -----------
+description              | r/w | ASCII text string, 46 characters max
+
 ### 2IMG ###
 
 name                     | acc | description
@@ -1642,12 +1654,6 @@ comment                  | r/w | string; ASCII only
 
 The volume number is optional, so deleting `volume_number` will remove the
 stored value.  Emulators are expected to use the default (254) in that case.
-
-### Trackstar ###
-
-name                     | acc | description
------------------------- | --- | -----------
-description              | r/w | ASCII text string, 46 characters max
 
 ### WOZ ###
 

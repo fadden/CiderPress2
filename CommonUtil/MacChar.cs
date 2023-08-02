@@ -167,6 +167,7 @@ namespace CommonUtil {
 
         /// <summary>
         /// Converts a Unicode string to a length-delimited Mac OS string, in a new buffer.
+        /// Unsupported characters are converted to '?'.
         /// </summary>
         /// <param name="str">String to encode.</param>
         /// <param name="enc">Encoding type.</param>

@@ -42,6 +42,8 @@ namespace DiskArc {
         }
 
         public bool IsModified { get; set; }
+        public long ReadCount { get; private set; }
+        public long WriteCount { get; private set; }
 
         public long FormattedLength { get; private set; }
 
@@ -244,6 +246,7 @@ namespace DiskArc {
             CheckSectorArgs(trk, sct, false);
             uint physSector = SectorSetup(trk, sct, out TrackEntry trkEnt);
             DoReadSector(trk, physSector, trkEnt, data, offset);
+            ReadCount++;
         }
 
         /// <summary>
@@ -327,6 +330,7 @@ namespace DiskArc {
                 }
                 Array.Copy(mTmpBuf524, TAG_BYTE_COUNT, data, offset, BLOCK_SIZE);
             }
+            ReadCount++;
         }
 
         // IChunkAccess
@@ -335,6 +339,7 @@ namespace DiskArc {
             uint physSector = SectorSetup(trk, sct, out TrackEntry trkEnt);
             IsModified = true;
             DoWriteSector(trk, physSector, trkEnt, data, offset);
+            WriteCount++;
         }
 
         /// <summary>
@@ -396,6 +401,7 @@ namespace DiskArc {
                     throw new BadBlockException("Unable to write block", cyl, head, sct, false);
                 }
             }
+            WriteCount++;
         }
 
         // IChunkAccess

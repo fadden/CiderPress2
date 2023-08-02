@@ -62,6 +62,8 @@ namespace DiskArc {
             get => mBase.IsModified;
             set { mBase.IsModified = value; }       // always mutable, even when gate is closed
         }
+        public long ReadCount => mBase.ReadCount;
+        public long WriteCount => mBase.WriteCount;
 
         public long FormattedLength => mBase.FormattedLength;
 

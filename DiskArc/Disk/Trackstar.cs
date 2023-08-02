@@ -43,6 +43,7 @@ namespace DiskArc.Disk {
         private const int LEN_OFFSET = 0x19fe;
         private const int MIN_TRACKS = 40;
         private const int MAX_TRACKS = 80;
+        public const string DESCRIPTION_NAME = "description";
 
         // 82 zero bytes.
         private static readonly byte[] sReserved = new byte[RESERVED_LENGTH];
