@@ -409,16 +409,16 @@ namespace DiskArc {
 
         /// <summary>
         /// Disk images: saves all pending file entry changes to disk.  If no changes are pending,
-        /// this returns without doing anything.  Failure to call this may result in changes
-        /// being discarded.
+        /// this returns without doing anything.
         /// </summary>
         /// <remarks>
         /// <para>While changes made to the file entry happen immediately to the internal object,
-        /// they may not be not written to disk until explicitly requested or the filesystem is
-        /// disposed.  This call exists so that changes can be made to multiple attributes without
-        /// having to write the new values to disk after each.  The filesystem code will do
-        /// its best to flush changes to disk before the object is discarded, but explicitly
-        /// saving them is recommended.</para>
+        /// they may not be not written to disk until the filesystem is disposed.  (IFileSystem
+        /// Flush() implementations may not write attribute changes that aren't associated with
+        /// an open file.)  This call exists so that changes can be made to multiple attributes
+        /// without having to write the new values to disk after each.  The filesystem code will
+        /// flush changes to disk before the object is discarded, but explicitly saving them is
+        /// recommended.</para>
         /// <para>File archives: changes to archive entry attributes are made through the
         /// transaction mechanism, so this does nothing.</para>
         /// </remarks>

@@ -884,7 +884,7 @@ limitations under the License.
                                 <GroupBox Header="Export Configuration" Padding="0,2,0,0">
                                     <StackPanel>
                                         <TextBlock Text="Conversion mode:"/>
-                                        <RadioButton Content="Best" GroupName="ExportCfg" Margin="0,4,0,0"
+                                        <RadioButton Content="Best (automatic)" GroupName="ExportCfg" Margin="0,4,0,0"
                                                      IsChecked="{Binding IsExportBestChecked}"/>
                                         <Grid>
                                             <Grid.ColumnDefinitions>

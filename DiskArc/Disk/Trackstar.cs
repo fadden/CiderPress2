@@ -251,11 +251,11 @@ namespace DiskArc.Disk {
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>Disk image reference.</returns>
         public static Trackstar CreateDisk(Stream stream, SectorCodec codec,
-                byte volume, int fmtTracks, AppHook appHook) {
+                byte volume, uint fmtTracks, AppHook appHook) {
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
                 throw new ArgumentException("Invalid stream capabilities");
             }
-            int numTracks;
+            uint numTracks;
             if (fmtTracks == 35 || fmtTracks == 40) {
                 numTracks = 40;
             } else if (fmtTracks == 80) {
@@ -287,6 +287,7 @@ namespace DiskArc.Disk {
                 disk.mTrackData[trk] = new TrackData(data, 0, data.Length, false,
                     disk.mBufferModFlag, false);
             }
+            disk.mBufferModFlag.IsSet = true;
             disk.Flush();
 
             disk.ChunkAccess = new GatedChunkAccess(new NibbleChunkAccess(disk, codec));
@@ -394,7 +395,13 @@ namespace DiskArc.Disk {
             // Write entire file.  Length won't change.
             mStream.Position = 0;
             for (int trk = 0; trk < mNumTracks; trk++) {
+                Debug.Assert(mStream.Position == trk * TRACK_AREA_LENGTH);
                 mStream.Write(mDescription, 0, mDescription.Length);
+                if (!mBufferModFlag.IsSet) {
+                    // Track data didn't change, leave it alone.
+                    mStream.Position = (trk + 1) * TRACK_AREA_LENGTH;
+                    continue;
+                }
                 mStream.Write(sReserved, 0, sReserved.Length);
                 if (mNumTracks == MAX_TRACKS) {
                     mStream.WriteByte(0x01);
@@ -409,7 +416,6 @@ namespace DiskArc.Disk {
                     mStream.WriteByte(0xff);
                 }
                 RawData.WriteU16LE(mStream, (ushort)td.Length);
-                Debug.Assert(mStream.Position == (trk + 1) * TRACK_AREA_LENGTH);
             }
             mStream.Flush();
 

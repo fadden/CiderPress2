@@ -28,6 +28,7 @@ namespace DiskArcTests {
     /// </summary>
     public class TestTrackstar_Creation : ITest {
         private static readonly byte[] SIMPLE_DATA = new byte[] { 1, 2, 3, 4, 5 };
+        private const string TEST_DESC_STR = "This is a test!";
 
         // Test creation of a 35-track ProDOS disk.
         public static void Test35Track(AppHook appHook) {
@@ -60,6 +61,12 @@ namespace DiskArcTests {
                 }
             }
 
+            // Modify metadata only.
+            using (Trackstar disk = Trackstar.OpenDisk(diskStream, appHook)) {
+                disk.AnalyzeDisk();
+                disk.SetMetaValue("description", TEST_DESC_STR);
+            }
+
             // Verify disk and file contents.
             using (Trackstar disk = Trackstar.OpenDisk(diskStream, appHook)) {
                 disk.AnalyzeDisk();
@@ -79,6 +86,9 @@ namespace DiskArcTests {
                         throw new Exception("didn't find data written earlier");
                     }
                 }
+
+                string? meta = disk.GetMetaValue("description", false);
+                Helper.ExpectString(TEST_DESC_STR, meta, "wrong metadata");
             }
         }
 
@@ -98,16 +108,6 @@ namespace DiskArcTests {
                 }
             }
 
-        }
-
-        // Test 80-track disk... someday.
-        public static void Test80Track(AppHook appHook) {
-            MemoryStream diskStream = new MemoryStream();
-            SectorCodec codec = StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
-            try {
-                using Trackstar disk = Trackstar.CreateDisk(diskStream, codec, 101, 80, appHook);
-                throw new Exception("Successfully created 80-track disk (add tests here)");
-            } catch (ArgumentException) { /*expected*/ }
         }
     }
 }

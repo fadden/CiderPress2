@@ -190,6 +190,8 @@ namespace cp2_wpf {
                             throw new Exception("internal error");
                         }
                         break;
+                    case FileTypeValue.DiskCopy42:
+                        throw new Exception("not yet");
                     case FileTypeValue.Woz:
                         if (IsFlop525) {
                             if (!GetNumTracksSectors(out tracks, out sectors)) {
@@ -221,9 +223,16 @@ namespace cp2_wpf {
                         diskImage = UnadornedNibble525.CreateDisk(stream, codec, (byte)volNum,
                             mAppHook);
                         break;
-                    case FileTypeValue.DiskCopy42:
                     case FileTypeValue.Trackstar:
-                        throw new Exception("not yet");
+                        if (!GetNumTracksSectors(out tracks, out sectors)) {
+                            throw new Exception("internal error");
+                        }
+                        codec = (sectors == 13) ?
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
+                        diskImage = Trackstar.CreateDisk(stream, codec, (byte)volNum, tracks,
+                            mAppHook);
+                        break;
                     default:
                         throw new NotImplementedException("Not implemented: " + mFileType);
                 }

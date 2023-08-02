@@ -248,6 +248,10 @@ further interpretation.
 https://www.discferret.com/wiki/Apple_DiskCopy_4.2 claims that Mac 400K should be 0x02, and
 0x12 is actually Lisa 400K.  MFM disks use 0x22.
 
+The crux of the issue is the meaning of bit 4, which by the Apple definitions is zero for all
+disks except Mac 400K.  It would be more consistent to use the discferret definition, which
+uses the bit as a "Lisa" flag.
+
 The MAME ap_dsk35.cpp source code has a completely different take:
   - 0x00: Apple II
   - 0x01: Lisa

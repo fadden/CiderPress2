@@ -246,14 +246,14 @@ namespace cp2 {
                             throw new DAException("size must be a multiple of track length (" +
                                 trackSize + ") (try '35trk'?)");
                         }
-                        int fmtTracks = (int)(byteSize / trackSize);
-                        if (fmtTracks != 35 && fmtTracks != 40) {
+                        uint numTracks = (uint)(byteSize / trackSize);
+                        if (numTracks != 35 && numTracks != 40) {
                             throw new DAException("only 35- or 40-track images are allowed");
                         }
                         SectorCodec codec = is13Sector ?
                             StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
                             StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
-                        image = Trackstar.CreateDisk(imgStream, codec, volumeNum, fmtTracks,
+                        image = Trackstar.CreateDisk(imgStream, codec, volumeNum, numTracks,
                             appHook);
                     }
                     break;
