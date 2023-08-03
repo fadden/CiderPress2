@@ -36,7 +36,8 @@ namespace DiskArc.Disk {
     /// in memory for checksum computation.</para>
     /// <para>For best performance, we should use a write-back cache, where each block write
     /// updates the stream and our in-memory copy.  The flush operation then just recalculates
-    /// the checksum.  We could implement this with a ChunkAccess wrapper.</para>
+    /// the checksum.  We could implement this with a ChunkAccess wrapper, which we will need
+    /// if we want to support 524-byte block I/O.</para>
     /// <para>A software crash could leave us with a disk image with an invalid checksum.  If
     /// we raise the IsDubious flag we won't be able to correct it.  Instead, we just create a
     /// warning note, and fix the checksum when the next modifications are made.</para>
@@ -161,6 +162,20 @@ namespace DiskArc.Disk {
                 }
             }
 
+            /// <summary>
+            /// Converts a MediaKind to a "diskFormat" field value.
+            /// </summary>
+            /// <returns>Value, or -1 if the media kind is not supported.</returns>
+            public static int KindToFormat(MediaKind mediaKind) {
+                switch (mediaKind) {
+                    case MediaKind.GCR_SSDD35: return 0;
+                    case MediaKind.GCR_DSDD35: return 1;
+                    case MediaKind.MFM_DSDD35: return 2;
+                    case MediaKind.MFM_DSHD35: return 3;
+                    default: return -1;
+                }
+            }
+
             public void Load(byte[] buf, int offset) {
                 int startOffset = offset;
                 for (int i = 0; i < DISK_NAME_SIZE; i++) {
@@ -253,12 +268,20 @@ namespace DiskArc.Disk {
             mUserData = mTagData = RawData.EMPTY_BYTE_ARRAY;
         }
 
+        /// <summary>
+        /// Opens a disk image file.
+        /// </summary>
+        /// <param name="stream">Disk image data stream.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <returns>Disk image reference.</returns>
+        /// <exception cref="NotSupportedException">Incompatible data stream.</exception>
         public static DiskCopy OpenDisk(Stream stream, AppHook appHook) {
-            Notes notes = new Notes();
-            if (!ValidateHeader(stream, appHook, notes, out Header hdr)) {
+            Notes tmpNotes = new Notes();
+            if (!ValidateHeader(stream, appHook, tmpNotes, out Header hdr)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
             DiskCopy disk = new DiskCopy(stream, hdr, appHook);
+            disk.Notes.MergeFrom(tmpNotes);
             disk.mUserData = new byte[hdr.mDataSize];
             stream.Position = Header.LENGTH;
             stream.ReadExactly(disk.mUserData, 0, (int)hdr.mDataSize);
@@ -269,43 +292,81 @@ namespace DiskArc.Disk {
 
             uint checksum = ComputeChecksum(disk.mUserData, 0, (int)hdr.mDataSize);
             if (checksum != hdr.mDataChecksum) {
-                notes.AddW("Data checksum mismatch: expected 0x" +
+                disk.Notes.AddW("Data checksum mismatch: expected 0x" +
                     hdr.mDataChecksum.ToString("x8") + ", got 0x" + checksum.ToString("x8"));
             }
             checksum = ComputeChecksum(disk.mTagData, 0, (int)hdr.mTagSize);
             if (checksum != hdr.mTagChecksum) {
-                notes.AddW("Tag checksum mismatch: expected 0x" +
-                    hdr.mDataChecksum.ToString("x8") + ", got 0x" + checksum.ToString("x8"));
+                disk.Notes.AddW("Tag checksum mismatch: expected 0x" +
+                    hdr.mTagChecksum.ToString("x8") + ", got 0x" + checksum.ToString("x8"));
             }
 
             return disk;
         }
 
-        private static uint ComputeChecksum(byte[] data, int offset, int length) {
-            uint checksum = 0;
-            for (int i = 0; i < length; i += 2) {
-                ushort val = RawData.GetU16BE(data, offset);
-                checksum += val;
-                // rotate right
-                checksum = checksum >> 1 | ((checksum & 0x00000001) << 31);
+        /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="mediaKind">Kind of disk to create.</param>
+        /// <param name="errMsg">Result: error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
+        public static bool CanCreateDisk(MediaKind mediaKind, out string errMsg) {
+            if (Header.KindToFormat(mediaKind) < 0) {
+                errMsg = "unsupported value for media kind: " + mediaKind;
+                return false;
+            } else {
+                errMsg = string.Empty;
+                return true;
             }
-            return checksum;
+        }
+
+        public static DiskCopy CreateDisk(Stream stream, MediaKind mediaKind, AppHook appHook) {
+            if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
+                throw new ArgumentException("Invalid stream capabilities");
+            }
+            if (!CanCreateDisk(mediaKind, out string errMsg)) {
+                throw new ArgumentException(errMsg);
+            }
+
+            Header hdr = Header.Create(mediaKind);
+            stream.SetLength(0);
+            stream.SetLength(Header.LENGTH + hdr.mDataSize + hdr.mTagSize);
+            DiskCopy disk = new DiskCopy(stream, hdr, appHook);
+            try {
+                disk.mUserData = new byte[hdr.mDataSize];
+                disk.mTagData = new byte[hdr.mTagSize];
+                disk.SetChunkAccess();
+                disk.mDescriptionChanged = true;
+                disk.Flush();
+                return disk;
+            } catch {
+                disk.Dispose();
+                throw;
+            }
         }
 
         // IDiskImage
-        public bool AnalyzeDisk(SectorCodec? codec, SectorOrder orderHint,
-                IDiskImage.AnalysisDepth depth) {
+        public bool AnalyzeDisk(SectorCodec? codec, SectorOrder orderHint, AnalysisDepth depth) {
             // Discard existing FileSystem and ChunkAccess objects (filesystem will be flushed).
             CloseContents();
             if (ChunkAccess != null) {
+                // We're discarding the current ChunkAccess object, which will cause us to lose
+                // the signal that tells us about un-flushed changes.  So we need to check for
+                // that situation here.
+                if (mLastFlushWriteCount != ChunkAccess.WriteCount) {
+                    // Flush the pending changes now.  Alternatively, we could set the count to
+                    // long.MaxValue as a signal that our buffer is dirty, and let the write
+                    // happen the next time a flush happens naturally.
+                    Debug.Assert(false, "DiskCopy reanalyzed with unflushed changes");
+                    Flush();
+                }
                 ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
                 ChunkAccess = null;
             }
 
-            // Configure direct access to the stream
-            uint blockCount = mHeader.mDataSize / BLOCK_SIZE;
-            IChunkAccess chunks = new GeneralChunkAccess(mStream, Header.LENGTH, blockCount);
-            ChunkAccess = new GatedChunkAccess(chunks);
+            // Create chunk access, mapped to our in-memory data.
+            IChunkAccess chunks = SetChunkAccess();
+            Debug.Assert(ChunkAccess != null);
 
             if (depth == AnalysisDepth.ChunksOnly) {
                 return true;
@@ -319,6 +380,17 @@ namespace DiskArc.Disk {
             Contents = contents;
             ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
             return true;
+        }
+
+        private IChunkAccess SetChunkAccess() {
+            Debug.Assert(mUserData.Length > 0);
+            uint blockCount = mHeader.mDataSize / BLOCK_SIZE;
+            MemoryStream userDataStream = new MemoryStream(mUserData);
+            IChunkAccess chunks = new GeneralChunkAccess(userDataStream, 0, blockCount);
+            ChunkAccess = new GatedChunkAccess(chunks);
+            // Init our "is dirty" test.
+            mLastFlushWriteCount = ChunkAccess.WriteCount;
+            return chunks;
         }
 
         // IDiskImage
@@ -386,16 +458,55 @@ namespace DiskArc.Disk {
             }
 
             if (IsDirty) {
-                Debug.WriteLine("Flushing DiskCopy data");
-                // Fill out the header and write it.
-                // TODO
+                Debug.WriteLine("DiskCopy flush (dirty) ...");
+                // Update checksums.  The checksum might not match if it was damaged before.
+                uint dataChecksum = ComputeChecksum(mUserData, 0, mUserData.Length);
+                uint tagChecksum = ComputeChecksum(mTagData, 0, mTagData.Length);
+                if (dataChecksum != mHeader.mDataChecksum) {
+                    Debug.WriteLine("DiskCopy: data checksum updated");
+                    mHeader.mDataChecksum = dataChecksum;
+                }
+                if (tagChecksum != mHeader.mTagChecksum) {
+                    Debug.WriteLine("DiskCopy: tag checksum updated");
+                    mHeader.mTagChecksum = tagChecksum;
+                }
 
-                // If write count doesn't match, write the disk blocks in one shot.
-                mLastFlushWriteCount = ChunkAccess!.WriteCount;
-                throw new NotImplementedException();
+                // Serialize the header and write it out.
+                byte[] hdrBuf = new byte[Header.LENGTH];
+                mHeader.Store(hdrBuf, 0);
+
+                mStream.Position = 0;
+                mStream.Write(hdrBuf, 0, Header.LENGTH);
+                mDescriptionChanged = false;
+
+                // If the chunk write count has been incremented, write the disk data.
+                Debug.Assert(ChunkAccess != null);
+                if (mLastFlushWriteCount != ChunkAccess.WriteCount) {
+                    Debug.WriteLine("DiskCopy: writing disk data");
+                    mStream.Write(mUserData, 0, mUserData.Length);
+                    mStream.Write(mTagData, 0, mTagData.Length);
+                    mLastFlushWriteCount = ChunkAccess.WriteCount;
+                } else {
+                    Debug.WriteLine("DiskCopy: skipping disk data write");
+                }
             }
 
             mStream.Flush();
+            Debug.Assert(!IsDirty);
+        }
+
+        /// <summary>
+        /// Computes the DiskCopy 4.2 checksum.
+        /// </summary>
+        private static uint ComputeChecksum(byte[] data, int offset, int length) {
+            uint checksum = 0;
+            for (int i = 0; i < length; i += 2) {
+                ushort val = RawData.GetU16BE(data, offset + i);
+                checksum += val;
+                // rotate right
+                checksum = checksum >> 1 | ((checksum & 0x00000001) << 31);
+            }
+            return checksum;
         }
 
         #region Metadata
@@ -453,6 +564,7 @@ namespace DiskArc.Disk {
             if (description == null) {
                 throw new ArgumentException("invalid value '" + value + "'");
             }
+            Array.Clear(mHeader.mDiskName);
             Array.Copy(description, mHeader.mDiskName, description.Length);
             mDescriptionChanged = true;
         }

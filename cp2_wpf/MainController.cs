@@ -1272,13 +1272,13 @@ namespace cp2_wpf {
             WorkTree.Node workNode = arcTreeSel.WorkTreeNode;
             object daObject = workNode.DAObject;
             IChunkAccess? chunks;
-            IFileSystem? fs;
+            //IFileSystem? fs;
             if (daObject is IDiskImage) {
                 chunks = ((IDiskImage)daObject).ChunkAccess;
-                fs = ((IDiskImage)daObject).Contents as IFileSystem;
+                //fs = ((IDiskImage)daObject).Contents as IFileSystem;
             } else if (daObject is Partition) {
                 chunks = ((Partition)daObject).ChunkAccess;
-                fs = ((Partition)daObject).FileSystem;
+                //fs = ((Partition)daObject).FileSystem;
             } else {
                 Debug.Assert(false, "unexpected sector edit target: " + daObject);
                 return;
@@ -1312,6 +1312,11 @@ namespace cp2_wpf {
             EditSector dialog = new EditSector(mMainWin, chunks, asSectors, func, mFormatter);
             dialog.ShowDialog();
             Debug.WriteLine("After dialog, enabled=" + writeEnabled);
+
+            // Flush any pending changes made to the disk image.
+            if (daObject is IDiskImage) {
+                ((IDiskImage)daObject).Flush();
+            }
 
             if (writeEnabled) {
                 try {

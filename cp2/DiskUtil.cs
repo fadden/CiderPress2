@@ -326,8 +326,22 @@ namespace cp2 {
                         }
                     }
                     break;
-                case FileKind.DiskCopy:
-                    // TODO; only expected to be used for 800KB disks
+                case FileKind.DiskCopy: {
+                        MediaKind mediaKind;
+                        if (byteSize == 400 * 1024) {
+                            mediaKind = MediaKind.GCR_SSDD35;
+                        } else if (byteSize == 720 * 1024) {
+                            mediaKind = MediaKind.MFM_DSDD35;
+                        } else if (byteSize == 800 * 1024) {
+                            mediaKind = MediaKind.GCR_DSDD35;
+                        } else if (byteSize == 1440 * 1024) {
+                            mediaKind = MediaKind.MFM_DSHD35;
+                        } else {
+                            throw new DAException("Size not supported for DiskCopy disks");
+                        }
+                        image = DiskCopy.CreateDisk(imgStream, mediaKind, appHook);
+                    }
+                    break;
                 default:
                     throw new DAException("File kind not implemented: " + fileKind);
             }

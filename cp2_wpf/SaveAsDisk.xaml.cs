@@ -184,6 +184,7 @@ namespace cp2_wpf {
                 Mouse.OverrideCursor = Cursors.Wait;
 
                 SectorCodec codec;
+                MediaKind mediaKind;
 
                 int volNum = Defs.DEFAULT_525_VOLUME_NUM;
 
@@ -241,11 +242,11 @@ namespace cp2_wpf {
                             diskImage = Woz.CreateDisk525(stream, tracks, codec, (byte)volNum,
                                 mAppHook);
                         } else {
-                            if (!GetMediaKind(out MediaKind kind)) {
+                            if (!GetMediaKind(out mediaKind)) {
                                 throw new Exception("internal error");
                             }
                             codec = StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex35.Std_35);
-                            diskImage = Woz.CreateDisk35(stream, kind, WOZ_IL_35, codec,
+                            diskImage = Woz.CreateDisk35(stream, mediaKind, WOZ_IL_35, codec,
                                 mAppHook);
                         }
                         // Let's just add a default META chunk to all disks.
@@ -262,8 +263,21 @@ namespace cp2_wpf {
                             mAppHook);
                         break;
                     case FileTypeValue.DiskCopy42:
+                        if (!GetMediaKind(out mediaKind)) {
+                            throw new Exception("internal error");
+                        }
+                        diskImage = DiskCopy.CreateDisk(stream, mediaKind, mAppHook);
+                        break;
                     case FileTypeValue.Trackstar:
-                        throw new Exception("not yet");
+                        if (!GetNumTracksSectors(out tracks, out sectors)) {
+                            throw new Exception("internal error");
+                        }
+                        codec = (sectors == 13) ?
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_13) :
+                            StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex525.Std_525_16);
+                        diskImage = Trackstar.CreateDisk(stream, codec, (byte)volNum, tracks,
+                            mAppHook);
+                        break;
                     default:
                         throw new NotImplementedException("Not implemented: " + mFileType);
                 }
@@ -398,11 +412,17 @@ namespace cp2_wpf {
             if (!GetNumBlocks(out uint blocks)) {
                 return false;
             }
-            if (blocks == 800) {
+            if (blocks == 400 * 2) {
                 kind = MediaKind.GCR_SSDD35;
                 return true;
-            } else if (blocks == 1600) {
+            } else if (blocks == 800 * 2) {
                 kind = MediaKind.GCR_DSDD35;
+                return true;
+            } else if (blocks == 720 * 2) {
+                kind = MediaKind.MFM_DSDD35;
+                return true;
+            } else if (blocks == 1440 * 2) {
+                kind = MediaKind.MFM_DSHD35;
                 return true;
             }
             return false;
@@ -495,10 +515,10 @@ namespace cp2_wpf {
         }
         public bool IsEnabled_FT_DiskCopy42 {
             get {
-                if (!GetNumBlocks(out uint blocks)) {
+                if (!GetMediaKind(out MediaKind kind)) {
                     return false;
                 }
-                return blocks == 1600;
+                return DiskCopy.CanCreateDisk(kind, out string errMsg);
             }
         }
 
@@ -557,7 +577,7 @@ namespace cp2_wpf {
                 if (!GetNumTracksSectors(out uint tracks, out uint sectors)) {
                     return false;
                 }
-                return (tracks == 35 || tracks == 40) && (sectors == 13 || sectors == 16);
+                return Trackstar.CanCreateDisk(tracks, sectors, out string errMsg);
             }
         }
     }

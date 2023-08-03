@@ -84,6 +84,7 @@ namespace DiskArc {
         /// <para>Pending changes must be flushed before the flag is cleared.</para>
         /// </remarks>
         bool IsModified { get; set; }
+        // TODO: this isn't looking useful; remove it? (from here and IChunkAccess)
 
         /// <summary>
         /// True if the disk image file appears to be damaged.

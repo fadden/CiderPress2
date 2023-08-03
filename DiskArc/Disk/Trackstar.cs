@@ -242,6 +242,18 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
+        /// Determines whether a disk image with the specified parameters can be created.
+        /// </summary>
+        public static bool CanCreateDisk(uint numTracks, uint numSectors, out string errMsg) {
+            if ((numTracks == 35 || numTracks == 40) && (numSectors == 13 || numSectors == 16)) {
+                errMsg = string.Empty;
+                return true;
+            }
+            errMsg = "Unsupported track/sector count: T=" + numTracks + " S=" + numSectors;
+            return false;
+        }
+
+        /// <summary>
         /// Creates a 5.25" nibble image, formatted with the supplied codec.
         /// </summary>
         /// <param name="stream">Stream into which the new image will be written.  The stream
@@ -269,29 +281,34 @@ namespace DiskArc.Disk {
             stream.Position = 0;
             stream.SetLength(numTracks * TRACK_AREA_LENGTH);
             Trackstar disk = new Trackstar(stream, appHook);
+            try {
+                for (byte trk = 0; trk < numTracks; trk++) {
+                    byte[] data;
+                    if (trk < fmtTracks) {
+                        data = TrackInit.GenerateTrack525(codec, true, volume, trk,
+                                out int bitCount);
+                        Debug.Assert(bitCount < data.Length * 8);
+                    } else {
+                        // We don't want this track to be recognized as habitable.  We can set the
+                        // length to zero or fill it with junk.  The original Trackstar apparently
+                        // just copied track 34 in here.  I'm not sure which approach is best.
+                        data = new byte[MAX_TRACK_LENGTH];
+                        RawData.MemSet(data, 0, data.Length, 0xff);
+                    }
+                    if (data.Length > MAX_TRACK_LENGTH) {
+                        throw new DAException("Generated track is too long: " + data.Length);
+                    }
+                    disk.mTrackData[trk] = new TrackData(data, 0, data.Length, false,
+                        disk.mBufferModFlag, false);
+                }
+                disk.mBufferModFlag.IsSet = true;
+                disk.Flush();
 
-            for (byte trk = 0; trk < numTracks; trk++) {
-                byte[] data;
-                if (trk < fmtTracks) {
-                    data = TrackInit.GenerateTrack525(codec, true, volume, trk, out int bitCount);
-                    Debug.Assert(bitCount < data.Length * 8);
-                } else {
-                    // We don't want this track to be recognized as habitable.  We can set the
-                    // length to zero or fill it with junk.  The original Trackstar apparently
-                    // just copied track 34 in here.  I'm not sure which approach is best.
-                    data = new byte[MAX_TRACK_LENGTH];
-                    RawData.MemSet(data, 0, data.Length, 0xff);
-                }
-                if (data.Length > MAX_TRACK_LENGTH) {
-                    throw new DAException("Generated track is too long: " + data.Length);
-                }
-                disk.mTrackData[trk] = new TrackData(data, 0, data.Length, false,
-                    disk.mBufferModFlag, false);
+                disk.ChunkAccess = new GatedChunkAccess(new NibbleChunkAccess(disk, codec));
+            } catch {
+                disk.Dispose();
+                throw;
             }
-            disk.mBufferModFlag.IsSet = true;
-            disk.Flush();
-
-            disk.ChunkAccess = new GatedChunkAccess(new NibbleChunkAccess(disk, codec));
             return disk;
         }
 

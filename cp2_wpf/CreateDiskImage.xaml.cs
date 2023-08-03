@@ -140,6 +140,7 @@ namespace cp2_wpf {
 
                 IDiskImage diskImage;
                 SectorCodec codec;
+                MediaKind mediaKind;
 
                 GetVolNum(out int volNum);
 
@@ -191,7 +192,12 @@ namespace cp2_wpf {
                         }
                         break;
                     case FileTypeValue.DiskCopy42:
-                        throw new Exception("not yet");
+                        if (!GetMediaKind(out mediaKind)) {
+                            throw new Exception("internal error");
+                        }
+                        diskImage = DiskCopy.CreateDisk(stream, mediaKind, mAppHook);
+                        break;
+
                     case FileTypeValue.Woz:
                         if (IsFlop525) {
                             if (!GetNumTracksSectors(out tracks, out sectors)) {
@@ -203,11 +209,11 @@ namespace cp2_wpf {
                             diskImage = Woz.CreateDisk525(stream, tracks, codec, (byte)volNum,
                                 mAppHook);
                         } else {
-                            if (!GetMediaKind(out MediaKind kind)) {
+                            if (!GetMediaKind(out mediaKind)) {
                                 throw new Exception("internal error");
                             }
                             codec = StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex35.Std_35);
-                            diskImage = Woz.CreateDisk35(stream, kind, WOZ_IL_35, codec,
+                            diskImage = Woz.CreateDisk35(stream, mediaKind, WOZ_IL_35, codec,
                                 mAppHook);
                         }
                         // Let's just add a default META chunk to all disks.
@@ -1008,7 +1014,10 @@ namespace cp2_wpf {
                 if (!GetNumBlocks(out uint blocks)) {
                     return false;
                 }
-                return blocks == 1600;
+                if (!GetMediaKind(out MediaKind kind)) {
+                    return false;
+                }
+                return DiskCopy.CanCreateDisk(kind, out string errMsg);
             }
         }
 
@@ -1063,7 +1072,7 @@ namespace cp2_wpf {
                 if (!GetNumTracksSectors(out uint tracks, out uint sectors)) {
                     return false;
                 }
-                return tracks == 35 || tracks == 40;
+                return Trackstar.CanCreateDisk(tracks, sectors, out string errMsg);
             }
         }
 

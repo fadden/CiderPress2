@@ -582,8 +582,8 @@ namespace DiskArc.Disk {
         /// <param name="appHook">Application hook reference.</param>
         /// <exception cref="NotSupportedException">Incompatible data stream.</exception>
         public static TwoIMG OpenDisk(Stream stream, AppHook appHook) {
-            Notes notes = new Notes();
-            if (!ValidateHeader(stream, appHook, notes, out Header hdr, out bool isDubious)) {
+            Notes tmpNotes = new Notes();
+            if (!ValidateHeader(stream, appHook, tmpNotes, out Header hdr, out bool isDubious)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
             TwoIMG result;
@@ -592,7 +592,7 @@ namespace DiskArc.Disk {
             } else {
                 result = new TwoIMG(stream, hdr, appHook);
             }
-            result.Notes.MergeFrom(notes);
+            result.Notes.MergeFrom(tmpNotes);
             result.IsDubious = isDubious;
             return result;
         }
@@ -714,11 +714,11 @@ namespace DiskArc.Disk {
             try {
                 disk.ChunkAccess = new GatedChunkAccess(
                     new GeneralChunkAccess(stream, Header.LENGTH, numBlocks));
+                return disk;
             } catch {
                 disk.Dispose();
                 throw;
             }
-            return disk;
         }
 
         /// <summary>

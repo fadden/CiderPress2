@@ -570,12 +570,12 @@ namespace DiskArc.Disk {
         /// </summary>
         /// <param name="mediaKind">Kind of disk to create.</param>
         /// <param name="interleave">Disk interleave (2 or 4).</param>
-        /// <param name="errMsg">Error message, or empty string on success.</param>
+        /// <param name="errMsg">Result: error message, or empty string on success.</param>
         /// <returns>True on success.</returns>
         public static bool CanCreateDisk35(MediaKind mediaKind, int interleave, out string errMsg) {
             errMsg = string.Empty;
             if (mediaKind != MediaKind.GCR_SSDD35 && mediaKind != MediaKind.GCR_DSDD35) {
-                errMsg = "Unsupported value for MediaKind: " + mediaKind;
+                errMsg = "Unsupported value for media kind: " + mediaKind;
             }
             if (interleave != 2 && interleave != 4) {
                 errMsg = "Interleave must be 2:1 or 4:1";
