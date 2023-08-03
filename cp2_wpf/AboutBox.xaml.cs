@@ -49,7 +49,8 @@ namespace cp2_wpf {
         public string RuntimeInfo {
             get {
                 return "Runtime: " + RuntimeInformation.FrameworkDescription + " / " +
-                    RuntimeInformation.RuntimeIdentifier;
+                    RuntimeInformation.RuntimeIdentifier +
+                    (WinUtil.IsAdministrator() ? " (Admin)" : "");
             }
         }
 

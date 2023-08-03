@@ -104,7 +104,7 @@ limitations under the License.
 
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
 
-            <DataGrid Grid.Column="2" Name="fileListDataGrid"
+            <DataGrid Grid.Column="2" Name="fileListDataGrid" Padding="0,0,2,0"
                       ItemsSource="{Binding FileList}"
                       IsReadOnly="True"
                       SnapsToDevicePixels="True"
@@ -141,7 +141,7 @@ limitations under the License.
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Name" Width="300" Binding="{Binding DisplayName}"/>
                     <DataGridTextColumn Header="Date modified" Width="120" Binding="{Binding LastModDate}"/>
-                    <DataGridTextColumn Header="Size" Width="90" Binding="{Binding Size}">
+                    <DataGridTextColumn Header="Size" Width="*" Binding="{Binding Size}">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="HorizontalAlignment" Value="Right" />

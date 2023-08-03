@@ -531,6 +531,9 @@ namespace cp2_wpf {
         private void OpenCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.OpenWorkFile();
         }
+        private void OpenPhysicalDriveCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.OpenPhysicalDrive();
+        }
         private void ReplacePartitionCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.ReplacePartition();
         }

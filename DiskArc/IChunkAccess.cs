@@ -92,6 +92,7 @@ namespace DiskArc {
         /// by the application, IDiskImage implementations should not rely on this as a dirty
         /// block indicator.</para>
         /// </remarks>
+        //[Obsolete("this may go away")]
         bool IsModified { get; set; }
 
         /// <summary>

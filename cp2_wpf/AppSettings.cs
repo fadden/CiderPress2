@@ -83,6 +83,9 @@ namespace cp2_wpf {
 
         public const string SAVE_DISK_FILE_TYPE = "save-disk-file-type";
 
+        // Physical disks.
+        public const string PHYS_OPEN_READ_ONLY = "phys-open-read-only";
+
         // Sector editing.
         public const string SCTED_TEXT_CONV_MODE = "scted-text-conv-mode";
 

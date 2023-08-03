@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Principal;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
+using Microsoft.Win32;
 
 using FileConv;
 
@@ -144,6 +145,18 @@ namespace cp2_wpf {
                 return string.Empty;
             }
             return baseDir;
+        }
+
+        /// <summary>
+        /// Determines whether the process is running with Admin privileges.
+        /// </summary>
+        /// <remarks>
+        /// From <see href="https://stackoverflow.com/a/10905713/294248"/>.
+        /// </remarks>
+        public static bool IsAdministrator() {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
     }
 }

@@ -16,6 +16,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 using AppCommon;
 using CommonUtil;
@@ -33,14 +34,16 @@ namespace cp2_wpf.Actions {
 
         public Result Results { get; private set; } = new Result();
 
+        private SafeFileHandle? mDeviceHandle;
         private string mPathName;
+        private long mDeviceSize;
         private WorkTree.DepthLimiter mLimiter;
         private bool mAsReadOnly;
         private AppHook mAppHook;
 
 
         /// <summary>
-        /// Constructor.
+        /// Constructor for file open.
         /// </summary>
         /// <param name="pathName">Pathname of file to open.</param>
         /// <param name="limiter">Auto-open depth limiter.</param>
@@ -48,7 +51,26 @@ namespace cp2_wpf.Actions {
         /// <param name="appHook">Application hook reference.</param>
         public OpenProgress(string pathName, WorkTree.DepthLimiter limiter, bool asReadOnly,
                 AppHook appHook) {
+            mDeviceHandle = null;
             mPathName = pathName;
+            mLimiter = limiter;
+            mAsReadOnly = asReadOnly;
+            mAppHook = appHook;
+        }
+
+        /// <summary>
+        /// Constructor for device open.
+        /// </summary>
+        /// <param name="deviceHandle">Handle to open block device.</param>
+        /// <param name="deviceName">Device name.</param>
+        /// <param name="limiter">Auto-open depth limiter.</param>
+        /// <param name="asReadOnly">True if we want to open the file read-only.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        public OpenProgress(SafeFileHandle deviceHandle, string deviceName, long deviceSize,
+                WorkTree.DepthLimiter limiter, bool asReadOnly, AppHook appHook) {
+            mDeviceHandle = deviceHandle;
+            mPathName = deviceName;
+            mDeviceSize = deviceSize;
             mLimiter = limiter;
             mAsReadOnly = asReadOnly;
             mAppHook = appHook;
@@ -65,8 +87,14 @@ namespace cp2_wpf.Actions {
         public object DoWork(BackgroundWorker worker) {
             Result results = new Result();
             try {
-                WorkTree workTree = new WorkTree(mPathName, mLimiter, mAsReadOnly, worker,
-                    mAppHook);
+                WorkTree workTree;
+                if (mDeviceHandle == null) {
+                    workTree = new WorkTree(mPathName, mLimiter, mAsReadOnly, worker,
+                        mAppHook);
+                } else {
+                    workTree = new WorkTree(mDeviceHandle, mPathName, mDeviceSize, mLimiter,
+                        mAsReadOnly, worker, mAppHook);
+                }
                 results.mWorkTree = workTree;
             } catch (Exception ex) {
                 // We'll get an exception if the user cancelled the operation.  The WorkProgress

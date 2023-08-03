@@ -112,6 +112,7 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
+            <RoutedUICommand x:Key="OpenPhysicalDriveCmd" Text="Open Physical Drive..."/>
             <RoutedUICommand x:Key="ReplacePartitionCmd" Text="Replace Partition Contents..."/>
             <RoutedUICommand x:Key="RecentFileCmd"/>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>
@@ -187,6 +188,8 @@ limitations under the License.
                         Executed="NewFileArchiveCmd_Executed"/>
         <CommandBinding Command="Open"
                         Executed="OpenCmd_Executed"/>
+        <CommandBinding Command="{StaticResource OpenPhysicalDriveCmd}"
+                        Executed="OpenPhysicalDriveCmd_Executed"/>
         <CommandBinding Command="Paste"
                         CanExecute="IsFileOpen" Executed="PasteCmd_Executed"/>
         <CommandBinding Command="{StaticResource RecentFileCmd}" x:Name="recentFileCmd"
@@ -231,6 +234,7 @@ limitations under the License.
                 <MenuItem Command="{StaticResource NewDiskImageCmd}"/>
                 <MenuItem Command="{StaticResource NewFileArchiveCmd}"/>
                 <MenuItem Command="Open" Header="_Open"/>
+                <MenuItem Command="{StaticResource OpenPhysicalDriveCmd}"/>
                 <MenuItem Command="{StaticResource CloseCmd}"/>
                 <Separator/>
                 <MenuItem Name="recentFilesMenu" Header="Recent Files" SubmenuOpened="RecentFilesMenu_SubmenuOpened">

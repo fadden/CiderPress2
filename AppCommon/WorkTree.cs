@@ -18,6 +18,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 using CommonUtil;
 using DiskArc;
@@ -254,7 +255,7 @@ namespace AppCommon {
         public bool CanWrite { get; private set; }
 
         private string mHostPathName;
-        private HostFileNode mHostFileNode;
+        private DiskArcNode mHostNode;
         private BackgroundWorker? mWorker;
         private AppHook mAppHook;
 
@@ -285,13 +286,13 @@ namespace AppCommon {
         /// <param name="hostPathName">Pathname to file.</param>
         /// <param name="depthLimitFunc">Callback function that determines whether or not we
         ///   descend into children.</param>
-        /// <param name="readOnly">If true, try to open the file read-only first.</param>
+        /// <param name="asReadOnly">If true, try to open the file read-only first.</param>
         /// <param name="worker">Background worker, for cancel requests and progress
         ///   updates.  Only used during construction.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <exception cref="IOException">File open or read failed.</exception>
         /// <exception cref="InvalidDataException">File contents not recognized.</exception>
-        public WorkTree(string hostPathName, DepthLimiter depthLimitFunc, bool readOnly,
+        public WorkTree(string hostPathName, DepthLimiter depthLimitFunc, bool asReadOnly,
                 BackgroundWorker? worker, AppHook appHook) {
             mHostPathName = hostPathName;
             DepthLimitFunc = depthLimitFunc;
@@ -299,32 +300,32 @@ namespace AppCommon {
             mAppHook = appHook;
 
             DateTime startWhen = DateTime.Now;
-            mAppHook.LogI("Constructing work tree for '" + mHostPathName + "'");
-            mHostFileNode = new HostFileNode(mHostPathName, mAppHook);
+            mAppHook.LogI("Constructing work tree for '" + hostPathName + "'");
+            mHostNode = new HostFileNode(hostPathName, mAppHook);
 
             Stream? hostStream = null;
             try {
                 try {
                     // Try to open with read-write access unless read-only requested.
-                    FileAccess access = readOnly ? FileAccess.Read : FileAccess.ReadWrite;
-                    hostStream = new FileStream(mHostPathName, FileMode.Open, access,
+                    FileAccess access = asReadOnly ? FileAccess.Read : FileAccess.ReadWrite;
+                    hostStream = new FileStream(hostPathName, FileMode.Open, access,
                         FileShare.Read);
                 } catch (IOException ex) {
                     // Retry with read-only access unless we did that the first time around.
-                    if (readOnly) {
+                    if (asReadOnly) {
                         throw;
                     }
                     mAppHook.LogI("R/W open failed (" + ex.Message + "), retrying R/O: '" +
-                        mHostPathName + "'");
-                    hostStream = new FileStream(mHostPathName, FileMode.Open, FileAccess.Read,
+                        hostPathName + "'");
+                    hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.Read,
                         FileShare.Read);
                 }
 
-                string ext = Path.GetExtension(mHostPathName);
+                string ext = Path.GetExtension(hostPathName);
                 // This will throw InvalidDataException if the stream isn't recognized.  Let
                 // the caller handle the exception (it has the error message).
-                Node? newNode = ProcessStream(hostStream, ext, Path.GetFileName(mHostPathName),
-                        null, mHostFileNode, IFileEntry.NO_ENTRY, out string errorMsg);
+                Node? newNode = ProcessStream(hostStream, ext, Path.GetFileName(hostPathName),
+                        null, mHostNode, IFileEntry.NO_ENTRY, out string errorMsg);
                 if (newNode == null) {
                     throw new InvalidDataException(errorMsg);
                 }
@@ -337,10 +338,75 @@ namespace AppCommon {
 
                 hostStream = null;      // we're good, don't let "finally" close it
             } catch {
-                mHostFileNode.Dispose();
+                mHostNode.Dispose();
                 throw;
             } finally {
                 hostStream?.Close();
+            }
+
+            mAppHook.LogD("Work tree construction finished in " +
+                (DateTime.Now - startWhen).TotalMilliseconds + " ms");
+
+            // Clear this so we don't try to use it for updates later.
+            mWorker = null;
+        }
+
+        /// <summary>
+        /// Constructor for a physical disk device, such as a CF card in a USB card reader.
+        /// </summary>
+        /// <param name="deviceHandle">Handle to open device.</param>
+        /// <param name="deviceName">Device name (for display).</param>
+        /// <param name="deviceSize">Size of device, in bytes.</param>
+        /// <param name="depthLimitFunc">Callback function that determines whether or not we
+        ///   descend into children.</param>
+        /// <param name="asReadOnly">If true, try to open the file read-only first.</param>
+        /// <param name="worker">Background worker, for cancel requests and progress
+        ///   updates.  Only used during construction.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <exception cref="IOException">File open or read failed.</exception>
+        /// <exception cref="InvalidDataException">File contents not recognized.</exception>
+        public WorkTree(SafeFileHandle deviceHandle, string deviceName, long deviceSize,
+                DepthLimiter depthLimitFunc, bool asReadOnly, BackgroundWorker? worker,
+                AppHook appHook) {
+            Debug.Assert(deviceSize % BLOCK_SIZE == 0);     // or we won't get very far
+            mHostPathName = deviceName;
+            DepthLimitFunc = depthLimitFunc;
+            mWorker = worker;
+            mAppHook = appHook;
+
+            DateTime startWhen = DateTime.Now;
+            mAppHook.LogI("Constructing work tree for '" + deviceName + "'");
+            mHostNode = new HostDeviceNode(deviceHandle, deviceName, mAppHook);
+
+            Stream? deviceStream = null;
+            try {
+                // The device handle can't provide the device size, so the FileStream we create
+                // throws when you try to access the Length value.  Wrap the stream.
+                Stream baseStream = new FileStream(deviceHandle,
+                    asReadOnly ? FileAccess.Read : FileAccess.ReadWrite);
+                deviceStream = new FixedLengthStream(baseStream, deviceSize);
+                string ext = ".po";     // treat it like an unadorned block image
+
+                // This will throw InvalidDataException if the stream isn't recognized.  Let
+                // the caller handle the exception (it has the error message).
+                Node? newNode = ProcessStream(deviceStream, ext, "device" + ext,
+                        null, mHostNode, IFileEntry.NO_ENTRY, out string errorMsg);
+                if (newNode == null) {
+                    throw new InvalidDataException(errorMsg);
+                }
+                if (mWorker != null && mWorker.CancellationPending) {
+                    mAppHook.LogW("Work tree construction was cancelled");
+                    throw new Exception("cancelled");   // kind doesn't matter, just want cleanup
+                }
+                RootNode = newNode;
+                CanWrite = deviceStream.CanWrite;
+
+                deviceStream = null;      // we're good, don't let "finally" close it
+            } catch {
+                mHostNode.Dispose();
+                throw;
+            } finally {
+                deviceStream?.Close();
             }
 
             mAppHook.LogD("Work tree construction finished in " +
@@ -666,13 +732,13 @@ namespace AppCommon {
         public void ReprocessDiskImage(Node diskImageNode) {
             Debug.Assert(diskImageNode.Count == 0);
             Debug.Assert(diskImageNode.DANode is DiskImageNode);
-            Debug.Assert(mHostFileNode.CheckHealth());
+            Debug.Assert(mHostNode.CheckHealth());
 
             IDiskImage disk = (IDiskImage)diskImageNode.DAObject;
             disk.AnalyzeDisk(null, diskImageNode.OrderHint, IDiskImage.AnalysisDepth.Full);
             HandleDiskImage((IDiskImage)diskImageNode.DAObject, diskImageNode,
                 diskImageNode.DANode);
-            Debug.Assert(mHostFileNode.CheckHealth());
+            Debug.Assert(mHostNode.CheckHealth());
         }
 
         /// <summary>
@@ -740,7 +806,7 @@ namespace AppCommon {
         public void ReprocessPartition(Node partNode) {
             Debug.Assert(partNode.Count == 0);
             Debug.Assert(partNode.DANode == null);
-            Debug.Assert(mHostFileNode.CheckHealth());
+            Debug.Assert(mHostNode.CheckHealth());
             Partition part = (Partition)partNode.DAObject;
             DiskArcNode daParent = partNode.FindDANode();
             if (part.FileSystem == null) {
@@ -750,7 +816,7 @@ namespace AppCommon {
                 part.FileSystem.PrepareFileAccess(true);
                 ProcessFileSystem(part.FileSystem, partNode, daParent);
             }
-            Debug.Assert(mHostFileNode.CheckHealth());
+            Debug.Assert(mHostNode.CheckHealth());
         }
 
         /// <summary>
@@ -963,7 +1029,7 @@ namespace AppCommon {
 
         public bool CheckHealth() {
             //Debug.Write(mHostFileNode.GenerateTreeSummary());
-            return mHostFileNode.CheckHealth();
+            return mHostNode.CheckHealth();
         }
 
         ~WorkTree() {
@@ -976,7 +1042,7 @@ namespace AppCommon {
         protected virtual void Dispose(bool disposing) {
             if (disposing) {
                 mAppHook.LogD("Disposing work tree (disp=" + disposing + ")");
-                mHostFileNode.Dispose();
+                mHostNode.Dispose();
             }
         }
 

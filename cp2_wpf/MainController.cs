@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -25,6 +26,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 using AppCommon;
 using CommonUtil;
@@ -164,9 +166,21 @@ namespace cp2_wpf {
         /// </summary>
         private void ProcessCommandLine() {
             string[] args = Environment.GetCommandLineArgs();
-            // Currently we just look for the name of a file to open.
-            if (args.Length == 2) {
-                DoOpenWorkFile(Path.GetFullPath(args[1]), false);
+
+            bool readOnly = false;
+
+            int curArg = 1;
+            if (args.Length > curArg && args[curArg] == "-r") {
+                readOnly = true;
+                curArg++;
+            }
+
+            if (args.Length > curArg) {
+                if (args[curArg].StartsWith(@"\\.\PhysicalDrive")) {
+                    DoOpenPhysicalDrive(args[curArg], readOnly);
+                } else {
+                    DoOpenWorkFile(Path.GetFullPath(args[curArg]), readOnly);
+                }
             }
         }
 
@@ -488,6 +502,112 @@ namespace cp2_wpf {
 
             // We can't really focus on the file list yet because it won't get populated until
             // the various selection-changed events percolate through.
+            mSwitchFocusToFileList = true;
+        }
+
+        /// <summary>
+        /// Handles File > Open Physical Drive
+        /// </summary>
+        public void OpenPhysicalDrive() {
+            if (!CloseWorkFile()) {
+                return;
+            }
+
+            SelectPhysicalDisk dialog = new SelectPhysicalDisk(mMainWin);
+            if (dialog.ShowDialog() != true) {
+                return;
+            }
+
+            PhysicalDiskAccess.DiskInfo disk = dialog.SelectedDisk!;
+
+            if (!WinUtil.IsAdministrator()) {
+                // TODO: add setting to do this automatically
+                MessageBoxResult result = MessageBox.Show(mMainWin,
+                    "CiderPress II is not running as Administrator. Restart?",
+                    "Escalate privileges", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+                if (result == MessageBoxResult.OK) {
+                    // Restart process with escalated privileges.
+                    string exeName = Process.GetCurrentProcess().MainModule!.FileName!;
+                    ProcessStartInfo startInfo = new ProcessStartInfo(exeName);
+                    if (dialog.OpenReadOnly) {
+                        startInfo.ArgumentList.Add("-r");
+                    }
+                    startInfo.ArgumentList.Add(disk.Name);
+                    startInfo.Verb = "runas";
+                    startInfo.UseShellExecute = true;
+                    try {
+                        Process.Start(startInfo);
+                        Application.Current.Shutdown();
+                    } catch (Win32Exception ex) {
+                        Debug.WriteLine("Process.Start failed: " + ex.Message);
+                    }
+                    return;
+                }
+            }
+
+            DoOpenPhysicalDrive(disk.Name, dialog.OpenReadOnly);
+        }
+
+        private void DoOpenPhysicalDrive(string deviceName, bool asReadOnly) {
+            if (deviceName == @"\\.\PhysicalDrive0") {
+                Debug.Assert(false, "disallowed for safety reasons");
+                return;
+            }
+            SafeFileHandle handle = PhysicalDiskAccess.Win.OpenDisk(deviceName, false,
+                out long deviceSize, out int errCode);
+            if (handle.IsInvalid) {
+                const int ERROR_ACCESS_DENIED = 5;
+                string msg;
+                if (errCode == ERROR_ACCESS_DENIED) {
+                    msg = "Unable to open disk: access denied (need to run as Administrator?)";
+                } else {
+                    msg = "Unable to open disk '" + deviceName + "': error 0x" +
+                        errCode.ToString("x8");
+                }
+                MessageBox.Show(mMainWin, msg, "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                handle.Dispose();
+                return;
+            }
+
+            AutoOpenDepth depth =
+                AppSettings.Global.GetEnum(AppSettings.AUTO_OPEN_DEPTH, AutoOpenDepth.SubVol);
+            WorkTree.DepthLimiter limiter =
+                delegate (WorkTree.DepthParentKind parentKind, WorkTree.DepthChildKind childKind) {
+                    return DepthLimit(parentKind, childKind, depth);
+                };
+
+            try {
+                Mouse.OverrideCursor = Cursors.Wait;
+
+                // Do the load on a background thread so we can show progress.
+                OpenProgress prog = new OpenProgress(handle, deviceName, deviceSize, limiter,
+                    asReadOnly, AppHook);
+                WorkProgress workDialog = new WorkProgress(mMainWin, prog, true);
+                if (workDialog.ShowDialog() != true) {
+                    // cancelled or failed
+                    if (prog.Results.mException != null) {
+                        MessageBox.Show(mMainWin, "Error: " + prog.Results.mException.Message,
+                            FILE_ERR_CAPTION, MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    return;
+                }
+                Debug.Assert(prog.Results.mWorkTree != null);
+                mWorkTree = prog.Results.mWorkTree;
+
+                // File is fully parsed.  Generate the archive tree.
+                PopulateArchiveTree();
+            } catch (Exception ex) {
+                // Expecting IOException and InvalidDataException.
+                ShowFileError("Unable to open file: " + ex.Message);
+                return;
+            } finally {
+                Mouse.OverrideCursor = null;
+            }
+
+            mWorkPathName = deviceName;
+            UpdateTitle();
+            mMainWin.ShowLaunchPanel = false;
             mSwitchFocusToFileList = true;
         }
 

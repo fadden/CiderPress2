@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 using CommonUtil;
 using DiskArc;
@@ -752,6 +753,65 @@ namespace AppCommon {
             diskImageStream.Flush();
             // nothing to do here
             AppHook.LogI("Host-level disk image updated");
+        }
+    }
+
+    /// <summary>
+    /// Node representing a device physically attached to the host, such as a memory card in
+    /// a USB card reader.
+    /// </summary>
+    public class HostDeviceNode : DiskArcNode {
+        private SafeFileHandle mDeviceHandle;
+        private string mDeviceName;
+
+        /// <summary>
+        /// Constructor.  Note this does not take a stream, and we do not open the file; the
+        /// stream is associated with our first (and only) child.  The pathname is only used as
+        /// the location for archive output files.
+        /// </summary>
+        /// <param name="pathName">Path to host file.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        public HostDeviceNode(SafeFileHandle deviceHandle, string deviceName, AppHook appHook) :
+                base(null, new MemoryStream(new byte[0]), IFileEntry.NO_ENTRY, appHook) {
+            mDeviceHandle = deviceHandle;
+            mDeviceName = deviceName;
+
+            CanWriteNode = true;
+            DebugIdentifier = "Device(" + deviceName + ")";
+        }
+
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                if (CheckHealth()) {
+                    AppHook.LogI("Disposing DiskArcNode tree; health check OK");
+                } else {
+                    AppHook.LogE("DiskArcNode tree health check failed");
+                }
+                DisposeChildren();
+                // The stream that spans the device is held by the first child.  We hold the
+                // device handle.
+                mDeviceHandle.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        public override void SaveUpdates(bool doCompress) {
+            throw new NotImplementedException("should not call here");
+        }
+
+        protected internal override Stream CreateArchiveOutputFile(IFileEntry entryHere) {
+            throw new NotImplementedException("should not be a file archive here");
+        }
+
+        protected internal override Stream? FinishArchiveOutputFile(ref IFileEntry entryHere, bool doCompress, bool success) {
+            throw new NotImplementedException("should not be a file archive here");
+        }
+
+        protected internal override void DiskUpdated(Stream diskImageStream, IFileEntry entryHere,
+                bool doCompress) {
+            diskImageStream.Flush();
+            // nothing to do here
+            AppHook.LogI("Host-device disk image updated");
         }
     }
 }
