@@ -387,7 +387,8 @@ namespace DiskArc {
         /// type.</para>
         /// <para>If the result is <see cref="AnalysisResult.ExtensionMismatch"/>, and the
         /// caller wants to retry the analysis considering only the file contents, it may call
-        /// this function again with an empty <paramref name="fileNameExt"/>.</para>
+        /// this function again with an empty <paramref name="fileNameExt"/>.  This could be
+        /// valuable if the file has other attributes, e.g. an HFS file type of 'dCpy'.</para>
         /// </remarks>
         /// <param name="stream">File data stream; must be seekable.</param>
         /// <param name="fileNameExt">Filename extension, with or without the leading '.';

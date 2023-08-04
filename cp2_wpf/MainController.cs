@@ -176,7 +176,7 @@ namespace cp2_wpf {
             }
 
             if (args.Length > curArg) {
-                if (args[curArg].StartsWith(@"\\.\PhysicalDrive")) {
+                if (args[curArg].StartsWith(PhysicalDriveAccess.Win.PHYSICAL_DRIVE_PREFIX)) {
                     DoOpenPhysicalDrive(args[curArg], readOnly);
                 } else {
                     DoOpenWorkFile(Path.GetFullPath(args[curArg]), readOnly);
@@ -513,12 +513,12 @@ namespace cp2_wpf {
                 return;
             }
 
-            SelectPhysicalDisk dialog = new SelectPhysicalDisk(mMainWin);
+            SelectPhysicalDrive dialog = new SelectPhysicalDrive(mMainWin);
             if (dialog.ShowDialog() != true) {
                 return;
             }
 
-            PhysicalDiskAccess.DiskInfo disk = dialog.SelectedDisk!;
+            PhysicalDriveAccess.DiskInfo disk = dialog.SelectedDisk!;
 
             if (!WinUtil.IsAdministrator()) {
                 // TODO: add setting to do this automatically
@@ -549,11 +549,11 @@ namespace cp2_wpf {
         }
 
         private void DoOpenPhysicalDrive(string deviceName, bool asReadOnly) {
-            if (deviceName == @"\\.\PhysicalDrive0") {
+            if (deviceName == PhysicalDriveAccess.Win.PHYSICAL_DRIVE_PREFIX + "0") {
                 Debug.Assert(false, "disallowed for safety reasons");
                 return;
             }
-            SafeFileHandle handle = PhysicalDiskAccess.Win.OpenDisk(deviceName, false,
+            SafeFileHandle handle = PhysicalDriveAccess.Win.OpenDisk(deviceName, false,
                 out long deviceSize, out int errCode);
             if (handle.IsInvalid) {
                 const int ERROR_ACCESS_DENIED = 5;

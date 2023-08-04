@@ -24,7 +24,7 @@ namespace CommonUtil {
     /// Functions for getting access to physical disks.  This is system-specific and may
     /// require elevated privileges.
     /// </summary>
-    public static class PhysicalDiskAccess {
+    public static class PhysicalDriveAccess {
         /// <summary>
         /// Physical disk information.
         /// </summary>
@@ -98,6 +98,7 @@ namespace CommonUtil {
             // https://stackoverflow.com/a/39869074/294248
 
             const int MAX_DEVICES = 16;     // arbitrary, not based on anything
+            public const string PHYSICAL_DRIVE_PREFIX = @"\\.\PhysicalDrive";
 
             /// <summary>
             /// Generates a list of disk devices found on a Windows system.
@@ -108,7 +109,7 @@ namespace CommonUtil {
 
                 Debug.WriteLine("Scanning for physical disks...");
                 for (int dev = 0; dev < MAX_DEVICES; dev++) {
-                    string fileName = @"\\.\PhysicalDrive" + dev;
+                    string fileName = PHYSICAL_DRIVE_PREFIX + dev;
                     SafeFileHandle handle = CreateFile(
                         fileName,                           // lpFileName
                         0,                                  // dwDesiredAccess = none

@@ -31,7 +31,7 @@ namespace cp2_wpf {
     /// <summary>
     /// Present a list of physical disks and allow the user to choose one.
     /// </summary>
-    public partial class SelectPhysicalDisk : Window, INotifyPropertyChanged {
+    public partial class SelectPhysicalDrive : Window, INotifyPropertyChanged {
         // INotifyPropertyChanged
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "") {
@@ -59,10 +59,10 @@ namespace cp2_wpf {
         /// <summary>
         /// Result: selected disk item.
         /// </summary>
-        public PhysicalDiskAccess.DiskInfo? SelectedDisk { get; private set; }
+        public PhysicalDriveAccess.DiskInfo? SelectedDisk { get; private set; }
 
         public class DiskItem {
-            public PhysicalDiskAccess.DiskInfo Info { get; private set; }
+            public PhysicalDriveAccess.DiskInfo Info { get; private set; }
 
             public string Label { get; private set; }
             public string FileName { get; private set; }
@@ -70,7 +70,7 @@ namespace cp2_wpf {
             public string Size { get; private set; }
             public bool CanOpen { get; private set; }
 
-            public DiskItem(PhysicalDiskAccess.DiskInfo info) {
+            public DiskItem(PhysicalDriveAccess.DiskInfo info) {
                 Info = info;
 
                 Label = "Physical disk #" + info.Number;
@@ -80,26 +80,26 @@ namespace cp2_wpf {
                 // Disallow access to fixed disks, on the assumption that those have host
                 // data and we shouldn't be messing with them.  At the very least we want
                 // to disallow access to device 0 (boot disk).
-                CanOpen = (info.MediaType != PhysicalDiskAccess.DiskInfo.MediaTypes.Fixed);
+                CanOpen = (info.MediaType != PhysicalDriveAccess.DiskInfo.MediaTypes.Fixed);
             }
         }
         public ObservableCollection<DiskItem> DiskItems { get; set; } =
             new ObservableCollection<DiskItem>();
 
 
-        public SelectPhysicalDisk(Window owner) {
+        public SelectPhysicalDrive(Window owner) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
-            List<PhysicalDiskAccess.DiskInfo>? diskList = PhysicalDiskAccess.GetDiskList();
+            List<PhysicalDriveAccess.DiskInfo>? diskList = PhysicalDriveAccess.GetDiskList();
             if (diskList != null && diskList.Count > 0) {
                 int best = 0;
                 for (int i = 0; i < diskList.Count; i++) {
-                    PhysicalDiskAccess.DiskInfo di = diskList[i];
+                    PhysicalDriveAccess.DiskInfo di = diskList[i];
                     DiskItems.Add(new DiskItem(di));
                     if (best == 0 &&
-                            di.MediaType == PhysicalDiskAccess.DiskInfo.MediaTypes.Removable) {
+                            di.MediaType == PhysicalDriveAccess.DiskInfo.MediaTypes.Removable) {
                         best = i;
                     }
                 }
