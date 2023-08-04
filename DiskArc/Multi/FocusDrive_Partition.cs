@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2022 faddenSoft
+ * Copyright 2023 faddenSoft
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,11 @@ namespace DiskArc.Multi {
     /// <summary>
     /// One partition in an Apple Partition Map.
     /// </summary>
-    public class APM_Partition : Partition {
+    public class FocusDrive_Partition : Partition {
         /// <summary>
         /// Partition name string.
         /// </summary>
         public string PartitionName { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// Partition type string.
-        /// </summary>
-        public string PartitionType { get; private set; } = string.Empty;
 
         /// <summary>
         /// Constructor.
@@ -42,15 +37,14 @@ namespace DiskArc.Multi {
         /// <param name="name">Partition name, from partition map entry.</param>
         /// <param name="typeStr">Partition type, from partition map entry.</param>
         /// <param name="appHook">Application hook reference.</param>
-        public APM_Partition(IChunkAccess chunkAccess, long startOffset, long length,
-                string name, string typeStr, AppHook appHook)
+        public FocusDrive_Partition(IChunkAccess chunkAccess, long startOffset, long length,
+                string name, AppHook appHook)
                 : base(chunkAccess, startOffset, length, appHook) {
             PartitionName = name;
-            PartitionType = typeStr;
         }
 
         public override string ToString() {
-            return "[APM: name='" + PartitionName + "' type='" + PartitionType +
+            return "[FocusPart: name='" + PartitionName +
                 "' start=" + (StartOffset / BLOCK_SIZE) + " length=" + (Length / BLOCK_SIZE) +
                 " (" + (Length / (1024 * 1024.0)).ToString("F2") + " MiB)]";
         }

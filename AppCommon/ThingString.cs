@@ -76,6 +76,8 @@ namespace AppCommon {
                 return "APM";
             } else if (parts is CFFA) {
                 return "CFFA";
+            } else if (parts is FocusDrive) {
+                return "FocusDrive";
             } else if (parts is MacTS) {
                 return "MacTS";
             } else if (parts is MicroDrive) {
@@ -114,6 +116,8 @@ namespace AppCommon {
         public static string Partition(Partition fs) {
             if (fs is APM_Partition) {
                 return "APM partition";
+            } else if (fs is FocusDrive_Partition) {
+                return "Focus partition";
             } else {
                 return "Partition";
             }

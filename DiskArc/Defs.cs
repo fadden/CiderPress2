@@ -190,7 +190,7 @@ namespace DiskArc {
             MacTS = 41,                 // old Apple partition format
             CFFA = 42,                  // CFFA with 4/6 or 8 partitions
             MicroDrive = 43,            // ///SHH Systeme's MicroDrive format
-            //kFormatFocusDrive = 46,     // Parsons Engineering FocusDrive format
+            FocusDrive = 44,            // Parsons Engineering FocusDrive format
 
             AmUniDOS = 50,              // two 400KB DOS 3.3 volumes on an 800KB disk
             OzDOS = 51,                 // two 400KB DOS 3.3 volumes on an 800KB split-block disk

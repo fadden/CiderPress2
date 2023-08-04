@@ -358,8 +358,11 @@ namespace DiskArc.Multi {
         ///   <paramref name="isTestOnly"/> is true, the list will have zero entries.</returns>
         private static List<Partition>? LoadPartitions(IChunkAccess chunkAccess, bool isTestOnly,
                 Notes? notes, AppHook appHook) {
-            List<Partition> partitions = new List<Partition>();
             long totalBlocks = chunkAccess.FormattedLength / BLOCK_SIZE;
+            if (totalBlocks < 2) {
+                return null;        // need at least the DDR and the PM
+            }
+            List<Partition> partitions = new List<Partition>();
             byte[] blockBuf = new byte[BLOCK_SIZE];
 
             // Partition map starts in block 1.  The map length is stored in each entry.

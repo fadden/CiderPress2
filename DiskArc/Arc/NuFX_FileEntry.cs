@@ -908,7 +908,7 @@ namespace DiskArc.Arc {
                     // 36 bytes when there's only room for 18.  Clamp the value to what's
                     // actually available.
                     Archive.Notes.AddW("Found option size " + optionSize +
-                        ", but header only holds" + extraBytes);
+                        ", but header only holds " + extraBytes);
                     optionSize = (ushort)extraBytes;
                 }
                 if (optionSize > 0) {

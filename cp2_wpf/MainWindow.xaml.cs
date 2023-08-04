@@ -885,6 +885,8 @@ namespace cp2_wpf {
                 if (part is APM_Partition) {
                     name = ((APM_Partition)part).PartitionName;
                     type = ((APM_Partition)part).PartitionType;
+                } else if (part is FocusDrive_Partition) {
+                    name = ((FocusDrive_Partition)part).PartitionName;
                 }
 
                 Index = index;

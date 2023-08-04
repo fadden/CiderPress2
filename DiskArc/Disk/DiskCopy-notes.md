@@ -11,7 +11,8 @@ The DiskCopy disk image format was developed by Apple for internal use in duplic
 distributing 3.5" disk images.  The version described here is for DiskCopy v4.2.
 
 On the Apple II, the files should use type $e0/8005.  On the Mac, type 'dImg', usually with
-creator 'dCpy'.  On systems without file types, these were usually ".image" or sometimes ".dsk".
+creator 'dCpy'.  On systems without file types, these were usually ".image", ".img", ".dc", or
+sometimes ".dsk".
 
 ## File Structure ##
 

@@ -16,38 +16,19 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Text;
 
 using CommonUtil;
 using static DiskArc.Defs;
 using static DiskArc.FileAnalyzer.DiskLayoutEntry;
 
-/*
-  From Joachim Lange (date unknown, probably early 2005):
-
-    Below, this is the configuration block as it is used in all
-    MicroDrive cards. Please verify that my ID shortcut can be
-    found at offset 0, otherwise the partition info is not
-    valid. Most of the other parms are not useful, some are
-    historic and not useful anymore. As a second security
-    measure, verify that the first partition starts at
-    absolute block 256. This is also a fixed value used in all
-    MicroDrive cards. Of course the partition size is not two
-    bytes long but three (not four), the 4th byte is used for
-    switching drives in a two-drive configuration. So, for
-    completeness, when reading partition sizes, perform a
-    partitionLength[..] & 0x00FFFFFF, or at least issue a
-    warning that something may be wrong. The offset
-    (partitionStart) could reach into the 4th byte.
-    I have attached the config block in a zip file because
-    the mailer would probably re-format the source text.
-*/
-
 namespace DiskArc.Multi {
     /// <summary>
-    /// MicroDrive partition format.
+    /// FocusDrive partition format.
     /// </summary>
-    public class MicroDrive : IMultiPart {
-        private const int FIRST_PART_START = 256;
+    public class FocusDrive : IMultiPart {
+        private const int PART_MAP_BLOCK_COUNT = 3;
+        private const int MAX_PARTITIONS = 30;
 
         //
         // IMultiPart interfaces.
@@ -77,61 +58,75 @@ namespace DiskArc.Multi {
         private List<Partition> mPartitions;
 
         private class PartitionMap {
-            public const int LENGTH = 192;
-            public const int NUM_PARTS = 8;
-            public const ushort MAGIC = 0xccca;
+            public const int MAP_LENGTH = 512;
+            public static readonly byte[] SIGNATURE = Encoding.ASCII.GetBytes("Parsons Engin.");
+            private const int NAME_LEN = 32;
 
-            public ushort mMagic;
-            public ushort mCylinders;
-            public ushort mReserved1;
-            public ushort mHeads;
-            public ushort mSectors;
-            public ushort mReserved2;
-            public byte mNumPart1;
-            public byte mNumPart2;
-            public byte[] mReserved3 = new byte[10];
-            public ushort mROMVersion;
-            public byte[] mReserved4 = new byte[6];
-            public uint[] mPartitionStart1 = new uint[NUM_PARTS];       // starts at 0x20
-            public uint[] mPartitionSize1 = new uint[NUM_PARTS];
-            public byte[] mReserved5 = new byte[32];
-            public uint[] mPartitionStart2 = new uint[NUM_PARTS];       // starts at 0x80
-            public uint[] mPartitionSize2 = new uint[NUM_PARTS];
-            // 320 bytes reserved
+            // Partition map block.
+            public byte[] mSignature = new byte[SIGNATURE.Length];
+            public byte mUnknown1;
+            public byte mPartCount;
+            public byte[] mUnknown2 = new byte[16];
+            public Entry[] mEntries = new Entry[MAX_PARTITIONS];
+            public class Entry {
+                public uint mStartBlock;
+                public uint mBlockCount;
+                public uint mUnknown1e;
+                public uint mUnknown2e;
+                public byte[] mName = new byte[NAME_LEN];
+
+                public string Name {
+                    get {
+                        int len;
+                        for (len = 0; len < NAME_LEN; len++) {
+                            if (mName[len] == '\0') {
+                                break;
+                            }
+                        }
+                        return Encoding.ASCII.GetString(mName, 0, len);
+                    }
+                }
+            }
+
+            // Partition name block header.
+            public uint mLeftoverBlockCount;
 
             public void Load(byte[] buf, int offset) {
                 int startOffset = offset;
-                mMagic = RawData.ReadU16LE(buf, ref offset);
-                mCylinders = RawData.ReadU16LE(buf, ref offset);
-                mReserved1 = RawData.ReadU16LE(buf, ref offset);
-                mHeads = RawData.ReadU16LE(buf, ref offset);
-                mSectors = RawData.ReadU16LE(buf, ref offset);
-                mReserved2 = RawData.ReadU16LE(buf, ref offset);
-                mNumPart1 = buf[offset++];
-                mNumPart2 = buf[offset++];
-                for (int i = 0; i < mReserved3.Length; i++) {
-                    mReserved3[i] = buf[offset++];
+                for (int i = 0; i < mSignature.Length; i++) {
+                    mSignature[i] = buf[offset++];
                 }
-                mROMVersion = RawData.ReadU16LE(buf, ref offset);
-                for (int i = 0; i < mReserved4.Length; i++) {
-                    mReserved4[i] = buf[offset++];
+                mUnknown1 = buf[offset++];
+                mPartCount = buf[offset++];
+                for (int i = 0; i < mUnknown2.Length; i++) {
+                    mUnknown2[i] = buf[offset++];
                 }
-                for (int i = 0; i < NUM_PARTS; i++) {
-                    mPartitionStart1[i] = RawData.ReadU32LE(buf, ref offset);
+                for (int part = 0; part < MAX_PARTITIONS; part++) {
+                    mEntries[part] = new Entry();
+                    mEntries[part].mStartBlock = RawData.ReadU32LE(buf, ref offset);
+                    mEntries[part].mBlockCount = RawData.ReadU32LE(buf, ref offset);
+                    mEntries[part].mUnknown1e = RawData.ReadU32LE(buf, ref offset);
+                    mEntries[part].mUnknown2e = RawData.ReadU32LE(buf, ref offset);
                 }
-                for (int i = 0; i < NUM_PARTS; i++) {
-                    mPartitionSize1[i] = RawData.ReadU32LE(buf, ref offset);
+                Debug.Assert(offset - startOffset == MAP_LENGTH);
+
+                // Extract the left-over blocks count, which is stored in what would be
+                // expected to hold the first partition name.
+                offset += 4;
+                mLeftoverBlockCount = RawData.ReadU32LE(buf, ref offset);
+                offset += 24;
+
+                // Extract the 30 partition names.
+                for (int part = 0; part < MAX_PARTITIONS; part++) {
+                    for (int i = 0; i < NAME_LEN; i++) {
+                        mEntries[part].mName[i] = buf[offset++];
+                    }
                 }
-                for (int i = 0; i < mReserved5.Length; i++) {
-                    mReserved5[i] = buf[offset++];
-                }
-                for (int i = 0; i < NUM_PARTS; i++) {
-                    mPartitionStart2[i] = RawData.ReadU32LE(buf, ref offset);
-                }
-                for (int i = 0; i < NUM_PARTS; i++) {
-                    mPartitionSize2[i] = RawData.ReadU32LE(buf, ref offset);
-                }
-                Debug.Assert(offset - startOffset == LENGTH);
+
+                // Last name slot is empty.
+                offset += 32;
+
+                Debug.Assert(offset - startOffset == BLOCK_SIZE * 3);
             }
         }
 
@@ -158,7 +153,7 @@ namespace DiskArc.Multi {
             return false;
         }
 
-        public MicroDrive(IChunkAccess chunkAccess, AppHook appHook) {
+        public FocusDrive(IChunkAccess chunkAccess, AppHook appHook) {
             Debug.Assert(chunkAccess is not GatedChunkAccess);
             if (!chunkAccess.HasBlocks) {
                 throw new ArgumentException("Must have blocks");
@@ -197,37 +192,31 @@ namespace DiskArc.Multi {
 
         private static List<Partition>? LoadPartitions(IChunkAccess chunkAccess, bool isTestOnly,
                 Notes? notes, AppHook appHook) {
+            if (chunkAccess.FormattedLength / BLOCK_SIZE < PART_MAP_BLOCK_COUNT) {
+                return null;        // need the 3-block partition map
+            }
             List<Partition> partitions = new List<Partition>();
-            byte[] blockBuf = new byte[BLOCK_SIZE];
+            byte[] blockBuf = new byte[BLOCK_SIZE * PART_MAP_BLOCK_COUNT];
 
-            chunkAccess.ReadBlock(0, blockBuf, 0);
+            for (int i = 0; i < PART_MAP_BLOCK_COUNT; i++) {
+                chunkAccess.ReadBlock((uint)i, blockBuf, BLOCK_SIZE * i);
+            }
             PartitionMap pm = new PartitionMap();
             pm.Load(blockBuf, 0);
 
-            // Check a couple of things.
-            if (pm.mMagic != PartitionMap.MAGIC) {
+            // See if it looks like one of ours.
+            if (RawData.MemCmp(pm.mSignature, PartitionMap.SIGNATURE,
+                    PartitionMap.SIGNATURE.Length) != 0) {
                 return null;
             }
-            if (pm.mNumPart1 == 0 || pm.mNumPart1 > PartitionMap.NUM_PARTS ||
-                    pm.mNumPart2 > PartitionMap.NUM_PARTS) {
-                return null;        // no partitions, or too many defined
-            }
-            if (pm.mPartitionStart1[0] != FIRST_PART_START) {
-                return null;        // first partition is in the wrong place
+            if (pm.mPartCount > MAX_PARTITIONS) {
+                return null;
             }
 
-            // Load up all the partitions we can find.
             if (!isTestOnly) {
-                for (int i = 0; i < pm.mNumPart1; i++) {
-                    Partition? newPart = NewPartition(chunkAccess, pm.mPartitionStart1[i],
-                        pm.mPartitionSize1[i] & 0x00ffffff, notes, appHook);
-                    if (newPart != null) {
-                        partitions.Add(newPart);
-                    }
-                }
-                for (int i = 0; i < pm.mNumPart2; i++) {
-                    Partition? newPart = NewPartition(chunkAccess, pm.mPartitionStart2[i],
-                        pm.mPartitionSize2[i] & 0x00ffffff, notes, appHook);
+                for (int i = 0; i < pm.mPartCount; i++) {
+                    Partition? newPart = NewPartition(chunkAccess, pm.mEntries[i].mStartBlock,
+                        pm.mEntries[i].mBlockCount, pm.mEntries[i].Name, notes, appHook);
                     if (newPart != null) {
                         partitions.Add(newPart);
                     }
@@ -238,7 +227,7 @@ namespace DiskArc.Multi {
         }
 
         private static Partition? NewPartition(IChunkAccess chunkAccess, uint startBlock,
-                uint blockCount, Notes? notes, AppHook appHook) {
+                uint blockCount, string name, Notes? notes, AppHook appHook) {
             long totalBlocks = chunkAccess.FormattedLength / BLOCK_SIZE;
             if (startBlock >= totalBlocks) {
                 notes?.AddE("Start of partition at block=" + startBlock +
@@ -248,8 +237,8 @@ namespace DiskArc.Multi {
                 notes?.AddE("Partition at " + startBlock + " runs off end of file");
                 return null;
             }
-            Partition newPart = new Partition(chunkAccess,
-                (long)startBlock * BLOCK_SIZE, (long)blockCount * BLOCK_SIZE, appHook);
+            Partition newPart = new FocusDrive_Partition(chunkAccess,
+                (long)startBlock * BLOCK_SIZE, (long)blockCount * BLOCK_SIZE, name, appHook);
             return newPart;
         }
 
@@ -267,7 +256,7 @@ namespace DiskArc.Multi {
             });
 
             bool result = true;
-            long lastEnd = FIRST_PART_START * BLOCK_SIZE;
+            long lastEnd = PART_MAP_BLOCK_COUNT * BLOCK_SIZE;
             for (int i = 0; i < sorted.Length; i++) {
                 if (sorted[i].StartOffset < lastEnd) {
                     notes.AddE("Partitions " + (i - 1) + " and " + i + " overlap");

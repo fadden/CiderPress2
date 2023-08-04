@@ -972,7 +972,7 @@ namespace DiskArc.FS {
                                 newEntry.IsDamaged = true;
                             }
 
-                            if (newEntry.HasRsrcFork) {
+                            if (!newEntry.IsDamaged && newEntry.HasRsrcFork) {
                                 try {
                                     using (ProDOS_FileDesc rsrcFd = ProDOS_FileDesc.CreateFD(newEntry,
                                             IFileSystem.FileAccessMode.ReadOnly,

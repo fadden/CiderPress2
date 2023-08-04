@@ -37,6 +37,7 @@ namespace DiskArc {
             new DiskLayoutEntry("APM", FileSystemType.APM, typeof(Multi.APM)),
             new DiskLayoutEntry("MacTS", FileSystemType.MacTS, typeof(Multi.MacTS)),
             new DiskLayoutEntry("MicroDrive", FileSystemType.MicroDrive, typeof(Multi.MicroDrive)),
+            new DiskLayoutEntry("FocusDrive", FileSystemType.FocusDrive, typeof(Multi.FocusDrive)),
             new DiskLayoutEntry("CFFA", FileSystemType.CFFA, typeof(Multi.CFFA)),
             // MSDOS (mostly to rule it out)
 
@@ -269,15 +270,17 @@ namespace DiskArc {
                 case ".po":
                 case ".iso":
                 case ".hdv":
-                case ".img":
                     fileKind1 = FileKind.UnadornedSector;
                     if (fileNameExt == ".do") {
                         orderHint1 = SectorOrder.DOS_Sector;
-                    } else if (fileNameExt == ".img") {
-                        orderHint1 = SectorOrder.Physical;
                     } else {
                         orderHint1 = SectorOrder.ProDOS_Block;
                     }
+                    break;
+                case ".img":
+                    fileKind1 = FileKind.UnadornedSector;
+                    orderHint1 = SectorOrder.Physical;
+                    fileKind2 = FileKind.DiskCopy;
                     break;
                 case ".d13":
                     fileKind1 = FileKind.UnadornedSector;
