@@ -725,7 +725,14 @@ namespace cp2_wpf {
         /// <summary>
         /// Remember if we prefer single-dir or full-file view for hierarchical filesystems.
         /// </summary>
-        private bool PreferSingleDirList { get; set; } = true;
+        private bool PreferSingleDirList {
+            get {
+                return AppSettings.Global.GetBool(AppSettings.FILE_LIST_PREFER_SINGLE, true);
+            }
+            set {
+                AppSettings.Global.SetBool(AppSettings.FILE_LIST_PREFER_SINGLE, value);
+            }
+        }
 
         /// <summary>
         /// True if the current display doesn't have a file list.

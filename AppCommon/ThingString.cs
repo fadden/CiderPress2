@@ -67,7 +67,7 @@ namespace AppCommon {
         }
 
         /// <summary>
-        /// Returns a short (&lt;= 9 char) string with a multipart layout class name.
+        /// Returns a short (&lt;= 10 char) string with a multipart layout class name.
         /// </summary>
         public static string IMultiPart(IMultiPart parts) {
             if (parts is AmUniDOS) {
@@ -78,6 +78,8 @@ namespace AppCommon {
                 return "CFFA";
             } else if (parts is MacTS) {
                 return "MacTS";
+            } else if (parts is MicroDrive) {
+                return "MicroDrive";
             } else if (parts is OzDOS) {
                 return "OzDOS";
             } else if (parts is DOS_Hybrid) {

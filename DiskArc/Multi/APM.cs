@@ -342,7 +342,9 @@ namespace DiskArc.Multi {
                     part.Dispose();
                 }
             }
-            RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
+            if (RawAccess != null) {
+                RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
+            }
         }
 
         /// <summary>

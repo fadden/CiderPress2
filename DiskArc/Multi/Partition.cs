@@ -129,6 +129,7 @@ namespace DiskArc.Multi {
         /// <param name="appHook">Application hook reference.</param>
         internal Partition(IChunkAccess baseAccess, long startOffset, long length,
                 AppHook appHook) {
+            mAppHook = appHook;
             if (startOffset % BLOCK_SIZE != 0 || length % BLOCK_SIZE != 0) {
                 throw new ArgumentException("Offset or length not multiple of block size");
             }
@@ -140,7 +141,6 @@ namespace DiskArc.Multi {
             ChunkAccess = new GatedChunkAccess(partChunks);
             StartOffset = startOffset;
             Length = length;
-            mAppHook = appHook;
             IsReanalysisAllowed = true;
         }
 
@@ -152,7 +152,9 @@ namespace DiskArc.Multi {
             GC.SuppressFinalize(this);
         }
         protected virtual void Dispose(bool disposing) {
-            ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
+            if (ChunkAccess != null) {      // can be null if throw during construction
+                ChunkAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
+            }
             if (disposing) {
                 FileSystem?.Dispose();
                 FileSystem = null;

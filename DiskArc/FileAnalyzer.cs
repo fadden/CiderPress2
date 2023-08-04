@@ -36,8 +36,8 @@ namespace DiskArc {
         private static DiskLayoutEntry[] sDiskLayouts = {
             new DiskLayoutEntry("APM", FileSystemType.APM, typeof(Multi.APM)),
             new DiskLayoutEntry("MacTS", FileSystemType.MacTS, typeof(Multi.MacTS)),
+            new DiskLayoutEntry("MicroDrive", FileSystemType.MicroDrive, typeof(Multi.MicroDrive)),
             new DiskLayoutEntry("CFFA", FileSystemType.CFFA, typeof(Multi.CFFA)),
-            // MicroDrive, FocusDrive, ...
             // MSDOS (mostly to rule it out)
 
             // We want to check for DOS before ProDOS, so that we can identify DOS hybrids.

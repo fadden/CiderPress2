@@ -131,11 +131,13 @@ namespace DiskArc.Multi {
             GC.SuppressFinalize(this);
         }
         protected virtual void Dispose(bool disposing) {
-            RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
             if (disposing) {
                 foreach (Partition part in mPartitions) {
                     part.Dispose();
                 }
+            }
+            if (RawAccess != null) {
+                RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
             }
         }
 
