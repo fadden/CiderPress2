@@ -453,6 +453,10 @@ namespace DiskArc.Disk {
                 ushort trackLen = RawData.ReadU16LE(mStream, out bool ok);
                 Debug.Assert(trackLen <= MAX_TRACK_LENGTH);     // should've been caught initially
                 if (trackLen == 0) {
+                    // This appears to be a track that failed analysis, e.g. tracks 35-39 that
+                    // were captured on a drive that could actually seek that far.  Instead of
+                    // returning nothing, we return the full set of garbage in the hope that
+                    // somebody can make more sense out of it than the Trackstar software did.
                     trackLen = MAX_TRACK_LENGTH;
                 }
 

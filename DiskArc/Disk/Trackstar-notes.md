@@ -4,6 +4,7 @@
 
 - Various reverse-engineering efforts
 - Samples from https://www.diskman.com/presents/trackstar/
+- Trackstar Plus manual
 
 ## General ##
 
@@ -20,7 +21,7 @@ tracks to be variable length.
 
 ## File Layout ##
 
-A file holds 40 or 80 tracks.  Each track occupies $1a00 (6656) bytes.
+A file holds 40 or 80 tracks.  Each track occupies $1a00 (6656) bytes:
 ```
 +$0000 / 46: ASCII description of contents, padded with spaces; same on every track
 +$002e / 82: zeroes
@@ -31,12 +32,32 @@ A file holds 40 or 80 tracks.  Each track occupies $1a00 (6656) bytes.
 
 The data starts at +$0081 and continues for up to (6656-129-2=6525) bytes.  The bytes past
 the declared length should be ignored.  Unusually, the data is stored in descending order, so
-a program that reads forward through the disk should read backward through memory.  (The "junk"
-at the end is stored in ascending order, and is likely leftover data from the disk read that
-wasn't zeroed out.  A quick sample showed that the bytes match those at the start of the track.)
+a program that reads forward through the disk should read backward through memory.
 
-The nibble data is whole bytes as read from the disk controller, so self-sync patterns are not
-recoverable.
+(The "junk" at the end is stored in ascending order, and is likely leftover data from the disk
+read that wasn't zeroed out.  A quick examination of a couple of disks showed that the bytes that
+follow are the palindrome of the bytes that immediately precede it.)
+
+The nibble data is stored as 8-bit bytes as they were read from the disk controller, so extended
+bytes in self-sync patterns are not identifiable.
+
+40-track images include the whole tracks, 80-track images include both whole and half tracks.  The
+purpose of 80-track images was to improve compatibility with copy-protected software.
+
+### Counting Tracks ###
+
+The "Trackstore" format always stores 40 or 80 tracks, even though most Apple II floppies only
+use 35 tracks (because many drives can't reliably seek beyond that).  So what's in the
+leftover tracks?
+
+An analysis of a few images determined that, on a 40-track image of a 35-track disk, tracks 35-39
+are repeated reads of track 34.  This can be seen by examining the sector headers, which
+include the track number.  This is likely the result of capturing the disk images on a 5.25"
+drive that had a hard stop at track 35: the software requested a higher-numbered track, but the
+drive couldn't do it, so it re-read track 34 instead.
+
+Other disk images have garbage for those tracks, with a track length of zero, indicating that
+the Trackstore software was unable to recognize valid data.
 
 ## Performance Note ##
 
