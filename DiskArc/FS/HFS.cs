@@ -17,7 +17,6 @@ using System;
 using System.Diagnostics;
 
 using CommonUtil;
-using DiskArc.Multi;
 using static DiskArc.Defs;
 using static DiskArc.FileAnalyzer.DiskLayoutEntry;
 using static DiskArc.FS.HFS_Struct;

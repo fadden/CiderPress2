@@ -22,7 +22,7 @@ using static DiskArc.IFileSystem;
 
 namespace DiskArc.FS {
     /// <summary>
-    /// Implementation of a file descriptor.
+    /// Implementation of a ProDOS file descriptor.
     /// </summary>
     /// <remarks>
     /// <para>This object doesn't tie up OS resources, and does not cache writes, so explicit
