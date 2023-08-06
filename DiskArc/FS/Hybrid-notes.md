@@ -48,8 +48,8 @@ the full length of the disk.
 The DOS MASTER distribution disk provides an interesting case: tracks 17 through 21 are DOS 3.3,
 but the rest of the disk (tracks 0-16 and 22-34) is ProDOS.  This is very different from a
 DOS MASTER volume, which has a complete DOS disk stored inside a ProDOS filesystem, and a little
-different from other hybrids, which tend to split the disk in half.  (The DOS track is only one
-sector long, which makes recognition tricky.)
+different from other hybrids, which tend to split the disk in half.  (The DOS catalog track is
+only one sector long, which makes recognition tricky.)
 
 DOS hybrids can be detected by examining the VTOC for in-use blocks that aren't part of any file.
 This isn't perfect because the first three tracks of most DOS disks are already in this state

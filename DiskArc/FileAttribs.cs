@@ -31,7 +31,11 @@ namespace DiskArc {
 
         // Some common ProDOS file type constants, for use by application or test code.
         public const int FILE_TYPE_NON = 0x00;
+        public const int FILE_TYPE_BAD = 0x01;
+        public const int FILE_TYPE_PCD = 0x02;
+        public const int FILE_TYPE_PTX = 0x03;
         public const int FILE_TYPE_TXT = 0x04;
+        public const int FILE_TYPE_PDA = 0x05;
         public const int FILE_TYPE_BIN = 0x06;
         public const int FILE_TYPE_FOT = 0x08;
         public const int FILE_TYPE_DIR = 0x0f;
@@ -45,6 +49,7 @@ namespace DiskArc {
         public const int FILE_TYPE_F2 = 0xf2;
         public const int FILE_TYPE_F3 = 0xf3;
         public const int FILE_TYPE_F4 = 0xf4;
+        public const int FILE_TYPE_F5 = 0xf5;
         public const int FILE_TYPE_INT = 0xfa;
         public const int FILE_TYPE_BAS = 0xfc;
         public const int FILE_TYPE_REL = 0xfe;

@@ -966,9 +966,11 @@ be prefixed with "0x" or "$", though the latter is often a shell
 metacharacter and may need to be escaped.
 
 `type` sets the ProDOS file type.  It may be a type abbreviation, such as
-"TXT", "BIN", or "LBR", or a two-digit hexadecimal value ($00-ff).  DOS file
-types are specified as ProDOS equivalents: T=TXT, I=INT, A=BAS, B=BIN,
-S=$F2, R=REL, AA=$F3, BB=$F4.
+"TXT", "BIN", or "LBR", or a two-digit hexadecimal value ($00-ff).
+ - DOS file types are specified as ProDOS equivalents: T=TXT, I=INT, A=BAS,
+   B=BIN, S=$F2, R=REL, AA=$F3, BB=$F4.
+ - Pascal file types: untyped=NON, bad=BAD, code=PCD, text=PTX, info=$F3,
+   data=PDA, graf=$F4, foto=FOT, securedir=$F5.
 
 `aux` sets the ProDOS auxiliary type.  It must be a four-digit hexadecimal
 value ($0000-ffff).

@@ -168,6 +168,72 @@ namespace CommonUtil {
 
         #endregion
 
+        #region Pascal
+
+        public static readonly DateTime PASCAL_MIN_TIMESTAMP =
+            new DateTime(1940, 1, 1, 0, 0, 0, DateTimeKind.Local);
+        public static readonly DateTime PASCAL_MAX_TIMESTAMP =
+            new DateTime(2039, 12, 31, 23, 59, 59, DateTimeKind.Local);
+
+        /// <summary>
+        /// Converts an Apple Pascal timestamp to a DateTime object.
+        /// </summary>
+        /// <remarks>
+        /// <para>The timestamp used on Apple Pascal filesystems holds the date only, not the time.
+        /// It's similar to the ProDOS date, but with the month and day fields swapped.</para>
+        /// <para>Date values with year=100 have a special meaning to the system, and must not
+        /// be used.  We follow the ProDOS convention of treating dates 0-39 as 2000-2039.</para>
+        /// <para>The documentation says that a month value of zero indicates "no date".</para>
+        /// </remarks>
+        /// <param name="when">Date value.</param>
+        /// <returns>DateTime equivalent.</returns>
+        public static DateTime ConvertDateTime_Pascal(ushort when) {
+            // Decode YYYYYYYDDDDDMMMM.
+            int year = (when >> 9) & 0x7f;
+            int day = (when >> 4) & 0x1f;
+            int month = when & 0x0f;
+            if (month == 0 || year >= 100) {
+                return NO_DATE;
+            }
+            if (year >= 40) {
+                year += 1900;
+            } else {
+                year += 2000;
+            }
+            try {
+                return new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Local);
+            } catch (ArgumentOutOfRangeException) {
+                // Something was out of range.
+                return INVALID_DATE;
+            }
+        }
+
+        /// <summary>
+        /// Converts a DateTime object to a Pascal timestamp.
+        /// </summary>
+        /// <param name="when">DateTime object with date or sentinel value.</param>
+        /// <returns>Two-byte Pascal date value, or zero for NO_DATE.</returns>
+        public static ushort ConvertDateTime_Pascal(DateTime when) {
+            if (when == INVALID_DATE || when == NO_DATE) {
+                return 0;
+            }
+            // Map 1940-1999 to 40-99, and 2000-2039 to 0-39.
+            int year = when.Year;
+            int pascalYear;
+            if (year >= 1940 && year <= 1999) {
+                pascalYear = year - 1900;   // 40-99
+            } else if (year >= 2028 && year <= 2039) {
+                pascalYear = year - 2000;   // 0-39
+            } else {
+                // Can't represent this year.  Return the NO_DATE value.
+                return 0;
+            }
+            int pascalDate = (pascalYear << 9) | (when.Day << 4) | when.Month;
+            return (ushort)pascalDate;
+        }
+
+        #endregion
+
         #region HFS
 
         // Adjustment for HFS time (seconds since Jan 1 1904, unsigned) to UNIX time (seconds

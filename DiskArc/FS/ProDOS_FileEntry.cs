@@ -50,7 +50,7 @@ namespace DiskArc.FS {
 
         public IFileEntry ContainingDir { get; private set; }
 
-        public int Count { get { return mChildList.Count; } }
+        public int Count => mChildList.Count;
 
         public string FullPathName {
             get {
@@ -82,10 +82,7 @@ namespace DiskArc.FS {
                 IsDirentDirty = true;
             }
         }
-        public char DirectorySeparatorChar {
-            get { return ProDOS.SEP_CHAR; }
-            set { }
-        }
+        public char DirectorySeparatorChar { get => ProDOS.SEP_CHAR; set { } }
         public byte[] RawFileName {
             get {
                 byte[] result = new byte[mFileName.Length];
@@ -197,7 +194,7 @@ namespace DiskArc.FS {
             }
         }
 
-        public string Comment { get { return string.Empty; } set { } }
+        public string Comment { get => string.Empty; set { } }
 
         public bool GetPartInfo(FilePart part, out long length, out long storageSize,
                 out CompressionFormat format) {

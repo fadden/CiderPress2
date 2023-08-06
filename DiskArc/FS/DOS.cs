@@ -557,6 +557,7 @@ namespace DiskArc.FS {
         /// </summary>
         /// <param name="doScan">If set, examine the structure of all files.</param>
         /// <exception cref="IOException">Disk access failure.</exception>
+        /// <exception cref="DAException">Invalid filesystem.</exception>
         private void ScanVolume(bool doScan) {
             // Re-validate the VTOC, in case it has been edited since we initially checked
             // the volume.
@@ -572,7 +573,7 @@ namespace DiskArc.FS {
             // Scan the full catalog, creating a very shallow tree.
             mVolDirEntry = DOS_FileEntry.ScanCatalog(this, VTOC, doScan);
 
-            // Assign system usage to the DOS tracks, if nothing else has claimed them.  This
+            // Assign "system" usage to the DOS tracks, if nothing else has claimed them.  This
             // should always be the case for track 0, but some disks don't have a DOS image,
             // and some that do free up a couple of sectors on track 2 that aren't actually
             // needed to hold DOS.

@@ -611,8 +611,9 @@ namespace AppCommon {
                         IsReadOnly = !leafNode.CanWrite,
                         IsNodeReadOnly = arc.IsReadOnly,
                     };
+                    leafObj = null;
 
-                    HandleFileArchive((IArchive)leafObj, newNode, leafNode, pathName);
+                    HandleFileArchive((IArchive)newNode.DAObject, newNode, leafNode, pathName);
                 } else if (leafObj is IDiskImage) {
                     IDiskImage disk = (IDiskImage)leafObj;
                     leafNode = new DiskImageNode(daParent, stream, disk, entryInParent, mAppHook);
@@ -633,14 +634,15 @@ namespace AppCommon {
                         IsNodeReadOnly = disk.IsReadOnly,
                         OrderHint = orderHint
                     };
+                    leafObj = null;
 
-                    HandleDiskImage((IDiskImage)leafObj, newNode, leafNode);
+                    HandleDiskImage((IDiskImage)newNode.DAObject, newNode, leafNode);
                 } else {
                     throw new NotImplementedException(
                         "Unexpected result from IdentifyStreamContents: " + leafObj);
                 }
             } catch {
-                leafObj.Dispose();
+                leafObj?.Dispose();
                 throw;
             }
 

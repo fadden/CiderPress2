@@ -26,10 +26,12 @@ The partition map layout is:
   +$08 / 4: (unknown, always zero?)
   +$0c / 4: (unknown)
 ```
-All values are little-endian.
+This completely fills block 0.  All multi-byte values are little-endian.
 
-Blocks 1 and 2 hold the partition names.  Each name is 32 bytes of ASCII, padded with zeroes.
+Blocks 1 and 2 hold the partition names.  Each name is 32 bytes of ASCII, padded with zeroes
+at the end.
 
-The area where you'd expect to find the first entry is actually used to hold the number of blocks
-not included in the partition map; the 32-bit value appears at +$04.  The name of the first
-partition is found at +$20.  The last entry, in block 2 at +$1e0, is always blank.
+The area where you'd expect to find the first entry is actually used to hold other data.  A count
+of the number of blocks not included in the partition map appears is a 32-bit value at +$04.
+The name of the first partition is found at +$20.  Since there are only 30 entries, the last slot,
+in block 2 at +$1e0, is always blank.

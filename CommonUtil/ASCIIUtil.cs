@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Text;
 
 namespace CommonUtil {
     /// <summary>
@@ -58,6 +59,39 @@ namespace CommonUtil {
                 return '\x7f';
             } else {
                 return ch;
+            }
+        }
+
+        /// <summary>
+        /// Converts an ASCII "Pascal string", which starts with a length byte, to a string.
+        /// </summary>
+        /// <param name="data">ASCII byte data.</param>
+        /// <returns>Converted string.</returns>
+        public static string PascalBytesToString(byte[] data) {
+            int length = data[0];
+            return Encoding.ASCII.GetString(data, 1, length);
+        }
+
+        /// <summary>
+        /// Converts a string to an ASCII "Pascal string", which starts with a length byte, and
+        /// stores it in a fixed-length buffer.  The unused area of the buffer will be zeroed.
+        /// </summary>
+        /// <param name="str">String to convert.</param>
+        /// <param name="buf">Buffer to write data into.</param>
+        public static void StringToFixedPascalBytes(string str, byte[] buf) {
+            byte[] data = Encoding.ASCII.GetBytes(str);
+            if (data.Length > 255) {
+                throw new ArgumentException("string is longer than 255 bytes");
+            }
+            if (data.Length + 1 > buf.Length) {
+                throw new ArgumentException("string is longer than the buffer can hold");
+            }
+            buf[0] = (byte)data.Length;
+            for (int i = 0; i < data.Length; i++) {
+                buf[i + 1] = data[i];
+            }
+            for (int i = data.Length + 1; i < buf.Length; i++) {
+                buf[i] = 0x00;
             }
         }
 

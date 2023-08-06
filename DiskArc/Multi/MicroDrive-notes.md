@@ -13,8 +13,8 @@ Joachim Lange of ///SHH Systeme and first released in 1996.
 
 ## Layout ##
 
-Block 0 holds the partition map, which defines up to 16 partitions.  The first partition starts
-at block 256.
+Block 0 holds the partition map, which defines up to 16 partitions.  The first partition always
+starts at block 256.
 
 The partition map is defined:
 ```

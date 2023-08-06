@@ -94,10 +94,7 @@ namespace DiskArc.FS {
                 IsDirty = true;
             }
         }
-        public char DirectorySeparatorChar {
-            get { return IFileEntry.NO_DIR_SEP; }
-            set { }
-        }
+        public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
         public string FullPathName {
             get {
                 string pathName;
@@ -136,7 +133,7 @@ namespace DiskArc.FS {
             }
         }
 
-        public bool HasProDOSTypes { get { return true; } }
+        public bool HasProDOSTypes => true;
         public byte FileType {
             get {
                 if (IsVolumeDirectory) {
@@ -194,9 +191,9 @@ namespace DiskArc.FS {
             }
         }
 
-        public bool HasHFSTypes { get { return false; } }
-        public uint HFSFileType { get { return 0; } set { } }
-        public uint HFSCreator { get { return 0; } set { } }
+        public bool HasHFSTypes => false;
+        public uint HFSFileType { get => 0; set { } }
+        public uint HFSCreator { get => 0; set { } }
 
         public byte Access {
             get {
@@ -217,8 +214,8 @@ namespace DiskArc.FS {
                 IsDirty = true;
             }
         }
-        public DateTime CreateWhen { get { return TimeStamp.NO_DATE; } set { } }
-        public DateTime ModWhen { get { return TimeStamp.NO_DATE; } set { } }
+        public DateTime CreateWhen { get => TimeStamp.NO_DATE; set { } }
+        public DateTime ModWhen { get => TimeStamp.NO_DATE; set { } }
 
         // This is based purely on the sector count.  If an entry is damaged or dubious, we may
         // not have an accurate value here.  If the value in the catalog sector is way off, this
@@ -229,9 +226,9 @@ namespace DiskArc.FS {
         // or updating this to match the value stored inside the file.
         public long DataLength { get; internal set; }
 
-        public long RsrcLength { get { return 0; } }
+        public long RsrcLength => 0;
 
-        public string Comment { get { return string.Empty; } set { } }
+        public string Comment { get => string.Empty; set { } }
 
         public bool GetPartInfo(FilePart part, out long length, out long storageSize,
                 out CompressionFormat format) {
@@ -368,6 +365,9 @@ namespace DiskArc.FS {
         /// </summary>
         private ushort mBinLoadAddr;
 
+        /// <summary>
+        /// Converts a DOS file type to its ProDOS equivalent.
+        /// </summary>
         public static byte TypeToProDOS(byte typeAndFlags) {
             switch (typeAndFlags & 0x7f) {
                 case TYPE_T:
@@ -392,6 +392,9 @@ namespace DiskArc.FS {
             }
         }
 
+        /// <summary>
+        /// Converts a ProDOS file type to its DOS equivalent.
+        /// </summary>
         public static byte TypeFromProDOS(byte fileType) {
             switch (fileType) {
                 case FileAttribs.FILE_TYPE_TXT:
@@ -420,7 +423,7 @@ namespace DiskArc.FS {
         /// Constructor.
         /// </summary>
         /// <param name="fileSystem">Filesystem this file entry is a part of.</param>
-        public DOS_FileEntry(DOS fileSystem) {
+        internal DOS_FileEntry(DOS fileSystem) {
             ContainingDir = IFileEntry.NO_ENTRY;
             FileSystem = fileSystem;
         }
@@ -556,6 +559,7 @@ namespace DiskArc.FS {
                     // mark it as "damaged" later.
                     DOS_FileEntry newEntry = new DOS_FileEntry(fileSystem);
                     if (!newEntry.ExtractFileEntry(dataBuf, offset, catTrk, catSct, volDir, true)) {
+                        newEntry.Dispose();
                         throw new DAException("Internal failure");
                     }
                     volDir.ChildList.Add(newEntry);

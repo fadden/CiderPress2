@@ -35,7 +35,7 @@ end of a file will fail.
 Pascal volumes can be stored on 140KB 5.25" disks, 800KB 3.5" disks, and in special regions of
 ProDOS volumes.  The exact specifications of the latter are unknown, but it was managed by
 Apple's "Pascal ProFile Manager", for use with the Apple ProFile hard drive.  According to the
-manual, the region was fixed in size and occupied a contiguous region in the ProDOS volume.
+manual, the region was fixed in size and occupied a contiguous region of the ProDOS volume.
 
 Volume names are limited to 7 ASCII characters, and may not contain equals ('='), dollar ('$'),
 question ('?'), or comma (',').  Filenames are limited to 15 characters, and in theory all
@@ -47,9 +47,10 @@ be avoided as well.  (Summary: use printable ASCII not in `$=?, [#:`.)
 
 ### File Types ###
 
-The directory entry allows a file type to be assigned.  Some parts of the system also expect
-a filename extension to be present.  The manual notes that changing the filename with the file
-utilities may result in a mismatch.  The defined types are:
+The directory entry includes a file type value.  Some parts of the system also expect a filename
+extension to be present.  The manual notes that changing the filename with the file utilities may
+result in a mismatch, so the two aren't tied together.  (You can see the file types with the
+"extended listing" command in the Filer.)  The defined types are:
 ```
  0 untypedfile - used for "untyped" files and volume header entry
  1 xdskfile / .BAD - used to mark physically damaged disk blocks
@@ -75,21 +76,24 @@ ProFile hard drive can be formatted as a Pascal volume, it will still be limited
 
 The volume directory entry is:
 ```
-+$00 / 2: first block (always 0)
++$00 / 2: system area start block number (always 0)
 +$02 / 2: next block (first block after directory; always 6)
 +$04 / 2: file type ($00)
 +$06 / 8: volume name, prefixed with length byte
 +$0e / 2: number of blocks in volume
 +$10 / 2: number of files in directory
-+$12 / 2: last access time (declared as "integer", not "daterec"; not sure what this is)
++$12 / 2: last access time (declared as "integer", definition unclear; always zero?)
 +$14 / 2: most recently set date value
 +$16 / 4: (reserved)
 ```
+The "most recently set date" is used to store the last date that was set for the system.  This is
+useful on systems without a clock card, where the date is entered manually by the user.
+
 A regular directory entry is:
 ```
 +$00 / 2: file start block number
 +$02 / 2: first block past end of file (i.e. last block + 1)
-+$04 / 2: file type in bits 0-3, bit 15 used "for filer wildcards", rest reserved
++$04 / 2: file type in bits 0-3; bit 15 used "for filer wildcards"; other bits reserved
 +$06 /16: file name, prefixed with length byte
 +$16 / 2: number of bytes used in last block
 +$18 / 2: modification date
@@ -97,15 +101,19 @@ A regular directory entry is:
 All multi-byte integers are stored in little-endian order.
 
 Directory entries are packed together.  When an entry is deleted, the entries that follow are
-moved up, and the unused entry is zeroed out.  Entries are not sorted by block number.
+moved up, and the unused entry is zeroed out.  Entries are sorted by starting block number, so
+when a file is created it may be necessary to slide the following entries down.
+
+To see file types and empty disk regions, request an E)xtended directory listing from the F)iler.
 
 ### Timestamps ###
 
-The filesystem stores the date, but not the time.  The date is held in a 16-bit value:
+The filesystem stores the date, but not the time.  Dates are held in a 16-bit value:
 ```
  YYYYYYY DDDDD MMMM
 ```
-Years are 0-99, starting in 1900.  Months are 1-12, days are 1-31.  A zero value indicates no date.
+Years are 0-99, starting in 1900.  Months are 1-12, days are 1-31.  A zero value in the month
+field indicates "meaningless date".
 
 The Filer utility uses a date with the year 100 as a flag to indicate file creation in progress.
 If the system finds a file with year=100, it will silently remove the file.
