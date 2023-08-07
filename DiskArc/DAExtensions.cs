@@ -183,15 +183,18 @@ namespace DiskArc {
             // Map a filesystem object onto the IChunkAccess.
             IFileSystem fs;
             switch (fsType) {
-                case Defs.FileSystemType.ProDOS:
-                    fs = new ProDOS(diskImage.ChunkAccess, appHook);
-                    break;
                 case Defs.FileSystemType.DOS32:
                 case Defs.FileSystemType.DOS33:
                     fs = new DOS(diskImage.ChunkAccess, appHook);
                     break;
                 case Defs.FileSystemType.HFS:
                     fs = new HFS(diskImage.ChunkAccess, appHook);
+                    break;
+                case Defs.FileSystemType.Pascal:
+                    fs = new Pascal(diskImage.ChunkAccess, appHook);
+                    break;
+                case Defs.FileSystemType.ProDOS:
+                    fs = new ProDOS(diskImage.ChunkAccess, appHook);
                     break;
                 default:
                     throw new NotSupportedException("FormatDisk doesn't handle: " + fsType);
@@ -336,10 +339,12 @@ namespace DiskArc {
         public static Defs.FileSystemType GetFileSystemType(this IFileSystem fs) {
             if (fs is DOS) {
                 return Defs.FileSystemType.DOS33;   // we don't really use the DOS32 enum value
-            } else if (fs is ProDOS) {
-                return Defs.FileSystemType.ProDOS;
             } else if (fs is HFS) {
                 return Defs.FileSystemType.HFS;
+            } else if (fs is Pascal) {
+                return Defs.FileSystemType.Pascal;
+            } else if (fs is ProDOS) {
+                return Defs.FileSystemType.ProDOS;
             } else {
                 Debug.Assert(false, "Unhandled fs type: " + fs.GetType().Name);
                 return Defs.FileSystemType.Unknown;
@@ -356,6 +361,8 @@ namespace DiskArc {
                 return DOS_FileEntry.IsFileNameValid(fileName);
             } else if (fs is HFS) {
                 return HFS_FileEntry.IsFileNameValid(fileName);
+            } else if (fs is Pascal) {
+                return Pascal_FileEntry.IsFileNameValid(fileName);
             } else if (fs is ProDOS) {
                 return ProDOS_FileEntry.IsFileNameValid(fileName);
             } else {
@@ -373,6 +380,8 @@ namespace DiskArc {
                 return DOS_FileEntry.IsVolumeNameValid(volName);
             } else if (fs is HFS) {
                 return HFS_FileEntry.IsVolumeNameValid(volName);
+            } else if (fs is Pascal) {
+                return Pascal_FileEntry.IsVolumeNameValid(volName);
             } else if (fs is ProDOS) {
                 return ProDOS_FileEntry.IsVolumeNameValid(volName);
             } else {
@@ -393,6 +402,8 @@ namespace DiskArc {
                 return DOS_FileEntry.AdjustFileName(fileName);
             } else if (fs is HFS) {
                 return HFS_FileEntry.AdjustFileName(fileName);
+            } else if (fs is Pascal) {
+                return Pascal_FileEntry.AdjustFileName(fileName);
             } else if (fs is ProDOS) {
                 return ProDOS_FileEntry.AdjustFileName(fileName);
             } else {
@@ -411,6 +422,8 @@ namespace DiskArc {
                 return DOS_FileEntry.AdjustVolumeName(fileName);
             } else if (fs is HFS) {
                 return HFS_FileEntry.AdjustVolumeName(fileName);
+            } else if (fs is Pascal) {
+                return Pascal_FileEntry.AdjustVolumeName(fileName);
             } else if (fs is ProDOS) {
                 return ProDOS_FileEntry.AdjustVolumeName(fileName);
             } else {
@@ -579,6 +592,8 @@ namespace DiskArc {
                 return ((DOS_FileEntry)entry).FileSystem;
             } else if (entry is HFS_FileEntry) {
                 return ((HFS_FileEntry)entry).FileSystem;
+            } else if (entry is Pascal_FileEntry) {
+                return ((Pascal_FileEntry)entry).FileSystem;
             } else if (entry is ProDOS_FileEntry) {
                 return ((ProDOS_FileEntry)entry).FileSystem;
             } else {

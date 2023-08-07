@@ -732,13 +732,6 @@ namespace DiskArc.FS {
         // while holding data here.
         private byte[] mTmpBlockBuf = new byte[BLOCK_SIZE];
 
-        // Regex pattern for filename validation.
-        //
-        // Both filenames and volume names are 1-15 characters, starting with a letter,
-        // and may contain numbers and '.'.  We allow lower case (GS/OS extension).
-        private const string FILE_NAME_PATTERN = @"^[A-Za-z]([A-Za-z0-9\.]{0,14})$";
-        private static Regex sFileNameRegex = new Regex(FILE_NAME_PATTERN);
-
 
         /// <summary>
         /// Constructor.
@@ -1650,6 +1643,13 @@ namespace DiskArc.FS {
 
         #region Filenames
 
+        // Regex pattern for filename validation.
+        //
+        // Both filenames and volume names are 1-15 characters, starting with a letter,
+        // and may contain numbers and '.'.  We allow lower case (GS/OS extension).
+        private const string FILE_NAME_PATTERN = @"^[A-Za-z]([A-Za-z0-9\.]{0,14})$";
+        private static Regex sFileNameRegex = new Regex(FILE_NAME_PATTERN);
+
         /// <summary>
         /// Sets the various fields associated with the filename.  The actual rename, including
         /// updates to the redundant copy in the directory header, happens in SaveChanges().
@@ -1681,7 +1681,7 @@ namespace DiskArc.FS {
 
         // IFileEntry
         public int CompareFileName(string fileName, char fileNameSeparator) {
-            return CompareFileName(fileName);
+            return CompareFileNames(mFileName, fileName);
             //return PathName.ComparePathNames(mFileName, ProDOS.SEP_CHAR, fileName,
             //    fileNameSeparator, PathName.CompareAlgorithm.OrdinalIgnoreCase);
         }

@@ -547,7 +547,7 @@ namespace cp2_wpf {
                     volNameSyntaxOk = HFS_FileEntry.IsVolumeNameValid(VolumeNameText);
                     break;
                 case FileSystemType.Pascal:
-                    // TODO
+                    volNameSyntaxOk = Pascal_FileEntry.IsVolumeNameValid(VolumeNameText);
                     break;
                 case FileSystemType.DOS33:
                 case FileSystemType.CPM:

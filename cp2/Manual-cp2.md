@@ -1395,10 +1395,12 @@ The filesystems that may be formatted onto a disk image are:
    and are limited to 65535 blocks (31.9MB).  Partitions are typically
    created as an even number of megabytes, so an "oversized" 65536-block
    image is also allowed.
+ - "pascal" - Apple Pascal volume.  Recommended sizes are 140KB or 800KB,
+   but anything from 6 blocks to 32MB is allowed.  Disks are limited to 77
+   files, regardless of size.
  - "hfs" - Macintosh Hierarchical Filesystem volume.  Volumes may be fairly
    small or unreasonably large.  Here they must be at least 128KB but no
    more than 4GB.
- - ["pascal"] - TBD
  - ["cpm"] - TBD
 
 ### Import and Export ###

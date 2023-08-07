@@ -45,6 +45,10 @@ filename includes dollar ('$'), left square bracket ('['), equals ('='), a quest
 or various control characters.  Note ':' is used to indicate a device/volume name, and should
 be avoided as well.  (Summary: use printable ASCII not in `$=?, [#:`.)
 
+The Pascal system converts filenames to upper case, but may not do case-insensitive comparisons.
+For example, a volume called "Foo" will not be accessible as "foo:" from the Filer, but a
+volume called "FOO" will.
+
 ### File Types ###
 
 The directory entry includes a file type value.  Some parts of the system also expect a filename

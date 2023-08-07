@@ -28,6 +28,9 @@ using static DiskArc.IDiskImage;
 using static DiskArc.IFileSystem;
 
 namespace DiskArcTests {
+    /// <summary>
+    /// Test creation of DOS volumes.
+    /// </summary>
     public class TestDOS_Creation : ITest {
         private const bool DO_SCAN = true;
 

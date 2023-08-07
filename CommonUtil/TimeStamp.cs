@@ -222,7 +222,7 @@ namespace CommonUtil {
             int pascalYear;
             if (year >= 1940 && year <= 1999) {
                 pascalYear = year - 1900;   // 40-99
-            } else if (year >= 2028 && year <= 2039) {
+            } else if (year >= 2000 && year <= 2039) {
                 pascalYear = year - 2000;   // 0-39
             } else {
                 // Can't represent this year.  Return the NO_DATE value.

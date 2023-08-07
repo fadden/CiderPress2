@@ -73,6 +73,7 @@ namespace DiskArc.FS {
         public string FileName {
             get { return mFileName; }
             set => throw new NotImplementedException();
+            // TODO - convert to upper case
         }
         public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
         public string FullPathName {
@@ -344,15 +345,15 @@ namespace DiskArc.FS {
                 Pascal_FileEntry? newEntry = CreateDirEntry(fileSystem, dirBuf, offset);
                 if (newEntry == null) {
                     // Ran off end of list of entries.  Did we expect to be done?
-                    if (i != hdr.mFileCount) {
+                    if (i < hdr.mFileCount) {
                         notes.AddW("File count (" + hdr.mFileCount + ") exceeds number of files");
                         fileSystem.IsDubious = true;
                         break;
                     }
                     break;
                 } else if (i == hdr.mFileCount) {
-                    notes.AddW("Found files past the recorded file count (" + hdr.mFileCount +
-                        "; first='" + newEntry.FileName + "')");
+                    notes.AddW("Found file entries past the recorded file count (" +
+                        hdr.mFileCount + ")");
                     // We could correct it, or just figure something is wrong and not touch it.
                     fileSystem.IsDubious = true;
                 }
@@ -388,7 +389,7 @@ namespace DiskArc.FS {
         /// <summary>
         /// Creates a new directory entry from the raw data.
         /// </summary>
-        private static Pascal_FileEntry CreateDirEntry(Pascal fileSystem, byte[] buffer,
+        private static Pascal_FileEntry? CreateDirEntry(Pascal fileSystem, byte[] buffer,
                 int offset) {
             Pascal_FileEntry newEntry = new Pascal_FileEntry(fileSystem);
             newEntry.mStartBlock = RawData.ReadU16LE(buffer, ref offset);
@@ -456,17 +457,46 @@ namespace DiskArc.FS {
 
         #region Filenames
 
+        // Regex pattern for filename validation.
+        //
+        // Filenames are 1-15 characters, and may include printable ASCII characters
+        // other than '$=?, [#:'.  Volume names follow the same rules but are shorter.
+        // (Regex trick is "negative lookahead": https://stackoverflow.com/a/35427132/294248.)
+        private const string FILE_NAME_PATTERN = @"^((?![\$=?, \[#:])[\x20-\x7e])+$";
+        private static Regex sFileNameRegex = new Regex(FILE_NAME_PATTERN);
+
         // IFileEntry
         public int CompareFileName(string fileName) {
-            throw new NotImplementedException();
+            return CompareFileNames(mFileName, fileName);
         }
 
         // IFileEntry
         public int CompareFileName(string fileName, char fileNameSeparator) {
-            throw new NotImplementedException();
+            return CompareFileNames(mFileName, fileName);
+        }
+
+        /// <summary>
+        /// Compares two filenames, case insensitive.
+        /// </summary>
+        public static int CompareFileNames(string fileName1, string fileName2) {
+            return string.Compare(fileName1, fileName2,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsFileNameValid(string fileName) {
+            MatchCollection matches = sFileNameRegex.Matches(fileName);
+            return (matches.Count == 1);
+        }
+
+        public static bool IsVolumeNameValid(string volName) {
+            return volName.Length <= Pascal.MAX_VOL_NAME_LEN && IsFileNameValid(volName);
         }
 
         public static string AdjustFileName(string fileName) {
+            throw new NotImplementedException();
+        }
+
+        public static string AdjustVolumeName(string fileName) {
             throw new NotImplementedException();
         }
 

@@ -87,11 +87,14 @@ namespace cp2 {
                     case "dos":
                         fsType = FileSystemType.DOS33;
                         break;
-                    case "prodos":
-                        fsType = FileSystemType.ProDOS;
-                        break;
                     case "hfs":
                         fsType = FileSystemType.HFS;
+                        break;
+                    case "pascal":
+                        fsType = FileSystemType.Pascal;
+                        break;
+                    case "prodos":
+                        fsType = FileSystemType.ProDOS;
                         break;
                     default:
                         Console.Error.WriteLine("Unsupported filesystem '" + formatStr + "'");
