@@ -61,6 +61,7 @@ namespace DiskArc.FS {
 
         // DiskFileStream
         public override FilePart Part { get; }
+
         private bool IsRsrcFork { get { return Part == FilePart.RsrcFork; } }
 
         internal ProDOS FileSystem { get; private set; }
@@ -247,7 +248,7 @@ namespace DiskArc.FS {
             mInternalOpen = internalOpen;
 
             DebugPathName = entry.FullPathName;
-            mIsReadOnly = (mode == IFileSystem.FileAccessMode.ReadOnly);
+            mIsReadOnly = (mode == FileAccessMode.ReadOnly);
         }
 
         /// <summary>
@@ -264,6 +265,7 @@ namespace DiskArc.FS {
         ///   not being tracked by the filesystem object.</param>
         /// <exception cref="IOException">Disk access failure, or corrupted file
         ///   structure.</exception>
+        /// <returns>File descriptor object.</returns>
         internal static ProDOS_FileDesc CreateFD(ProDOS_FileEntry entry,
                 FileAccessMode mode, FilePart part, bool internalOpen) {
             Debug.Assert(!entry.IsDamaged);

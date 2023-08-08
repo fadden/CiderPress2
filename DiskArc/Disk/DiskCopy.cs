@@ -416,7 +416,6 @@ namespace DiskArc.Disk {
         }
         protected virtual void Dispose(bool disposing) {
             Debug.Assert(!mDisposed, this + " disposed twice");
-            mDisposed = true;
 
             // If we're being disposed explicitly, e.g. by a using statement or declaration,
             // dispose of the filesystem object.  If we're being finalized, don't, because
@@ -433,6 +432,7 @@ namespace DiskArc.Disk {
                 Debug.Assert(false, "GC disposing DiskCopy, dirty=" + IsDirty +
                     " created:\r\n" + mCreationStackTrace);
             }
+            mDisposed = true;
         }
         private bool mDisposed = false;
 #if DEBUG

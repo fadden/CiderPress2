@@ -839,7 +839,7 @@ namespace DiskArc.FS {
 
         /// <summary>
         /// Closes a file, removing it from our list.  Do not call this directly -- this is
-        /// called from the DOS_FileDesc Dispose() call.
+        /// called from the file descriptor Dispose() call.
         /// </summary>
         /// <param name="ifd">Descriptor to close.</param>
         /// <exception cref="IOException">File descriptor was already closed, or was opened

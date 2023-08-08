@@ -88,17 +88,13 @@ namespace DiskArcTests {
             try {
                 fs.OpenFile(entry, FileAccessMode.ReadOnly, FilePart.RsrcFork);
                 throw new Exception("File does not have a resource fork");
-            } catch (IOException) {
-                // expected
-            }
+            } catch (IOException) { /*expected*/ }
 
             // Open file read-write on read-only filesystem.
             try {
                 fs.OpenFile(entry, FileAccessMode.ReadWrite, FilePart.DataFork);
                 throw new Exception("Should not be allowed to open file read-write");
-            } catch (IOException) {
-                // expected
-            }
+            } catch (IOException) { /*expected*/ }
         }
 
         // 100 TEXT : NORMAL : HOME
@@ -164,8 +160,8 @@ namespace DiskArcTests {
 
             // Now try SMALL and OVERSIZED in raw data mode.  SMALL should be a single sector,
             // OVERSIZED should be larger.
-            fd1 = fs.OpenFile(file1, IFileSystem.FileAccessMode.ReadOnly, FilePart.RawData);
-            fd2 = fs.OpenFile(file2, IFileSystem.FileAccessMode.ReadOnly, FilePart.RawData);
+            fd1 = fs.OpenFile(file1, FileAccessMode.ReadOnly, FilePart.RawData);
+            fd2 = fs.OpenFile(file2, FileAccessMode.ReadOnly, FilePart.RawData);
             length1 = fd1.Read(buf1, 0, buf1.Length);
             length2 = fd2.Read(buf2, 0, buf2.Length);
             if (length1 == length2 || length1 != SECTOR_SIZE) {

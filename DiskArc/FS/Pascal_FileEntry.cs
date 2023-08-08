@@ -108,10 +108,7 @@ namespace DiskArc.FS {
             }
             set => throw new NotImplementedException();
         }
-        public ushort AuxType {
-            get => 0;
-            set => throw new NotImplementedException();
-        }
+        public ushort AuxType { get => 0; set { } }
 
         public bool HasHFSTypes => false;
         public uint HFSFileType { get => 0; set { } }
@@ -437,7 +434,9 @@ namespace DiskArc.FS {
 
         // IFileEntry
         public void SaveChanges() {
-            throw new NotImplementedException();
+            // Our changes are effectively stored alongside all others in the directory file.
+            // Save the whole thing if changes have been made.
+            FileSystem.FlushVolumeDir();
         }
 
         // IFileEntry

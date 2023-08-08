@@ -195,15 +195,15 @@ namespace DiskArc.FS {
         /// <summary>
         /// Constructor.
         /// </summary>
-        private DOS_FileDesc(DOS_FileEntry entry, FileAccessMode mode,
-                FilePart part, bool internalOpen) {
+        private DOS_FileDesc(DOS_FileEntry entry, FileAccessMode mode, FilePart part,
+                bool internalOpen) {
             FileSystem = entry.FileSystem;
             FileEntry = entry;
             Part = part;
-            DebugPathName = entry.FullPathName;     // latch name when file opened
-
             mIsReadOnly = (mode == FileAccessMode.ReadOnly);
             mInternalOpen = internalOpen;
+
+            DebugPathName = entry.FullPathName;     // latch name when file opened
             mDOSFileType = entry.DOSFileType;
             mSectorsUsed = entry.SectorCount;
             mRawDataLength = entry.RawDataLength;
@@ -862,7 +862,7 @@ namespace DiskArc.FS {
                 // been invalidated.
                 try {
                     Flush();
-                } catch (Exception) {
+                } catch {
                     Debug.Assert(false, "FileDesc dispose-time flush failed: " + DebugPathName);
                 }
 

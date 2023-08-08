@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 using CommonUtil;
 using DiskArc;
@@ -39,6 +40,7 @@ namespace DiskArcTests {
             new Helper.FileAttr("SYSTEM.CHARSET", 1024, -1, 1024, FileAttribs.FILE_TYPE_PDA, 0),
             new Helper.FileAttr("SYSTEM.SYNTAX", 7168, -1, 7168, FileAttribs.FILE_TYPE_PDA, 0),
         };
+
         public static void TestSimple(AppHook appHook) {
             using (Stream dataFile = Helper.OpenTestFile("pascal/Apple Pascal1.po", true,
                     appHook)) {
@@ -51,7 +53,58 @@ namespace DiskArcTests {
 
                     IFileEntry volDir = fs.GetVolDirEntry();
                     Helper.ValidateDirContents(volDir, sApple1List);
+
+                    TestInterface(fs);
+                    TestSimpleRead(fs);
                 }
+            }
+        }
+
+        private static void TestInterface(IFileSystem fs) {
+            IFileEntry entry =
+                Helper.EntryFromPathThrow(fs, "SYSTEM.SYNTAX", IFileEntry.NO_DIR_SEP);
+
+            // Open file correctly...
+            using (DiskFileStream desc = fs.OpenFile(entry, FileAccessMode.ReadOnly,
+                    FilePart.DataFork)) {
+                // ...then try to open it again.
+                fs.OpenFile(entry, FileAccessMode.ReadOnly, FilePart.DataFork);
+                // ...and again in "raw" mode.
+                fs.OpenFile(entry, FileAccessMode.ReadOnly, FilePart.RawData);
+            }
+
+            // Open resource fork of non-extended file.
+            try {
+                fs.OpenFile(entry, FileAccessMode.ReadOnly, FilePart.RsrcFork);
+                throw new Exception("File does not have a resource fork");
+            } catch (IOException) { /*expected*/ }
+
+            // Open file read-write on read-only filesystem.
+            try {
+                fs.OpenFile(entry, FileAccessMode.ReadWrite, FilePart.DataFork);
+                throw new Exception("Should not be allowed to open file read-write");
+            } catch (IOException) { /*expected*/ }
+        }
+
+        private static void TestSimpleRead(IFileSystem fs) {
+            IFileEntry volDir = fs.GetVolDirEntry();
+            IFileEntry file1 = fs.FindFileEntry(volDir, "SYSTEM.SYNTAX");
+
+            byte[] buf = new byte[32];
+            const int STR_LEN = 24;
+
+            DiskFileStream fd1 = fs.OpenFile(file1, FileAccessMode.ReadOnly, FilePart.DataFork);
+            fd1.Seek(0x402, SeekOrigin.Begin);
+            fd1.Read(buf, 0, STR_LEN);
+            string conv = Encoding.ASCII.GetString(buf, 0, STR_LEN);
+            if (conv != "1: Error in simple type\r") {
+                throw new Exception("Read did not find correct data");
+            }
+
+            fd1.Position = 0x1bf0;
+            int actual = fd1.Read(buf, 0, 32);
+            if (actual != 16) {
+                throw new Exception("Read past end of file");
             }
         }
     }

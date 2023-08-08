@@ -188,7 +188,6 @@ namespace AppCommon {
                     disposing + ")");
                 return;
             }
-            mDisposed = true;
 
             if (disposing) {
                 Close();
@@ -196,6 +195,7 @@ namespace AppCommon {
                 mAppHook.LogW("GC disposing CopyFileSource: " + mSrcEntry);
                 Debug.Assert(false, "GC disposing CopyFileSource: " + mSrcEntry);
             }
+            mDisposed = true;
         }
 
         public override string ToString() {

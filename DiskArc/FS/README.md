@@ -13,7 +13,7 @@ All filesystem implementations need classes that implement three interfaces:
 
 Suggested procedure:
 
- - Start by defining place-holder implementations for all three interfaces.
+ - Start by defining place-holder implementations for all three interface classes.
  - Copy the generic parts out of an existing filesystem that seems similar, e.g. DOS or ProDOS.
    You need the Dispose() functions and the open-file tracking.
  - Write the code that scans the contents of the directory structure.
@@ -25,7 +25,7 @@ Suggested procedure:
 For a read-only implementation, you're mostly done.  For read-write:
 
  - Implement Format(), so you can create new disk images.  Add tests.
- - Write the code that modifies files: Write, Delete, MoveFile, AddRsrc.  Add tests.
+ - Write the code that modifies files: Create, Write, Delete, Move, AddRsrc.  Add tests.
 
 Update general tests and the applications:
 

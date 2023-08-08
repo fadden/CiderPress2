@@ -2,11 +2,11 @@
 
 ## Primary References ##
 
+ - _Apple II Pascal 1.3_, https://archive.org/details/apple-ii-pascal-1.3/mode/2up
+   (directory format on page IV-15)
  - _Apple Pascal Operating System Reference Manual_,
    https://archive.org/details/Apple_Pascal_Operating_System_Reference_Manual/mode/1up
    (disk format starts p.25, file format descriptions p.265)
- - _Apple II Pascal 1.3_, https://archive.org/details/apple-ii-pascal-1.3/mode/2up
-   (directory format on page IV-15)
 
 ## General ##
 
@@ -16,9 +16,9 @@ Version II of the UCSD p-System was ported to the Apple II by Apple Computer, an
 August 1979.
 
 The Apple II version came with a new operating system that used 16-sector 5.25" disks divided
-into 512-byte blocks, different from Apple's other operating system that used 13-sector disks
+into 512-byte blocks, different from Apple's current DOS 3.2 OS, which used 13-sector disks
 with 256-byte sectors.  (DOS 3.3 didn't ship until the following year.)  The disk filesystem
-format is generally referred to as "Pascal", even though it had no real ties to the programming
+format is generally referred to as "Pascal", even though it had no ties to the programming
 language.
 
 All files are listed in a single directory structure.  The directory spans multiple blocks, but
@@ -28,9 +28,12 @@ required for certain operations, e.g. when a file is deleted, all following entr
 up one slot.
 
 The disk doesn't have a volume allocation bitmap.  Instead, each file has a start block and a
-length, and the contents must be stored contiguously.  This makes accesses very fast, but
+length, and the contents are stored on contiguous blocks.  This makes accesses very fast, but
 creates problems with fragmentation.  It's also likely that attempting to append data to the
 end of a file will fail.
+
+The system doesn't define an explicit maximum file length.  Untyped files are accessed as whole
+blocks, by block number, which is a signed 16-bit integer.  This yields a maximum size of 16MB.
 
 Pascal volumes can be stored on 140KB 5.25" disks, 800KB 3.5" disks, and in special regions of
 ProDOS volumes.  The exact specifications of the latter are unknown, but it was managed by
@@ -42,12 +45,13 @@ question ('?'), or comma (',').  Filenames are limited to 15 characters, and in 
 characters are legal.  However, the filesystem is case-insensitive, and removes spaces and
 non-printing characters.  In addition, it can be difficult to use the file utilities if the
 filename includes dollar ('$'), left square bracket ('['), equals ('='), a question mark ('?'),
-or various control characters.  Note ':' is used to indicate a device/volume name, and should
+or various control characters.  Colon (':') is used to indicate a device/volume name, and should
 be avoided as well.  (Summary: use printable ASCII not in `$=?, [#:`.)
 
-The Pascal system converts filenames to upper case, but may not do case-insensitive comparisons.
-For example, a volume called "Foo" will not be accessible as "foo:" from the Filer, but a
-volume called "FOO" will.
+The Pascal system converts volume and file names to upper case, but may not do case-insensitive
+comparisons.  For example, a volume called "Foo" will not be accessible as "foo:" from the Filer,
+but a volume called "FOO" will.  Volume and file names should always be written to disk in
+upper case.
 
 ### File Types ###
 
@@ -66,9 +70,10 @@ result in a mismatch, so the two aren't tied together.  (You can see the file ty
  7 fotofile / .FOTO - (not used)
  8 securedir - (unknown)
 ```
-Note that .TEXT files have a specific structure based around 1024-byte pages, and store runs
+Note that .TEXT files have a specific structure based around 1024-byte pages, and encode runs
 of leading spaces in compressed form (very useful for Pascal source).  See page IV-16 in the
-Pascal 1.3 manual for a description.  "Untyped" files are discussed in chapter 10 (page III-156).
+Pascal 1.3 manual for a description.  .CODE files are described on page IV-17, and "untyped"
+files are discussed in the file I/O chapter (page III-180).
 
 ## Disk Structure ##
 
@@ -120,4 +125,16 @@ Years are 0-99, starting in 1900.  Months are 1-12, days are 1-31.  A zero value
 field indicates "meaningless date".
 
 The Filer utility uses a date with the year 100 as a flag to indicate file creation in progress.
-If the system finds a file with year=100, it will silently remove the file.
+If the system finds a file with year >= 100, it will silently remove the file, assuming that it
+was left over from a failed file creation attempt.
+
+The recommended way to handle dates for the year 2000 and beyond is to adopt Apple's preferred
+approach for ProDOS: encode 1940-1999 as 40-99, and 2000-2039 as 0-39.
+
+### Apple System Utilities ###
+
+Apple's System Utilities 3.1 for ProDOS appears to handle Pascal disks incorrectly.  When files
+are deleted, the directory entry is zeroed out but not removed, and the file count is decremented.
+When next booted, the Pascal operating system removes the bogus entry and decrements the file
+count, resulting in an incorrect count.
+See https://groups.google.com/g/comp.sys.apple2.programmer/c/m6Ym3bMGlQg/m/BE4mHmGkKecJ

@@ -83,7 +83,6 @@ namespace AppCommon {
                     disposing + "), created:\r\n" + mCreationStackTrace);
                 return;
             }
-            mDisposed = true;
 
             if (disposing) {
                 if (!mLeaveOpen) {
@@ -96,6 +95,7 @@ namespace AppCommon {
                         mCreationStackTrace);
                 }
             }
+            mDisposed = true;
         }
 #if DEBUG
         private string mCreationStackTrace = Environment.StackTrace + Environment.NewLine + "---";

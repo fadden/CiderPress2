@@ -31,6 +31,7 @@ namespace DiskArc.FS {
         public const int MAX_VOL_SIZE = BLOCK_SIZE * 65535; // one block shy of 32MB
         public const int MAX_VOL_NAME_LEN = 7;
         public const int MAX_FILE_NAME_LEN = 15;
+        public const long MAX_FILE_LEN = 0x00ffffff;        // one byte shy of 16MB
 
         private const string FILENAME_RULES =
             "1-15 characters, must not include '$=?,[#:', spaces, or control characters.";
@@ -104,17 +105,17 @@ namespace DiskArc.FS {
         /// Record of an open file.
         /// </summary>
         private class OpenFileRec {
-            public DOS_FileEntry Entry { get; private set; }
-            public DOS_FileDesc FileDesc { get; private set; }
+            public Pascal_FileEntry Entry { get; private set; }
+            public Pascal_FileDesc FileDesc { get; private set; }
 
-            public OpenFileRec(DOS_FileEntry entry, DOS_FileDesc desc) {
+            public OpenFileRec(Pascal_FileEntry entry, Pascal_FileDesc desc) {
                 Debug.Assert(desc.FileEntry == entry);  // check consistency and !Invalid
                 Entry = entry;
                 FileDesc = desc;
             }
 
             public override string ToString() {
-                return "[DOS OpenFile: '" + Entry.FullPathName + "' part=" +
+                return "[Pascal OpenFile: '" + Entry.FullPathName + "' part=" +
                     FileDesc.Part + " rw=" + FileDesc.CanWrite + "]";
             }
         }
@@ -326,11 +327,15 @@ namespace DiskArc.FS {
             FlushVolumeDir();
         }
 
-        private void FlushVolumeDir() {
+        /// <summary>
+        /// Flushes the contents of the volume directory, if they have been changed.
+        /// </summary>
+        internal void FlushVolumeDir() {
             if (!IsVolDirDirty) {
                 return;
             }
             Debug.Assert(IsPreppedForFileAccess);
+            throw new NotImplementedException();
         }
 
         // IFileSystem
@@ -430,9 +435,12 @@ namespace DiskArc.FS {
                 Notes.AddW("Found " + conflicts + " blocks in use by more than one file");
             }
 
-           Debug.WriteLine(VolUsage.DebugDump());
+            Debug.WriteLine(VolUsage.DebugDump());
         }
 
+        /// <summary>
+        /// Calculates the total number of free blocks.
+        /// </summary>
         private int CalcFreeBlocks() {
             if (!IsPreppedForFileAccess) {
                 return -1;
@@ -507,11 +515,55 @@ namespace DiskArc.FS {
 
             // Reset state.
             PrepareRawAccess();
-    }
+        }
 
-    private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite,
-                FilePart part) {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Performs general checks on file-access calls, throwing exceptions when something
+        /// is amiss.  An exception here generally indicates an error in the program calling
+        /// into the library.
+        /// </summary>
+        /// <param name="op">Short string describing the operation.</param>
+        /// <param name="ientry">File being accessed.</param>
+        /// <param name="wantWrite">True if this operation might modify the file.</param>
+        /// <param name="part">Which part of the file we want access to.</param>
+        /// <exception cref="IOException">Various.</exception>
+        /// <exception cref="ArgumentException">Various.</exception>
+        private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite, FilePart part) {
+            if (mDisposed) {
+                throw new ObjectDisposedException("Object was disposed");
+            }
+            if (!IsPreppedForFileAccess) {
+                throw new IOException("Filesystem object not prepared for file access");
+            }
+            if (wantWrite && IsReadOnly) {
+                throw new IOException("Filesystem is read-only");
+            }
+            if (ientry == IFileEntry.NO_ENTRY) {
+                throw new ArgumentException("Cannot operate on NO_ENTRY");
+            }
+            if (ientry.IsDamaged) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to access");
+            }
+            if (ientry.IsDubious && wantWrite) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to modify");
+            }
+            Pascal_FileEntry? entry = ientry as Pascal_FileEntry;
+            if (entry == null || entry.FileSystem != this) {
+                if (entry != null && entry.FileSystem == null) {
+                    // Invalid entry; could be a deleted file, or from before a raw-mode switch.
+                    throw new IOException("File entry is invalid");
+                } else {
+                    throw new FileNotFoundException("File entry is not part of this filesystem");
+                }
+            }
+            if (part == FilePart.RsrcFork) {
+                throw new IOException("File does not have a resource fork");
+            }
+            if (!CheckOpenConflict(entry, wantWrite)) {
+                throw new IOException("File is already open; cannot " + op);
+            }
         }
 
         // IFileSystem
@@ -523,13 +575,100 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public DiskFileStream OpenFile(IFileEntry entry, FileAccessMode mode, FilePart part) {
-            throw new NotImplementedException();
+        public DiskFileStream OpenFile(IFileEntry ientry, FileAccessMode mode, FilePart part) {
+            if (part == FilePart.RawData) {
+                part = FilePart.DataFork;   // do this before is-file-open check
+            }
+            CheckFileAccess("open", ientry, mode != FileAccessMode.ReadOnly, part);
+            if (mode != FileAccessMode.ReadOnly && mode != FileAccessMode.ReadWrite) {
+                throw new ArgumentException("Unknown file access mode " + mode);
+            }
+            if (part != FilePart.DataFork) {
+                throw new ArgumentException("Requested file part not found");
+            }
+
+            Pascal_FileEntry entry = (Pascal_FileEntry)ientry;
+            Pascal_FileDesc pfd = Pascal_FileDesc.CreateFD(entry, mode, part, false);
+            mOpenFiles.Add(new OpenFileRec(entry, pfd));
+            return pfd;
+        }
+
+        /// <summary>
+        /// Determines whether the specified file/part is already opened read-write.
+        /// </summary>
+        /// <param name="entry">File to check.</param>
+        /// <param name="wantWrite">True if we're going to modify the file.</param>
+        /// <returns>True if all is well (no conflict).</returns>
+        private bool CheckOpenConflict(Pascal_FileEntry entry, bool wantWrite) {
+            foreach (OpenFileRec rec in mOpenFiles) {
+                if (rec.Entry != entry) {
+                    continue;
+                }
+                if (wantWrite) {
+                    // We need exclusive access to this part.
+                    return false;
+                } else {
+                    // We're okay if the existing open is read-only.
+                    if (rec.FileDesc.CanWrite) {
+                        return false;
+                    }
+                    // There may be additional open instances, but they must be read-only.
+                    return true;
+                }
+            }
+            return true;        // file is not open at all
+        }
+
+        /// <summary>
+        /// Closes a file, removing it from our list.  Do not call this directly -- this is
+        /// called from the file descriptor Dispose() call.
+        /// </summary>
+        /// <param name="ifd">Descriptor to close.</param>
+        /// <exception cref="IOException">File descriptor was already closed, or was opened
+        ///   by a different filesystem.</exception>
+        internal void CloseFile(DiskFileStream ifd) {
+            Pascal_FileDesc fd = (Pascal_FileDesc)ifd;
+            if (fd.FileSystem != this) {
+                // Should be impossible, though it could be null if previous close invalidated it.
+                if (fd.FileSystem == null) {
+                    throw new IOException("Invalid file descriptor");
+                } else {
+                    throw new IOException("File descriptor was opened by a different filesystem");
+                }
+            }
+
+            // Find the file record, searching by descriptor.
+            bool found = false;
+            foreach (OpenFileRec rec in mOpenFiles) {
+                if (rec.FileDesc == fd) {
+                    mOpenFiles.Remove(rec);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new IOException("Open file record not found: " + fd);
+            }
+
+            // Take the opportunity to flush the volume directory, in case the file was modified.
+            FlushVolumeDir();
         }
 
         // IFileSystem
         public void CloseAll() {
-            throw new NotImplementedException();
+            // Walk through from end to start so we don't trip when entries are removed.
+            for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
+                try {
+                    mOpenFiles[i].FileDesc.Close();
+                } catch (IOException ex) {
+                    Debug.WriteLine("Caught IOException during CloseAll: " + ex.Message);
+                } catch (Exception ex) {
+                    // Unexpected.  Discard it so cleanup can continue.
+                    Debug.WriteLine("Unexpected exception in CloseAll: " + ex.Message);
+                    Debug.Assert(false);
+                }
+            }
+            Debug.Assert(mOpenFiles.Count == 0);
         }
 
         // IFileSystem
@@ -554,10 +693,10 @@ namespace DiskArc.FS {
 
         #region Miscellaneous
 
-        /*
-         * Blocks 0 and 1 of a 5.25" bootable Pascal disk, formatted by
-         * APPLE3:FORMATTER from Pascal v1.3.
-         */
+        /// <summary>
+        /// Blocks 0 and 1 of a 5.25" bootable Pascal disk, formatted by APPLE3:FORMATTER
+        /// from Pascal v1.3.
+        /// </summary>
         private static readonly byte[] sBoot525Block0 = {
             0x01, 0xe0, 0x70, 0xb0, 0x04, 0xe0, 0x40, 0xb0, 0x39, 0xbd, 0x88, 0xc0,
             0x20, 0x20, 0x08, 0xa2, 0x00, 0xbd, 0x25, 0x08, 0x09, 0x80, 0x20, 0xfd,
@@ -649,10 +788,10 @@ namespace DiskArc.FS {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbb
         };
 
-        /*
-         * Block 0 of a 3.5" bootable Pascal disk, formatted by
-         * APPLE3:FORMATTER from Pascal v1.3.  Block 1 is zeroed out.
-         */
+        /// <summary>
+        /// Block 0 of a 3.5" bootable Pascal disk, formatted by APPLE3:FORMATTER from
+        /// Pascal v1.3.  Block 1 is zeroed out.
+        /// </summary>
         private static readonly byte[] sBoot35Block0 = {
             0x01, 0xe0, 0x70, 0xb0, 0x04, 0xe0, 0x40, 0xb0, 0x39, 0xbd, 0x88, 0xc0,
             0x20, 0x20, 0x08, 0xa2, 0x00, 0xbd, 0x25, 0x08, 0x09, 0x80, 0x20, 0xfd,

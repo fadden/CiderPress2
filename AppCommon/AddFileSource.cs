@@ -194,7 +194,6 @@ namespace AppCommon {
                     disposing + ")");
                 return;
             }
-            mDisposed = true;
 
             if (disposing) {
                 Close();
@@ -202,6 +201,7 @@ namespace AppCommon {
                 mAppHook.LogW("GC disposing AddFileSource: " + mFullPath);
                 Debug.Assert(false, "GC disposing AddFileSource: " + mFullPath);
             }
+            mDisposed = true;
         }
     }
 }
