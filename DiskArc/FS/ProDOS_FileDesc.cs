@@ -1345,7 +1345,7 @@ namespace DiskArc.FS {
         public override long Seek(long seekOff, SeekOrigin origin) {
             CheckValid();
             if (seekOff < -ProDOS.MAX_FILE_LEN || seekOff > ProDOS.MAX_FILE_LEN) {
-                throw new ArgumentOutOfRangeException("Invalid offset " + seekOff);
+                throw new ArgumentOutOfRangeException(nameof(seekOff), seekOff, "invalid offset");
             }
 
             long newPos;
@@ -1506,6 +1506,15 @@ namespace DiskArc.FS {
                 throw new ObjectDisposedException("File descriptor has been closed (" +
                     DebugPathName + ")");
             }
+        }
+
+        // DiskFileStream
+        public override bool DebugValidate(IFileSystem fs, IFileEntry entry) {
+            Debug.Assert(entry != null && entry != IFileEntry.NO_ENTRY);
+            if (FileSystem == null || FileEntry == null) {
+                return false;       // we're invalid
+            }
+            return (fs == FileSystem && entry == FileEntry);
         }
 
         public override string ToString() {

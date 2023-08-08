@@ -102,28 +102,9 @@ namespace DiskArc.FS {
         private IFileEntry mVolDirEntry;
 
         /// <summary>
-        /// Record of an open file.
-        /// </summary>
-        private class OpenFileRec {
-            public Pascal_FileEntry Entry { get; private set; }
-            public Pascal_FileDesc FileDesc { get; private set; }
-
-            public OpenFileRec(Pascal_FileEntry entry, Pascal_FileDesc desc) {
-                Debug.Assert(desc.FileEntry == entry);  // check consistency and !Invalid
-                Entry = entry;
-                FileDesc = desc;
-            }
-
-            public override string ToString() {
-                return "[Pascal OpenFile: '" + Entry.FullPathName + "' part=" +
-                    FileDesc.Part + " rw=" + FileDesc.CanWrite + "]";
-            }
-        }
-
-        /// <summary>
         /// List of open files.
         /// </summary>
-        private List<OpenFileRec> mOpenFiles = new List<OpenFileRec>();
+        private OpenFileTracker mOpenFiles = new OpenFileTracker();
 
         /// <summary>
         /// Total blocks present in the filesystem, as determined by the value in the volume
@@ -285,10 +266,7 @@ namespace DiskArc.FS {
                 // to have already been finalized, so all we can do is complain.
                 AppHook.LogW("GC disposing of filesystem object " + this);
                 if (mOpenFiles.Count != 0) {
-                    foreach (OpenFileRec rec in mOpenFiles) {
-                        AppHook.LogW("ProDOS FS finalized while file open: '" +
-                            rec.Entry.FullPathName + "'");
-                    }
+                    AppHook.LogW("Pascal FS finalized while " + mOpenFiles.Count + " files open");
                 }
                 return;
             }
@@ -320,10 +298,7 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void Flush() {
-            foreach (OpenFileRec rec in mOpenFiles) {
-                rec.FileDesc.Flush();
-                rec.Entry.SaveChanges();
-            }
+            mOpenFiles.FlushAll();
             FlushVolumeDir();
         }
 
@@ -561,7 +536,7 @@ namespace DiskArc.FS {
             if (part == FilePart.RsrcFork) {
                 throw new IOException("File does not have a resource fork");
             }
-            if (!CheckOpenConflict(entry, wantWrite)) {
+            if (!mOpenFiles.CheckOpenConflict(entry, wantWrite, FilePart.Unknown)) {
                 throw new IOException("File is already open; cannot " + op);
             }
         }
@@ -589,34 +564,8 @@ namespace DiskArc.FS {
 
             Pascal_FileEntry entry = (Pascal_FileEntry)ientry;
             Pascal_FileDesc pfd = Pascal_FileDesc.CreateFD(entry, mode, part, false);
-            mOpenFiles.Add(new OpenFileRec(entry, pfd));
+            mOpenFiles.Add(this, entry, pfd);
             return pfd;
-        }
-
-        /// <summary>
-        /// Determines whether the specified file/part is already opened read-write.
-        /// </summary>
-        /// <param name="entry">File to check.</param>
-        /// <param name="wantWrite">True if we're going to modify the file.</param>
-        /// <returns>True if all is well (no conflict).</returns>
-        private bool CheckOpenConflict(Pascal_FileEntry entry, bool wantWrite) {
-            foreach (OpenFileRec rec in mOpenFiles) {
-                if (rec.Entry != entry) {
-                    continue;
-                }
-                if (wantWrite) {
-                    // We need exclusive access to this part.
-                    return false;
-                } else {
-                    // We're okay if the existing open is read-only.
-                    if (rec.FileDesc.CanWrite) {
-                        return false;
-                    }
-                    // There may be additional open instances, but they must be read-only.
-                    return true;
-                }
-            }
-            return true;        // file is not open at all
         }
 
         /// <summary>
@@ -638,15 +587,7 @@ namespace DiskArc.FS {
             }
 
             // Find the file record, searching by descriptor.
-            bool found = false;
-            foreach (OpenFileRec rec in mOpenFiles) {
-                if (rec.FileDesc == fd) {
-                    mOpenFiles.Remove(rec);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            if (!mOpenFiles.RemoveDescriptor(ifd)) {
                 throw new IOException("Open file record not found: " + fd);
             }
 
@@ -656,19 +597,7 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void CloseAll() {
-            // Walk through from end to start so we don't trip when entries are removed.
-            for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
-                try {
-                    mOpenFiles[i].FileDesc.Close();
-                } catch (IOException ex) {
-                    Debug.WriteLine("Caught IOException during CloseAll: " + ex.Message);
-                } catch (Exception ex) {
-                    // Unexpected.  Discard it so cleanup can continue.
-                    Debug.WriteLine("Unexpected exception in CloseAll: " + ex.Message);
-                    Debug.Assert(false);
-                }
-            }
-            Debug.Assert(mOpenFiles.Count == 0);
+            mOpenFiles.CloseAll();
         }
 
         // IFileSystem

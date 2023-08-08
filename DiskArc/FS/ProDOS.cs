@@ -138,28 +138,9 @@ namespace DiskArc.FS {
         internal ProDOS_VolBitmap? VolBitmap { get; private set; }
 
         /// <summary>
-        /// Record of an open file.
-        /// </summary>
-        private class OpenFileRec {
-            public ProDOS_FileEntry Entry { get; private set; }
-            public ProDOS_FileDesc FileDesc { get; private set; }
-
-            public OpenFileRec(ProDOS_FileEntry entry, ProDOS_FileDesc desc) {
-                Debug.Assert(desc.FileEntry == entry);  // check consistency and !Invalid
-                Entry = entry;
-                FileDesc = desc;
-            }
-
-            public override string ToString() {
-                return "[ProDOS OpenFile: '" + Entry.FullPathName + "' part=" +
-                    FileDesc.Part + " rw=" + FileDesc.CanWrite + "]";
-            }
-        }
-
-        /// <summary>
         /// List of open files.
         /// </summary>
-        private List<OpenFileRec> mOpenFiles = new List<OpenFileRec>();
+        private OpenFileTracker mOpenFiles = new OpenFileTracker();
 
         /// <summary>
         /// Total blocks present in the filesystem, as determined by the value in the volume
@@ -285,10 +266,7 @@ namespace DiskArc.FS {
                 // to have already been finalized, so all we can do is complain.
                 AppHook.LogW("GC disposing of filesystem object " + this);
                 if (mOpenFiles.Count != 0) {
-                    foreach (OpenFileRec rec in mOpenFiles) {
-                        AppHook.LogW("ProDOS FS finalized while file open: '" +
-                            rec.Entry.FullPathName + "'");
-                    }
+                    AppHook.LogW("ProDOS FS finalized while " + mOpenFiles.Count + " files open");
                 }
                 return;
             }
@@ -323,10 +301,7 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void Flush() {
-            foreach (OpenFileRec rec in mOpenFiles) {
-                rec.FileDesc.Flush();
-                rec.Entry.SaveChanges();
-            }
+            mOpenFiles.FlushAll();
             VolBitmap?.Flush();
 
             if (mEmbeds != null) {
@@ -334,7 +309,6 @@ namespace DiskArc.FS {
                     part.FileSystem?.Flush();
                 }
             }
-
             // TODO: should we do SaveChanges() across all entries?
         }
 
@@ -902,7 +876,7 @@ namespace DiskArc.FS {
                     throw new FileNotFoundException("File entry is not part of this filesystem");
                 }
             }
-            if (!CheckOpenConflict(entry, wantWrite, part)) {
+            if (!mOpenFiles.CheckOpenConflict(entry, wantWrite, part)) {
                 throw new IOException("File is already open; cannot " + op);
             }
         }
@@ -940,46 +914,8 @@ namespace DiskArc.FS {
             }
 
             ProDOS_FileDesc pfd = ProDOS_FileDesc.CreateFD(entry, mode, part, false);
-            mOpenFiles.Add(new OpenFileRec(entry, pfd));
+            mOpenFiles.Add(this, entry, pfd);
             return pfd;
-        }
-
-        /// <summary>
-        /// Determines whether we can open this file/part.  If the caller is requesting write
-        /// access, we can't allow it if the file is already opened read-write.
-        /// </summary>
-        /// <remarks>
-        /// This is also testing whether we're allowed to delete the file.  That is processed
-        /// as a write operation on an ambiguous part.  If any part of the file is open, the
-        /// call will be rejected.
-        /// </remarks>
-        /// <param name="entry">File to check.</param>
-        /// <param name="wantWrite">True if we're going to modify the file.</param>
-        /// <param name="part">File part.  Pass "Unknown" to match on any part.</param>
-        /// <returns>True if all is well (no conflict).</returns>
-        private bool CheckOpenConflict(ProDOS_FileEntry entry, bool wantWrite, FilePart part) {
-            foreach (OpenFileRec rec in mOpenFiles) {
-                if (rec.Entry != entry) {
-                    continue;
-                }
-                if (part != FilePart.Unknown && rec.FileDesc.Part != part) {
-                    // This file is open, but we're only interested in a specific part, and
-                    // the part that's open isn't this one.
-                    continue;
-                }
-                if (wantWrite) {
-                    // We need exclusive access to this part.
-                    return false;
-                } else {
-                    // We're okay if the existing open is read-only.
-                    if (rec.FileDesc.CanWrite) {
-                        return false;
-                    }
-                    // There may be additional open instances, but they must be read-only.
-                    return true;
-                }
-            }
-            return true;        // file is not open at all
         }
 
         /// <summary>
@@ -1001,15 +937,7 @@ namespace DiskArc.FS {
             }
 
             // Find the file record, searching by descriptor.
-            bool found = false;
-            foreach (OpenFileRec rec in mOpenFiles) {
-                if (rec.FileDesc == fd) {
-                    mOpenFiles.Remove(rec);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            if (!mOpenFiles.RemoveDescriptor(ifd)) {
                 throw new IOException("Open file record not found: " + fd);
             }
 
@@ -1023,21 +951,7 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void CloseAll() {
-            // Walk through from end to start so we don't trip when entries are removed.
-            for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
-                try {
-                    mOpenFiles[i].FileDesc.Close();
-                } catch (IOException ex) {
-                    // This could happen if Close flushed a change that wrote to a bad block,
-                    // e.g. a new index block in a tree file.
-                    Debug.WriteLine("Caught IOException during CloseAll: " + ex.Message);
-                } catch (Exception ex) {
-                    // Unexpected.  Discard it so cleanup can continue.
-                    Debug.WriteLine("Unexpected exception in CloseAll: " + ex.Message);
-                    Debug.Assert(false);
-                }
-            }
-            Debug.Assert(mOpenFiles.Count == 0);
+            mOpenFiles.CloseAll();
 
             // This is probably being called as part of closing the filesystem, so make sure
             // pending changes have been flushed.  In normal operation this shouldn't be needed,

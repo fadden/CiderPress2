@@ -49,6 +49,20 @@ namespace DiskArc {
         // Single-byte buffer for ReadByte/WriteByte, allocated on first use.
         private byte[]? mSingleBuf;
 
+        /// <summary>
+        /// Returns the part of the file that is open (e.g. data or resource fork).
+        /// </summary>
+        public abstract Defs.FilePart Part { get; }
+
+        /// <summary>
+        /// Confirms that the file descriptor is valid, and is for the specified file entry,
+        /// which is part of the specified filesystem.
+        /// </summary>
+        /// <param name="fs">Expected filesystem.</param>
+        /// <param name="entry">Expected file entry.</param>
+        /// <returns>True if all is well.</returns>
+        public abstract bool DebugValidate(IFileSystem fs, IFileEntry entry);
+
         // Stream
         public override int ReadByte() {
             if (mSingleBuf == null) {
@@ -69,11 +83,6 @@ namespace DiskArc {
             Write(mSingleBuf, 0, 1);
         }
 
-        /// <summary>
-        /// Returns the part of the file that is open (e.g. data or resource fork).
-        /// </summary>
-        public abstract Defs.FilePart Part { get; }
-
         // Note:
         //  - Stream.Dispose() calls Close()
         //  - Stream.Close() calls Dispose(true) and GC.SuppressFinalize(this)
@@ -84,7 +93,7 @@ namespace DiskArc {
         /// </summary>
         /// <returns>Length, in bytes.</returns>
         public long ComputeNonSparseLength() {
-            long oldPosition = Position;
+            long origPosition = Position;
             long totalLength = 0;
             long dataStart = Seek(0, Defs.SEEK_ORIGIN_DATA);
             while (dataStart < Length) {
@@ -92,6 +101,7 @@ namespace DiskArc {
                 totalLength += dataEnd - dataStart;
                 dataStart = Seek(dataEnd, Defs.SEEK_ORIGIN_DATA);
             }
+            Position = origPosition;
             return totalLength;
         }
     }

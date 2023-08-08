@@ -130,29 +130,9 @@ namespace DiskArc.FS {
         private IFileEntry mVolDirEntry;
 
         /// <summary>
-        /// Record of an open file.
-        /// </summary>
-        private class OpenFileRec {
-            public DOS_FileEntry Entry { get; private set; }
-            public DOS_FileDesc FileDesc { get; private set; }
-
-            public OpenFileRec(DOS_FileEntry entry, DOS_FileDesc desc) {
-                Debug.Assert(desc.FileEntry == entry);  // check consistency and !Invalid
-                Entry = entry;
-                FileDesc = desc;
-            }
-
-            public override string ToString() {
-                return "[DOS OpenFile: '" + Entry.FullPathName + "' part=" +
-                    FileDesc.Part + " rw=" + FileDesc.CanWrite + "]";
-            }
-        }
-
-        /// <summary>
         /// List of open files.
         /// </summary>
-        private List<OpenFileRec> mOpenFiles = new List<OpenFileRec>();
-
+        private OpenFileTracker mOpenFiles = new OpenFileTracker();
 
         /// <summary>
         /// Disk VTOC and volume usage.
@@ -405,17 +385,9 @@ namespace DiskArc.FS {
             if (!disposing) {
                 // This is a GC finalization.  We can't know if the objects we have references
                 // to have already been finalized, so there's nothing we can do but complain.
-                // (This may be dangerous.)
-                try {
-                    AppHook.LogW("GC disposing of filesystem object " + this);
-                    if (mOpenFiles.Count != 0) {
-                        foreach (OpenFileRec rec in mOpenFiles) {
-                            AppHook.LogW("DOS FS finalized while file open: '" +
-                                rec.Entry.FullPathName + "'");
-                        }
-                    }
-                } catch (Exception ex) {
-                    Debug.WriteLine("Failed while trying to report GC dispose: " + ex);
+                AppHook.LogW("GC disposing of filesystem object " + this);
+                if (mOpenFiles.Count != 0) {
+                    AppHook.LogW("DOS FS finalized while " + mOpenFiles.Count + " files open");
                 }
                 return;
             }
@@ -446,13 +418,9 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void Flush() {
-            foreach (OpenFileRec rec in mOpenFiles) {
-                rec.FileDesc.Flush();
-                rec.Entry.SaveChanges();
-            }
+            mOpenFiles.FlushAll();
             VTOC?.Flush();
-
-            // TODO: should we do SaveChanges() across all entries?
+            // TODO: should we do SaveChanges() across all entries, including those not open?
         }
 
         public uint TSToChunk(uint trk, uint sct) {
@@ -776,7 +744,7 @@ namespace DiskArc.FS {
             if (part == FilePart.RsrcFork) {
                 throw new IOException("File does not have a resource fork");
             }
-            if (!CheckOpenConflict(entry, wantWrite)) {
+            if (!mOpenFiles.CheckOpenConflict(entry, wantWrite, FilePart.Unknown)) {
                 throw new IOException("File is already open; cannot " + op);
             }
         }
@@ -807,34 +775,8 @@ namespace DiskArc.FS {
 
             DOS_FileEntry entry = (DOS_FileEntry)ientry;
             DOS_FileDesc pfd = DOS_FileDesc.CreateFD(entry, mode, part, false);
-            mOpenFiles.Add(new OpenFileRec(entry, pfd));
+            mOpenFiles.Add(this, entry, pfd);
             return pfd;
-        }
-
-        /// <summary>
-        /// Determines whether the specified file/part is already opened read-write.
-        /// </summary>
-        /// <param name="entry">File to check.</param>
-        /// <param name="wantWrite">True if we're going to modify the file.</param>
-        /// <returns>True if all is well (no conflict).</returns>
-        private bool CheckOpenConflict(DOS_FileEntry entry, bool wantWrite) {
-            foreach (OpenFileRec rec in mOpenFiles) {
-                if (rec.Entry != entry) {
-                    continue;
-                }
-                if (wantWrite) {
-                    // We need exclusive access to this part.
-                    return false;
-                } else {
-                    // We're okay if the existing open is read-only.
-                    if (rec.FileDesc.CanWrite) {
-                        return false;
-                    }
-                    // There may be additional open instances, but they must be read-only.
-                    return true;
-                }
-            }
-            return true;        // file is not open at all
         }
 
         /// <summary>
@@ -856,15 +798,7 @@ namespace DiskArc.FS {
             }
 
             // Find the file record, searching by descriptor.
-            bool found = false;
-            foreach (OpenFileRec rec in mOpenFiles) {
-                if (rec.FileDesc == fd) {
-                    mOpenFiles.Remove(rec);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            if (!mOpenFiles.RemoveDescriptor(ifd)) {
                 throw new IOException("Open file record not found: " + fd);
             }
 
@@ -875,21 +809,7 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void CloseAll() {
-            // Walk through from end to start so we don't trip when entries are removed.
-            for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
-                try {
-                    mOpenFiles[i].FileDesc.Close();
-                } catch (IOException ex) {
-                    // This could happen if Close flushed a change that wrote to a bad block,
-                    // e.g. a new index block in a tree file.
-                    Debug.WriteLine("Caught IOException during CloseAll: " + ex.Message);
-                } catch (Exception ex) {
-                    // Unexpected.  Discard it so cleanup can continue.
-                    Debug.WriteLine("Unexpected exception in CloseAll: " + ex.Message);
-                    Debug.Assert(false);
-                }
-            }
-            Debug.Assert(mOpenFiles.Count == 0);
+            mOpenFiles.CloseAll();
 
             // This is probably being called as part of closing the filesystem, so make sure
             // pending changes have been flushed.  In normal operation this shouldn't be needed,
