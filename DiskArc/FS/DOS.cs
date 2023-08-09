@@ -708,7 +708,8 @@ namespace DiskArc.FS {
         /// <param name="op">Short string describing the operation.</param>
         /// <param name="ientry">File being accessed.</param>
         /// <param name="wantWrite">True if this operation might modify the file.</param>
-        /// <param name="part">Which part of the file we want access to.</param>
+        /// <param name="part">Which part of the file we want access to.  Pass "Unknown" to
+        ///   match on any part.</param>
         /// <exception cref="IOException">Various.</exception>
         /// <exception cref="ArgumentException">Various.</exception>
         private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite, FilePart part) {
@@ -881,7 +882,6 @@ namespace DiskArc.FS {
 
             // Insert it into the list of children.
             dirEntry.ChildList.Insert(catIndex, newEntry);
-
 
             return newEntry;
         }

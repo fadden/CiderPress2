@@ -247,6 +247,7 @@ namespace cp2 {
             // Can use Environment.GetCommandLineArgs() to get command name in args[0] if desired.
 
             Environment.ExitCode = 2;       // use code 2 for usage problems
+            Console.OutputEncoding = Encoding.UTF8;
 
             if (args.Length == 0) {
                 Usage();

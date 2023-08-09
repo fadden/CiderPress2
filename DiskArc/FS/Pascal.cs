@@ -102,6 +102,12 @@ namespace DiskArc.FS {
         private IFileEntry mVolDirEntry;
 
         /// <summary>
+        /// Buffer that holds directory data while we're flushing it.  This only exists to
+        /// reduce allocations.
+        /// </summary>
+        private byte[] mDirOutBuffer = RawData.EMPTY_BYTE_ARRAY;
+
+        /// <summary>
         /// List of open files.
         /// </summary>
         private OpenFileTracker mOpenFiles = new OpenFileTracker();
@@ -310,7 +316,33 @@ namespace DiskArc.FS {
                 return;
             }
             Debug.Assert(IsPreppedForFileAccess);
-            throw new NotImplementedException();
+
+            // We don't try to preserve the initial state of the directory blocks.  This means
+            // we will purge the entries of previously-deleted files.  If we decided to be less
+            // heavy-handed, we will need to make sure that the filename length of the entries
+            // past the end are zeroed.
+            byte[] buf = mDirOutBuffer;
+            Array.Clear(buf);
+
+            // Output the volume header first.
+            int offset = 0;
+            mVolDirHeader.Store(buf, offset);
+            offset += VolDirHeader.LENGTH;
+
+            // Output the file entries.
+            Pascal_FileEntry volDir = (Pascal_FileEntry)mVolDirEntry;
+            foreach (Pascal_FileEntry entry in volDir.ChildList) {
+                entry.StoreEntry(buf, ref offset);
+            }
+
+            // Write the data to disk.
+            offset = 0;
+            for (uint block = VOL_DIR_START_BLOCK; block < mVolDirHeader.mNextBlock; block++) {
+                ChunkAccess.WriteBlock(block, buf, offset);
+                offset += BLOCK_SIZE;
+            }
+
+            IsVolDirDirty = false;
         }
 
         // IFileSystem
@@ -325,6 +357,8 @@ namespace DiskArc.FS {
                 IsDubious = false;
                 Notes.Clear();
                 ScanVolume();
+                int numDirBlocks = mVolDirHeader.mNextBlock - VOL_DIR_START_BLOCK;
+                mDirOutBuffer = new byte[numDirBlocks * BLOCK_SIZE];
                 RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
             } catch (Exception ex) {
                 // Failed; reset for raw.
@@ -348,6 +382,7 @@ namespace DiskArc.FS {
             }
 
             mVolDirEntry = IFileEntry.NO_ENTRY;
+            mDirOutBuffer = RawData.EMPTY_BYTE_ARRAY;
             VolUsage = null;
             IsDubious = false;
             RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
@@ -410,7 +445,7 @@ namespace DiskArc.FS {
                 Notes.AddW("Found " + conflicts + " blocks in use by more than one file");
             }
 
-            Debug.WriteLine(VolUsage.DebugDump());
+            //Debug.WriteLine(VolUsage.DebugDump());
         }
 
         /// <summary>
@@ -464,9 +499,9 @@ namespace DiskArc.FS {
             byte[] blockBuf = new byte[BLOCK_SIZE];
 
             // Write the standard boot block data to block 0/1 (we ignore the "make bootable"
-            // flag).  If the chunks are from a source with tracks and sectors we use the 5.25"
-            // boot block, otherwise we use the 3.5" boot block.
-            if (ChunkAccess.HasSectors) {
+            // flag).  If the chunks are from a source with room for 35 tracks * 16 sectors, use
+            // the 5.25" boot blocks; otherwise we use the 3.5" boot block.
+            if (ChunkAccess.FormattedLength == 140 * 1024) {
                 ChunkAccess.WriteBlock(0, sBoot525Block0, 0);
                 ChunkAccess.WriteBlock(1, sBoot525Block1, 0);
             } else {
@@ -500,7 +535,8 @@ namespace DiskArc.FS {
         /// <param name="op">Short string describing the operation.</param>
         /// <param name="ientry">File being accessed.</param>
         /// <param name="wantWrite">True if this operation might modify the file.</param>
-        /// <param name="part">Which part of the file we want access to.</param>
+        /// <param name="part">Which part of the file we want access to.  Pass "Unknown" to
+        ///   match on any part.</param>
         /// <exception cref="IOException">Various.</exception>
         /// <exception cref="ArgumentException">Various.</exception>
         private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite, FilePart part) {
@@ -601,8 +637,91 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public IFileEntry CreateFile(IFileEntry dirEntry, string fileName, CreateMode mode) {
-            throw new NotImplementedException();
+        public IFileEntry CreateFile(IFileEntry idirEntry, string fileName, CreateMode mode) {
+            CheckFileAccess("create", idirEntry, true, FilePart.Unknown);
+            Debug.Assert(idirEntry == mVolDirEntry);
+            if (mode != CreateMode.File) {
+                throw new ArgumentException("Invalid Pascal creation mode: " + mode);
+            }
+            Pascal_FileEntry dirEntry = (Pascal_FileEntry)idirEntry;
+            if (fileName == null || !Pascal_FileEntry.IsFileNameValid(fileName)) {
+                throw new ArgumentException("Invalid filename '" + fileName + "'");
+            }
+
+            // Check for an entry with a duplicate filename in the list of children.
+            foreach (IFileEntry entry in dirEntry) {
+                if (entry.CompareFileName(fileName) == 0) {
+                    throw new IOException("A file with that name already exists");
+                }
+            }
+
+            // Make sure there's room.
+            int numDirBlocks = mVolDirHeader.mNextBlock - VOL_DIR_START_BLOCK;
+            int maxFiles = (numDirBlocks * BLOCK_SIZE) / Pascal_FileEntry.DIR_ENTRY_LEN - 1;
+            if (dirEntry.Count >= maxFiles) {
+                throw new DiskFullException("Volume directory is full");
+            }
+
+            // We don't know how big this file will become.  Our best option is to create it
+            // in the largest open space.
+            if (!FindLargestFreeArea(out int gapIndex, out ushort gapStart,
+                    out ushort gapBlockCount)) {
+                throw new DiskFullException("Disk full");
+            }
+            Debug.Assert(gapStart < ushort.MaxValue);
+
+            // Create a new file entry.  We allocate one block, with the bytes-used zeroed.
+            // Note the Pascal system will delete such files automatically.  (Filer-created
+            // files will have 1 block, with all 512 bytes used.)
+            Pascal_FileEntry newEntry = Pascal_FileEntry.CreateEntry(this, gapStart,
+                (ushort)(gapStart + 1), Pascal_FileEntry.FileKind.DataFile, fileName, DateTime.Now);
+            VolUsage!.AllocChunk(gapStart, newEntry);
+
+            // Insert it in the list of children, and update the file count.
+            dirEntry.ChildList.Insert(gapIndex, newEntry);
+            mVolDirHeader.mFileCount++;
+
+            // Save the updated directory.
+            IsVolDirDirty = true;
+            FlushVolumeDir();
+            return newEntry;
+        }
+
+        /// <summary>
+        /// Finds the largest contiguous collection of free blocks on the disk.
+        /// </summary>
+        /// <param name="gapIndex">Result: index of entry that comes after the gap.  This is
+        ///   an index into the list of children, so the first file entry is 0.</param>
+        /// <param name="gapStart">Result: block number of the start of the gap.</param>
+        /// <param name="gapBlockCount">Result: number of blocks in the gap.</param>
+        /// <returns>True if a gap was found, false if the disk is full.</returns>
+        private bool FindLargestFreeArea(out int gapIndex, out ushort gapStart,
+                out ushort gapBlockCount) {
+            gapIndex = -1;
+            gapStart = ushort.MaxValue;
+            gapBlockCount = 0;
+            ushort prevNext = mVolDirHeader.mNextBlock;
+
+            Pascal_FileEntry volDir = (Pascal_FileEntry)mVolDirEntry;
+            for (int i = 0; i < mVolDirEntry.Count; i++) {
+                Pascal_FileEntry entry = (Pascal_FileEntry)volDir.ChildList[i];
+                Debug.Assert(entry.StartBlock >= prevNext);     // should not be writable otherwise
+                uint gapSize = (uint)entry.StartBlock - prevNext;
+                if (gapSize > gapBlockCount) {
+                    gapIndex = i;
+                    gapStart = prevNext;
+                    gapBlockCount = (ushort)gapSize;
+                }
+                prevNext = entry.NextBlock;
+            }
+
+            uint endSize = (uint)mVolDirHeader.mVolBlockCount - prevNext;
+            if (endSize > gapBlockCount) {
+                gapIndex = mVolDirEntry.Count;
+                gapStart = prevNext;
+                gapBlockCount = (ushort)endSize;
+            }
+            return (gapBlockCount != 0);
         }
 
         // IFileSystem
@@ -616,8 +735,27 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public void DeleteFile(IFileEntry entry) {
-            throw new NotImplementedException();
+        public void DeleteFile(IFileEntry ientry) {
+            CheckFileAccess("delete", ientry, true, FilePart.Unknown);
+            if (ientry == mVolDirEntry) {
+                throw new IOException("Can't delete volume directory");
+            }
+            Pascal_FileEntry entry = (Pascal_FileEntry)ientry;
+
+            // Clear storage from volume usage tracker.
+            for (uint block = entry.StartBlock; block < entry.NextBlock; block++) {
+                VolUsage!.FreeChunk(block);
+            }
+
+            ((Pascal_FileEntry)mVolDirEntry).ChildList.Remove(entry);
+            mVolDirHeader.mFileCount--;
+
+            // This entry may no longer be used.
+            entry.Invalidate();
+
+            // Save the updated directory.
+            IsVolDirDirty = true;
+            FlushVolumeDir();
         }
 
         #region Miscellaneous

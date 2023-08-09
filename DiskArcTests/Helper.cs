@@ -466,7 +466,7 @@ namespace DiskArcTests {
         }
 
         /// <summary>
-        /// Writes a stream to a file in the TestData directory.
+        /// Copies a stream to a file in the TestData directory.
         /// </summary>
         public static void CopyToFile(Stream source, string fileName) {
             string pathName = DebugFileDir + fileName;

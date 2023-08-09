@@ -73,7 +73,7 @@ result in a mismatch, so the two aren't tied together.  (You can see the file ty
 Note that .TEXT files have a specific structure based around 1024-byte pages, and encode runs
 of leading spaces in compressed form (very useful for Pascal source).  See page IV-16 in the
 Pascal 1.3 manual for a description.  .CODE files are described on page IV-17, and "untyped"
-files are discussed in the file I/O chapter (page III-180).
+files are discussed in the file I/O chapter (e.g. page III-180).
 
 ## Disk Structure ##
 
@@ -109,11 +109,20 @@ A regular directory entry is:
 ```
 All multi-byte integers are stored in little-endian order.
 
-Directory entries are packed together.  When an entry is deleted, the entries that follow are
-moved up, and the unused entry is zeroed out.  Entries are sorted by starting block number, so
-when a file is created it may be necessary to slide the following entries down.
+Directory entries are packed together.  Entries are sorted by starting block number, so when a
+file is created it may be necessary to slide the following entries down.  When an entry is deleted,
+the entries that follow are moved up.  Unused regions of the disk do not have directory entries;
+their existence is implied when the "next block" of one file is not equal to the "start block"
+of the next file.
+
+Entries past the end of the list have their filename lengths set to zero.  It is possible to
+"undelete" a file by making a new one with the Filer, in the same space with the same size.
 
 To see file types and empty disk regions, request an E)xtended directory listing from the F)iler.
+
+Entries with zero length (single block allocated, bytes used == 0) will be silently removed
+when the system boots.  As of Pascal 1.1, entries with zero blocks (start == next) but a nonzero
+byte count are not removed (note these are illegal).
 
 ### Timestamps ###
 

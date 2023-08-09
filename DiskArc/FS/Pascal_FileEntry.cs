@@ -286,8 +286,9 @@ namespace DiskArc.FS {
             // The only reason for doing this is to ensure that we're flushing changes.  This
             // can happen if the application chooses not to call SaveChanges before closing
             // the filesystem or switching to raw mode.
-
-            // TODO
+            if (disposing) {
+                SaveChanges();
+            }
         }
 
         /// <summary>
@@ -324,6 +325,7 @@ namespace DiskArc.FS {
             Debug.Assert(numBlocks > 0);
             byte[] dirBuf = new byte[numBlocks * BLOCK_SIZE];
             IChunkAccess chunks = fileSystem.ChunkAccess;
+            uint prevStart = 0;
             uint block = 0;
             try {
                 for (int i = 0; i < numBlocks; i++) {
@@ -339,7 +341,7 @@ namespace DiskArc.FS {
             int maxEntCount = (numBlocks * BLOCK_SIZE) / DIR_ENTRY_LEN - 1;
             for (int i = 0; i < maxEntCount; i++) {
                 int offset = DIR_ENTRY_LEN * (i + 1);
-                Pascal_FileEntry? newEntry = CreateDirEntry(fileSystem, dirBuf, offset);
+                Pascal_FileEntry? newEntry = ExtractEntry(fileSystem, dirBuf, offset);
                 if (newEntry == null) {
                     // Ran off end of list of entries.  Did we expect to be done?
                     if (i < hdr.mFileCount) {
@@ -349,11 +351,20 @@ namespace DiskArc.FS {
                     }
                     break;
                 } else if (i == hdr.mFileCount) {
-                    notes.AddW("Found file entries past the recorded file count (" +
-                        hdr.mFileCount + ")");
-                    // We could correct it, or just figure something is wrong and not touch it.
+                    // All entries should have their filename length field zeroed.
+                    if (newEntry.mRawFileName[0] != 0) {
+                        notes.AddW("Found file entries past the recorded file count (" +
+                            hdr.mFileCount + ")");
+                        // We could correct it, or just figure something is wrong and not touch it.
+                        fileSystem.IsDubious = true;
+                    }
+                }
+
+                if (newEntry.StartBlock < prevStart) {
+                    notes.AddE("File entries are out of order");
                     fileSystem.IsDubious = true;
                 }
+                prevStart = newEntry.StartBlock;
 
                 if (!newEntry.ValidateEntry(hdr)) {
                     newEntry.IsDamaged = true;
@@ -366,27 +377,15 @@ namespace DiskArc.FS {
                     }
                 }
                 volDir.ChildList.Add(newEntry);
-
             }
 
             return volDir;
         }
 
         /// <summary>
-        /// Creates a "fake" file entry for the volume directory.
-        /// </summary>
-        private static Pascal_FileEntry CreateFakeVolDirEntry(Pascal fileSystem,
-                Pascal.VolDirHeader hdr) {
-            Pascal_FileEntry volDir = new Pascal_FileEntry(fileSystem);
-            volDir.IsVolumeDirectory = true;
-            volDir.mFileName = ASCIIUtil.PascalBytesToString(hdr.mVolumeName);
-            return volDir;
-        }
-
-        /// <summary>
         /// Creates a new directory entry from the raw data.
         /// </summary>
-        private static Pascal_FileEntry? CreateDirEntry(Pascal fileSystem, byte[] buffer,
+        private static Pascal_FileEntry? ExtractEntry(Pascal fileSystem, byte[] buffer,
                 int offset) {
             Pascal_FileEntry newEntry = new Pascal_FileEntry(fileSystem);
             newEntry.mStartBlock = RawData.ReadU16LE(buffer, ref offset);
@@ -398,10 +397,55 @@ namespace DiskArc.FS {
             newEntry.mByteCount = RawData.ReadU16LE(buffer, ref offset);
             newEntry.mModWhen = RawData.ReadU16LE(buffer, ref offset);
             if (newEntry.mStartBlock == 0 || newEntry.mRawFileName[0] == 0) {
-                // Deleted entry.
+                // Unused or deleted entry.
                 newEntry.Dispose();
                 return null;
             }
+            return newEntry;
+        }
+
+        /// <summary>
+        /// Serializes a file entry into the directory file buffer.
+        /// </summary>
+        internal void StoreEntry(byte[] buffer, ref int offset) {
+            int startOffset = offset;
+            Debug.Assert(mRawFileName[0] != 0);     // don't store a deleted entry
+            RawData.WriteU16LE(buffer, ref offset, mStartBlock);
+            RawData.WriteU16LE(buffer, ref offset, mNextBlock);
+            RawData.WriteU16LE(buffer, ref offset, mTypeAndFlags);
+            for (int i = 0; i < Pascal.MAX_FILE_NAME_LEN + 1; i++) {
+                buffer[offset++] = mRawFileName[i];
+            }
+            RawData.WriteU16LE(buffer, ref offset, mByteCount);
+            RawData.WriteU16LE(buffer, ref offset, mModWhen);
+            Debug.Assert(offset - startOffset == DIR_ENTRY_LEN);
+        }
+
+        /// <summary>
+        /// Creates a new file entry.
+        /// </summary>
+        internal static Pascal_FileEntry CreateEntry(Pascal fileSystem, ushort startBlock,
+                ushort nextBlock, FileKind kind, string fileName, DateTime modWhen) {
+            Pascal_FileEntry newEntry = new Pascal_FileEntry(fileSystem);
+            newEntry.mStartBlock = startBlock;
+            newEntry.mNextBlock = nextBlock;
+            newEntry.mTypeAndFlags = (ushort)kind;
+            newEntry.mFileName = fileName;
+            ASCIIUtil.StringToFixedPascalBytes(fileName, newEntry.mRawFileName);
+            newEntry.mByteCount = 1;
+            newEntry.mModWhen = TimeStamp.ConvertDateTime_Pascal(modWhen);
+            return newEntry;
+        }
+
+        /// <summary>
+        /// Creates a "fake" file entry for the volume directory.
+        /// </summary>
+        private static Pascal_FileEntry CreateFakeVolDirEntry(Pascal fileSystem,
+                Pascal.VolDirHeader hdr) {
+            string volName = ASCIIUtil.PascalBytesToString(hdr.mVolumeName);
+            Pascal_FileEntry newEntry = CreateEntry(fileSystem, hdr.mFirstBlock, hdr.mNextBlock,
+                FileKind.UntypedFile, volName, TimeStamp.ConvertDateTime_Pascal(hdr.mLastDateSet));
+            newEntry.IsVolumeDirectory = true;
             return newEntry;
         }
 
@@ -417,12 +461,14 @@ namespace DiskArc.FS {
                 return false;
             }
             mFileName = ASCIIUtil.PascalBytesToString(mRawFileName);
+            // Range checks.
             if (mStartBlock < hdr.mNextBlock || mStartBlock >= hdr.mVolBlockCount) {
                 notes.AddW("Invalid start block " + mStartBlock + " for '" + FileName + "'");
                 return false;
             }
             if (mNextBlock <= mStartBlock || mNextBlock >= hdr.mVolBlockCount) {
-                notes.AddW("Invalid next block " + mNextBlock + " for '" + FileName + "'");
+                notes.AddW("Invalid next block " + mNextBlock + " for '" + FileName +
+                    "' (start=" + mStartBlock + ")");
                 return false;
             }
             if (mByteCount > BLOCK_SIZE) {
