@@ -282,7 +282,7 @@ namespace DiskArc.FS {
 
             try {
                 VolBitmap?.Flush();
-            } catch (IOException) {
+            } catch {
                 AppHook.LogE("Failed while attempting to flush volume bitmap");
             }
 

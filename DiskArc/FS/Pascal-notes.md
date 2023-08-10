@@ -60,20 +60,21 @@ extension to be present.  The manual notes that changing the filename with the f
 result in a mismatch, so the two aren't tied together.  (You can see the file types with the
 "extended listing" command in the Filer.)  The defined types are:
 ```
- 0 untypedfile - used for "untyped" files and volume header entry
+ 0 untypedfile - used for the volume directory header entry
  1 xdskfile / .BAD - used to mark physically damaged disk blocks
  2 codefile / .CODE - machine-executable code
  3 textfile / .TEXT - human-readable text
  4 infofile / .INFO - (not used)
- 5 datafile / .DATA - general data
+ 5 datafile / .DATA - arbitrary data
  6 graffile / .GRAF - (not used)
  7 fotofile / .FOTO - (not used)
  8 securedir - (unknown)
 ```
 Note that .TEXT files have a specific structure based around 1024-byte pages, and encode runs
-of leading spaces in compressed form (very useful for Pascal source).  See page IV-16 in the
-Pascal 1.3 manual for a description.  .CODE files are described on page IV-17, and "untyped"
-files are discussed in the file I/O chapter (e.g. page III-180).
+of leading spaces in compressed form (very handy for Pascal source code).  See page IV-16 in the
+Pascal 1.3 manual for a description.  .CODE files are described on page IV-17.  "Untyped"
+file access is discussed in the file I/O chapter (e.g. page III-180), though the relationship
+between the "untyped" file type and untyped file access isn't clear to me.
 
 ## Disk Structure ##
 
@@ -120,9 +121,14 @@ Entries past the end of the list have their filename lengths set to zero.  It is
 
 To see file types and empty disk regions, request an E)xtended directory listing from the F)iler.
 
-Entries with zero length (single block allocated, bytes used == 0) will be silently removed
-when the system boots.  As of Pascal 1.1, entries with zero blocks (start == next) but a nonzero
-byte count are not removed (note these are illegal).
+Entries with zero in the "bytes used" field will be silently removed when the system boots,
+regardless of how many blocks they occupy.  As of Pascal 1.1, entries with zero blocks
+(start == next) but a nonzero byte count are not removed (note these are illegal).
+
+Because files are stored in contiguous blocks, fragmentation can become a problem very quickly.
+The Apple Pascal Filer tool provides a "K(runch" command that defragments the disk.  The process
+needs to work around any "bad block" files encountered, since those represent physically damaged
+disk sectors and cannot be moved.
 
 ### Timestamps ###
 

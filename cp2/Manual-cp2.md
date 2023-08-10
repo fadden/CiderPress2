@@ -1005,6 +1005,8 @@ ZIP archive will cause the "header" file to be updated if it exists.
 When verbose mode is enabled, the updated record will be displayed.
 The output will reflect the actual final state.
 
+Editing of comments (for NuFX and Zip archives) is not currently supported.
+
 Options:
  - `--mac-zip`, `--no-mac-zip`
 

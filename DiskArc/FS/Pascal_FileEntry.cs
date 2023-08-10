@@ -72,8 +72,21 @@ namespace DiskArc.FS {
 
         public string FileName {
             get { return mFileName; }
-            set => throw new NotImplementedException();
-            // TODO - convert to upper case
+            set {
+                CheckChangeAllowed();
+                if (IsVolumeDirectory) {
+                    if (!IsVolumeNameValid(value)) {
+                        throw new ArgumentException("Invalid volume name");
+                    }
+                } else {
+                    if (!IsFileNameValid(value)) {
+                        throw new ArgumentException("Invalid filename");
+                    }
+                }
+                mFileName = value.ToUpperInvariant();
+                ASCIIUtil.StringToFixedPascalBytes(mFileName, mRawFileName);
+                MarkDirty();
+            }
         }
         public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
         public string FullPathName {
@@ -88,16 +101,27 @@ namespace DiskArc.FS {
         }
         public byte[] RawFileName {
             get {
-                // Use the "cooked" length, which is exactly the same as the trimmed "raw" length.
-                byte[] result = new byte[mFileName.Length];
-                Array.Copy(mRawFileName, result, result.Length);
+                byte[] result = new byte[mRawFileName[0]];
+                Array.Copy(mRawFileName, 1, result, 0, result.Length);
                 return result;
             }
-            set => throw new NotImplementedException();
+            set {
+                CheckChangeAllowed();
+                // Minimal syntax checking.
+                int maxLen = IsVolumeDirectory ? Pascal.MAX_VOL_NAME_LEN : Pascal.MAX_FILE_NAME_LEN;
+                if (value.Length == 0 || value.Length > maxLen) {
+                    throw new ArgumentException("Invalid name length (" + value.Length + ")");
+                }
+                mRawFileName[0] = (byte)value.Length;
+                for (int i = 0; i < value.Length; i++) {
+                    mRawFileName[i + 1] = value[i];
+                }
+                mFileName = ASCIIUtil.PascalBytesToString(mRawFileName);
+                MarkDirty();
+            }
         }
 
         public bool HasProDOSTypes => true;
-
         public byte FileType {
             get {
                 if (IsVolumeDirectory) {
@@ -106,7 +130,12 @@ namespace DiskArc.FS {
                     return TypeToProDOS(mTypeAndFlags);
                 }
             }
-            set => throw new NotImplementedException();
+            set {
+                CheckChangeAllowed();
+                ushort newType = TypeFromProDOS(value);
+                mTypeAndFlags = (byte)(newType | (mTypeAndFlags & ~FILE_TYPE_MASK));
+                MarkDirty();
+            }
         }
         public ushort AuxType { get => 0; set { } }
 
@@ -118,18 +147,18 @@ namespace DiskArc.FS {
         public DateTime CreateWhen { get => TimeStamp.NO_DATE; set { } }
         public DateTime ModWhen {
             get { return TimeStamp.ConvertDateTime_Pascal(mModWhen); }
-            set => throw new NotImplementedException();
+            set {
+                CheckChangeAllowed();
+                mModWhen = TimeStamp.ConvertDateTime_Pascal(value);
+                MarkDirty();
+            }
         }
 
         public long StorageSize {
-            get {
-                return (mNextBlock - mStartBlock) * BLOCK_SIZE;
-            }
+            get { return (mNextBlock - mStartBlock) * BLOCK_SIZE; }
         }
         public long DataLength {
-            get {
-                return (mNextBlock - mStartBlock - 1) * BLOCK_SIZE + mByteCount;
-            }
+            get { return (mNextBlock - mStartBlock - 1) * BLOCK_SIZE + mByteCount; }
         }
 
         public long RsrcLength => 0;
@@ -172,6 +201,18 @@ namespace DiskArc.FS {
             }
         }
 
+        /// <summary>
+        /// Marks the file entry as dirty.
+        /// </summary>
+        /// <remarks>
+        /// We don't actually maintain a local "dirty" flag, because any change requires writing
+        /// the full directory out.  Instead, notify the filesystem object that changes are
+        /// pending.
+        /// </remarks>
+        internal void MarkDirty() {
+            FileSystem.IsVolDirDirty = true;
+        }
+
         //
         // Implementation-specific.
         //
@@ -207,6 +248,16 @@ namespace DiskArc.FS {
 
         public ushort StartBlock => mStartBlock;
         public ushort NextBlock => mNextBlock;
+        public ushort ByteCount {
+            get => mByteCount;
+            set {
+                Debug.Assert(value <= BLOCK_SIZE);
+                if (mByteCount != value) {
+                    mByteCount = value;
+                    MarkDirty();
+                }
+            }
+        }
 
         /// <summary>
         /// Converts a Pascal file type to its ProDOS equivalent.
@@ -424,15 +475,17 @@ namespace DiskArc.FS {
         /// <summary>
         /// Creates a new file entry.
         /// </summary>
-        internal static Pascal_FileEntry CreateEntry(Pascal fileSystem, ushort startBlock,
-                ushort nextBlock, FileKind kind, string fileName, DateTime modWhen) {
-            Pascal_FileEntry newEntry = new Pascal_FileEntry(fileSystem);
+        internal static Pascal_FileEntry CreateEntry(Pascal fs, IFileEntry volDir,
+                ushort startBlock, ushort nextBlock, FileKind kind, string fileName,
+                DateTime modWhen) {
+            Pascal_FileEntry newEntry = new Pascal_FileEntry(fs);
+            newEntry.ContainingDir = volDir;
             newEntry.mStartBlock = startBlock;
             newEntry.mNextBlock = nextBlock;
             newEntry.mTypeAndFlags = (ushort)kind;
             newEntry.mFileName = fileName;
             ASCIIUtil.StringToFixedPascalBytes(fileName, newEntry.mRawFileName);
-            newEntry.mByteCount = 1;
+            newEntry.mByteCount = 0;
             newEntry.mModWhen = TimeStamp.ConvertDateTime_Pascal(modWhen);
             return newEntry;
         }
@@ -443,8 +496,9 @@ namespace DiskArc.FS {
         private static Pascal_FileEntry CreateFakeVolDirEntry(Pascal fileSystem,
                 Pascal.VolDirHeader hdr) {
             string volName = ASCIIUtil.PascalBytesToString(hdr.mVolumeName);
-            Pascal_FileEntry newEntry = CreateEntry(fileSystem, hdr.mFirstBlock, hdr.mNextBlock,
-                FileKind.UntypedFile, volName, TimeStamp.ConvertDateTime_Pascal(hdr.mLastDateSet));
+            Pascal_FileEntry newEntry = CreateEntry(fileSystem, IFileEntry.NO_ENTRY,
+                hdr.mFirstBlock, hdr.mNextBlock, FileKind.UntypedFile, volName,
+                TimeStamp.ConvertDateTime_Pascal(hdr.mLastDateSet));
             newEntry.IsVolumeDirectory = true;
             return newEntry;
         }
@@ -466,7 +520,7 @@ namespace DiskArc.FS {
                 notes.AddW("Invalid start block " + mStartBlock + " for '" + FileName + "'");
                 return false;
             }
-            if (mNextBlock <= mStartBlock || mNextBlock >= hdr.mVolBlockCount) {
+            if (mNextBlock <= mStartBlock || mNextBlock > hdr.mVolBlockCount) {
                 notes.AddW("Invalid next block " + mNextBlock + " for '" + FileName +
                     "' (start=" + mStartBlock + ")");
                 return false;
@@ -500,6 +554,40 @@ namespace DiskArc.FS {
             mHasConflict = true;
         }
 
+        /// <summary>
+        /// Grows the file if the block index doesn't fit within the file bounds.  If the file
+        /// can't be expanded to fit the entire allocation, an exception is thrown.
+        /// </summary>
+        /// <param name="blockIndex">Block index within the file.</param>
+        /// <exception cref="DiskFullException">Unable to extend file.</exception>
+        internal void ExpandIfNeeded(int blockIndex) {
+            if (blockIndex < NextBlock - StartBlock) {
+                return;     // it fits
+            }
+
+            ushort maxNext = FileSystem.GetMaxNext(this);
+            Debug.Assert(maxNext >= NextBlock);
+            if (blockIndex < maxNext - StartBlock) {
+                mNextBlock = (ushort)(StartBlock + blockIndex + 1);
+                MarkDirty();
+            } else {
+                throw new DiskFullException("Disk full, unable to extend file");
+            }
+        }
+
+        /// <summary>
+        /// Truncates the file to the specified number of blocks.
+        /// </summary>
+        /// <param name="blockIndex">Block index within the file.</param>
+        internal void TruncateTo(int blockIndex) {
+            if (blockIndex >= NextBlock - StartBlock) {
+                throw new DAException("internal error: truncation would expand");
+            }
+
+            mNextBlock = (ushort)(StartBlock + blockIndex + 1);
+            MarkDirty();
+        }
+
         #region Filenames
 
         // Regex pattern for filename validation.
@@ -509,6 +597,8 @@ namespace DiskArc.FS {
         // (Regex trick is "negative lookahead": https://stackoverflow.com/a/35427132/294248.)
         private const string FILE_NAME_PATTERN = @"^((?![\$=?, \[#:])[\x20-\x7e])+$";
         private static Regex sFileNameRegex = new Regex(FILE_NAME_PATTERN);
+
+        private const string INVALID_CHARS = @"$=?, #:]";
 
         // IFileEntry
         public int CompareFileName(string fileName) {
@@ -537,12 +627,56 @@ namespace DiskArc.FS {
             return volName.Length <= Pascal.MAX_VOL_NAME_LEN && IsFileNameValid(volName);
         }
 
+        /// <summary>
+        /// Adjusts a filename to be compatible with this filesystem, removing invalid characters
+        /// and shortening the name.
+        /// </summary>
+        /// <param name="fileName">Filename to adjust.</param>
+        /// <returns>Adjusted filename.</returns>
         public static string AdjustFileName(string fileName) {
-            throw new NotImplementedException();
+            return DoAdjustName(fileName, Pascal.MAX_FILE_NAME_LEN);
         }
 
-        public static string AdjustVolumeName(string fileName) {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Adjusts a volume name to be compatible with this filesystem, removing invalid
+        /// characters and shortening the name.
+        /// </summary>
+        /// <param name="volName">Volume to adjust.</param>
+        /// <returns>Adjusted volume name.</returns>
+        public static string AdjustVolumeName(string volName) {
+            return DoAdjustName(volName, Pascal.MAX_VOL_NAME_LEN);
+        }
+
+        private static string DoAdjustName(string name, int maxLen) {
+            if (string.IsNullOrEmpty(name)) {
+                return "Q";
+            }
+
+            // Convert the string to ASCII values, stripping diacritical marks.
+            char[] chars = name.ToCharArray();
+            ASCIIUtil.ReduceToASCII(chars, '_');
+
+            // Replace invalid characters.
+            for (int i = 0; i < chars.Length; i++) {
+                char ch = chars[i];
+                if (ch < 0x20 || ch == 0x7f || INVALID_CHARS.Contains(ch)) {
+                    chars[i] = '_';
+                }
+            }
+            string cleaned = new string(chars);
+
+            // Clamp to max length by removing characters from the middle.  We won't lose the
+            // standard extensions (".TEXT", etc).
+            if (cleaned.Length > maxLen) {
+                int firstLen = maxLen / 2;              // 7 or 3
+                int lastLen = maxLen - (firstLen + 2);  // 6 or 2
+                cleaned = cleaned.Substring(0, firstLen) + ".." +
+                    cleaned.Substring(name.Length - lastLen, lastLen);
+                Debug.Assert(cleaned.Length == maxLen);
+            }
+
+            // Convert to upper case.
+            return cleaned.ToUpperInvariant();
         }
 
         #endregion Filenames

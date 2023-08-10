@@ -31,7 +31,7 @@ namespace DiskArc.FS {
         public const int MAX_VOL_SIZE = BLOCK_SIZE * 65535; // one block shy of 32MB
         public const int MAX_VOL_NAME_LEN = 7;
         public const int MAX_FILE_NAME_LEN = 15;
-        public const long MAX_FILE_LEN = 0x00ffffff;        // one byte shy of 16MB
+        public const long MAX_FILE_LEN = 0x01000000;        // 16MB (theoretically)
 
         private const string FILENAME_RULES =
             "1-15 characters, must not include '$=?,[#:', spaces, or control characters.";
@@ -289,8 +289,8 @@ namespace DiskArc.FS {
 
             try {
                 FlushVolumeDir();
-            } catch (IOException) {
-                AppHook.LogE("Failed while attempting to flush volume bitmap");
+            } catch {
+                AppHook.LogE("Failed while attempting to flush volume directory");
             }
 
             if (mVolDirEntry != IFileEntry.NO_ENTRY) {
@@ -324,7 +324,13 @@ namespace DiskArc.FS {
             byte[] buf = mDirOutBuffer;
             Array.Clear(buf);
 
-            // Output the volume header first.
+            // Output the volume header first.  Copy any changes out of the volume dir object.
+            mVolDirHeader.mLastDateSet = TimeStamp.ConvertDateTime_Pascal(mVolDirEntry.ModWhen);
+            byte[] rawName = mVolDirEntry.RawFileName;
+            mVolDirHeader.mVolumeName[0] = (byte)rawName.Length;
+            for (int i = 0; i < rawName.Length; i++) {
+                mVolDirHeader.mVolumeName[i + 1] = rawName[i];
+            }
             int offset = 0;
             mVolDirHeader.Store(buf, offset);
             offset += VolDirHeader.LENGTH;
@@ -673,7 +679,7 @@ namespace DiskArc.FS {
             // Create a new file entry.  We allocate one block, with the bytes-used zeroed.
             // Note the Pascal system will delete such files automatically.  (Filer-created
             // files will have 1 block, with all 512 bytes used.)
-            Pascal_FileEntry newEntry = Pascal_FileEntry.CreateEntry(this, gapStart,
+            Pascal_FileEntry newEntry = Pascal_FileEntry.CreateEntry(this, mVolDirEntry, gapStart,
                 (ushort)(gapStart + 1), Pascal_FileEntry.FileKind.DataFile, fileName, DateTime.Now);
             VolUsage!.AllocChunk(gapStart, newEntry);
 
@@ -724,14 +730,45 @@ namespace DiskArc.FS {
             return (gapBlockCount != 0);
         }
 
+        /// <summary>
+        /// Determines the maximum allowed value for the "next block" field for a file entry.
+        /// </summary>
+        /// <param name="entry">File entry to examine.</param>
+        /// <returns>Maximum next value (which will be equal to the current next value if the
+        ///   file has run out of room).</returns>
+        internal ushort GetMaxNext(Pascal_FileEntry entry) {
+            Pascal_FileEntry volDir = (Pascal_FileEntry)mVolDirEntry;
+            // This is a linear search.  We could do a faster binary search by StartBlock.
+            int index = volDir.ChildList.IndexOf(entry);
+            if (index < 0) {
+                throw new DAException("Unable to find entry for open file");
+            }
+            ushort nextNext;
+            if (index == volDir.ChildList.Count - 1) {
+                // We're the last entry, so we can continue to the end of the volume.
+                nextNext = mVolDirHeader.mVolBlockCount;
+            } else {
+                // We can only go until the start block of the next entry.
+                nextNext = ((Pascal_FileEntry)volDir.ChildList[index + 1]).StartBlock;
+            }
+            return nextNext;
+        }
+
         // IFileSystem
         public void AddRsrcFork(IFileEntry entry) {
             throw new IOException("Filesystem does not support resource forks");
         }
 
         // IFileSystem
-        public void MoveFile(IFileEntry entry, IFileEntry destDir, string newFileName) {
-            throw new NotImplementedException();
+        public void MoveFile(IFileEntry ientry, IFileEntry destDir, string newFileName) {
+            CheckFileAccess("move", ientry, true, FilePart.Unknown);
+            if (destDir != mVolDirEntry) {
+                throw new IOException("Destination directory is invalid");
+            }
+
+            // Just a rename.
+            ientry.FileName = newFileName;
+            ientry.SaveChanges();
         }
 
         // IFileSystem
@@ -756,6 +793,19 @@ namespace DiskArc.FS {
             // Save the updated directory.
             IsVolDirDirty = true;
             FlushVolumeDir();
+        }
+
+        /// <summary>
+        /// Defragments ("crunches") the filesystem.
+        /// </summary>
+        /// <remarks>
+        /// <para>The filesystem must be in raw-access mode.</para>
+        /// </remarks>
+        /// <returns>True if the drive was defragmented, false if something (such as bad blocks)
+        ///   prevented the operation from starting.</returns>
+        public bool Defragment() {
+            // TODO - check for bad block files, maybe do a bad block scan
+            throw new NotImplementedException();
         }
 
         #region Miscellaneous

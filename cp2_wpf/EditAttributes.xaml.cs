@@ -295,6 +295,11 @@ namespace cp2_wpf {
         /// </summary>
         public bool IsProTypeListEnabled { get; private set; } = true;
 
+        /// <summary>
+        /// True if the ProDOS aux type entry field is enabled.
+        /// </summary>
+        public bool IsProAuxEnabled { get; private set; } = true;
+
         public string ProTypeDescString {
             get { return mProTypeDescString; }
             set { mProTypeDescString = value; OnPropertyChanged(); }
@@ -462,6 +467,17 @@ namespace cp2_wpf {
             FileAttribs.FILE_TYPE_F3,       // AA
             FileAttribs.FILE_TYPE_F4        // BB
         };
+        private static readonly byte[] PASCAL_TYPES = {
+            FileAttribs.FILE_TYPE_NON,      // untyped
+            FileAttribs.FILE_TYPE_BAD,      // bad blocks
+            FileAttribs.FILE_TYPE_PCD,      // code
+            FileAttribs.FILE_TYPE_PTX,      // text
+            FileAttribs.FILE_TYPE_F3,       // info
+            FileAttribs.FILE_TYPE_PDA,      // data
+            FileAttribs.FILE_TYPE_F4,       // graf
+            FileAttribs.FILE_TYPE_FOT,      // foto
+            FileAttribs.FILE_TYPE_F5        // securedir
+        };
 
         /// <summary>
         /// Prepares the DOS/ProDOS type pop-up.
@@ -471,12 +487,26 @@ namespace cp2_wpf {
                 if (mFileEntry.IsDirectory) {
                     // Editing VTOC volume number.
                     IsProTypeListEnabled = false;
+                    IsProAuxEnabled = false;
                     ProTypeVisibility = Visibility.Collapsed;
                 } else {
                     // Editing DOS file type.  In theory we want to enable/disable the aux type
                     // field based on the current file type, but it's not essential.
                     foreach (byte type in DOS_TYPES) {
                         string abbrev = FileTypes.GetDOSTypeAbbrev(type);
+                        ProTypeList.Add(new ProTypeListItem(abbrev, type));
+                    }
+                }
+            } else if (mFileEntry is Pascal_FileEntry) {
+                IsProAuxEnabled = false;
+                if (mFileEntry.IsDirectory) {
+                    // Editing volume name.
+                    IsProTypeListEnabled = false;
+                    ProTypeVisibility = Visibility.Collapsed;
+                } else {
+                    // Editing Pascal file type.
+                    foreach (byte type in PASCAL_TYPES) {
+                        string abbrev = FileTypes.GetPascalTypeName(type);
                         ProTypeList.Add(new ProTypeListItem(abbrev, type));
                     }
                 }
@@ -490,9 +520,9 @@ namespace cp2_wpf {
                     ProTypeList.Add(new ProTypeListItem(label, (byte)type));
                 }
 
-                IsProTypeListEnabled = (!mFileEntry.IsDirectory);
+                IsProTypeListEnabled = IsProAuxEnabled = (!mFileEntry.IsDirectory);
             } else {
-                IsProTypeListEnabled = false;
+                IsProTypeListEnabled = IsProAuxEnabled = false;
                 ProTypeVisibility = Visibility.Collapsed;
             }
 
@@ -552,6 +582,7 @@ namespace cp2_wpf {
 
         #endregion File Type
 
+        #region Timestamps
 
         //
         // Dates.
@@ -702,7 +733,7 @@ namespace cp2_wpf {
 
             // Disable creation date input for formats that don't support it.
             if ((mArchiveOrFileSystem is Zip && mADFEntry == IFileEntry.NO_ENTRY) ||
-                    mArchiveOrFileSystem is GZip) {
+                    mArchiveOrFileSystem is GZip || mArchiveOrFileSystem is Pascal) {
                 CreateWhenEnabled = false;
             }
 
@@ -723,6 +754,7 @@ namespace cp2_wpf {
             mCreateWhenValid = mModWhenValid = true;
         }
 
+        #endregion Timestamps
 
         #region Access Flags
 
@@ -782,7 +814,7 @@ namespace cp2_wpf {
             // system-specific permissions in the "extra" data, but DiskArc doesn't currently
             // support that.
             if ((mArchiveOrFileSystem is Zip && mADFEntry == IFileEntry.NO_ENTRY) ||
-                    mArchiveOrFileSystem is GZip) {
+                    mArchiveOrFileSystem is GZip || mArchiveOrFileSystem is Pascal) {
                 AccessVisibility = Visibility.Collapsed;
                 return;
             }

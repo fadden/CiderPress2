@@ -321,7 +321,7 @@ cause the block to become sparse, but seeking past the EOF and then writing can 
 
 The features of the Seek() call that allow examination of sparse regions only work in "raw" mode.
 
-Extending a file with SetLength() will only have an effect on I/A/B files, and only in "cooked"
+Extending a file with `SetLength()` will only have an effect on I/A/B files, and only in "cooked"
 mode; for these the embedded EOF value is updated.  In no event will it add additional sectors
 to the file.  Partially truncating a sparse file may cause the file to become shorter than
 expected, because the "raw" length is determined by the position of the last non-sparse sector.
@@ -358,6 +358,7 @@ in the creator and file type fields is defined, but it is up to the application 
 the translation if desired.
 
 Using `SetLength()` to extend a file will cause additional storage to be allocated immediately.
+The new storage will be zeroed out.
 
 Filenames may be up to 31 characters long, and include any character except colon (':'), except
 for the volume name which is limited to 27 characters.  Names may have embedded null bytes, though
@@ -365,12 +366,30 @@ this is discouraged.  The character set used is assumed to be Mac OS Roman, and 
 filename will have an appropriate transformation to Unicode applied.  Control characters are
 converted to the Unicode "control pictures" block.
 
-Directories are not files.  They do not have a length or a file type.
+Directories are not files.  They do not have a length or a file type, but they do have timestamps.
 
-The original CiderPress (and presumably a number of other applications) used libhfs v3.2.6 by
-Robert Leslie.  That code incorrectly handled Daylight Saving Time calculations for file
-timestamps.  This means that CiderPress II will report some timestamps offset by an hour from
-some other utilities.  (They will match the values shown on a Mac or Apple IIgs.)
+The original CiderPress (and presumably a number of other applications) used libhfs from
+hfsutils v3.2.6 by Robert Leslie.  That code incorrectly handled Daylight Saving Time calculations
+for file timestamps.  This means that CiderPress II will report some timestamps offset by an hour
+from some other utilities.  (They will match the values shown on a Mac or Apple IIgs.)
+
+### Pascal ###
+
+The Apple Pascal filesystem is very well supported.  The structure is very simple, so very
+little can go wrong.  All interfaces are fully supported.
+
+Files are stored as simple start/length extents, so fragmentation is a significant issue.  The
+class defines a `Defragment()` call that performs the same function as the Filer "K(runch"
+command.  Disks with errors cannot be defragmented.
+
+Zero-length files can be created, but will be deleted silently by the system during boot.
+
+Using `SetLength()` to extend a file will cause additional storage to be allocated immediately.
+The new storage will be zeroed out.  Seeking past the end of the file and writing data will
+allocate the intervening blocks, but will not zero them out.
+
+The last date set for the system is stored in the volume directory header.  This can be accessed
+as the modification date on the volume directory object.
 
 ### ProDOS ###
 
@@ -383,7 +402,7 @@ be edited independently.
 
 The implementation is similar to the ProDOS FST in GS/OS.  Blocks filled with zeroes will be
 written as "sparse" blocks to reduce the storage required.  Lower-case filenames are allowed,
-via the GS/OS extension.  Extending a file with SetLength() will add a sparse area at the end.
+via the GS/OS extension.  Extending a file with `SetLength()` will add a sparse area at the end.
 
 Embedded DOS volumes, such as those created by DOS.MASTER, can be detected automatically.
 

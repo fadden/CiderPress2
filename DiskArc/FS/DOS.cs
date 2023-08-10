@@ -930,9 +930,9 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public void MoveFile(IFileEntry ientry, IFileEntry newDir, string newFileName) {
+        public void MoveFile(IFileEntry ientry, IFileEntry destDir, string newFileName) {
             CheckFileAccess("move", ientry, true, FilePart.Unknown);
-            if (newDir != mVolDirEntry) {
+            if (destDir != mVolDirEntry) {
                 throw new IOException("Destination directory is invalid");
             }
 

@@ -19,26 +19,36 @@ using System.Text;
 
 using CommonUtil;
 using DiskArc;
+using DiskArc.FS;
 using static DiskArc.Defs;
 using static DiskArc.IFileSystem;
 
 namespace DiskArcTests {
+    /// <summary>
+    /// Pascal filesystem I/O tests.
+    /// </summary>
     public class TestPascal_FileIO : ITest {
+        private const int SYSTEM_BLOCKS = 6;        // two for boot, four for volume dir
+
         // Simple create / delete test.
         public static void TestCreateDelete(AppHook appHook) {
             using (IFileSystem fs = Make525Floppy("Tester", appHook)) {
                 IFileEntry volDir = fs.GetVolDirEntry();
 
                 IFileEntry fileX = fs.CreateFile(volDir, "FILEx", CreateMode.File);
-                IFileEntry file1 = fs.CreateFile(volDir, "FILE0", CreateMode.File);
+                try {
+                    fs.CreateFile(volDir, "FILEx", CreateMode.File);
+                    throw new Exception("Created a second file with same name");
+                } catch (IOException) { /*expected*/ }
+                IFileEntry file0 = fs.CreateFile(volDir, "FILE0", CreateMode.File);
                 IFileEntry fileY = fs.CreateFile(volDir, "FILEy", CreateMode.File);
-                IFileEntry file3 = fs.CreateFile(volDir, "FILE1", CreateMode.File);
+                IFileEntry file1 = fs.CreateFile(volDir, "FILE1", CreateMode.File);
                 IFileEntry fileZ = fs.CreateFile(volDir, "FILEz", CreateMode.File);
                 fs.DeleteFile(fileX);
                 fs.DeleteFile(fileY);
                 fs.DeleteFile(fileZ);
-                IFileEntry file0 = fs.CreateFile(volDir, "FILE2", CreateMode.File);
-                IFileEntry file2 = fs.CreateFile(volDir, "FILE3", CreateMode.File);
+                IFileEntry file2 = fs.CreateFile(volDir, "FILE2", CreateMode.File);
+                IFileEntry file3 = fs.CreateFile(volDir, "FILE3", CreateMode.File);
                 IFileEntry file4 = fs.CreateFile(volDir, "FILE4", CreateMode.File);
 
                 // Files are added to the largest gap, which means they will always be added
@@ -49,16 +59,297 @@ namespace DiskArcTests {
                     Helper.ExpectString(expName, entry.FileName, "file out of order");
                     index++;
                 }
-
-                //fs.DumpToFile(@"c:\src\ciderpress2\test.po");
             }
         }
+
+        public static void TestCreateDeleteExpand(AppHook appHook) {
+            using (IFileSystem fs = Make525Floppy("Tester", appHook)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+
+                IFileEntry fileX = fs.CreateFile(volDir, "FILEx", CreateMode.File);
+                IFileEntry file1 = fs.CreateFile(volDir, "FILE1", CreateMode.File);
+                IFileEntry fileY = fs.CreateFile(volDir, "FILEy", CreateMode.File);
+                IFileEntry file3 = fs.CreateFile(volDir, "FILE3", CreateMode.File);
+                IFileEntry fileZ = fs.CreateFile(volDir, "FILEz", CreateMode.File);
+                IFileEntry file5 = fs.CreateFile(volDir, "FILE5", CreateMode.File);
+                // Six files have been created.  Expand the last to fill the disk.
+                long expectedFree = (280 - SYSTEM_BLOCKS - 6) * BLOCK_SIZE;
+                long fillDiskLen = expectedFree + BLOCK_SIZE;
+                Helper.ExpectLong(expectedFree, fs.FreeSpace, "free space not right");
+                using (Stream stream = fs.OpenFile(file5, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    stream.SetLength(fillDiskLen);
+                }
+                Helper.ExpectLong(fillDiskLen, file5.DataLength, "file didn't fully expand");
+                Helper.ExpectLong(0, fs.FreeSpace, "disk isn't full");
+
+                try {
+                    fs.CreateFile(volDir, "FULL", CreateMode.File);
+                    throw new Exception("Overfilled the disk");
+                } catch (DiskFullException) { /*expected*/ }
+
+                fs.DeleteFile(fileX);
+                fs.DeleteFile(fileY);
+                fs.DeleteFile(fileZ);
+                IFileEntry file0 = fs.CreateFile(volDir, "FILE0", CreateMode.File);
+                IFileEntry file2 = fs.CreateFile(volDir, "FILE2", CreateMode.File);
+                IFileEntry file4 = fs.CreateFile(volDir, "FILE4", CreateMode.File);
+
+                // No space at end of disk, so new files should fill in the gaps, in order.
+                int index = 0;
+                foreach (IFileEntry entry in volDir) {
+                    string expName = "FILE" + index;
+                    Helper.ExpectString(expName, entry.FileName, "file out of order");
+                    index++;
+                }
+            }
+        }
+
+        public static void TestAttributes(AppHook appHook) {
+            using (IFileSystem fs = Make525Floppy("Tester", appHook)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+                IFileEntry file0 = fs.CreateFile(volDir, "FILE0", CreateMode.File);
+                IFileEntry file1 = fs.CreateFile(volDir, "FILE1", CreateMode.File);
+                IFileEntry file2 = fs.CreateFile(volDir, "FILE2", CreateMode.File);
+
+                Helper.ExpectString("FILE0", file0.FileName, "wrong filename");
+                byte[] raw = file0.RawFileName;
+                if (raw.Length != 5 || Encoding.ASCII.GetString(raw) != "FILE0") {
+                    throw new Exception("Incorrect raw filename");
+                }
+                Helper.ExpectByte(FileAttribs.FILE_TYPE_PDA, file0.FileType, "wrong default type");
+                Helper.ExpectInt(0, file0.AuxType, "wrong aux type");
+
+                DateTime testDate = new DateTime(1977, 06, 01);
+                file1.FileName = "New/FILE1";
+                file1.FileType = FileAttribs.FILE_TYPE_FOT;
+                file1.ModWhen = testDate;
+                if (file1.FileName != "NEW/FILE1" || file1.FileType != FileAttribs.FILE_TYPE_FOT ||
+                        file1.ModWhen != testDate) {
+                    throw new Exception("file attribute changes didn't take");
+                }
+                try {
+                    file1.FileName = "BAD NAME";
+                    throw new Exception("Bad name accepted");
+                } catch (ArgumentException) { /*expected*/ }
+
+                fs.MoveFile(file2, volDir, "NEW^FILE2");
+                Helper.ExpectString("NEW^FILE2", file2.FileName, "MoveFile rename failed");
+
+                volDir.FileName = "MY~Vol";
+                volDir.ModWhen = testDate;
+                if (volDir.FileName != "MY~VOL" || volDir.ModWhen != testDate) {
+                    throw new Exception("volume attribute changes didn't take");
+                }
+
+                // Bounce the filesystem.
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+
+                volDir = fs.GetVolDirEntry();
+                file1 = fs.FindFileEntry(volDir, "NEW/FILE1");
+                if (file1.FileType != FileAttribs.FILE_TYPE_FOT || file1.ModWhen != testDate) {
+                    throw new Exception("file attribute changes were lost");
+                }
+                if (volDir.FileName != "MY~VOL" || volDir.ModWhen != testDate) {
+                    throw new Exception("volume attribute changes were lost");
+                }
+            }
+        }
+
+        // Create files of various sizes, one byte at a time, and confirm that they retain
+        // their size and contents.
+        public static void TestByteRW(AppHook appHook) {
+            using (IFileSystem fs = Make525Floppy("RdWr", appHook)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+                IFileEntry file0 = fs.CreateFile(volDir, "FILE_0", CreateMode.File);
+                CheckFill(fs, file0, 0);
+                Helper.ExpectLong(BLOCK_SIZE, file0.StorageSize, "wrong storage size");
+
+                IFileEntry file1 = fs.CreateFile(volDir, "FILE_1", CreateMode.File);
+                FillFile(fs, file1, 1);
+                CheckFill(fs, file1, 1);
+                Helper.ExpectLong(BLOCK_SIZE, file1.StorageSize, "wrong storage size");
+
+                IFileEntry file511 = fs.CreateFile(volDir, "FILE_511", CreateMode.File);
+                FillFile(fs, file511, 511);
+                CheckFill(fs, file511, 511);
+                Helper.ExpectLong(BLOCK_SIZE, file511.StorageSize, "wrong storage size");
+
+                IFileEntry file512 = fs.CreateFile(volDir, "FILE_512", CreateMode.File);
+                FillFile(fs, file512, 512);
+                CheckFill(fs, file512, 512);
+                Helper.ExpectLong(BLOCK_SIZE, file512.StorageSize, "wrong storage size");
+
+                IFileEntry file513 = fs.CreateFile(volDir, "FILE_513", CreateMode.File);
+                FillFile(fs, file513, 513);
+                CheckFill(fs, file513, 513);
+                Helper.ExpectLong(BLOCK_SIZE * 2, file513.StorageSize, "wrong storage size");
+
+                IFileEntry file4096 = fs.CreateFile(volDir, "FILE_4096", CreateMode.File);
+                FillFile(fs, file4096, 4096);
+                CheckFill(fs, file4096, 4096);
+                Helper.ExpectLong(BLOCK_SIZE * 8, file4096.StorageSize, "wrong storage size");
+
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+                volDir = fs.GetVolDirEntry();
+
+                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_0"), 0);
+                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_1"), 1);
+                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_511"), 511);
+                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_512"), 512);
+                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_513"), 513);
+                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_4096"), 4096);
+
+                IFileEntry overFill = fs.CreateFile(volDir, "OVER!FILL", CreateMode.File);
+                try {
+                    FillFile(fs, overFill, 140 * 1024);
+                } catch (DiskFullException) { /*expected*/ }
+
+                Helper.ExpectLong(0, fs.FreeSpace, "some space still free");
+
+                // Delete a one-block file, create a new one, write 512 bytes into it to verify
+                // that we don't over-allocate.
+                file511 = fs.FindFileEntry(volDir, "FILE_511");
+                Helper.ExpectLong(BLOCK_SIZE, file511.StorageSize, "wrong storage size");
+                fs.DeleteFile(file511);
+                IFileEntry new512 = fs.CreateFile(volDir, "FILE_512_NEW", CreateMode.File);
+                FillFile(fs, new512, 512);
+                CheckFill(fs, new512, 512);
+            }
+        }
+
+        // Test different ways of changing the file length.
+        public static void TestLengthChange(AppHook appHook) {
+            const int TEST_SIZE = 16384;
+            using (IFileSystem fs = Make525Floppy("@LENGT%", appHook)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+                IFileEntry file1 = fs.CreateFile(volDir, "FILE1", CreateMode.File);
+
+                byte[] patBuf = Helper.SeqByteTestPattern(TEST_SIZE);
+                using (Stream stream = fs.OpenFile(file1, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    stream.Write(patBuf, 0, TEST_SIZE);
+                }
+
+                byte[] readBuf = new byte[TEST_SIZE];
+                using (Stream stream = fs.OpenFile(file1, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    stream.ReadExactly(readBuf, 0, TEST_SIZE);
+                    if (RawData.MemCmp(patBuf, readBuf, TEST_SIZE) != 0) {
+                        throw new Exception("Data read doesn't match data written");
+                    }
+
+                    // Truncate file, confirm additional space is zeroed.
+                    const int PARTIAL = 768;        // halfway into second block
+                    stream.SetLength(PARTIAL);
+                    Helper.ExpectLong(PARTIAL, file1.DataLength, "incorrect length / PARTIAL");
+                    stream.SetLength(TEST_SIZE);
+                    Helper.ExpectLong(TEST_SIZE, file1.DataLength, "incorrect length / TEST_SIZE");
+                    stream.Position = 0;
+                    stream.ReadExactly(readBuf, 0, TEST_SIZE);
+                    if (RawData.MemCmp(patBuf, readBuf, PARTIAL) != 0) {
+                        throw new Exception("First part of data doesn't match what was written");
+                    }
+                    for (int i = PARTIAL; i < TEST_SIZE; i++) {
+                        if (readBuf[i] != 0) {
+                            throw new Exception("Truncation didn't zero out data");
+                        }
+                    }
+
+                    // Seek past the end and write a byte.  This may or may not zero the
+                    // intervening storage (currently it doesn't, but that's not required).
+                    stream.SetLength(0);
+                    Helper.ExpectLong(0, file1.DataLength, "incorrect truncated length");
+                    stream.Position = 0;
+                    stream.WriteByte(0xaa);
+                    Helper.ExpectLong(1, stream.Length, "incorrect stream length (1)");
+                    stream.Flush();
+                    Helper.ExpectLong(1, file1.DataLength, "incorrect file length (1)");
+
+                    stream.Position = TEST_SIZE - 1;
+                    stream.WriteByte(0xff);
+                    Helper.ExpectLong(TEST_SIZE, stream.Length, "incorrect stream length (TS)");
+                    stream.Flush();
+                    Helper.ExpectLong(TEST_SIZE, file1.DataLength, "incorrect file length (TS)");
+
+                    // Try an excessively large length extension.  When it fails, the length of
+                    // the file and the stream should be unchanged.
+                    try {
+                        stream.SetLength(140 * 1024);
+                        throw new Exception("extended file length beyond disk limits");
+                    } catch (DiskFullException) { /*expected*/ }
+                    Helper.ExpectLong(TEST_SIZE, stream.Length, "bad setlen altered stream len");
+                    Helper.ExpectLong(TEST_SIZE, file1.DataLength, "bad setlen altered file len");
+                }
+            }
+        }
+
+        public static void TestVolDirFull(AppHook appHook) {
+            const int MAX_FILE_COUNT = 77;      // floor(2048/26) - 1
+            using (IFileSystem fs = Make525Floppy("FILLER", appHook)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+                for (int i = 0; i < MAX_FILE_COUNT; i++) {
+                    fs.CreateFile(volDir, "FILE_" + i, CreateMode.File);
+                }
+
+                try {
+                    fs.CreateFile(volDir, "STRAW", CreateMode.File);
+                    throw new Exception("created too many files");
+                } catch (DiskFullException) { /*expected*/ }
+            }
+        }
+
+        public static void TestAdjust(AppHook appHook) {
+            Helper.ExpectString("HELLO",
+                Pascal_FileEntry.AdjustFileName("HELLO"), "err");
+            Helper.ExpectString("NAME_TO..G.TEXT",
+                Pascal_FileEntry.AdjustFileName("NAME_TOO_LONG.TEXT"), "err");
+            Helper.ExpectString("NO_SPACES_PLS",
+                Pascal_FileEntry.AdjustFileName("No Spaces Pls"), "err");
+            Helper.ExpectString("________",
+                Pascal_FileEntry.AdjustFileName("$=?, #:]"), "err");
+
+            Helper.ExpectString("VER..RT",
+                Pascal_FileEntry.AdjustVolumeName("Very, very Short"), "err");
+        }
+
 
         #region Utilities
 
         private static IFileSystem Make525Floppy(string volName, AppHook appHook) {
             return Helper.CreateTestImage(volName, FileSystemType.Pascal, 280, appHook,
                 out MemoryStream memFile);
+        }
+
+        private static void FillFile(IFileSystem fs, IFileEntry entry, int count) {
+            using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadWrite,
+                    FilePart.DataFork)) {
+                for (int i = 0; i < count; i++) {
+                    stream.WriteByte((byte)i);
+                }
+            }
+        }
+
+        private static void CheckFill(IFileSystem fs, IFileEntry entry, int count) {
+            if (entry.DataLength != count) {
+                throw new Exception("Expected length " + count + ", actual=" + entry.DataLength);
+            }
+            using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadWrite,
+                    FilePart.DataFork)) {
+                for (int i = 0; i < count; i++) {
+                    if (stream.ReadByte() != (byte)i) {
+                        throw new Exception("Mismatched byte in " + entry.FileName +
+                            " at offset " + i);
+                    }
+                }
+                if (stream.ReadByte() != -1) {
+                    throw new Exception("Failed to get EOF result at end");
+                }
+            }
         }
 
         #endregion Utilities

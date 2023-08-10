@@ -151,7 +151,72 @@ namespace DiskArc.FS {
 
         // Stream
         public override void Write(byte[] buffer, int offset, int count) {
-            throw new NotImplementedException();
+            CheckValid();
+            if (mIsReadOnly) {
+                throw new NotSupportedException("File was opened read-only");
+            }
+            if (offset < 0 || count < 0) {
+                throw new ArgumentOutOfRangeException("Bad offset / count");
+            }
+            if (buffer == null) {
+                throw new ArgumentNullException("Buffer is null");
+            }
+            if (count == 0) {
+                return;
+            }
+            if (offset >= buffer.Length || count > buffer.Length - offset) {
+                throw new ArgumentException("Buffer overrun");
+            }
+            if (offset + count > buffer.Length) {
+                throw new ArgumentOutOfRangeException("Buffer overflow");
+            }
+            Debug.Assert(mMark >= 0 && mMark <= Pascal.MAX_FILE_LEN);
+            if (mMark + count > Pascal.MAX_FILE_LEN) {
+                // We don't do partial writes, so we just throw if we're off the end.
+                throw new IOException("Write would exceed max file size (mark=" +
+                    mMark + " len=" + count + ")");
+            }
+
+            while (count > 0) {
+                // Set block index according to file position.
+                int blockIndex = mMark / BLOCK_SIZE;
+                int blockOffset = mMark % BLOCK_SIZE;
+
+                byte[] writeSource;
+                int writeSourceOff;
+                int writeLen;
+
+                FileEntry.ExpandIfNeeded(blockIndex);
+                uint blockNum = FileEntry.StartBlock + (uint)blockIndex;
+                if (blockOffset != 0 || count < BLOCK_SIZE) {
+                    // Partial write to the start or end of a block.  Read the block and merge
+                    // the contents.
+                    FileSystem.ChunkAccess.ReadBlock(blockNum, mTmpBlockBuf, 0);
+                    writeLen = BLOCK_SIZE - blockOffset;
+                    if (writeLen > count) {
+                        writeLen = count;
+                    }
+                    Array.Copy(buffer, offset, mTmpBlockBuf, blockOffset, writeLen);
+                    writeSource = mTmpBlockBuf;
+                    writeSourceOff = 0;
+                } else {
+                    // Writing a full block, so just use the source data.
+                    writeSource = buffer;
+                    writeSourceOff = offset;
+                    writeLen = BLOCK_SIZE;
+                }
+
+                // Finally, write the block to the disk.
+                FileSystem.ChunkAccess.WriteBlock(blockNum, writeSource, writeSourceOff);
+
+                // Advance file position.
+                mMark += writeLen;
+                offset += writeLen;
+                count -= writeLen;
+                if (mMark > mEOF) {
+                    mEOF = mMark;
+                }
+            }
         }
 
         // Stream
@@ -183,7 +248,7 @@ namespace DiskArc.FS {
             }
 
             // It's okay to be positioned one byte past the end of the file.  The largest file is
-            // 0x00ffffff, so the last byte is at mark=0x00fffffe, and we want to allow 0x00ffffff.
+            // 0x01000000, so the last byte is at mark=0x00ffffff, and we want to allow 0x01000000.
             if (newPos < 0 || newPos > Pascal.MAX_FILE_LEN) {
                 throw new IOException("Invalid seek offset " + newPos);
             }
@@ -191,9 +256,78 @@ namespace DiskArc.FS {
             return newPos;
         }
 
+        private static readonly byte[] sZeroBuf = new byte[BLOCK_SIZE];
+
         // Stream
-        public override void SetLength(long value) {
-            throw new NotImplementedException();
+        public override void SetLength(long newEof) {
+            CheckValid();
+            if (mIsReadOnly) {
+                throw new NotSupportedException("File was opened read-only");
+            }
+            if (newEof < 0 || newEof > Pascal.MAX_FILE_LEN) {
+                throw new ArgumentOutOfRangeException("Invalid EOF (" + newEof + ")");
+            }
+            if (newEof == mEOF) {
+                return;
+            }
+
+            // If the end of file is 0, 511, or 512, we need one block; at 513 we need 2.  So
+            // the number of blocks required is ((EOF - 1) / 512) + 1, with a special case
+            // for zero because we still want to allocate a block even if we don't have data.
+            // We want the index of the last block, which is (length - 1).
+
+            int oldLastBlockIndex = (mEOF - 1) / BLOCK_SIZE;
+            int newLastBlockIndex = ((int)newEof - 1) / BLOCK_SIZE;
+            if (oldLastBlockIndex == newLastBlockIndex) {
+                // No change to number of blocks used.  If the EOF is different, update it.
+                if (mEOF != (int)newEof) {
+                    mEOF = (int)newEof;
+                }
+                Flush();
+                return;
+            }
+
+            Debug.Assert(FileEntry.StartBlock + oldLastBlockIndex < FileEntry.NextBlock);
+
+            if (newEof > mEOF) {
+                // Grow the file as much as possible.  This will throw when we run out of space.
+                // We could do a simple "FileEntry.ExpandIfNeeded(newLastBlockIndex)", but that
+                // would leave the previous contents of the disk in the file.  Better to zero it.
+                int savedMark = mMark;
+                ushort origNextBlock = FileEntry.NextBlock;
+                int origEOF = mEOF;
+                try {
+                    mMark = mEOF;
+                    int needed = (int)(newEof - mEOF);
+
+                    // Do a potentially smaller write on the first one so we're aligned with
+                    // the allocation block size.  This avoids partial block writes in the
+                    // Write() call on subsequent iterations.
+                    int partialCount = mMark % BLOCK_SIZE;
+                    while (needed > 0) {
+                        int thisCount = BLOCK_SIZE - partialCount;
+                        if (thisCount > needed) {
+                            thisCount = needed;
+                        }
+                        Write(sZeroBuf, 0, thisCount);
+
+                        needed -= thisCount;
+                        partialCount = 0;
+                    }
+                } catch {
+                    // Probably a DiskFullException.  Undo the growth and re-throw.
+                    FileEntry.TruncateTo(oldLastBlockIndex);
+                    mEOF = origEOF;
+                    mMark = savedMark;
+                    throw;
+                }
+            } else {
+                // Truncate the storage space.
+                FileEntry.TruncateTo(newLastBlockIndex);
+            }
+
+            mEOF = (int)newEof;
+            Flush();
         }
 
         // Stream
@@ -202,7 +336,17 @@ namespace DiskArc.FS {
             if (mIsReadOnly) {
                 return;
             }
-            throw new NotImplementedException();
+
+            // Changes to NextBlock are made directly to the file entry, but we don't update
+            // the byte count on every write.  Update it here.
+            //
+            // This is a little tricky because a 512-byte file has a byte count of 512, not zero.
+            ushort bytesInLastBlock = (ushort)(mEOF % BLOCK_SIZE);
+            if (mEOF != 0 && bytesInLastBlock == 0) {
+                bytesInLastBlock = 512;     // exactly filled out last block
+            }
+            FileEntry.ByteCount = bytesInLastBlock;
+            FileEntry.SaveChanges();
         }
 
         // IDisposable generic finalizer.

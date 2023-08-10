@@ -223,7 +223,8 @@ namespace DiskArc.FS {
                 int blockOffset = mMark % BLOCK_SIZE;
 
                 // Add storage until we're caught up with the file mark.  If this is the first
-                // write after a Seek call, we might need to do this several times.
+                // write after a Seek call, we might need to do this several times.  Note this
+                // does not zero out the storage.
                 if (mMark >= mFileStorage.PhyLength) {
                     mFileStorage.Extend();
                     continue;
@@ -368,6 +369,8 @@ namespace DiskArc.FS {
                         partialCount = 0;
                     }
                 } catch {
+                    // We don't undo the allocations, but we leave the EOF unchanged.  The
+                    // file close code will truncate the excess if necessary.
                     mMark = savedMark;
                     throw;
                 }
@@ -390,11 +393,6 @@ namespace DiskArc.FS {
             }
 
             mFileStorage.Trim(mEndOfFile);
-        }
-
-        // DiskFileStream
-        public List<int> GetDataChunks() {
-            throw new NotImplementedException();
         }
 
         // IDisposable generic finalizer.

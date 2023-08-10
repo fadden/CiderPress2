@@ -67,6 +67,36 @@ namespace AppCommon {
         }
 
         /// <summary>
+        /// Gets a short value for the Pascal file type.
+        /// </summary>
+        /// <param name="fileType">ProDOS equivalent file type.</param>
+        /// <returns>Abbreviation string.</returns>
+        public static string GetPascalTypeName(int fileType) {
+            switch (fileType) {
+                case FileAttribs.FILE_TYPE_NON:
+                    return "Untyped";
+                case FileAttribs.FILE_TYPE_BAD:
+                    return "Bad";
+                case FileAttribs.FILE_TYPE_PCD:
+                    return "Code";
+                case FileAttribs.FILE_TYPE_PTX:
+                    return "Text";
+                case FileAttribs.FILE_TYPE_F3:
+                    return "Info";
+                case FileAttribs.FILE_TYPE_PDA:
+                    return "Data";
+                case FileAttribs.FILE_TYPE_F4:
+                    return "Graf";
+                case FileAttribs.FILE_TYPE_FOT:
+                    return "Foto";
+                case FileAttribs.FILE_TYPE_F5:
+                    return "S.dir";
+                default:
+                    return "?";
+            }
+        }
+
+        /// <summary>
         /// Finds a ProDOS file type by 3-letter abbreviation.  Two-letter strings will have a
         /// space appended (for "OS " and "WP ").
         /// </summary>

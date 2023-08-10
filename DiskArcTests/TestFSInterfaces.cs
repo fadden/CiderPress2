@@ -94,6 +94,29 @@ namespace DiskArcTests {
             }
         }
 
+        public static void TestPascal(AppHook appHook) {
+            using (Stream dataFile = Helper.OpenTestFile("pascal/Apple Pascal1.po",
+                    true, appHook)) {
+                using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
+                        FileKind.UnadornedSector, appHook)!) {
+                    diskImage.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)diskImage.Contents!;
+
+                    TestReadOnly(fs, "SYSTEM.APPLE", "NO.SUCH.FILE", appHook);
+                }
+            }
+
+            using (IFileSystem wfs = Helper.CreateTestImage("TESTVOL", FileSystemType.Pascal,
+                    35, 16, 254, true, appHook, out MemoryStream memFile)) {
+                wfs.PrepareRawAccess();
+                TestReadWrite(wfs, "TESTFILE", "INVAL?ID", appHook);
+
+                wfs.PrepareRawAccess();
+                wfs.PrepareFileAccess(true);
+                Helper.CheckNotes(wfs, 0, 0);
+            }
+        }
+
         public static void TestProDOS(AppHook appHook) {
             using (Stream dataFile = Helper.OpenTestFile("prodos/simple-sparse.po", true,
                     appHook)) {

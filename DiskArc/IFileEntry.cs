@@ -44,7 +44,7 @@ namespace DiskArc {
     /// might not be saved to disk until <see cref="SaveChanges"/> is called.  Closing the
     /// filesystem without saving the file entry changes could result in those changes being lost.
     /// While a file is open and modified, the values returned may not be consistent
-    /// with the file's actual contents.  For example, the EOF may not be updated until
+    /// with the file's actual contents.  For example, the DataLength may not be updated until
     /// the file descriptor is flushed or closed.</para>
     ///
     /// <para>A "fake" entry may be created for the volume directory, which is not part of

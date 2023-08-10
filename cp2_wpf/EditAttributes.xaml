@@ -67,8 +67,8 @@ limitations under the License.
                        Text="{Binding DirSepText, FallbackValue=o Directory separator character is X.}"/>
         </Grid>
 
-        <!-- DOS/ProDOS types -->
-        <GroupBox Grid.Row="1" Header="DOS/ProDOS Type" Padding="2,4" Margin="0,12,0,0"
+        <!-- ProDOS, for DOS/Pascal/ProDOS types -->
+        <GroupBox Grid.Row="1" Header="ProDOS Type (for DOS/Pascal/ProDOS)" Padding="2,4" Margin="0,12,0,0"
                   Visibility="{Binding ProTypeVisibility}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -94,7 +94,7 @@ limitations under the License.
                            Foreground="{Binding ProAuxForeground}"/>
                 <TextBox Grid.Row="1" Grid.Column="1" Width="65" Margin="8,4,0,0"
                          HorizontalAlignment="Left" MaxLength="4"
-                         IsEnabled="{Binding IsProTypeListEnabled}"
+                         IsEnabled="{Binding IsProAuxEnabled}"
                          Text="{Binding ProAuxString, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"/>
                 <TextBlock Grid.Row="1" Grid.Column="2" Margin="8,4,0,0"
@@ -148,6 +148,7 @@ limitations under the License.
             </Grid>
         </GroupBox>
 
+        <!-- timestamps -->
         <GroupBox Grid.Row="3" Header="Timestamp" Padding="2,4" Margin="0,12,0,0"
                   Visibility="{Binding TimestampVisibility}">
             <Grid>

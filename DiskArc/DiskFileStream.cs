@@ -43,7 +43,8 @@ namespace DiskArc {
     ///     <see cref="Defs.SEEK_ORIGIN_HOLE"/>.</item>
     /// </list>
     /// <para>Read calls should return the full amount of data requested, unless EOF is reached.
-    /// This not guaranteed, but is the expected behavior of disk and memory streams.</para>
+    /// This not guaranteed, but is the expected behavior of disk and memory streams.  Use
+    /// <see cref="ReadExactly"/> to ensure full reads.</para>
     /// </remarks>
     public abstract class DiskFileStream : Stream {
         // Single-byte buffer for ReadByte/WriteByte, allocated on first use.

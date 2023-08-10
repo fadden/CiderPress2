@@ -23,6 +23,9 @@ using static DiskArc.Defs;
 using static DiskArc.IFileSystem;
 
 namespace DiskArcTests {
+    /// <summary>
+    /// DOS filesystem I/O tests.
+    /// </summary>
     public class TestDOS_FileIO : ITest {
         private const bool DO_SCAN = true;
 

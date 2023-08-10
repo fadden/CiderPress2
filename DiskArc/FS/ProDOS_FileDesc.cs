@@ -1022,16 +1022,13 @@ namespace DiskArc.FS {
             if (offset >= buf.Length || count > buf.Length - offset) {
                 throw new ArgumentException("Buffer overrun");
             }
+            if (offset + count > buf.Length) {
+                throw new ArgumentOutOfRangeException("Buffer underflow");
+            }
 
             Debug.Assert(StorageType == ProDOS.StorageType.Seedling ||
                 StorageType == ProDOS.StorageType.Sapling ||
                 StorageType == ProDOS.StorageType.Tree);
-            if (offset < 0 || count < 0) {
-                throw new ArgumentOutOfRangeException("Bad offset or length");
-            }
-            if (offset + count > buf.Length) {
-                throw new ArgumentOutOfRangeException("Buffer underflow");
-            }
             Debug.Assert(mMark >= 0 && mMark <= ProDOS.MAX_FILE_LEN);
             if (mMark + count > ProDOS.MAX_FILE_LEN) {
                 // We don't do partial writes, so we just throw if we're off the end.
@@ -1228,8 +1225,8 @@ namespace DiskArc.FS {
                     FileEntry.ExtInfo.DataEof = (uint)mEndOfFile;
                     FileEntry.ExtInfo.DataBlocksUsed = (ushort)BlocksUsed;
                 }
-                // Main dir entry blocks_used field tracks changes to both forks.  Be careful
-                // here if we allow both forks to be open for writing simultaneously.
+                // Main dir entry blocks_used field tracks changes to both forks.  If both forks
+                // are open for writing, both writers will need to keep it up to date.
                 FileEntry.BlocksUsed = (ushort)(FileEntry.ExtInfo.DataBlocksUsed +
                     FileEntry.ExtInfo.RsrcBlocksUsed + 1);
             } else {
@@ -1407,11 +1404,6 @@ namespace DiskArc.FS {
                 return mEndOfFile;
             }
             return offset;
-        }
-
-        // DiskFileStream
-        public List<int> GetDataChunks() {
-            throw new NotImplementedException();
         }
 
         // IDisposable generic finalizer.

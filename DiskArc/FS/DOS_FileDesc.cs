@@ -396,6 +396,7 @@ namespace DiskArc.FS {
             if (mIsReadOnly) {
                 throw new NotSupportedException("File was opened read-only");
             }
+            Debug.Assert(!FileEntry.IsDamaged && !FileEntry.IsDubious);
             if (offset < 0 || count < 0) {
                 throw new ArgumentOutOfRangeException("Bad offset / count");
             }
@@ -423,11 +424,6 @@ namespace DiskArc.FS {
             }
             if (offset >= buf.Length || count > buf.Length - offset) {
                 throw new ArgumentException("Buffer overrun");
-            }
-
-            Debug.Assert(!FileEntry.IsDamaged && !FileEntry.IsDubious);
-            if (offset < 0 || count < 0) {
-                throw new ArgumentOutOfRangeException("Bad offset or length");
             }
             if (offset + count > buf.Length) {
                 throw new ArgumentOutOfRangeException("Buffer underflow");
@@ -820,11 +816,6 @@ namespace DiskArc.FS {
                 }
                 vtoc.MarkSectorUnused(tsl.Trk, tsl.Sct);
             }
-        }
-
-        // DiskFileStream
-        public List<int> GetDataChunks() {
-            throw new NotImplementedException();
         }
 
         // IDisposable generic finalizer.

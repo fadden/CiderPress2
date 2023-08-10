@@ -119,8 +119,8 @@ namespace DiskArc.FS {
                 if (IsVolumeDirectory) {
                     return;
                 }
-                if (value.Length > DOS.MAX_FILE_NAME_LEN) {
-                    throw new ArgumentException("Invalid filename");
+                if (value.Length == 0 || value.Length > DOS.MAX_FILE_NAME_LEN) {
+                    throw new ArgumentException("Invalid name length (" + value.Length + ")");
                 }
                 string cookedName = GenerateCookedName(value);  // this does NOT test validity
                 mFileName = cookedName;
@@ -1163,11 +1163,11 @@ namespace DiskArc.FS {
                 return "Q";
             }
 
-            char[] chars = fileName.ToCharArray();
-
             // Convert the string to ASCII values, stripping diacritical marks.
+            char[] chars = fileName.ToCharArray();
             ASCIIUtil.ReduceToASCII(chars, '?');
-            // Remove commas.
+
+            // Replace commas.
             for (int i = 0; i < chars.Length; i++) {
                 char ch = chars[i];
                 if (ch == ',') {

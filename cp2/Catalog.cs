@@ -715,6 +715,8 @@ namespace cp2 {
                 baseUnit = SECTOR_SIZE;
             } else if (fs is ProDOS) {
                 osString = "ProDOS \"" + fs.GetVolDirEntry().FileName + "\"";
+            } else if (fs is Pascal) {
+                osString = "Pascal \"" + fs.GetVolDirEntry().FileName + "\"";
             } else if (fs is HFS) {
                 osString = "HFS \"" + fs.GetVolDirEntry().FileName + "\"";
                 baseUnit = KBLOCK_SIZE;     // KB is more appropriate than blocks for HFS
