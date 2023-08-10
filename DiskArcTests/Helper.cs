@@ -332,6 +332,48 @@ namespace DiskArcTests {
             }
         }
 
+        /// <summary>
+        /// Verifies the contents of a file populated with a single byte value.
+        /// </summary>
+        /// <param name="fs">Filesystem object.</param>
+        /// <param name="entry">File entry object.</param>
+        /// <param name="value">Byte value to use for filler.</param>
+        /// <param name="dataBlocks">Number of data fork blocks to expect.</param>
+        /// <param name="rsrcBlocks">Number of rsrc fork blocks to expect.</param>
+        public static void CheckPopulatedFile(IFileSystem fs, IFileEntry entry, byte value,
+                int dataBlocks, int rsrcBlocks) {
+            byte[] block = CreateFilledBlock(value, BLOCK_SIZE);
+            byte[] readBuf = new byte[BLOCK_SIZE];
+            if (dataBlocks > 0) {
+                using (DiskFileStream fd = fs.OpenFile(entry, IFileSystem.FileAccessMode.ReadOnly,
+                        FilePart.DataFork)) {
+                    while (dataBlocks-- != 0) {
+                        fd.ReadExactly(readBuf, 0, BLOCK_SIZE);
+                        if (RawData.MemCmp(readBuf, block, BLOCK_SIZE) != 0) {
+                            throw new Exception("mismatch in data fork");
+                        }
+                    }
+                    if (fd.ReadByte() != -1) {
+                        throw new Exception("data fork too long");
+                    }
+                }
+            }
+            if (rsrcBlocks > 0) {
+                using (DiskFileStream fd = fs.OpenFile(entry, IFileSystem.FileAccessMode.ReadOnly,
+                        FilePart.RsrcFork)) {
+                    while (rsrcBlocks-- != 0) {
+                        fd.ReadExactly(readBuf, 0, BLOCK_SIZE);
+                        if (RawData.MemCmp(readBuf, block, BLOCK_SIZE) != 0) {
+                            throw new Exception("mismatch in rsrc fork");
+                        }
+                    }
+                    if (fd.ReadByte() != -1) {
+                        throw new Exception("rsrc fork too long");
+                    }
+                }
+            }
+        }
+
         public static void ExpectLong(long expected, long actual, string desc) {
             if (expected != actual) {
                 throw new Exception(desc + ": expected=" + expected + ", actual=" + actual);

@@ -211,14 +211,24 @@ namespace DiskArcTests {
 
                 Helper.ExpectLong(0, fs.FreeSpace, "some space still free");
 
-                // Delete a one-block file, create a new one, write 512 bytes into it to verify
-                // that we don't over-allocate.
+                // Delete a one-block file that is sandwiched between other files, create a new
+                // one, write 512 bytes into it to verify that we don't over-allocate.
                 file511 = fs.FindFileEntry(volDir, "FILE_511");
                 Helper.ExpectLong(BLOCK_SIZE, file511.StorageSize, "wrong storage size");
                 fs.DeleteFile(file511);
                 IFileEntry new512 = fs.CreateFile(volDir, "FILE_512_NEW", CreateMode.File);
                 FillFile(fs, new512, 512);
                 CheckFill(fs, new512, 512);
+
+                // Try to append another byte.  We should get "disk full".
+                using (Stream stream = fs.OpenFile(new512, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    stream.Position = 512;
+                    try {
+                        stream.WriteByte(0xaa);
+                        throw new Exception("expanded file into next file");
+                    } catch (DiskFullException) { /*expected*/ }
+                }
             }
         }
 
@@ -315,6 +325,72 @@ namespace DiskArcTests {
 
             Helper.ExpectString("VER..RT",
                 Pascal_FileEntry.AdjustVolumeName("Very, very Short"), "err");
+        }
+
+        public static void TestDefragment(AppHook appHook) {
+            using (IFileSystem fs = Make525Floppy("FILLER", appHook)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+                // Create some files.  Use increasing sizes so that the destination range
+                // overlaps with the source range.
+                IFileEntry file1 = fs.CreateFile(volDir, "FILE1", CreateMode.File);
+                Helper.PopulateFile(fs, file1, 0x11, 8, 0);
+                IFileEntry file2 = fs.CreateFile(volDir, "FILE2", CreateMode.File);
+                Helper.PopulateFile(fs, file2, 0x22, 10, 0);
+                IFileEntry file3 = fs.CreateFile(volDir, "FILE3", CreateMode.File);
+                Helper.PopulateFile(fs, file3, 0x33, 12, 0);
+                IFileEntry file4 = fs.CreateFile(volDir, "FILE4", CreateMode.File);
+                Helper.PopulateFile(fs, file4, 0x44, 14, 0);
+                IFileEntry file5 = fs.CreateFile(volDir, "FILE5", CreateMode.File);
+                Helper.PopulateFile(fs, file5, 0x55, 14, 0);
+
+                fs.DeleteFile(file1);
+                fs.DeleteFile(file3);
+
+                long freeSpace = fs.FreeSpace;
+
+                IFileEntry filler = fs.CreateFile(volDir, "filler", CreateMode.File);
+                using (Stream stream = fs.OpenFile(filler, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    try {
+                        stream.SetLength(freeSpace);
+                        throw new Exception("disk wasn't fragmented?");
+                    } catch (DiskFullException) { /*expected*/ }
+                }
+                fs.DeleteFile(filler);
+
+                fs.PrepareRawAccess();
+                if (!((Pascal)fs).Defragment()) {
+                    throw new Exception("Unable to defragment");
+                }
+
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+                Helper.ExpectLong(freeSpace, fs.FreeSpace, "free space changed");
+                volDir = fs.GetVolDirEntry();
+
+                // If we defragmented successfully, we should be able to create a single file
+                // that fills all of the free space.
+                filler = fs.CreateFile(volDir, "filler", CreateMode.File);
+                using (Stream stream = fs.OpenFile(filler, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    stream.SetLength(freeSpace);
+                }
+                Helper.ExpectLong(0, fs.FreeSpace, "didn't fill space");
+
+                // Verify the contents of the files that were moved.
+                file2 = fs.FindFileEntry(volDir, "FILE2");
+                Helper.CheckPopulatedFile(fs, file2, 0x22, 10, 0);
+                file4 = fs.FindFileEntry(volDir, "FILE4");
+                Helper.CheckPopulatedFile(fs, file4, 0x44, 14, 0);
+                file5 = fs.FindFileEntry(volDir, "FILE5");
+                Helper.CheckPopulatedFile(fs, file5, 0x55, 14, 0);
+
+                // Try it on a completely full volume.
+                fs.PrepareRawAccess();
+                if (!((Pascal)fs).Defragment()) {
+                    throw new Exception("Unable to defragment");
+                }
+            }
         }
 
 

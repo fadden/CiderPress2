@@ -591,6 +591,21 @@ Examples:
  - `cp2 cfa Archive.shk`
 
 ----
+#### `defrag`
+
+Defragments a filesystem.
+
+Usage: `cp2 defrag [options] <ext-archive>`
+
+This is only implemented for Apple Pascal filesystems.  The process is the
+same as is performed by the Filer's K(runch command.
+
+Options: (none)
+
+Examples:
+ - `cp2 defrag pascal.po`
+
+----
 #### `delete`|`rm`
 
 Deletes files or directories from an archive.

@@ -66,10 +66,11 @@ namespace CommonUtil {
         /// Converts an ASCII "Pascal string", which starts with a length byte, to a string.
         /// </summary>
         /// <param name="data">ASCII byte data.</param>
+        /// <param name="offset">Offset of start of data in buffer.</param>
         /// <returns>Converted string.</returns>
-        public static string PascalBytesToString(byte[] data) {
-            int length = data[0];
-            return Encoding.ASCII.GetString(data, 1, length);
+        public static string PascalBytesToString(byte[] data, int offset = 0) {
+            int length = data[offset];
+            return Encoding.ASCII.GetString(data, offset + 1, length);
         }
 
         /// <summary>

@@ -21,6 +21,7 @@ using CommonUtil;
 using DiskArc;
 using DiskArc.Arc;
 using DiskArc.Disk;
+using DiskArc.FS;
 using DiskArc.Multi;
 using static DiskArc.Defs;
 
@@ -675,6 +676,64 @@ namespace cp2 {
         }
 
         #endregion Copy Blocks
+
+        #region Defragment
+
+        /// <summary>
+        /// Handles the "defrag" command.
+        /// </summary>
+        public static bool HandleDefrag(string cmdName, string[] args, ParamsBag parms) {
+            if (args.Length != 1) {
+                CP2Main.ShowUsage(cmdName);
+                return false;
+            }
+            string extArchive = args[0];
+            if (!ExtArchive.OpenExtArc(extArchive, false, false, parms, out DiskArcNode? rootNode,
+                    out DiskArcNode? leafNode, out object? leaf, out IFileEntry unused)) {
+                return false;
+            }
+            using (rootNode) {
+                if (leaf is IArchive) {
+                    Console.Error.WriteLine("Operation not available for file archives");
+                    return false;
+                } else {
+                    IFileSystem? fs = Misc.GetTopFileSystem(leaf);
+                    if (fs is not Pascal) {
+                        Console.Error.WriteLine("This operation is only available for " +
+                            "Apple Pascal filesystems.");
+                        return false;
+                    }
+                    if (!Misc.StdChecks(fs, needWrite: true, parms.FastScan)) {
+                        return false;
+                    }
+                    fs.PrepareRawAccess();
+                    bool success = false;
+                    try {
+                        success = ((Pascal)fs).Defragment();
+                        if (!success) {
+                            Console.Error.WriteLine("Unable to defragment (bad blocks?)");
+                        }
+                    } catch (Exception ex) {
+                        Console.Error.WriteLine("Error: " + ex.Message);
+                    }
+                    try {
+                        leafNode.SaveUpdates(parms.Compress);
+                    } catch (Exception ex) {
+                        Console.Error.WriteLine("Error: update failed: " + ex.Message);
+                        return false;
+                    }
+                    if (!success) {
+                        return false;
+                    }
+                }
+            }
+            if (parms.Verbose) {
+                Console.WriteLine("Defrag operation successful");
+            }
+            return true;
+        }
+
+        #endregion Defragment
 
         #region Misc
 

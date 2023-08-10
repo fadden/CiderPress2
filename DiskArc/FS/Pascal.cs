@@ -796,16 +796,135 @@ namespace DiskArc.FS {
         }
 
         /// <summary>
-        /// Defragments ("crunches") the filesystem.
+        /// Defragments ("krunches") the filesystem.
         /// </summary>
         /// <remarks>
         /// <para>The filesystem must be in raw-access mode.</para>
+        /// <para>The process will not be started if the filesystem has any errors or dubious
+        /// files, or any .BAD files (by type, not extension).</para>
         /// </remarks>
         /// <returns>True if the drive was defragmented, false if something (such as bad blocks)
         ///   prevented the operation from starting.</returns>
+        /// <exception cref="DAException">Unable to check filesystem for errors.</exception>
         public bool Defragment() {
-            // TODO - check for bad block files, maybe do a bad block scan
-            throw new NotImplementedException();
+            if (ChunkAccess.IsReadOnly) {
+                throw new IOException("Can't format read-only data");
+            }
+            if (IsPreppedForFileAccess) {
+                throw new IOException("Must be in raw access mode");
+            }
+
+            // Check the filesystem.
+            PrepareFileAccess(true);
+            if (IsDubious) {
+                Debug.WriteLine("Filesystem is dubious");
+                return false;
+            }
+            foreach (IFileEntry entry in mVolDirEntry) {
+                if (entry.IsDubious || entry.IsDamaged) {
+                    Debug.WriteLine("Found dubious/damaged file");
+                    return false;
+                }
+                if (entry.FileType == FileAttribs.FILE_TYPE_BAD) {
+                    Debug.WriteLine("Found bad-blocks file");
+                    return false;
+                }
+            }
+            if (Notes.WarningCount != 0 || Notes.ErrorCount != 0) {
+                Debug.WriteLine("Found notes, being paranoid");
+                return false;
+            }
+
+            // Grab the directory block and file counts while we have it open.
+            int numDirBlocks = mVolDirHeader.mNextBlock - VOL_DIR_START_BLOCK;
+            int numFiles = mVolDirHeader.mFileCount;
+            ushort volBlockCount = mVolDirHeader.mVolBlockCount;
+            ushort prevNextBlock = mVolDirHeader.mFirstBlock;
+            Debug.Assert(numDirBlocks == 4);       // remove this
+            byte[] dirBuf = new byte[numDirBlocks * BLOCK_SIZE];
+
+            PrepareRawAccess();
+            if (numFiles == 0) {
+                Debug.WriteLine("Empty disk, nothing to do");
+                return true;
+            }
+
+            // Do a bad block scan.  This will throw if an I/O error is encountered.
+            for (uint blk = 0; blk < volBlockCount; blk++) {
+                ChunkAccess.ReadBlock(blk, dirBuf, 0);
+            }
+            Debug.WriteLine("Looks clean, starting defrag");
+
+            // Read the directory into memory.
+            for (int i = 0; i < numDirBlocks; i++) {
+                ChunkAccess.ReadBlock(VOL_DIR_START_BLOCK + (uint)i, dirBuf, BLOCK_SIZE * i);
+            }
+
+            // We start with the vol dir entry, so scan numFiles+1.
+            int dirOffset = 0;
+            for (int i = 0; i <= numFiles; i++) {
+                string debugName = ASCIIUtil.PascalBytesToString(dirBuf, dirOffset + 0x06);
+                ushort startBlock = RawData.GetU16LE(dirBuf, dirOffset);
+                ushort nextBlock = RawData.GetU16LE(dirBuf, dirOffset + 2);
+
+                if (startBlock != prevNextBlock) {
+                    int shift = startBlock - prevNextBlock;
+                    Debug.Assert(shift > 0);
+                    Debug.WriteLine("'" + debugName + "': shift: " + startBlock + "-" + nextBlock +
+                        " -> " + prevNextBlock);
+
+                    CopyBlocks(ChunkAccess, startBlock, prevNextBlock, nextBlock - startBlock);
+                    RawData.SetU16LE(dirBuf, dirOffset, (ushort)(startBlock - shift));
+                    RawData.SetU16LE(dirBuf, dirOffset + 2, (ushort)(nextBlock - shift));
+
+                    prevNextBlock = (ushort)(nextBlock - shift);
+                } else {
+                    Debug.WriteLine("'" + debugName + "': no shift");
+                    prevNextBlock = nextBlock;
+                }
+
+                dirOffset += Pascal_FileEntry.DIR_ENTRY_LEN;
+            }
+
+            // Write the directory back to disk.
+            //
+            // NOTE: this would be safer but slower if we saved the directory after every
+            // shift.  However, "safer" just means that we'd only trash one file instead of
+            // multiple files, so we haven't really solved the problem.  Another risk-reducer
+            // would be to clone the volume during the bad-block check, do the defragment run
+            // on the in-memory copy, and then copy the entire thing out at the end.  I think
+            // the filesystem structure is simple enough, and has been scanned carefully enough,
+            // that these steps are unnecessary.
+            for (int i = 0; i < numDirBlocks; i++) {
+                ChunkAccess.WriteBlock(VOL_DIR_START_BLOCK + (uint)i, dirBuf, BLOCK_SIZE * i);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Copies a range of blocks from one part of the disk to another.  The source and
+        /// destination ranges may be overlapping.
+        /// </summary>
+        /// <param name="chunkAccess">Chunk data object.</param>
+        /// <param name="srcBlock">Starting block number for the source range.</param>
+        /// <param name="dstBlock">Starting block number for the destination range.</param>
+        /// <param name="count">Number of blocks to copy.</param>
+        private static void CopyBlocks(IChunkAccess chunkAccess, uint srcBlock, uint dstBlock,
+                int count) {
+            Debug.Assert(count > 0);
+            byte[] blockBuf = new byte[BLOCK_SIZE];
+            if (srcBlock > dstBlock) {
+                // Moving blocks toward start of volume.  Start from the start.
+                for (uint i = 0; i < count; i++) {
+                    chunkAccess.ReadBlock(srcBlock + i, blockBuf, 0);
+                    chunkAccess.WriteBlock(dstBlock + i, blockBuf, 0);
+                }
+            } else if (srcBlock < dstBlock) {
+                // Moving blocks toward end of volume.  Start from the end.
+                throw new NotImplementedException();
+            } else {
+                Debug.Assert(false, "no-op");
+            }
         }
 
         #region Miscellaneous
