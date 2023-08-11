@@ -1183,6 +1183,42 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Actions : Defragment
+        /// </summary>
+        public void Defragment() {
+            Pascal? fs = CurrentWorkObject as Pascal;
+            if (fs == null) {
+                Debug.Assert(false);
+                return;
+            }
+
+            // We assume that defragmentation isn't going to render the filesystem unusable or
+            // significantly different -- in theory the list of files should be identical -- so
+            // we shouldn't need to close and re-scan the work tree unless the filesystem has
+            // embedded volumes.  We currently only do this for Pascal, which doesn't have embeds.
+            // We do need to re-scan the file list because the IFileEntry objects have all changed.
+            bool ok = false;
+            try {
+                fs.PrepareRawAccess();
+                ok = fs.Defragment();
+            } catch (Exception ex) {
+                // This is bad.  Hopefully it blew up before anything got shuffled.
+                MessageBox.Show(mMainWin, "Error: " + ex.Message, "Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            } finally {
+                fs.PrepareFileAccess(true);
+                RefreshDirAndFileList();
+            }
+            if (ok) {
+                mMainWin.PostNotification("Defragmentation successful", true);
+            } else {
+                MessageBox.Show(mMainWin, "Filesystems with errors cannot be defragmented.",
+                    "Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
         /// Handles Actions : Delete Files
         /// </summary>
         public void DeleteFiles() {

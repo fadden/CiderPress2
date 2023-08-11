@@ -417,6 +417,14 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
                 mMainCtrl.IsMultiFileItemSelected && ShowCenterFileList);
         }
+        private void CanDefragment(object sender, CanExecuteRoutedEventArgs e) {
+            // Technically we don't need the filesystem to be writable; rather, we need the disk
+            // image or partition that holds it to be writable.  But a filesystem should only be
+            // read-only if the continer is read-only or there are errors that render it dubious,
+            // either of which will cause the defragmenter to refuse to run.
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+                mMainCtrl.IsDefragmentableSelected);
+        }
         private void CanDeleteFiles(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
                 mMainCtrl.IsMultiFileItemSelected && ShowCenterFileList &&
@@ -481,6 +489,9 @@ namespace cp2_wpf {
         }
         private void CutCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             Debug.WriteLine("Cut!");
+        }
+        private void DefragmentCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.Defragment();
         }
         private void DeleteFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.DeleteFiles();

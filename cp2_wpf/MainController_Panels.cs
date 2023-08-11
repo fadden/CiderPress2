@@ -186,6 +186,8 @@ namespace cp2_wpf {
             }
         }
 
+        public bool IsDefragmentableSelected { get { return CurrentWorkObject is Pascal; } }
+
         /// <summary>
         /// True if the selected item in the archive tree is a hierarchical filesystem
         /// (ProDOS or HFS).
