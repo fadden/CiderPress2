@@ -34,9 +34,9 @@ namespace DiskArc.FS {
         public const long MAX_FILE_LEN = 0x01000000;        // 16MB (theoretically)
 
         private const string FILENAME_RULES =
-            "1-15 characters, must not include '$=?,[#:', spaces, or control characters.";
+            "1-15 printable ASCII characters, must not include \u201c$=?,[#:\u201d or spaces.";
         private const string VOLNAME_RULES =
-            "1-7 characters, must not include '$=?,[#:', spaces, or control characters.";
+            "1-7 printable ASCII characters, must not include \u201c$=?,[#:\u201d or spaces.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
             name: "Apple Pascal",
             canWrite: true,

@@ -24,8 +24,9 @@ namespace DiskArc {
     /// Track usage of disk volume allocation units.
     /// </summary>
     /// <remarks>
-    /// <para>The goal is to provide a simple linear map of sectors, blocks, or kblocks.  How
-    /// those map to physical track/sector is up to the caller.</para>
+    /// <para>The goal is to provide a simple linear map of sectors, blocks, or whatever
+    /// allocation unit the filesystem uses.  How those map to physical track/sector is up to
+    /// the caller.</para>
     ///
     /// <para>This tracks the used/free state and the usage (i.e. which file is using the chunk)
     /// as parallel entities.</para>

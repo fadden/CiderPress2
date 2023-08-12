@@ -290,6 +290,12 @@ assumption is that the library is being used for file archiving, not general fil
 
 [ ... ]
 
+Implementations of the CP/M operating system are many and varied.  The disk format function
+does not currently create bootable disks.  While the IFileSystem `Format()` call is defined as a
+fast-format operation that lays down the directory tracks without erasing the storage, the CP/M
+implementation does a full clear, because empty blocks are expected to be filled with 0xe5
+rather than 0x00.
+
 Most file lengths are expressed in 128-byte increments, though some disks store precise lengths.
 Text files work around this issue by ending at the first Ctrl+Z character (0x1a).  The filesystem
 code doesn't try to manage this.  Text file conversion code should take it into account, similar

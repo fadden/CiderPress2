@@ -23,6 +23,11 @@ namespace DiskArc.FS {
     /// <summary>
     /// Internal class to manage the ProDOS block allocation bitmap.
     /// </summary>
+    /// <remarks>
+    /// File creation and deletion can require changing the status of multiple blocks.  A simple
+    /// transaction mechanism is provided so that the changes can be rolled back if an error is
+    /// encountered.
+    /// </remarks>
     internal class ProDOS_VolBitmap {
         /// <summary>
         /// Volume bitmap's first block.

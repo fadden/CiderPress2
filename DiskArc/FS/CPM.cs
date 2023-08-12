@@ -21,6 +21,12 @@ using static DiskArc.Defs;
 using static DiskArc.FileAnalyzer.DiskLayoutEntry;
 using static DiskArc.IFileSystem;
 
+// TODO:
+// - create AllocMap class in commonutil to track allocation bitmap
+//   - simple bit vector based on 32-bit ints
+//   - need FreeCount, FindFirstFree, MarkFree/MarkUsed
+//   - makes VolumeAlloc calls
+
 namespace DiskArc.FS {
     /// <summary>
     /// CP/M filesystem implementation.  Focus is on the Apple II implementation, which was
@@ -28,7 +34,8 @@ namespace DiskArc.FS {
     /// </summary>
     public class CPM : IFileSystem {
         private const string FILENAME_RULES =
-            "8+3 filename, using ASCII characters not in \"<>.,;:=?*[]\".";
+            "8.3 format, using printable ASCII characters except for spaces and " +
+                "\u201c<>.,;:=?*[]\u201d.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
             name: "CP/M",
             canWrite: true,
@@ -50,9 +57,9 @@ namespace DiskArc.FS {
 
         public Notes Notes { get; } = new Notes();
 
-        public bool IsReadOnly => throw new NotImplementedException();
+        public bool IsReadOnly { get { return ChunkAccess.IsReadOnly || IsDubious; } }
 
-        public bool IsDubious => throw new NotImplementedException();
+        public bool IsDubious { get; internal set; }
 
         public long FreeSpace => throw new NotImplementedException();
 

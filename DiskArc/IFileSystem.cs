@@ -210,7 +210,8 @@ namespace DiskArc {
         /// with tighter bounds.</para>
         /// <para>This does not zero out the disk blocks, so a disk formatted for both DOS and
         /// ProDOS could be recognized as either.  Use <see cref="IChunkAccess.Initialize()"/>
-        /// to zero the disk before calling here.</para>
+        /// to zero the disk before calling here.  (Exception: CP/M erases all blocks to
+        /// 0xe5.)</para>
         /// </remarks>
         /// </summary>
         /// <param name="volumeName">Volume name.</param>

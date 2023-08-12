@@ -4,7 +4,7 @@
 
 - https://www.seasip.info/Cpm/formats.html
 - https://manpages.ubuntu.com/manpages/bionic/man5/cpm.5.html
-- CP/AM 5.1 manual, http://www.apple-iigs.info/doc/fichiers/cpmam51.pdf
+- CP/AM 5.1 manual, https://archive.org/details/AE_Z-80_Plus_CPAM_5.1_Manual_v1.21
 
 ## General ##
 
@@ -97,7 +97,7 @@ larger files will have multiple entries in the directory.  Each entry looks like
 The byte fields are:
  - `ST`: status.  Possible values:
 	- 0-15: user number.
-	- 16-31: could be user number, could be a password extent (CP/M v3).
+	- 16-31: could be user number, could be a password extent (CP/M v3).  Some 
 	- 32: disc label (CP/M v3).
 	- 33: timestamp (CP/M v3 or third-party mod to CP/M v2.2).
 	- 0xe5: entry is unused
@@ -138,11 +138,6 @@ used as the "empty directory entry" indicator, and there are no disk structures,
 initialization process doesn't have to do anything but erase all sectors.  This makes disk
 format auto-detection tricky, because any disk with 0xe5 bytes in the directory area looks
 like a blank CP/M disk.
-
-### Text Files ###
-
-On many disks, files will be a multiple of 128 bytes long.  For a text file, the actual file
-EOF occurs when a Ctrl-Z (0x1a) byte is read.
 
 ### Apple II Disk Formats ###
 
@@ -189,6 +184,20 @@ is always 16KB; having them both be 16KB makes things a little simpler.
 The integrity of a 5.25" disk image can be checked with the `fsck.cpm` command from the
 `cpmtools` package.  Use `fsck -f apple-do <file>` for DOS-ordered images, `apple-po` for
 ProDOS-ordered images.
+
+### Boot Image File ###
+
+Some 5.25" disks have a directory record with user number 31 and a lower-case filename, such as
+"cp/m.sys" or "cp/am.sys".  The extent uses allocation blocks 0x80 through 0x8b, which would be
+off the end of the disk (140KB minus three 4KB boot tracks = 128KB).  If the values are treated
+as wrapping around to the start of the disk, the file contents represent the 12KB boot track area.
+
+It's unclear what value this provides.
+
+### Text Files ###
+
+On many disks, files will be a multiple of 128 bytes long.  For a text file, the actual file
+EOF occurs when a Ctrl-Z (0x1a) byte is read.
 
 
 ## Appendix: User Numbers and CiderPress ##

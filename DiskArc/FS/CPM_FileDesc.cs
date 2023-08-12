@@ -67,7 +67,7 @@ namespace DiskArc.FS {
             mDebugPathName = entry.FullPathName;        // latch name when file opened
         }
 
-        internal static CPM_FileDesc CreateFD(Pascal_FileEntry entry, FileAccessMode mode,
+        internal static CPM_FileDesc CreateFD(CPM_FileEntry entry, FileAccessMode mode,
                 FilePart part, bool internalOpen) {
             throw new NotImplementedException();
         }

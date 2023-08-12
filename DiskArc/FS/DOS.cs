@@ -582,9 +582,13 @@ namespace DiskArc.FS {
                 //IsDamaged = true;
             }
 
-            bool doWarnUnused = AppHook.GetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, false);
-            if (doWarnUnused && unusedMarked != 0) {
-                Notes.AddW("Found " + unusedMarked + " unused blocks that are marked used");
+            if (unusedMarked != 0) {
+                bool doWarnUnused = AppHook.GetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, false);
+                if (doWarnUnused) {
+                    Notes.AddW("Found " + unusedMarked + " unused sectors that are marked used");
+                } else {
+                    Notes.AddI("Found " + unusedMarked + " unused sectors that are marked used");
+                }
             }
         }
 

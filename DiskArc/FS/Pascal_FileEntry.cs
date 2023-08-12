@@ -402,12 +402,12 @@ namespace DiskArc.FS {
                     }
                     break;
                 } else if (i == hdr.mFileCount) {
-                    // All entries should have their filename length field zeroed.
+                    // All entries should have their filename length field zeroed.  It looks like
+                    // some tools might not do this however, so don't treat it as an error.
                     if (newEntry.mRawFileName[0] != 0) {
-                        notes.AddW("Found file entries past the recorded file count (" +
+                        notes.AddI("Found non-null file entries past the recorded file count (" +
                             hdr.mFileCount + ")");
-                        // We could correct it, or just figure something is wrong and not touch it.
-                        fileSystem.IsDubious = true;
+                        break;
                     }
                 }
 

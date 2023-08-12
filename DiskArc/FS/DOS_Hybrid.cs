@@ -131,7 +131,7 @@ namespace DiskArc.FS {
             // need to do this at block/sector granularity, taking into account the sector skew
             // employed by the alternate filesystem.
             bool[] dosUse = new bool[chunkAccess.NumTracks];
-            //int dosTrkCount = 0;
+            uint firstDosUse = uint.MaxValue;
             for (uint trk = 0; trk < chunkAccess.NumTracks; trk++) {
                 for (uint sct = 0; sct < chunkAccess.NumSectorsPerTrack; sct++) {
                     uint chunkNum = mFileSystem.TSToChunk(trk, sct);
@@ -147,6 +147,9 @@ namespace DiskArc.FS {
                         if (!dosUse[trk]) {
                             dosUse[trk] = true;
                             //dosTrkCount++;
+                        }
+                        if (firstDosUse == uint.MaxValue) {
+                            firstDosUse = trk;
                         }
                     }
                 }
@@ -194,8 +197,52 @@ namespace DiskArc.FS {
                 Partition part = new Partition(subChunk, proFs, mAppHook);
                 mPartitions.Add(part);
                 return true;
+            } else if (Pascal.TestImage(chunkAccess, mAppHook) ==
+                    FileAnalyzer.DiskLayoutEntry.TestResult.Yes) {
+                mAppHook.LogI("Found DOS+Pascal hybrid; first DOS use is track " + firstDosUse);
+                Pascal pascalFs = new Pascal(chunkAccess, mAppHook);
+
+                // Look for a .BAD file that spans the volume from the first track used by DOS
+                // to the end of the disk.
+                pascalFs.PrepareFileAccess(true);
+                IFileEntry volDir = pascalFs.GetVolDirEntry();
+                bool foundBad = false;
+                foreach (IFileEntry entry in volDir) {
+                    if (entry.FileType == FileAttribs.FILE_TYPE_BAD) {
+                        Pascal_FileEntry pentry = (Pascal_FileEntry)entry;
+                        if (pentry.StartBlock == firstDosUse * 16 / 2 &&
+                                pentry.NextBlock == pascalFs.TotalBlocks) {
+                            Debug.WriteLine("Found the .BAD file");
+                            foundBad = true;
+                            break;
+                        }
+                    }
+                }
+                if (!foundBad) {
+                    Notes.AddW("Did not find .BAD file that spanned DOS area");
+                    IsDubious = true;
+                } else {
+                    // Make sure DOS isn't using anything in the Pascal area.
+                    for (int i = 0; i < DOS.VTOC_TRACK; i++) {
+                        if (dosUse[i]) {
+                            Notes.AddW("Track " + i +
+                                " used by DOS (should be reserved for Pascal)");
+                            IsDubious = true;
+                            break;
+                        }
+                    }
+                }
+                pascalFs.PrepareRawAccess();
+
+                // Prepare the "partition".
+                ChunkSubset subChunk = ChunkSubset.CreateBlocksOnTracks(chunkAccess,
+                    chunkAccess.NumSectorsPerTrack, chunkAccess.NumTracks,
+                    SectorOrder.ProDOS_Block);
+                Partition part = new Partition(subChunk, pascalFs, mAppHook);
+                mPartitions.Add(part);
+                return true;
             } else {
-                // TODO - test for Pascal and CP/M
+                // TODO - test for CP/M
                 return false;
             }
         }
