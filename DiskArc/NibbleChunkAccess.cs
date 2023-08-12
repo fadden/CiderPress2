@@ -290,6 +290,15 @@ namespace DiskArc {
 
         // IChunkAccess
         public void ReadBlock(uint block, byte[] data, int offset) {
+            DoReadBlock(block, data, offset, GeneralChunkAccess.sProdos2Phys);
+        }
+
+        // IChunkAccess
+        public void ReadBlockCPM(uint block, byte[] data, int offset) {
+            DoReadBlock(block, data, offset, GeneralChunkAccess.sCpm2Phys);
+        }
+
+        private void DoReadBlock(uint block, byte[] data, int offset, uint[] skewMap) {
             CheckBlockArgs(block, false);
             if (HasSectors) {
                 // Read the block as a pair of sectors, using ProDOS skewing.
@@ -306,10 +315,8 @@ namespace DiskArc {
                 if (trkEnt == null) {
                     throw new IOException("Track " + trk + " not found");
                 }
-                DoReadSector(trk, GeneralChunkAccess.sProdos2Phys[sct], trkEnt,
-                    data, offset);
-                DoReadSector(trk, GeneralChunkAccess.sProdos2Phys[sct + 1], trkEnt,
-                    data, offset + SECTOR_SIZE);
+                DoReadSector(trk, skewMap[sct], trkEnt, data, offset);
+                DoReadSector(trk, skewMap[sct + 1], trkEnt, data, offset + SECTOR_SIZE);
             } else {
                 // Must be a 3.5" disk.
                 uint cyl, head, sct;
@@ -359,6 +366,15 @@ namespace DiskArc {
 
         // IChunkAccess
         public void WriteBlock(uint block, byte[] data, int offset) {
+            DoWriteBlock(block, data, offset, GeneralChunkAccess.sProdos2Phys);
+        }
+
+        // IChunkAccess
+        public void WriteBlockCPM(uint block, byte[] data, int offset) {
+            DoWriteBlock(block, data, offset, GeneralChunkAccess.sCpm2Phys);
+        }
+
+        private void DoWriteBlock(uint block, byte[] data, int offset, uint[] skewMap) {
             CheckBlockArgs(block, true);
             IsModified = true;
             if (HasSectors) {
@@ -375,10 +391,8 @@ namespace DiskArc {
                 if (trkEnt == null) {
                     throw new IOException("Track " + trk + " not found");
                 }
-                DoWriteSector(trk, GeneralChunkAccess.sProdos2Phys[sct], trkEnt,
-                    data, offset);
-                DoWriteSector(trk, GeneralChunkAccess.sProdos2Phys[sct + 1], trkEnt,
-                    data, offset + SECTOR_SIZE);
+                DoWriteSector(trk, skewMap[sct], trkEnt, data, offset);
+                DoWriteSector(trk, skewMap[sct + 1], trkEnt, data, offset + SECTOR_SIZE);
             } else {
                 // Must be a 3.5" disk.
                 uint cyl, head, sct;

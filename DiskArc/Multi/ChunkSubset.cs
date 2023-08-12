@@ -289,6 +289,17 @@ namespace DiskArc.Multi {
         }
 
         // IChunkAccess
+        public void ReadBlockCPM(uint block, byte[] data, int offset) {
+            CheckBlockArgs(block, false);
+            if (mBase.HasBlocks) {
+                Debug.Assert(FileOrder == SectorOrder.CPM_KBlock);
+                mBase.ReadBlockCPM(StartBlock + block, data, offset);
+            } else {
+                throw new InvalidOperationException("No blocks");
+            }
+        }
+
+        // IChunkAccess
         public void WriteSector(uint trk, uint sct, byte[] data, int offset) {
             CheckSectorArgs(trk, sct, true);
             if (mBase.HasSectors) {
@@ -327,6 +338,17 @@ namespace DiskArc.Multi {
             CheckBlockArgs(block, true);
             if (mBase.HasBlocks) {
                 mBase.WriteBlock(StartBlock + block, data, offset);
+            } else {
+                throw new InvalidOperationException("No blocks");
+            }
+            IsModified = true;
+        }
+
+        // IChunkAccess
+        public void WriteBlockCPM(uint block, byte[] data, int offset) {
+            CheckBlockArgs(block, true);
+            if (mBase.HasBlocks) {
+                mBase.WriteBlockCPM(StartBlock + block, data, offset);
             } else {
                 throw new InvalidOperationException("No blocks");
             }

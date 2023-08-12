@@ -39,6 +39,10 @@ namespace cp2_wpf {
     public partial class EditSector : Window, INotifyPropertyChanged {
         private const int NUM_COLS = 16;
 
+        public enum SectorEditMode {
+            Unknown = 0, Sectors, Blocks, CPMBlocks
+        }
+
         public enum TxtConvMode { HighASCII, MOR, Latin }
         private delegate char TextConverter(byte b);
         private static TextConverter ModeToConverter(TxtConvMode mode) {
@@ -358,7 +362,7 @@ namespace cp2_wpf {
         private bool mIsNextEnabled;
 
         private IChunkAccess mChunkAccess;
-        private bool mAsSectors;
+        private SectorEditMode mEditMode;
 
         private uint mCurBlockOrTrack;
         private uint mCurSector;
@@ -379,19 +383,19 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="owner">Parent window.</param>
         /// <param name="chunks">Chunk data source.</param>
-        /// <param name="asSectors">If true, try to operate on sectors rather than blocks.  This
-        ///   will be ignored if the chunk source can't operate on sectors.</param>
+        /// <param name="mode">Edit mode.  This will be ignored if the mode is Sectors but the
+        ///   chunk source can't operate on sectors.</param>
         /// <param name="enableWriteFunc">Function to call to enable writes.  Will be null if
         ///   we don't allow writes (read-only volume).</param>
         /// <param name="formatter">Text formatter.</param>
-        public EditSector(Window owner, IChunkAccess chunks, bool asSectors,
+        public EditSector(Window owner, IChunkAccess chunks, SectorEditMode editMode,
                 EnableWriteFunc? enableWriteFunc, Formatter unused) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
 
             mChunkAccess = chunks;
-            mAsSectors = asSectors;
+            mEditMode = editMode;
             mEnableWriteFunc = enableWriteFunc;
 
             Debug.Assert(mEnableWriteFunc == null || !mChunkAccess.IsReadOnly);
@@ -400,10 +404,26 @@ namespace cp2_wpf {
             mTxtConvMode =
                 settings.GetEnum(AppSettings.SCTED_TEXT_CONV_MODE, TxtConvMode.HighASCII);
 
-            if (mAsSectors && !chunks.HasSectors) {
-                mAsSectors = false;
+            if (editMode == SectorEditMode.Sectors && !chunks.HasSectors) {
+                editMode = SectorEditMode.Blocks;
             }
-            mBuffer = new byte[mAsSectors ? SECTOR_SIZE : BLOCK_SIZE];
+            bool asSectors = (editMode == SectorEditMode.Sectors);
+            switch (editMode) {
+                case SectorEditMode.Sectors:
+                    Title = "Edit Sectors (DOS)";
+                    break;
+                case SectorEditMode.Blocks:
+                    Title = "Edit Blocks (ProDOS/Pascal)";
+                    break;
+                case SectorEditMode.CPMBlocks:
+                    Title = "Edit Blocks (CP/M)";
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+
+            mBuffer = new byte[asSectors ? SECTOR_SIZE : BLOCK_SIZE];
             mNumRows = mBuffer.Length / NUM_COLS;
 
             for (int i = 0; i < mBuffer.Length; i += NUM_COLS) {
@@ -415,7 +435,7 @@ namespace cp2_wpf {
             SetPrevNextEnabled();
             ReadFromDisk();
 
-            if (mAsSectors) {
+            if (asSectors) {
                 SectorVisibility = Visibility.Visible;
                 TrackBlockLabel = "Track:";
                 TrackBlockInfoLabel = string.Format("\u2022 Track is 0-{0} (${1:X})",
@@ -476,10 +496,19 @@ namespace cp2_wpf {
                 return;
             }
             try {
-                if (mAsSectors) {
-                    mChunkAccess.ReadSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
-                } else {
-                    mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0);
+                switch (mEditMode) {
+                    case SectorEditMode.Sectors:
+                        mChunkAccess.ReadSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
+                        break;
+                    case SectorEditMode.Blocks:
+                        mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0);
+                        break;
+                    case SectorEditMode.CPMBlocks:
+                        mChunkAccess.ReadBlockCPM(mCurBlockOrTrack, mBuffer, 0);
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        return;
                 }
                 SectorDataGridVisibility = Visibility.Visible;
                 IOErrorMsgVisibility = Visibility.Collapsed;
@@ -502,10 +531,19 @@ namespace cp2_wpf {
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
             try {
-                if (mAsSectors) {
-                    mChunkAccess.WriteSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
-                } else {
-                    mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0);
+                switch (mEditMode) {
+                    case SectorEditMode.Sectors:
+                        mChunkAccess.WriteSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
+                        break;
+                    case SectorEditMode.Blocks:
+                        mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0);
+                        break;
+                    case SectorEditMode.CPMBlocks:
+                        mChunkAccess.WriteBlockCPM(mCurBlockOrTrack, mBuffer, 0);
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        return;
                 }
                 IsDirty = false;
             } catch (Exception ex) {
@@ -520,7 +558,7 @@ namespace cp2_wpf {
         /// </summary>
         private void SetSectorDataLabel() {
             string dirtyStr = IsDirty ? " [*]" : string.Empty;
-            if (mAsSectors) {
+            if (mEditMode == SectorEditMode.Sectors) {
                 SectorDataLabel = string.Format("Track {0} (${0:X}), Sector {1} (${1:X}) {2}",
                     mCurBlockOrTrack, mCurSector, dirtyStr);
             } else {
@@ -535,7 +573,7 @@ namespace cp2_wpf {
         /// </summary>
         private void SetPrevNextEnabled() {
             bool hasPrev, hasNext;
-            if (mAsSectors) {
+            if (mEditMode == SectorEditMode.Sectors) {
                 hasPrev = (mCurBlockOrTrack != 0 || mCurSector != 0);
                 hasNext = (mCurBlockOrTrack != mChunkAccess.NumTracks - 1 ||
                     mCurSector != mChunkAccess.NumSectorsPerTrack - 1);
@@ -582,7 +620,7 @@ namespace cp2_wpf {
 
             bool trackBlockValid, sectorValid;
 
-            if (mAsSectors) {
+            if (mEditMode == SectorEditMode.Sectors) {
                 trackBlockValid = mEnteredBlockOrTrack >= 0 &&
                     mEnteredBlockOrTrack < mChunkAccess.NumTracks;
                 sectorValid = mEnteredSector >= 0 &&
@@ -637,7 +675,7 @@ namespace cp2_wpf {
 
         private void PrevButton_Click(object sender, RoutedEventArgs e) {
             // Assume "prev" button is disabled if this would set an invalid value.
-            if (mAsSectors) {
+            if (mEditMode == SectorEditMode.Sectors) {
                 if (mCurSector != 0) {
                     mCurSector--;
                 } else {
@@ -654,7 +692,7 @@ namespace cp2_wpf {
 
         private void NextButton_Click(object sender, RoutedEventArgs e) {
             // Assume "next" button is disabled if this would set an invalid value.
-            if (mAsSectors) {
+            if (mEditMode == SectorEditMode.Sectors) {
                 mCurSector++;
                 if (mCurSector == mChunkAccess.NumSectorsPerTrack) {
                     mCurSector = 0;

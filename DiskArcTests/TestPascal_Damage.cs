@@ -178,9 +178,10 @@ namespace DiskArcTests {
 
                     fs.RawAccess.WriteBlock(Pascal.VOL_DIR_START_BLOCK, buf, 0);
                     fs.PrepareFileAccess(true);
-                    Helper.CheckNotes(fs, 1, 0);
-                    if (!fs.IsDubious) {
-                        throw new Exception("filesystem should be dubious");
+                    // This isn't an error, as some otherwise healthy disks look this way.
+                    Helper.CheckNotes(fs, 0, 0);
+                    if (fs.IsDubious) {
+                        throw new Exception("filesystem should not be dubious");
                     }
                 }
             }

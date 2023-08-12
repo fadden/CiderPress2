@@ -21,7 +21,7 @@ limitations under the License.
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:cp2_wpf"
         mc:Ignorable="d"
-        Title="Edit Block / Sector"
+        Title="Edit THING"
         SizeToContent="WidthAndHeight" ResizeMode="NoResize"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
         ContentRendered="Window_ContentRendered"

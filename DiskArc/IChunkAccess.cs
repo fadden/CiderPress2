@@ -207,6 +207,21 @@ namespace DiskArc {
         void ReadBlock(uint block, byte[] data, int offset);
 
         /// <summary>
+        /// Reads a 512-byte block from the underlying storage, as if requested by CP/M.
+        /// </summary>
+        /// <remarks>
+        /// On anything but 5.25" media, this is equivalent to ReadBlock().
+        /// </remarks>
+        /// <param name="block">Block number.</param>
+        /// <param name="data">Data buffer.</param>
+        /// <param name="offset">Initial offset within data buffer.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Block number out of range.</exception>
+        /// <exception cref="BadBlockException">The storage is damaged, rendering the data
+        ///   unreadable.</exception>
+        /// <exception cref="InvalidOperationException">Disk does not have blocks.</exception>
+        void ReadBlockCPM(uint block, byte[] data, int offset);
+
+        /// <summary>
         /// Writes a 256-byte sector to the underlying storage.
         /// </summary>
         /// <remarks>
@@ -225,7 +240,7 @@ namespace DiskArc {
         void WriteSector(uint trk, uint sct, byte[] data, int offset);
 
         /// <summary>
-        /// Writes a 512-byte block to the underlying storage.
+        /// Writes a 512-byte block to the underlying storage, as if requested by ProDOS/Pascal.
         /// </summary>
         /// <param name="block">Block number.</param>
         /// <param name="data">Data buffer.</param>
@@ -235,6 +250,21 @@ namespace DiskArc {
         /// <exception cref="NotSupportedException">Storage was opened read-only.</exception>
         /// <exception cref="InvalidOperationException">Disk does not have blocks.</exception>
         void WriteBlock(uint block, byte[] data, int offset);
+
+        /// <summary>
+        /// Writes a 512-byte block to the underlying storage, as if requested by CP/M.
+        /// </summary>
+        /// <remarks>
+        /// On anything but 5.25" media, this is equivalent to WriteBlock().
+        /// </remarks>
+        /// <param name="block">Block number.</param>
+        /// <param name="data">Data buffer.</param>
+        /// <param name="offset">Initial offset within data buffer.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Block number out of range.</exception>
+        /// <exception cref="BadBlockException">The storage is damaged.</exception>
+        /// <exception cref="NotSupportedException">Storage was opened read-only.</exception>
+        /// <exception cref="InvalidOperationException">Disk does not have blocks.</exception>
+        void WriteBlockCPM(uint block, byte[] data, int offset);
 
         /// <summary>
         /// Tests the validity of a sector.

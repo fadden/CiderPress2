@@ -90,6 +90,7 @@ limitations under the License.
             <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
             <RoutedUICommand x:Key="EditAttributesCmd" Text="Edit Attributes..."/>
             <RoutedUICommand x:Key="EditBlocksCmd" Text="Edit Blocks..."/>
+            <RoutedUICommand x:Key="EditBlocksCPMCmd" Text="Edit Blocks (CP/M)..."/>
             <RoutedUICommand x:Key="EditDirAttributesCmd" Text="Edit Directory Attributes..."/>
             <RoutedUICommand x:Key="EditSectorsCmd" Text="Edit Sectors..."/>
             <RoutedUICommand x:Key="ExitCmd" Text="E_xit"/>
@@ -167,6 +168,8 @@ limitations under the License.
                         CanExecute="IsWritableSingleEntrySelected" Executed="EditAttributesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditBlocksCmd}"
                         CanExecute="CanEditBlocks" Executed="EditBlocksCmd_Executed"/>
+        <CommandBinding Command="{StaticResource EditBlocksCPMCmd}"
+                        CanExecute="CanEditBlocks" Executed="EditBlocksCPMCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditDirAttributesCmd}"
                         CanExecute="IsEditableFileSystemSelected" Executed="EditDirAttributesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditSectorsCmd}"
@@ -270,11 +273,12 @@ limitations under the License.
                 <Separator/>
                 <MenuItem Command="{StaticResource EditDirAttributesCmd}"/>
                 <Separator/>
-                <MenuItem Command="{StaticResource EditBlocksCmd}"/>
                 <MenuItem Command="{StaticResource EditSectorsCmd}"/>
-                <MenuItem Command="{StaticResource ScanForBadBlocksCmd}"/>
+                <MenuItem Command="{StaticResource EditBlocksCmd}"/>
+                <MenuItem Command="{StaticResource EditBlocksCPMCmd}"/>
                 <MenuItem Command="{StaticResource SaveAsDiskImageCmd}"/>
                 <MenuItem Command="{StaticResource ReplacePartitionCmd}"/>
+                <MenuItem Command="{StaticResource ScanForBadBlocksCmd}"/>
                 <Separator/>
                 <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                 <MenuItem Command="{StaticResource DefragmentCmd}"/>
@@ -496,14 +500,16 @@ limitations under the License.
                             </TreeView.ItemContainerStyle>
                             <TreeView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Command="{StaticResource EditBlocksCmd}"/>
                                     <MenuItem Command="{StaticResource EditSectorsCmd}"/>
+                                    <MenuItem Command="{StaticResource EditBlocksCmd}"/>
+                                    <MenuItem Command="{StaticResource EditBlocksCPMCmd}"/>
+                                    <MenuItem Command="{StaticResource SaveAsDiskImageCmd}"/>
+                                    <MenuItem Command="{StaticResource ReplacePartitionCmd}"/>
                                     <MenuItem Command="{StaticResource ScanForBadBlocksCmd}"/>
+                                    <Separator/>
                                     <MenuItem Command="{StaticResource ScanForSubVolCmd}"/>
                                     <MenuItem Command="{StaticResource DefragmentCmd}"/>
                                     <MenuItem Command="{StaticResource CloseSubTreeCmd}"/>
-                                    <MenuItem Command="{StaticResource SaveAsDiskImageCmd}"/>
-                                    <MenuItem Command="{StaticResource ReplacePartitionCmd}"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                         </TreeView>
@@ -672,17 +678,19 @@ limitations under the License.
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                    <Button Content="Edit Blocks" Grid.Row="0" Grid.Column="0"
-                                            Command="{StaticResource EditBlocksCmd}"/>
-                                    <Button Content="Edit Sectors" Grid.Row="1" Grid.Column="0" Margin="0,4,0,0"
+                                    <Button Content="Edit Sectors" Grid.Row="0" Grid.Column="0"
                                             Command="{StaticResource EditSectorsCmd}"/>
-                                    <Button Content="Scan For Bad Blocks" Grid.Row="2" Grid.Column="0" Margin="0,4,0,0"
-                                            Command="{StaticResource ScanForBadBlocksCmd}"/>
+                                    <Button Content="Edit Blocks" Grid.Row="1" Grid.Column="0" Margin="0,4,0,0"
+                                            Command="{StaticResource EditBlocksCmd}"/>
+                                    <Button Content="Edit Blocks (CP/M)" Grid.Row="2" Grid.Column="0" Margin="0,4,0,0"
+                                            Command="{StaticResource EditBlocksCPMCmd}"/>
 
                                     <Button Content="Save As Disk Image" Grid.Row="0" Grid.Column="2"
                                             Command="{StaticResource SaveAsDiskImageCmd}"/>
                                     <Button Content="Replace Partition Contents" Grid.Row="1" Grid.Column="2" Margin="0,4,0,0"
                                             Command="{StaticResource ReplacePartitionCmd}"/>
+                                    <Button Content="Scan For Bad Blocks" Grid.Row="2" Grid.Column="2" Margin="0,4,0,0"
+                                            Command="{StaticResource ScanForBadBlocksCmd}"/>
                                 </Grid>
                             </GroupBox>
 

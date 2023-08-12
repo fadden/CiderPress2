@@ -392,6 +392,18 @@ namespace cp2 {
         /// Handles the "read-block" command.
         /// </summary>
         public static bool HandleReadBlock(string cmdName, string[] args, ParamsBag parms) {
+            return DoHandleReadBlock(cmdName, args, false, parms);
+        }
+
+        /// <summary>
+        /// Handles the "read-block-cpm" command.
+        /// </summary>
+        public static bool HandleReadBlockCPM(string cmdName, string[] args, ParamsBag parms) {
+            return DoHandleReadBlock(cmdName, args, true, parms);
+        }
+
+        public static bool DoHandleReadBlock(string cmdName, string[] args, bool isCpm,
+                ParamsBag parms) {
             if (args.Length != 2) {
                 CP2Main.ShowUsage(cmdName);
                 return false;
@@ -422,14 +434,15 @@ namespace cp2 {
                     return false;
                 }
 
-                return DoReadBlock(chunks, args[1], parms);
+                return DoReadBlock(chunks, args[1], isCpm, parms);
             }
         }
 
         /// <summary>
         /// Reads the specified block and prints it to the console.
         /// </summary>
-        private static bool DoReadBlock(IChunkAccess chunks, string blockStr, ParamsBag parms) {
+        private static bool DoReadBlock(IChunkAccess chunks, string blockStr, bool isCpm,
+                ParamsBag parms) {
             if (!chunks.HasBlocks) {
                 Console.Error.WriteLine("Error: this image cannot be accessed as blocks");
                 return false;
@@ -442,7 +455,11 @@ namespace cp2 {
 
             byte[] blkBuf = new byte[BLOCK_SIZE];
             try {
-                chunks.ReadBlock(blockNum, blkBuf, 0);
+                if (isCpm) {
+                    chunks.ReadBlockCPM(blockNum, blkBuf, 0);
+                } else {
+                    chunks.ReadBlock(blockNum, blkBuf, 0);
+                }
             } catch (IOException ex) {
                 Console.Error.WriteLine("Error: " + ex.Message);
                 return false;
@@ -455,7 +472,7 @@ namespace cp2 {
             Formatter fmt = new Formatter(cfg);
             StringBuilder sb = fmt.FormatHexDump(blkBuf);
 
-            Console.WriteLine("# block " + blockNum);
+            Console.WriteLine("# block " + blockNum + (isCpm ? " (CP/M order)" : ""));
             Console.Write(sb.ToString());
             return true;
         }
@@ -468,6 +485,18 @@ namespace cp2 {
         /// Handles the "write-block" command.
         /// </summary>
         public static bool HandleWriteBlock(string cmdName, string[] args, ParamsBag parms) {
+            return DoHandleWriteBlock(cmdName, args, false, parms);
+        }
+
+        /// <summary>
+        /// Handles the "write-block-cpm" command.
+        /// </summary>
+        public static bool HandleWriteBlockCPM(string cmdName, string[] args, ParamsBag parms) {
+            return DoHandleWriteBlock(cmdName, args, true, parms);
+        }
+
+        public static bool DoHandleWriteBlock(string cmdName, string[] args, bool isCpm,
+                ParamsBag parms) {
             if (args.Length != 3) {
                 CP2Main.ShowUsage(cmdName);
                 return false;
@@ -498,7 +527,7 @@ namespace cp2 {
                     return false;
                 }
 
-                bool success = DoWriteBlock(chunks, args[1], args[2], parms);
+                bool success = DoWriteBlock(chunks, args[1], args[2], isCpm, parms);
                 try {
                     leafNode.SaveUpdates(parms.Compress);
                 } catch (Exception ex) {
@@ -516,7 +545,7 @@ namespace cp2 {
         /// Writes the specified block, reading data from a file or stdin.
         /// </summary>
         private static bool DoWriteBlock(IChunkAccess chunks, string blockStr,
-                string inputPathName, ParamsBag parms) {
+                string inputPathName, bool isCpm, ParamsBag parms) {
             if (!chunks.HasBlocks) {
                 Console.Error.WriteLine("Error: this image cannot be accessed as blocks");
                 return false;
@@ -553,7 +582,11 @@ namespace cp2 {
             if (parms.Verbose) {
                 byte[] blkBuf = new byte[BLOCK_SIZE];
                 try {
-                    chunks.ReadBlock(blockNum, blkBuf, 0);
+                    if (isCpm) {
+                        chunks.ReadBlockCPM(blockNum, blkBuf, 0);
+                    } else {
+                        chunks.ReadBlock(blockNum, blkBuf, 0);
+                    }
                     int diffs = CountDifferences(blkBuf, dataBuf);
                     Console.WriteLine("Found changes to " + diffs + " bytes");
                 } catch (IOException) {
@@ -561,7 +594,11 @@ namespace cp2 {
                 }
             }
             try {
-                chunks.WriteBlock(blockNum, dataBuf, 0);
+                if (isCpm) {
+                    chunks.WriteBlockCPM(blockNum, dataBuf, 0);
+                } else {
+                    chunks.WriteBlock(blockNum, dataBuf, 0);
+                }
             } catch (IOException ex) {
                 Console.Error.WriteLine("Error: " + ex.Message);
                 return false;

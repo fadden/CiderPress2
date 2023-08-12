@@ -1416,9 +1416,9 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Handles Actions : Edit Blocks / Sectors
+        /// Handles Actions : Edit Sectors / Blocks / Blocks (CPM)
         /// </summary>
-        public void EditBlocksSectors(bool asSectors) {
+        public void EditBlocksSectors(EditSector.SectorEditMode editMode) {
             Debug.Assert(mWorkTree != null);
             ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
             if (arcTreeSel == null) {
@@ -1465,7 +1465,7 @@ namespace cp2_wpf {
                     return true;
                 };
             }
-            EditSector dialog = new EditSector(mMainWin, chunks, asSectors, func, mFormatter);
+            EditSector dialog = new EditSector(mMainWin, chunks, editMode, func, mFormatter);
             dialog.ShowDialog();
             Debug.WriteLine("After dialog, enabled=" + writeEnabled);
 

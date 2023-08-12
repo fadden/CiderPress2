@@ -92,6 +92,11 @@ namespace DiskArc {
             mBase.ReadBlock(block, data, offset);
         }
 
+        public void ReadBlockCPM(uint block, byte[] data, int offset) {
+            CheckAccess(false);
+            mBase.ReadBlockCPM(block, data, offset);
+        }
+
         public void WriteSector(uint track, uint sect, byte[] data, int offset) {
             CheckAccess(true);
             mBase.WriteSector(track, sect, data, offset);
@@ -100,6 +105,11 @@ namespace DiskArc {
         public void WriteBlock(uint block, byte[] data, int offset) {
             CheckAccess(true);
             mBase.WriteBlock(block, data, offset);
+        }
+
+        public void WriteBlockCPM(uint block, byte[] data, int offset) {
+            CheckAccess(true);
+            mBase.WriteBlockCPM(block, data, offset);
         }
 
         public bool TestSector(uint trk, uint sct, out bool writable) {

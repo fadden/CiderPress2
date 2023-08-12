@@ -503,13 +503,16 @@ namespace cp2_wpf {
             mMainCtrl.EditAttributes();
         }
         private void EditBlocksCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            mMainCtrl.EditBlocksSectors(false);
+            mMainCtrl.EditBlocksSectors(EditSector.SectorEditMode.Blocks);
+        }
+        private void EditBlocksCPMCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.EditBlocksSectors(EditSector.SectorEditMode.CPMBlocks);
         }
         private void EditDirAttributesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.EditDirAttributes();
         }
         private void EditSectorsCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            mMainCtrl.EditBlocksSectors(true);
+            mMainCtrl.EditBlocksSectors(EditSector.SectorEditMode.Sectors);
         }
         private void ExitCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             // Close the main window.  This operation can be cancelled by the user.

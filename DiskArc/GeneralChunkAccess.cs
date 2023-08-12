@@ -246,13 +246,22 @@ namespace DiskArc {
 
         // IChunkAccess
         public void ReadBlock(uint block, byte[] data, int offset) {
+            DoReadBlock(block, data, offset, sProdos2Phys);
+        }
+
+        // IChunkAccess
+        public void ReadBlockCPM(uint block, byte[] data, int offset) {
+            DoReadBlock(block, data, offset, sCpm2Phys);
+        }
+
+        public void DoReadBlock(uint block, byte[] data, int offset, uint[] skewMap) {
             CheckBlockArgs(block, false);
-            if (NumSectorsPerTrack == 16 && FileOrder == SectorOrder.DOS_Sector) {
+            if (NumSectorsPerTrack == 16 && FileOrder != SectorOrder.ProDOS_Block) {
                 // Read as a pair of sectors, using DOS skewing.
                 uint track = block >> 3;            // block / (NumSectorsPerTrack/2)
                 uint sect = (block & 0x07) << 1;    // (block % (NumSectorsPerTrack/2)) * 2
                 for (int i = 0; i < 2; i++) {
-                    uint physSector = sProdos2Phys[sect + i];
+                    uint physSector = skewMap[sect + i];
                     uint logicalSector;
                     switch (FileOrder) {
                         case SectorOrder.Physical:
@@ -342,13 +351,22 @@ namespace DiskArc {
 
         // IChunkAccess
         public void WriteBlock(uint block, byte[] data, int offset) {
+            DoWriteBlock(block, data, offset, sProdos2Phys);
+        }
+
+        // IChunkAccess
+        public void WriteBlockCPM(uint block, byte[] data, int offset) {
+            DoWriteBlock(block, data, offset, sCpm2Phys);
+        }
+
+        private void DoWriteBlock(uint block, byte[] data, int offset, uint[] skewMap) {
             CheckBlockArgs(block, true);
             if (NumSectorsPerTrack == 16 && FileOrder == SectorOrder.DOS_Sector) {
                 // Write as a pair of sectors.
                 uint track = block >> 3;            // block / (NumSectorsPerTrack/2)
                 uint sect = (block & 0x07) << 1;    // (block % (NumSectorsPerTrack/2)) * 2
                 for (int i = 0; i < 2; i++) {
-                    uint physSector = sProdos2Phys[sect + i];
+                    uint physSector = skewMap[sect + i];
                     uint logicalSector;
                     switch (FileOrder) {
                         case SectorOrder.Physical:
