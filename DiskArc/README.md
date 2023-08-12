@@ -286,6 +286,10 @@ The description field for DiskCopy, Trackstar, and 2IMG is editable via the meta
 Modification dates on files are *not* updated automatically when files are modified.  The
 assumption is that the library is being used for file archiving, not general file access.
 
+### CP/M ###
+
+[ TODO ]
+
 ### DOS ###
 
 DOS is well supported, for both reading and writing, but can be tricky.  A solid effort is made

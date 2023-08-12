@@ -1,4 +1,4 @@
-﻿# Apple Macintosh "Hierarchical Operating System" (HFS) #
+﻿# Apple Macintosh "Hierarchical File System" (HFS) #
 
 ## Primary References ##
 
@@ -25,7 +25,12 @@ This document summarizes the general information and then details the recommende
 
 ## General ##
 
-Disks have 512-byte "logical blocks", but files are made up of "allocation blocks", which are
+The Hierarchical File System was developed by Apple Computer for use on the Macintosh line of
+computers.  It was introduced in 1986 with the launch of the Macintosh plus, as a successor to
+MFS, and was designed to work with floppy disks and hard drives.  It has also been used to
+distribute software on CD-ROM.  Support for HFS volumes was dropped in macOS 10.15.
+
+HFS disks have 512-byte "logical blocks", but files are made up of "allocation blocks", which are
 one or more consecutive logical blocks.  A volume can't have more than 65535 allocation blocks,
 so for volumes over 32MB the size of the allocation blocks is increased.
 
