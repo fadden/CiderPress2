@@ -4,17 +4,20 @@
 
 - https://www.seasip.info/Cpm/formats.html
 - https://manpages.ubuntu.com/manpages/bionic/man5/cpm.5.html
+- CP/AM 5.1 manual, http://www.apple-iigs.info/doc/fichiers/cpmam51.pdf
 
 ## General ##
 
 CP/M, which stands for "Control Program/Monitor" or "Control Program for Microcomputers", is
 an operating system created in 1974 by Gary Kildall.  There were a few official releases over the
-years, as well as a number of third-party variants that extended the system in various ways.  Some
-aspects of CP/M are in the public domain.
+years, as well as a number of third-party variants that extended the system in various ways.
 
-The CP/M filesystem is divided into three general fixed-size areas: the system area, the
-disk directory, and the file data area.  The system area holds the boot blocks and operating
-system image.
+The Apple II was first able to run CP/M in 1980, when Microsoft introduced the "Z-80 SoftCard",
+based on the Zilog Z-80 CPU.  This was later renamed the "Microsoft SoftCard", and eventually
+succeeded by the "Premium Softcard IIe".  The SoftCard was Microsoft's largest revenue source in
+1980, and was briefly the most popular CP/M platform.  Other CP/M cards included the PCPI
+Appli-card and Applied Engineering Z-80 Plus.  The latter came with a special version of CP/M,
+called CP/AM, that supported 3.5" floppy drives and Sider hard drives.
 
 The filesystem has some awkward characteristics:
  1. Disks aren't self-describing.  Most filesystems have a block at a well-known location that
@@ -28,8 +31,9 @@ The filesystem has some awkward characteristics:
  3. On the Apple II, 5.25" disks use a CP/M-specific sector skew.  Except that some disks appear
 	to use ProDOS sector skew for the boot tracks.
 
-Supporting all possible CP/M filesystems is a difficult task.  This document is only concerned
+Supporting all possible CP/M disk layouts is a difficult task.  This document is only concerned
 with the formats found on the Apple II (see [Apple II Disk Formats](#apple-ii-disk-formats)).
+These were based on CP/M v2.2, though there have been modern efforts to port v3.
 
 ### Filenames and User Numbers ###
 
@@ -39,6 +43,8 @@ but the filename may not.  The filename and extension may include any printable 
 character except `<>.,;:=?*[]`.  (Note the list includes '.', so it can only be used as the
 extension delimiter.)
 
+Filenames may be entered in lower case, but are converted to upper case in the disk directory.
+
 Some file attribute flags are stored in the high bits of some of the filename bytes, e.g. setting
 the high bit of the first character in the extension indicates that the file is read-only.
 
@@ -46,10 +52,35 @@ Directory entries have a "user number" associated with them, usually 0-15, somet
 could be considered subdirectories, since you can have multiple files with the same name so long
 as the user number is different.
 
+Common extensions:
+
+ext | purpose
+--- | -------
+ASM | assembly language source file
+BAK | backup copy file (created by editor)
+BAS | BASIC source code file
+C   | C language source code
+COB | COBOL source code file
+COM | transient command program file
+DOC | documentation file
+FTN | FORTRAN source code file
+HEX | hex format source code file
+LIB | library file
+MAC | assembly language macro file
+PAS | Pascal source code file
+PLI | PL/I source file
+PRN | print file (assembly language listing)
+REL | relocatable machine language file
+SUB | command list for SUBMIT execution
+TXT | text file
+$$$ | temporary file
+
 ## Disk Structure ##
 
-Zero or more tracks at the start of the disk are reserved for the system.  Immediately following
-that is the volume directory, which is addressed as block 0.  (I will try to refer to CP/M blocks
+The CP/M filesystem is divided into three general fixed-size areas.  At the start of the disk is
+the system area, which holds the boot blocks and operating system image.  It can be omitted
+entirely if a disk doesn't need to be bootable.  Immediately following that is the volume
+directory, the first block of which is addressed as block 0.  (I will try to refer to CP/M blocks
 as "allocation blocks" to avoid confusion with the 512-byte blocks used by other systems.)  The
 directory occupies one or more consecutive alloc blocks, and is immediately followed by data
 storage.  The directory cannot expand.
@@ -102,6 +133,12 @@ CP/M v3 introduced "disc labels" and date stamps.  Date stamps are stored by res
 fourth directory entry as date storage for the three previous entries.  The date stamp format
 exists in some third-party implementations of CP/M v2.2, but the format is incompatible.
 
+Fun fact: newly-formatted disks have all sectors filled with 0xe5, not 0x00.  Because this is
+used as the "empty directory entry" indicator, and there are no disk structures, the disk
+initialization process doesn't have to do anything but erase all sectors.  This makes disk
+format auto-detection tricky, because any disk with 0xe5 bytes in the directory area looks
+like a blank CP/M disk.
+
 ### Text Files ###
 
 On many disks, files will be a multiple of 128 bytes long.  For a text file, the actual file
@@ -140,9 +177,10 @@ With 1KB alloc blocks, a 140KB floppy can be addressed in a single byte, so all 
 in the directory are a single byte.
 
 CP/AM 3.5" doesn't have a diskdefs entry, but the format can be determined with a bit of
-exploration.  Allocation blocks are 2048 bytes each, and the directory starts at alloc block 8
-(ProDOS block 32).  As there are 400 allocation blocks in the directory and data area, two bytes
-are required for each block number.
+exploration.  Allocation blocks are 2048 bytes each.  The directory starts at alloc block 8
+(ProDOS block 32), and spans 4 alloc blocks (8192 bytes, ending in ProDOS block 47).  There are
+a total of 400 allocation blocks in the directory and data area, so two bytes are required for
+each block number.
 
 It's worth noting that a directory entry extent holds 16KB for both Apple II disk formats
 (16 * 1KB or 8 * 2KB).  CP/M has a notion of "physical" and "logical" extents, where the latter
@@ -156,9 +194,9 @@ ProDOS-ordered images.
 ## Appendix: User Numbers and CiderPress ##
 
 When using CP/M, the current user number can be selected with the "user" command (0-15).  Only
-files with a matching user number are accessible.  This allows multiple files with the same
-filename to exist on a single volume, and provides a way to group files on a filesystem that lacks
-subdirectories.
+files with a matching user number are accessible, although files with user number zero are
+always visible.  This allows multiple files with the same filename to exist on a single volume,
+and provides a way to group files on a filesystem that lacks subdirectories.
 
 There are a few ways to handle them in CiderPress.  Ideally we'd use an approach that doesn't
 require introducing significant CP/M-specific mechanisms, so that the same set of commands used

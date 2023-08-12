@@ -288,7 +288,13 @@ assumption is that the library is being used for file archiving, not general fil
 
 ### CP/M ###
 
-[ TODO ]
+[ ... ]
+
+Most file lengths are expressed in 128-byte increments, though some disks store precise lengths.
+Text files work around this issue by ending at the first Ctrl+Z character (0x1a).  The filesystem
+code doesn't try to manage this.  Text file conversion code should take it into account, similar
+to the way DOS text files must be converted to/from low ASCII when being copied between disk
+formats.
 
 ### DOS ###
 
@@ -343,6 +349,9 @@ filename interface, which has no restrictions.
 
 DOS file types are mapped to ProDOS equivalents.  The auxiliary type field is only supported
 for 'B' files, though 'A' files will report $0801 for compatibility with ProDOS.
+
+Text files use high ASCII, i.e. the high bit is set on all characters.  When copying files to or
+from another format, such as ProDOS, the characters need to be converted.
 
 The DOS catalog scan normally stops when the first unused entry is encountered, but that behavior
 is configurable.  Some disks may show garbage entries and appear to be damaged if the scan
