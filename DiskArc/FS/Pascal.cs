@@ -64,7 +64,7 @@ namespace DiskArc.FS {
 
         public long FreeSpace { get { return CalcFreeBlocks() * BLOCK_SIZE; } }
 
-        public GatedChunkAccess RawAccess { get; private set; }
+        public GatedChunkAccess RawAccess { get; }
 
         //
         // Implementation-specific.
@@ -97,7 +97,7 @@ namespace DiskArc.FS {
         private VolDirHeader mVolDirHeader;
 
         /// <summary>
-        /// "Fake" volume directory entry, used to hold catalog entries.
+        /// "Fake" volume directory entry, used to hold directory entries.
         /// </summary>
         private IFileEntry mVolDirEntry;
 

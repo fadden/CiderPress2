@@ -2,8 +2,8 @@
 
 ## Primary References ##
 
+- cpmtools "man 5 cpm": https://manpages.ubuntu.com/manpages/lunar/en/man5/cpm.5.html
 - https://www.seasip.info/Cpm/formats.html
-- https://manpages.ubuntu.com/manpages/bionic/man5/cpm.5.html
 - CP/AM 5.1 manual, https://archive.org/details/AE_Z-80_Plus_CPAM_5.1_Manual_v1.21
 
 ## General ##
@@ -83,13 +83,14 @@ entirely if a disk doesn't need to be bootable.  Immediately following that is t
 directory, the first block of which is addressed as block 0.  (I will try to refer to CP/M blocks
 as "allocation blocks" to avoid confusion with the 512-byte blocks used by other systems.)  The
 directory occupies one or more consecutive alloc blocks, and is immediately followed by data
-storage.  The directory cannot expand.
+storage (although a gap between directory and data is possible).  The directory cannot expand.
 
 Files are regarded as a series of 128-byte records.  Until CP/M v3, it wasn't possible to specify
 a file length with finer granularity.
 
 The directory is a series of 32-byte "extent" records.  Each extent spans 16KB (usually), so
-larger files will have multiple entries in the directory.  Each entry looks like this:
+larger files will have multiple entries in the directory.  The part of the file that the extent
+spans is specified by an extent number.  Each entry looks like this:
 ```
   ST F0 F1 F2 F3 F4 F5 F6 F7 E0 E1 E2 XL BC XH RC
   AL AL AL AL AL AL AL AL AL AL AL AL AL AL AL AL
@@ -109,25 +110,35 @@ The byte fields are:
 	- `E2`: file has been archived (for backup software)
  - `XL`: extent number, low part.  Only values 0-31 are used; upper 3 bits are zero.  (This
 	limit appears to be a holdover from CP/M v1.4, which only allowed 32 extents per file.)
+	If a single extent spans 16KB, 32 extents would cover 512KB.
  - `BC`: count of bytes used in the last record (0-128).  Or possibly the count of bytes *not*
    used in the last record.  Either way, zero is understood to mean that all bytes are used.
-   See https://www.seasip.info/Cpm/bytelen.html#lrbc
+   See https://www.seasip.info/Cpm/bytelen.html#lrbc .  (This field is sometimes called `S1`.)
  - `XH`: extent number, high part.  Only values 0-63 are used; upper 2 bits are zero.  The
-	extent number is `(XH * 32) + XL` (0-2047) in v3.  In v2.2 it was capped at 512.
- - `RC`: number of 128-byte records used in this extent (0-128).  The total number of records
-   used in this extent is `(XL * 128) + RC`; if it's equal to 128 then the extent is full, and
-   there may be another one.  If it's zero then the extent is empty and can be deallocated.
+	extent number is `(XH * 32) + XL` (0-2047) in v3.  In v2.2 it was capped at 512.  (This
+	field is sometimes called `S2`.)
+ - `RC`: number of 128-byte records used in this extent (0-128).  If it's equal to 128 then the
+	extent is full, and there may be another one.  If it's zero then the extent is empty.  This
+	is expected to be 128 for all extents except the last.
  - `AL`: allocation block number.  For volumes with 256 or fewer allocation blocks, each entry
    is stored in a single byte.  For larger volumes, the entries are paired to form eight 16-bit
    little-endian block numbers.
 
+There does not appear to be an ordering requirement on extents, i.e. the extent for the second
+16KB of a file may appear in the directory before the first 16KB.  It's possible for an extent
+to be absent, e.g. a file could have no data stored for the area from 16KB to 32KB.  The first
+extent for a file might not be #0.
+
 The disk directory starts at allocation block zero, so that can never be used as a valid file
-storage pointer.  Instead, it acts as a sparse allocation marker.  Depending on the environment,
-a file being read sequentially will either return zeroes for the sparse area, or return EOF.
-It's also possible for a file to start at a nonzero extent.
+storage pointer.  Instead, it acts as a sparse allocation marker.  CP/M returns EOF when it
+encounters a sparse area.  Sparse files are valid but rare.
 
 The disk does not have a block usage bitmap.  The operating system generates it by scanning the
-directory extents.
+directory extents.  Extents must not share block pointers with other extents.
+
+A file with multiple extents will have multiple copies of the access flags.  It is unclear
+whether the first entry in the directory or the entry for extent #0 should take precedence.
+When setting the flags, it's probably best to set the bit in all extents.
 
 CP/M v3 introduced "disc labels" and date stamps.  Date stamps are stored by reserving every
 fourth directory entry as date storage for the three previous entries.  The date stamp format
@@ -168,14 +179,14 @@ indicates the directory has 64 entries; at 32 bytes each, that's 2048 bytes (two
 `boottrk 3` means the first 3 tracks are reserved for system use.  `os 2.2` specifies the set
 of features we can expect to find.
 
-With 1KB alloc blocks, a 140KB floppy can be addressed in a single byte, so all block numbers
-in the directory are a single byte.
+With 1KB alloc blocks, a 140KB floppy can be addressed in a single byte, so all allocation block
+numbers in the directory entries are a single byte.
 
 CP/AM 3.5" doesn't have a diskdefs entry, but the format can be determined with a bit of
 exploration.  Allocation blocks are 2048 bytes each.  The directory starts at alloc block 8
 (ProDOS block 32), and spans 4 alloc blocks (8192 bytes, ending in ProDOS block 47).  There are
-a total of 400 allocation blocks in the directory and data area, so two bytes are required for
-each block number.
+a total of 392 allocation blocks in the directory and data area, so two bytes are required for
+each allocation block number.
 
 It's worth noting that a directory entry extent holds 16KB for both Apple II disk formats
 (16 * 1KB or 8 * 2KB).  CP/M has a notion of "physical" and "logical" extents, where the latter
@@ -185,14 +196,25 @@ The integrity of a 5.25" disk image can be checked with the `fsck.cpm` command f
 `cpmtools` package.  Use `fsck -f apple-do <file>` for DOS-ordered images, `apple-po` for
 ProDOS-ordered images.
 
-### Boot Image File ###
+### Data-Only Disks ###
 
 Some 5.25" disks have a directory record with user number 31 and a lower-case filename, such as
 "cp/m.sys" or "cp/am.sys".  The extent uses allocation blocks 0x80 through 0x8b, which would be
 off the end of the disk (140KB minus three 4KB boot tracks = 128KB).  If the values are treated
-as wrapping around to the start of the disk, the file contents represent the 12KB boot track area.
+as wrapping around to the start of the disk, the file contains the 12KB boot track area.
 
-It's unclear what value this provides.
+This trick is used to allow extra storage on non-bootable disks.  Normally the first three tracks
+would be considered reserved and inaccessible, and the directory must start in allocation block 0.
+By wrapping around at the end of the disk, the first three tracks become accessible as allocation
+blocks 128-139.  To prevent files from overwriting the boot image, a special file is created that
+spans those blocks.  Giving the file a special status prevents the file from being deleted.
+
+The filesystem implementation needs to be aware of this trick, and needs to recognize that the
+special file has a valid allocation block list but should not be displayed in listings or
+otherwise be available as a target of commands (especially deletion).
+
+It's unclear whether 3.5" disks have a similar feature.  The cpmtools `fsck.cpm` command does
+not recognize this arrangement and will report an error.
 
 ### Text Files ###
 

@@ -183,6 +183,9 @@ namespace DiskArc {
             // Map a filesystem object onto the IChunkAccess.
             IFileSystem fs;
             switch (fsType) {
+                case Defs.FileSystemType.CPM:
+                    fs = new CPM(diskImage.ChunkAccess, appHook);
+                    break;
                 case Defs.FileSystemType.DOS32:
                 case Defs.FileSystemType.DOS33:
                     fs = new DOS(diskImage.ChunkAccess, appHook);
@@ -337,7 +340,9 @@ namespace DiskArc {
         /// </remarks>
         /// <returns>FileSystemType enumerated value, or Unknown if not known.</returns>
         public static Defs.FileSystemType GetFileSystemType(this IFileSystem fs) {
-            if (fs is DOS) {
+            if (fs is CPM) {
+                return Defs.FileSystemType.CPM;
+            } else if (fs is DOS) {
                 return Defs.FileSystemType.DOS33;   // we don't really use the DOS32 enum value
             } else if (fs is HFS) {
                 return Defs.FileSystemType.HFS;
@@ -357,7 +362,9 @@ namespace DiskArc {
         /// <param name="fileName">Filename to test.</param>
         /// <returns>True if the filename is valid.</returns>
         public static bool IsValidFileName(this IFileSystem fs, string fileName) {
-            if (fs is DOS) {
+            if (fs is CPM) {
+                return CPM_FileEntry.IsFileNameValid(fileName);
+            } else if (fs is DOS) {
                 return DOS_FileEntry.IsFileNameValid(fileName);
             } else if (fs is HFS) {
                 return HFS_FileEntry.IsFileNameValid(fileName);
@@ -376,6 +383,7 @@ namespace DiskArc {
         /// <param name="volName">Volume name to test.</param>
         /// <returns>True if the volume name is valid.</returns>
         public static bool IsValidVolumeName(this IFileSystem fs, string volName) {
+            // nothing for CPM
             if (fs is DOS) {
                 return DOS_FileEntry.IsVolumeNameValid(volName);
             } else if (fs is HFS) {
@@ -398,7 +406,9 @@ namespace DiskArc {
             // These are static methods implemented in the IFileEntry objects, alongside the
             // other filename functions.  Sometimes it's convenient to pretend that it's an
             // IFileSystem instance method.
-            if (fs is DOS) {
+            if (fs is CPM) {
+                return CPM_FileEntry.AdjustFileName(fileName);
+            } else if (fs is DOS) {
                 return DOS_FileEntry.AdjustFileName(fileName);
             } else if (fs is HFS) {
                 return HFS_FileEntry.AdjustFileName(fileName);
@@ -418,6 +428,7 @@ namespace DiskArc {
         /// <returns>Adjusted filename, or null if this filesystem doesn't support volume
         ///   names.</returns>
         public static string? AdjustVolumeName(this IFileSystem fs, string fileName) {
+            // nothing for CPM
             if (fs is DOS) {
                 return DOS_FileEntry.AdjustVolumeName(fileName);
             } else if (fs is HFS) {
@@ -588,7 +599,9 @@ namespace DiskArc {
         /// <param name="entry">File entry.</param>
         /// <returns>Filesystem reference, or null if entry is not part of a filesystem.</returns>
         public static IFileSystem? GetFileSystem(this IFileEntry entry) {
-            if (entry is DOS_FileEntry) {
+            if (entry is CPM_FileEntry) {
+                return ((CPM_FileEntry)entry).FileSystem;
+            } else if (entry is DOS_FileEntry) {
                 return ((DOS_FileEntry)entry).FileSystem;
             } else if (entry is HFS_FileEntry) {
                 return ((HFS_FileEntry)entry).FileSystem;

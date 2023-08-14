@@ -39,13 +39,14 @@ namespace DiskArc {
             new DiskLayoutEntry("MicroDrive", FileSystemType.MicroDrive, typeof(Multi.MicroDrive)),
             new DiskLayoutEntry("FocusDrive", FileSystemType.FocusDrive, typeof(Multi.FocusDrive)),
             new DiskLayoutEntry("CFFA", FileSystemType.CFFA, typeof(Multi.CFFA)),
-            // MSDOS (mostly to rule it out)
+            // MSDOS/FAT (mostly to rule it out)
 
             // We want to check for DOS before ProDOS, so that we can identify DOS hybrids.
             new DiskLayoutEntry("DOS 3.x", FileSystemType.DOS33, typeof(FS.DOS)),
             new DiskLayoutEntry("ProDOS", FileSystemType.ProDOS, typeof(FS.ProDOS)),
             new DiskLayoutEntry("Pascal", FileSystemType.Pascal, typeof(FS.Pascal)),
             new DiskLayoutEntry("HFS", FileSystemType.HFS, typeof(FS.HFS)),
+            new DiskLayoutEntry("CPM", FileSystemType.CPM, typeof(FS.CPM)),
 
             new DiskLayoutEntry("Am/UniDOS", FileSystemType.AmUniDOS, typeof(Multi.AmUniDOS)),
             new DiskLayoutEntry("OzDOS", FileSystemType.OzDOS, typeof(Multi.OzDOS)),

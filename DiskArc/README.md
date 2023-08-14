@@ -289,6 +289,8 @@ assumption is that the library is being used for file archiving, not general fil
 ### CP/M ###
 
 [ ... ]
+- does extending file with SetLength() create sparse region, or fill with 0xe5?
+- extending with seek + write creates sparse region in the middle?
 
 Implementations of the CP/M operating system are many and varied.  The disk format function
 does not currently create bootable disks.  While the IFileSystem `Format()` call is defined as a

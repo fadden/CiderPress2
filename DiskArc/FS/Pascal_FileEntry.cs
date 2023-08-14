@@ -68,7 +68,7 @@ namespace DiskArc.FS {
 
         public IFileEntry ContainingDir { get; private set; }
 
-        public int Count { get { return ChildList.Count; } }       // fake vol dir only
+        public int Count => ChildList.Count;        // fake vol dir only
 
         public string FileName {
             get { return mFileName; }
@@ -593,12 +593,12 @@ namespace DiskArc.FS {
         // Regex pattern for filename validation.
         //
         // Filenames are 1-15 characters, and may include printable ASCII characters
-        // other than '$=?, [#:'.  Volume names follow the same rules but are shorter.
-        // (Regex trick is "negative lookahead": https://stackoverflow.com/a/35427132/294248.)
-        private const string FILE_NAME_PATTERN = @"^((?![\$=?, \[#:])[\x20-\x7e])+$";
+        // other than spaces and '$=?,[#:'.  Volume names follow the same rules but are shorter.
+        // (Exclusion uses "negative lookahead": https://stackoverflow.com/a/35427132/294248.)
+        private const string FILE_NAME_PATTERN = @"^((?![\$=?,\[#: ])[\x20-\x7e]){1,15}$";
         private static Regex sFileNameRegex = new Regex(FILE_NAME_PATTERN);
 
-        private const string INVALID_CHARS = @"$=?, #:]";
+        private const string INVALID_CHARS = @"$=?,#:] ";
 
         // IFileEntry
         public int CompareFileName(string fileName) {

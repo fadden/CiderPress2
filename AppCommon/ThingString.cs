@@ -97,7 +97,9 @@ namespace AppCommon {
         /// Returns a short (&lt;= 7 char) string with a filesystem class name.
         /// </summary>
         public static string IFileSystem(IFileSystem fs) {
-            if (fs is DOS) {
+            if (fs is CPM) {
+                return "CP/M";
+            } else if (fs is DOS) {
                 return "DOS 3.x";
             } else if (fs is HFS) {
                 return "HFS";

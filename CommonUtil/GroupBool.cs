@@ -25,8 +25,9 @@ namespace CommonUtil {
     /// instance.  If one of them is modified, a flag is set that essentially marks all of
     /// them as dirty, and can be cleared with a single update.  The flag object should be
     /// created by the object that holds the collection.</para>
+    /// <para>The value is initially False.</para>
     /// </remarks>
     public sealed class GroupBool {
-        public bool IsSet { get; set; }
+        public bool IsSet { get; set; } = false;
     }
 }

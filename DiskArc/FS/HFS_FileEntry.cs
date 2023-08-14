@@ -726,7 +726,7 @@ namespace DiskArc.FS {
             } else {
                 HFS_FileEntry parent = (HFS_FileEntry)idestDir;
                 if (parent.ChildList.ContainsKey(newFileName)) {
-                    throw new IOException("Another file with that name already exists");
+                    throw new IOException("A file with that name already exists");
                 }
                 destCNID = ((HFS_FileEntry)idestDir).EntryCNID;
             }

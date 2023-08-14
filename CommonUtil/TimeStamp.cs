@@ -242,6 +242,7 @@ namespace CommonUtil {
             (long)(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) -
                    new DateTime(1904, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 
+        // 1-Jan-1904 to 6-Feb-2040.
         public static readonly DateTime HFS_MIN_TIMESTAMP = ConvertDateTime_HFS(uint.MinValue);
         public static readonly DateTime HFS_MAX_TIMESTAMP = ConvertDateTime_HFS(uint.MaxValue);
 
@@ -465,6 +466,7 @@ namespace CommonUtil {
 
         public const int INVALID_UNIX_TIME = int.MinValue;      // reserve 0x80000000 as invalid
 
+        // 13-Dec-1901 to 19-Jan-2038.
         public static readonly DateTime UNIX_MIN_TIMESTAMP = ConvertDateTime_Unix32(int.MinValue+1);
         public static readonly DateTime UNIX_MAX_TIMESTAMP = ConvertDateTime_Unix32(int.MaxValue);
 
