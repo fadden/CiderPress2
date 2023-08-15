@@ -558,9 +558,11 @@ used to format a disk see [#filesystem-types](Filesystem Types).
 
 Most filesystems can only be placed on disks with certain sizes.
 
-DOS disks will be bootable unless `--no-make-bootable` is specified.
-ProDOS and Pascal always have the Apple II boot blocks written.  HFS boot
-blocks are zeroed.
+DOS disks will be bootable unless `--no-make-bootable` is specified.  ProDOS
+and Pascal always have the Apple II boot blocks written, but the disks will
+not actually boot without "PRODOS" or "SYSTEM.APPLE".  HFS boot blocks are
+zeroed.  For CP/M, `--make-bootable` will cause the first three tracks to be
+marked as reserved, but the formatter does not write an OS image.
 
 ProDOS and HFS disks are created with the volume name "NEW.DISK".  DOS disks
 use volume #254.
@@ -1405,6 +1407,9 @@ little over .NIB, which is inferior to .WOZ.
 Filesystem type strings are used for commands like `create-disk-image`.
 The filesystems that may be formatted onto a disk image are:
 
+ - "cpm" - CP/M volume.  May be a 35-track 5.25" disk (140KB) or a 3.5"
+   disk (800KB).  The first 3 tracks of a 5.25" disk can be reserved for an
+   OS image by formatting the disk with the "make bootable" flag.
  - "dos" - DOS 3.2 or 3.3, determined by the value of the `--sectors`
    option.  Disks must have 35, 40, 50, or 80 tracks, with 13, 16, or 32
    sectors.  Supported configurations:
@@ -1414,17 +1419,16 @@ The filesystems that may be formatted onto a disk image are:
    - 80 * 16 - 80-track 5.25" floppy (320KB) - not bootable
    - 50 * 16 - 50-track, 16 sector embedded volume (200KB)
    - 50 * 32 - 50-track, 32 sector embedded volume (400KB) - not bootable
+ - "hfs" - Macintosh Hierarchical Filesystem volume.  Volumes may be fairly
+   small or unreasonably large.  Here they must be at least 128KB but no
+   more than 4GB.
+ - "pascal" - Apple Pascal volume.  Recommended sizes are 140KB or 800KB,
+   but anything from 6 blocks to 32MB is allowed.  Disks are limited to 77
+   files, regardless of size.
  - "prodos" - ProDOS / SOS volume.  Volumes may be very small (5 blocks),
    and are limited to 65535 blocks (31.9MB).  Partitions are typically
    created as an even number of megabytes, so an "oversized" 65536-block
    image is also allowed.
- - "pascal" - Apple Pascal volume.  Recommended sizes are 140KB or 800KB,
-   but anything from 6 blocks to 32MB is allowed.  Disks are limited to 77
-   files, regardless of size.
- - "hfs" - Macintosh Hierarchical Filesystem volume.  Volumes may be fairly
-   small or unreasonably large.  Here they must be at least 128KB but no
-   more than 4GB.
- - ["cpm"] - TBD
 
 ### Import and Export ###
 

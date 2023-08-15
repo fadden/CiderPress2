@@ -409,7 +409,12 @@ namespace cp2_wpf {
 
             // Do the conversion.
             DateTime startWhen = DateTime.Now;
-            mCurDataOutput = item.Converter.ConvertFile(mConvOptions);
+            try {
+                mCurDataOutput = item.Converter.ConvertFile(mConvOptions);
+            } catch (Exception ex) {
+                mCurDataOutput = new SimpleText("Error: converter (" +
+                    item.Converter.GetType().Name + ") crashed:\r\n" + ex);
+            }
             DateTime dataDoneWhen = DateTime.Now;
 
             // TODO: make the resource fork formatting on-demand: only do it if the resource

@@ -241,8 +241,29 @@ namespace DiskArc.FS {
                 Partition part = new Partition(subChunk, pascalFs, mAppHook);
                 mPartitions.Add(part);
                 return true;
+            } else if (CPM.TestImage(chunkAccess, mAppHook) >=
+                    FileAnalyzer.DiskLayoutEntry.TestResult.Good) {
+                mAppHook.LogI("Found DOS+CP/M hybrid; first DOS use is track " + firstDosUse);
+                CPM cpmFs = new CPM(chunkAccess, mAppHook);
+
+                for (uint trk = 0; trk < chunkAccess.NumTracks; trk++) {
+                    bool byDos = dosUse[trk];
+                    bool byCpm = cpmFs.Check525TrackReserved(trk);
+                    if (byDos && byCpm) {
+                        Notes.AddW("Track " + trk + " used by both DOS and CP/M");
+                        IsDubious = true;
+                        break;
+                    }
+                }
+
+                // Prepare the "partition".
+                ChunkSubset subChunk = ChunkSubset.CreateBlocksOnTracks(chunkAccess,
+                    chunkAccess.NumSectorsPerTrack, chunkAccess.NumTracks,
+                    SectorOrder.CPM_KBlock);
+                Partition part = new Partition(subChunk, cpmFs, mAppHook);
+                mPartitions.Add(part);
+                return true;
             } else {
-                // TODO - test for CP/M
                 return false;
             }
         }

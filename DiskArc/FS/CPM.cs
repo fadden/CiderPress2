@@ -33,11 +33,14 @@ namespace DiskArc.FS {
     /// based on CP/M v2.2.
     /// </summary>
     public class CPM : IFileSystem {
-        public const int DIR_ENTRY_LEN = 32;
+        public const int MAX_FILE_LEN = 8 * 1024*1024;  // 8MB (v2.2 limitation)
+        public const int DIR_ENTRY_LEN = 32;            // length of a dir entry extent record
+        public const int FILE_REC_LEN = 128;            // length of a "record" in a file
+        public const int RECS_PER_EXTENT = 128;         // constant for 5.25" and 3.5" disks
         public const byte NO_DATA = 0xe5;
 
         internal const int MAX_USER_NUM = 15;
-        internal const int SPECIAL_FILE_STATUS = 31;    // magical system area file
+        internal const int RESERVED_SPACE = 31;         // extent status indicating reservation
         internal const int MAX_VALID_STATUS = 0x21;     // CP/M v3 timestamp
 
         private const string FILENAME_RULES =
@@ -90,6 +93,11 @@ namespace DiskArc.FS {
         /// Number of (512-byte) blocks in the directory.
         /// </summary>
         public uint DirBlockCount { get; }
+
+        /// <summary>
+        /// For 5.25" disks, we allow allocation blocks to wrap around to the start of the disk.
+        /// </summary>
+        public bool DoBlocksWrap { get; }
 
         /// <summary>
         /// Total allocation blocks present in the filesystem (directory and data areas).
@@ -148,20 +156,23 @@ namespace DiskArc.FS {
         /// <param name="dirBlockCount">Result: number of (512-byte) blocks in directory.</param>
         /// <returns>True if the configuration is known, false if not.</returns>
         private static bool GetDiskParameters(IChunkAccess chunks, out uint allocUnit,
-                out uint dirStartBlock, out uint dirBlockCount) {
+                out uint dirStartBlock, out uint dirBlockCount, out bool doBlocksWrap) {
             switch (chunks.FormattedLength) {
                 case 140 * 1024:        // 140KB 5.25" disk
                     allocUnit = 1024;
                     dirStartBlock = 24;
                     dirBlockCount = 4;
+                    doBlocksWrap = true;
                     return true;
                 case 800 * 1024:        // 800KB 3.5" disk
                     allocUnit = 2048;
                     dirStartBlock = 32;
                     dirBlockCount = 16;
+                    doBlocksWrap = false;
                     return true;
                 default:
                     allocUnit = dirStartBlock = dirBlockCount = 0;
+                    doBlocksWrap = false;
                     return false;
             }
         }
@@ -174,13 +185,13 @@ namespace DiskArc.FS {
 
             // Get disk parameters and make some calculations.
             if (!GetDiskParameters(chunks, out uint allocUnit, out uint dirStartBlock,
-                    out uint dirBlockCount)) {
+                    out uint dirBlockCount, out bool doBlocksWrap)) {
                 return TestResult.No;
             }
             long usableLen = chunks.FormattedLength - dirStartBlock * BLOCK_SIZE;
             int numAllocBlocks = (int)(usableLen / allocUnit);
             Debug.Assert(numAllocBlocks == 128 || numAllocBlocks == 392);
-            if (numAllocBlocks == 128) {
+            if (doBlocksWrap && numAllocBlocks == 128) {
                 // 5.25" disks wrap around at the end.
                 numAllocBlocks = 140;
             }
@@ -200,10 +211,9 @@ namespace DiskArc.FS {
                     if (status == NO_DATA) {
                         // Empty directory slot.
                         continue;
-                    } else if (status == SPECIAL_FILE_STATUS) {
-                        // Some disks have a special file that uses invalid allocation block
-                        // numbers to span the three boot tracks.  Not sure what it's there for,
-                        // but we should probably just ignore it.
+                    } else if (status == RESERVED_SPACE) {
+                        // Some disks have a special file that reserves space for the boot image
+                        // or DOS hybrid tracks.  Ignore it here.
                         continue;
                     } else if (status > MAX_VALID_STATUS) {
                         badExtents++;
@@ -302,12 +312,13 @@ namespace DiskArc.FS {
             mVolDirEntry = IFileEntry.NO_ENTRY;
 
             if (!GetDiskParameters(ChunkAccess, out uint allocUnit, out uint dirStartBlock,
-                    out uint dirBlockCount)) {
+                    out uint dirBlockCount, out bool doBlocksWrap)) {
                 throw new DAException("CP/M filesystem can't live here");
             }
             AllocUnitSize = allocUnit;
             DirStartBlock = dirStartBlock;
             DirBlockCount = dirBlockCount;
+            DoBlocksWrap = doBlocksWrap;
             int totalBlocks = (int)((chunks.FormattedLength / BLOCK_SIZE) - DirStartBlock);
             Debug.Assert(totalBlocks == 256 || totalBlocks == 1568);
             if (totalBlocks == 256) {
@@ -371,7 +382,7 @@ namespace DiskArc.FS {
             // This can happen easily if we have the filesystem in a "using" block and
             // something throws with a file open.  Post a warning and close all files.
             if (mOpenFiles.Count != 0) {
-                AppHook.LogI("Pascal FS disposed with " + mOpenFiles.Count + " files open; closing");
+                AppHook.LogI("CPM FS disposed with " + mOpenFiles.Count + " files open; closing");
                 CloseAll();
             }
 
@@ -393,7 +404,14 @@ namespace DiskArc.FS {
         // IFileSystem
         public void Flush() {
             mOpenFiles.FlushAll();
-            // TODO - flush all directory blocks
+            FlushVolumeDir();
+        }
+
+        /// <summary>
+        /// Flushes the contents of the volume directory, if they have been changed.
+        /// </summary>
+        internal void FlushVolumeDir() {
+            // TODO
         }
 
         // IFileSystem
@@ -448,9 +466,18 @@ namespace DiskArc.FS {
             }
             foreach (IFileEntry child in volDir) {
                 CPM_FileEntry entry = (CPM_FileEntry)child;
+                entry.SaveChanges();
                 entry.Invalidate();
             }
             volDir.Invalidate();
+        }
+
+        private bool[] mIs525TrackReserved = new bool[35];
+        public bool Check525TrackReserved(uint track) {
+            if (track < mIs525TrackReserved.Length) {
+                return mIs525TrackReserved[track];
+            }
+            return false;
         }
 
         /// <summary>
@@ -481,6 +508,39 @@ namespace DiskArc.FS {
 
             // Scan the full catalog.
             mVolDirEntry = CPM_FileEntry.ScanDirectory(this);
+
+            // Handle the "reserved space" entries on 140KB 5.25" disks.  Make a map, marking
+            // entire tracks as reserved.  (The sector skew makes marking partial tracks tricky.)
+            if (ChunkAccess.FormattedLength == 140 * 1024) {
+                Array.Clear(mIs525TrackReserved);
+                int allocCount = 0;
+                foreach (CPM_FileEntry.Extent ext in Extents) {
+                    if (ext.Status == RESERVED_SPACE) {
+                        for (int i = 0; i < ext.PtrsPerExtent; i++) {
+                            ushort allocBlock = ext[i];
+                            if (allocBlock != 0) {
+                                allocCount++;
+                                uint track = 3 + allocBlock / 4U;
+                                if (track >= 35) {
+                                    track -= 35;
+                                }
+                                mIs525TrackReserved[track] = true;
+                            }
+                        }
+                    }
+                }
+
+                if (allocCount != 0) {
+                    bool doWarnUnused =
+                        AppHook.GetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, false);
+                    string msg = allocCount + " allocation blocks are reserved";
+                    if (doWarnUnused) {
+                        Notes.AddW(msg);
+                    } else {
+                        Notes.AddI(msg);
+                    }
+                }
+            }
         }
 
         // IFileSystem
@@ -490,12 +550,59 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void Format(string volumeName, int volumeNum, bool makeBootable) {
+            // TODO: makeBootable should create a user=31 file that spans the boot area on
+            //   5.25" disks.  Including boot image is optional.
             throw new NotImplementedException();
         }
 
-        private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite,
-                FilePart part) {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Performs general checks on file-access calls, throwing exceptions when something
+        /// is amiss.  An exception here generally indicates an error in the program calling
+        /// into the library.
+        /// </summary>
+        /// <param name="op">Short string describing the operation.</param>
+        /// <param name="ientry">File being accessed.</param>
+        /// <param name="wantWrite">True if this operation might modify the file.</param>
+        /// <param name="part">Which part of the file we want access to.  Pass "Unknown" to
+        ///   match on any part.</param>
+        /// <exception cref="IOException">Various.</exception>
+        /// <exception cref="ArgumentException">Various.</exception>
+        private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite, FilePart part) {
+            if (mDisposed) {
+                throw new ObjectDisposedException("Object was disposed");
+            }
+            if (!IsPreppedForFileAccess) {
+                throw new IOException("Filesystem object not prepared for file access");
+            }
+            if (wantWrite && IsReadOnly) {
+                throw new IOException("Filesystem is read-only");
+            }
+            if (ientry == IFileEntry.NO_ENTRY) {
+                throw new ArgumentException("Cannot operate on NO_ENTRY");
+            }
+            if (ientry.IsDamaged) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to access");
+            }
+            if (ientry.IsDubious && wantWrite) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to modify");
+            }
+            CPM_FileEntry? entry = ientry as CPM_FileEntry;
+            if (entry == null || entry.FileSystem != this) {
+                if (entry != null && entry.FileSystem == null) {
+                    // Invalid entry; could be a deleted file, or from before a raw-mode switch.
+                    throw new IOException("File entry is invalid");
+                } else {
+                    throw new FileNotFoundException("File entry is not part of this filesystem");
+                }
+            }
+            if (part == FilePart.RsrcFork) {
+                throw new IOException("File does not have a resource fork");
+            }
+            if (!mOpenFiles.CheckOpenConflict(entry, wantWrite, FilePart.Unknown)) {
+                throw new IOException("File is already open; cannot " + op);
+            }
         }
 
         // IFileSystem
@@ -504,17 +611,54 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public DiskFileStream OpenFile(IFileEntry entry, FileAccessMode mode, FilePart part) {
-            throw new NotImplementedException();
+        public DiskFileStream OpenFile(IFileEntry ientry, FileAccessMode mode, FilePart part) {
+            if (part == FilePart.RawData) {
+                part = FilePart.DataFork;   // do this before is-file-open check
+            }
+            CheckFileAccess("open", ientry, mode != FileAccessMode.ReadOnly, part);
+            if (mode != FileAccessMode.ReadOnly && mode != FileAccessMode.ReadWrite) {
+                throw new ArgumentException("Unknown file access mode " + mode);
+            }
+            if (part != FilePart.DataFork) {
+                throw new ArgumentException("Requested file part not found");
+            }
+
+            CPM_FileEntry entry = (CPM_FileEntry)ientry;
+            CPM_FileDesc pfd = CPM_FileDesc.CreateFD(entry, mode, part);
+            mOpenFiles.Add(this, entry, pfd);
+            return pfd;
         }
 
+        /// <summary>
+        /// Closes a file, removing it from our list.  Do not call this directly -- this is
+        /// called from the file descriptor Dispose() call.
+        /// </summary>
+        /// <param name="ifd">Descriptor to close.</param>
+        /// <exception cref="IOException">File descriptor was already closed, or was opened
+        ///   by a different filesystem.</exception>
         internal void CloseFile(DiskFileStream ifd) {
-            throw new NotImplementedException();
+            CPM_FileDesc fd = (CPM_FileDesc)ifd;
+            if (fd.FileSystem != this) {
+                // Should be impossible, though it could be null if previous close invalidated it.
+                if (fd.FileSystem == null) {
+                    throw new IOException("Invalid file descriptor");
+                } else {
+                    throw new IOException("File descriptor was opened by a different filesystem");
+                }
+            }
+
+            // Find the file record, searching by descriptor.
+            if (!mOpenFiles.RemoveDescriptor(ifd)) {
+                throw new IOException("Open file record not found: " + fd);
+            }
+
+            // Take the opportunity to flush the volume directory, in case the file was modified.
+            FlushVolumeDir();
         }
 
         // IFileSystem
         public void CloseAll() {
-            throw new NotImplementedException();
+            mOpenFiles.CloseAll();
         }
 
         // IFileSystem

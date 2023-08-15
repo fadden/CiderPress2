@@ -26,33 +26,49 @@ using static DiskArc.IFileSystem;
 
 namespace DiskArcTests {
     /// <summary>
-    /// Tests basic features of Pascal filesystem implementation.  All tests are done with
-    /// disk images created by Apple Pascal.
+    /// Tests basic features of CP/M filesystem implementation.  All tests are done with
+    /// disk images created by native systems.
     /// </summary>
-    public class TestPascal_Prefab : ITest {
-        private static List<Helper.FileAttr> sApple1List = new List<Helper.FileAttr>() {
-            new Helper.FileAttr("SYSTEM.APPLE", 16384, -1, 16384, FileAttribs.FILE_TYPE_PDA, 0),
-            new Helper.FileAttr("SYSTEM.PASCAL", 20992, -1, 20992, FileAttribs.FILE_TYPE_PCD, 0),
-            new Helper.FileAttr("SYSTEM.MISCINFO", 512, -1, 512, FileAttribs.FILE_TYPE_PDA, 0),
-            new Helper.FileAttr("SYSTEM.EDITOR", 24064, -1, 24064, FileAttribs.FILE_TYPE_PCD, 0),
-            new Helper.FileAttr("SYSTEM.FILER", 14336, -1, 14336, FileAttribs.FILE_TYPE_PCD, 0),
-            new Helper.FileAttr("SYSTEM.LIBRARY", 17408, -1, 17408, FileAttribs.FILE_TYPE_PDA, 0),
-            new Helper.FileAttr("SYSTEM.CHARSET", 1024, -1, 1024, FileAttribs.FILE_TYPE_PDA, 0),
-            new Helper.FileAttr("SYSTEM.SYNTAX", 7168, -1, 7168, FileAttribs.FILE_TYPE_PDA, 0),
+    public class TestCPM_Prefab : ITest {
+        private static List<Helper.FileAttr> sCPAMList = new List<Helper.FileAttr>() {
+            new Helper.FileAttr("-10/7/87.R21", 0, 0),
+            new Helper.FileAttr("AEXIT.COM", 384, 1024),
+            new Helper.FileAttr("APATCH12.COM", 2944, 3072),
+            new Helper.FileAttr("AUTOPC.COM", 256, 1024),
+            new Helper.FileAttr("AUTORUN.COM", 256, 1024),
+            new Helper.FileAttr("CONFIGIO.COM", 4736, 5120),
+            new Helper.FileAttr("COPY.COM", 3840, 4096),
+            new Helper.FileAttr("CPAM60F.COM", 13056, 13312),
+            new Helper.FileAttr("CPAM60S.COM", 13056, 13312),
+            new Helper.FileAttr("CPAM60UF.COM", 16384, 16384),
+            new Helper.FileAttr("CPAM60US.COM", 16384, 16384),
+            new Helper.FileAttr("CWS33X.COM", 384, 1024),
+            new Helper.FileAttr("FMTUNI.COM", 1664, 2048),
+            new Helper.FileAttr("FORMAT.COM", 3840, 4096),
+            new Helper.FileAttr("MEGDRIVE.COM", 2048, 2048),
+            new Helper.FileAttr("NSWEEP.COM", 11776, 12288),
+            new Helper.FileAttr("PC.COM", 7552, 8192),
+            new Helper.FileAttr("PIP.COM", 7168, 7168),
+            new Helper.FileAttr("RAMBOOT.COM", 512, 1024),
+            new Helper.FileAttr("RESTOR.COM", 896, 1024),
+            new Helper.FileAttr("SAMPLE.SUB", 128, 1024),
+            new Helper.FileAttr("SD.COM", 2048, 2048),
+            new Helper.FileAttr("STAT.COM", 6144, 6144),
+            new Helper.FileAttr("SUBMIT.COM", 1536, 2048),
         };
 
         public static void TestSimple(AppHook appHook) {
-            using (Stream dataFile = Helper.OpenTestFile("pascal/Apple Pascal1.po", true,
+            using (Stream dataFile = Helper.OpenTestFile("cpm/CPAM51a.do", true,
                     appHook)) {
                 using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
                         FileKind.UnadornedSector, appHook)!) {
                     diskImage.AnalyzeDisk();
                     IFileSystem fs = (IFileSystem)diskImage.Contents!;
                     fs.PrepareFileAccess(true);
-                    Helper.CheckNotes(fs, 0, 0);
+                    Helper.CheckNotes(fs, 1, 0);    // 1 warning for secretly used alloc blocks
 
                     IFileEntry volDir = fs.GetVolDirEntry();
-                    Helper.ValidateDirContents(volDir, sApple1List);
+                    Helper.ValidateDirContents(volDir, sCPAMList);
 
                     TestInterface(fs);
                     TestSimpleRead(fs);
@@ -62,7 +78,7 @@ namespace DiskArcTests {
 
         private static void TestInterface(IFileSystem fs) {
             IFileEntry entry =
-                Helper.EntryFromPathThrow(fs, "SYSTEM.SYNTAX", IFileEntry.NO_DIR_SEP);
+                Helper.EntryFromPathThrow(fs, "APATCH12.COM", IFileEntry.NO_DIR_SEP);
 
             // Open file correctly...
             using (DiskFileStream desc = fs.OpenFile(entry, FileAccessMode.ReadOnly,
@@ -87,11 +103,11 @@ namespace DiskArcTests {
         }
 
         private static void TestSimpleRead(IFileSystem fs) {
-            const string MATCH_STR = "1: Error in simple type\r";
-            const int MATCH_OFF = 0x402;
+            const string MATCH_STR = "Installation program for";
+            const int MATCH_OFF = 0x1f3;
 
             IFileEntry volDir = fs.GetVolDirEntry();
-            IFileEntry file1 = fs.FindFileEntry(volDir, "SYSTEM.SYNTAX");
+            IFileEntry file1 = fs.FindFileEntry(volDir, "APATCH12.COM");
 
             byte[] buf = new byte[MATCH_STR.Length];
 
@@ -103,7 +119,7 @@ namespace DiskArcTests {
                 throw new Exception("Read did not find correct data");
             }
 
-            fd1.Position = 0x1bf0;
+            fd1.Position = 0xb70;
             int actual = fd1.Read(buf, 0, buf.Length);
             if (actual != 16) {
                 throw new Exception("Read past end of file");

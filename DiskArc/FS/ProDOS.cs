@@ -503,11 +503,11 @@ namespace DiskArc.FS {
                 //IsDamaged = true;
             }
 
-            bool doWarnUnused = AppHook.GetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, false);
 
             // See if we have a large range of blocks that are marked used but have no usage.
             // If so, we may have an embedded DOS 3.3 volume.
             if (unusedMarked != 0) {
+                bool doWarnUnused = AppHook.GetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, false);
                 RangeSet noUsage = VolBitmap.VolUsage.GenerateNoUsageSet();
                 IEnumerator<RangeSet.Range> iter = noUsage.RangeListIterator;
                 while (iter.MoveNext()) {
@@ -519,9 +519,6 @@ namespace DiskArc.FS {
                     } else {
                         Notes.AddI(msg);
                     }
-
-                    // TODO: something useful with embedded volumes
-                    //       see DiskFSProDOS::ScanForSubVolumes
                 }
             }
 

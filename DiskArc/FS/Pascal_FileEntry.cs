@@ -376,7 +376,6 @@ namespace DiskArc.FS {
             Debug.Assert(numBlocks > 0);
             byte[] dirBuf = new byte[numBlocks * BLOCK_SIZE];
             IChunkAccess chunks = fileSystem.ChunkAccess;
-            uint prevStart = 0;
             uint block = 0;
             try {
                 for (int i = 0; i < numBlocks; i++) {
@@ -389,6 +388,7 @@ namespace DiskArc.FS {
                 // continue on, with a zeroed-out buffer
             }
 
+            uint prevStart = 0;
             int maxEntCount = (numBlocks * BLOCK_SIZE) / DIR_ENTRY_LEN - 1;
             for (int i = 0; i < maxEntCount; i++) {
                 int offset = DIR_ENTRY_LEN * (i + 1);
@@ -415,19 +415,20 @@ namespace DiskArc.FS {
                     notes.AddE("File entries are out of order");
                     fileSystem.IsDubious = true;
                 }
-                prevStart = newEntry.StartBlock;
 
                 if (!newEntry.ValidateEntry(hdr)) {
                     newEntry.IsDamaged = true;
                     fileSystem.IsDubious = true;
                 } else {
-                    // Update file usage map.
+                    // Update file usage map.  This detects overlapping entries.
                     for (uint ublk = newEntry.mStartBlock; ublk < newEntry.mNextBlock; ublk++) {
                         vu.MarkInUse(ublk);
                         vu.SetUsage(ublk, newEntry);
                     }
                 }
                 volDir.ChildList.Add(newEntry);
+
+                prevStart = newEntry.StartBlock;
             }
 
             return volDir;
@@ -568,7 +569,12 @@ namespace DiskArc.FS {
             ushort maxNext = FileSystem.GetMaxNext(this);
             Debug.Assert(maxNext >= NextBlock);
             if (blockIndex < maxNext - StartBlock) {
-                mNextBlock = (ushort)(StartBlock + blockIndex + 1);
+                VolumeUsage vu = FileSystem.VolUsage!;
+                ushort newNext = (ushort)(StartBlock + blockIndex + 1);
+                for (uint blk = mNextBlock; blk < newNext; blk++) {
+                    vu.AllocChunk(blk, this);
+                }
+                mNextBlock = newNext;
                 MarkDirty();
             } else {
                 throw new DiskFullException("Disk full, unable to extend file");
@@ -583,8 +589,12 @@ namespace DiskArc.FS {
             if (blockIndex >= NextBlock - StartBlock) {
                 throw new DAException("internal error: truncation would expand");
             }
-
-            mNextBlock = (ushort)(StartBlock + blockIndex + 1);
+            VolumeUsage vu = FileSystem.VolUsage!;
+            ushort newNext = (ushort)(StartBlock + blockIndex + 1);
+            for (uint blk = newNext; blk < mNextBlock; blk++) {
+                vu.FreeChunk(blk);
+            }
+            mNextBlock = newNext;
             MarkDirty();
         }
 
@@ -602,22 +612,17 @@ namespace DiskArc.FS {
 
         // IFileEntry
         public int CompareFileName(string fileName) {
-            return CompareFileNames(mFileName, fileName);
+            return string.Compare(mFileName, fileName, StringComparison.OrdinalIgnoreCase);
         }
 
         // IFileEntry
         public int CompareFileName(string fileName, char fileNameSeparator) {
-            return CompareFileNames(mFileName, fileName);
+            return string.Compare(mFileName, fileName, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
-        /// Compares two filenames, case insensitive.
+        /// Returns true if the string is a valid Pascal filename.
         /// </summary>
-        public static int CompareFileNames(string fileName1, string fileName2) {
-            return string.Compare(fileName1, fileName2,
-                    StringComparison.OrdinalIgnoreCase);
-        }
-
         public static bool IsFileNameValid(string fileName) {
             MatchCollection matches = sFileNameRegex.Matches(fileName);
             return (matches.Count == 1);

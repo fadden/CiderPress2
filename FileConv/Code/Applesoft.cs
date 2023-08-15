@@ -162,10 +162,11 @@ namespace FileConv.Code {
                 bool inRem = false;
                 bool inQuote = false;
                 while (true) {
-                    if (length == 0) {
+                    if (length - offset == 0) {
                         output.Notes.AddW("File may be truncated (mid line " + lineNum + ")");
                         break;
                     }
+                    Debug.Assert(offset >= 0 && offset < dataBuf.Length);
                     byte bval = dataBuf[offset];
                     if (bval == 0x00) {
                         break;      // end of line

@@ -332,11 +332,14 @@ namespace DiskArc.FS {
         // Stream
         public override int Read(byte[] readBuf, int readOffset, int count) {
             CheckValid();
-            if (readOffset < 0 || count < 0) {
-                throw new ArgumentOutOfRangeException("Bad offset / count");
+            if (readOffset < 0) {
+                throw new ArgumentOutOfRangeException(nameof(readOffset), readOffset, "bad offset");
+            }
+            if (count < 0) {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "bad count");
             }
             if (readBuf == null) {
-                throw new ArgumentNullException("Buffer is null");
+                throw new ArgumentNullException(nameof(readBuf));
             }
             if (count == 0 || mMark >= mEOF) {
                 return 0;

@@ -32,7 +32,8 @@ namespace DiskArcTests {
         // Simple test to verify recognition of various disk configurations.
         public static void TestSimple(AppHook appHook) {
             CheckEmbed("hybrid/dos-prodos.do", 1, FileSystemType.ProDOS, 4, "PRODOS", appHook);
-            // TODO: Pascal, CP/M
+            CheckEmbed("cpm/CPAM51b.do", 3, FileSystemType.CPM, 14, "AUTORUN4.COM", appHook);
+            // TODO: need a DOS+Pascal test
         }
 
         private static void CheckEmbed(string pathName, int expDosFileCount,
@@ -45,7 +46,7 @@ namespace DiskArcTests {
                     diskImage.AnalyzeDisk();
                     IFileSystem fs = (IFileSystem)diskImage.Contents!;
                     fs.PrepareFileAccess(true);
-                    // One warning, about in-use but unowned blocks.
+                    // There are in-use but un-owned blocks (which is a warning for these tests).
                     Helper.CheckNotes(fs, 1, 0);
 
                     List<IFileEntry> entries = fs.GetVolDirEntry().ToList();
@@ -66,10 +67,17 @@ namespace DiskArcTests {
                     embedFs.PrepareFileAccess(true);
                     Helper.CheckNotes(embedFs, 1, 0);
 
+                    if (embedFs.GetFileSystemType() != otherKind) {
+                        throw new Exception("Found wrong type of embedded filesystem");
+                    }
+
                     // Confirm the test file exists.
                     IFileEntry volDir = embedFs.GetVolDirEntry();
                     // This throws an exception if the file is not found.
                     IFileEntry testEntry = embedFs.FindFileEntry(volDir, testFileName);
+
+                    Helper.ExpectInt(expOtherFileCount, volDir.Count,
+                        "wrong number of files in embed");
                 }
             }
         }

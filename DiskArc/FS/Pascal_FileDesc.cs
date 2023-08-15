@@ -42,7 +42,6 @@ namespace DiskArc.FS {
 
         private string mDebugPathName { get; set; }
         private bool mIsReadOnly;                       // is writing disallowed?
-        private bool mInternalOpen;                     // skip informing filesystem of close?
 
         /// <summary>
         /// Current file length.
@@ -62,12 +61,10 @@ namespace DiskArc.FS {
         /// <summary>
         /// Private constructor.
         /// </summary>
-        private Pascal_FileDesc(Pascal_FileEntry entry, FileAccessMode mode, FilePart part,
-                bool internalOpen) {
+        private Pascal_FileDesc(Pascal_FileEntry entry, FileAccessMode mode, FilePart part) {
             FileSystem = entry.FileSystem;
             FileEntry = entry;
             Part = part;
-            mInternalOpen = internalOpen;
             mIsReadOnly = (mode == FileAccessMode.ReadOnly);
 
             mDebugPathName = entry.FullPathName;        // latch name when file opened
@@ -83,17 +80,15 @@ namespace DiskArc.FS {
         /// <param name="entry">File entry to open.</param>
         /// <param name="mode">Access mode.</param>
         /// <param name="part">File part.</param>
-        /// <param name="internalOpen">True if this is an "internal" open, which means it's
-        ///   not being tracked by the filesystem object.</param>
         /// <exception cref="IOException">Disk access failure, or corrupted file
         ///   structure.</exception>
         /// <returns>File descriptor object.</returns>
         internal static Pascal_FileDesc CreateFD(Pascal_FileEntry entry, FileAccessMode mode,
-                FilePart part, bool internalOpen) {
+                FilePart part) {
             Debug.Assert(!entry.IsDamaged);
             Debug.Assert(part == FilePart.DataFork);
 
-            Pascal_FileDesc newFd = new Pascal_FileDesc(entry, mode, part, internalOpen);
+            Pascal_FileDesc newFd = new Pascal_FileDesc(entry, mode, part);
             newFd.mEOF = (int)entry.DataLength;
 
             return newFd;
@@ -102,11 +97,14 @@ namespace DiskArc.FS {
         // Stream
         public override int Read(byte[] readBuf, int readOffset, int count) {
             CheckValid();
-            if (readOffset < 0 || count < 0) {
-                throw new ArgumentOutOfRangeException("Bad offset / count");
+            if (readOffset < 0) {
+                throw new ArgumentOutOfRangeException(nameof(readOffset), readOffset, "bad offset");
+            }
+            if (count < 0) {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "bad count");
             }
             if (readBuf == null) {
-                throw new ArgumentNullException("Buffer is null");
+                throw new ArgumentNullException(nameof(readBuf));
             }
             if (count == 0 || mMark >= mEOF) {
                 return 0;
@@ -361,13 +359,11 @@ namespace DiskArc.FS {
                 } catch {
                     Debug.Assert(false, "FileDesc dispose-time flush failed: " + mDebugPathName);
                 }
-                if (!mInternalOpen) {
-                    try {
-                        // Tell the OS to forget about us.
-                        FileSystem.CloseFile(this);
-                    } catch (Exception ex) {
-                        Debug.WriteLine("FileSystem.CloseFile from fd close failed: " + ex.Message);
-                    }
+                try {
+                    // Tell the OS to forget about us.
+                    FileSystem.CloseFile(this);
+                } catch (Exception ex) {
+                    Debug.WriteLine("FileSystem.CloseFile from fd close failed: " + ex.Message);
                 }
             } else {
                 // Finalizer dispose.

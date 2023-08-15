@@ -406,6 +406,7 @@ namespace DiskArc.FS {
             }
             foreach (IFileEntry child in volDir) {
                 Pascal_FileEntry entry = (Pascal_FileEntry)child;
+                entry.SaveChanges();
                 entry.Invalidate();
             }
             volDir.Invalidate();
@@ -605,7 +606,7 @@ namespace DiskArc.FS {
             }
 
             Pascal_FileEntry entry = (Pascal_FileEntry)ientry;
-            Pascal_FileDesc pfd = Pascal_FileDesc.CreateFD(entry, mode, part, false);
+            Pascal_FileDesc pfd = Pascal_FileDesc.CreateFD(entry, mode, part);
             mOpenFiles.Add(this, entry, pfd);
             return pfd;
         }

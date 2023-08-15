@@ -45,7 +45,6 @@ namespace DiskArc.FS {
     /// files do not alter the modification date.</para>
     /// </remarks>
     public class ProDOS_FileDesc : DiskFileStream {
-        internal static readonly byte[] sZeroBlock = new byte[BLOCK_SIZE];
         private const int PTRS_PER_IBLOCK = 256;        // max 256 pointers in index blocks
         private const int PTRS_PER_MIBLOCK = 128;       // max 128 pointers in master index
 
@@ -99,6 +98,7 @@ namespace DiskArc.FS {
         // General-purpose temporary disk buffer, to reduce allocations.  Don't call other methods
         // while holding data here.
         private byte[] mTmpBlockBuf = new byte[BLOCK_SIZE];
+        internal static readonly byte[] sZeroBlock = new byte[BLOCK_SIZE];
 
         /// <summary>
         /// A copy of the contents of a disk block, tagged with the block number and a "dirty"
@@ -947,11 +947,14 @@ namespace DiskArc.FS {
         // Stream
         public override int Read(byte[] readBuf, int readOffset, int count) {
             CheckValid();
-            if (readOffset < 0 || count < 0) {
-                throw new ArgumentOutOfRangeException("Bad offset / count");
+            if (readOffset < 0) {
+                throw new ArgumentOutOfRangeException(nameof(readOffset), readOffset, "bad offset");
+            }
+            if (count < 0) {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "bad count");
             }
             if (readBuf == null) {
-                throw new ArgumentNullException("Buffer is null");
+                throw new ArgumentNullException(nameof(readBuf));
             }
             if (count == 0 || mMark >= mEndOfFile) {
                 return 0;

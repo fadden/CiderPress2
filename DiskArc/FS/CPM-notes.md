@@ -203,18 +203,27 @@ Some 5.25" disks have a directory record with user number 31 and a lower-case fi
 off the end of the disk (140KB minus three 4KB boot tracks = 128KB).  If the values are treated
 as wrapping around to the start of the disk, the file contains the 12KB boot track area.
 
-This trick is used to allow extra storage on non-bootable disks.  Normally the first three tracks
-would be considered reserved and inaccessible, and the directory must start in allocation block 0.
-By wrapping around at the end of the disk, the first three tracks become accessible as allocation
-blocks 128-139.  To prevent files from overwriting the boot image, a special file is created that
-spans those blocks.  Giving the file a special status prevents the file from being deleted.
+This trick, which appears to have originated with the Microsoft SoftCard, is used to allow extra
+storage on non-bootable disks.  Normally the first three tracks would be considered reserved and
+inaccessible, and the directory must start in allocation block 0.  By wrapping around at the end
+of the disk, the first three tracks become accessible as allocation blocks 128-139.  To prevent
+files from overwriting the boot image, a special file is created that spans those blocks.  Giving
+the file a special status prevents the file from being modified or deleted.
 
 The filesystem implementation needs to be aware of this trick, and needs to recognize that the
 special file has a valid allocation block list but should not be displayed in listings or
 otherwise be available as a target of commands (especially deletion).
 
 It's unclear whether 3.5" disks have a similar feature.  The cpmtools `fsck.cpm` command does
-not recognize this arrangement and will report an error.
+not recognize this arrangement, and will report an error because the allocation block pointers
+are invalid.
+
+The CP/AM "COPY /S" command, which copies the boot image from one floppy disk to another, will
+create the special file if it doesn't exist.
+
+The user=31 trick is also used on DOS+CP/M hybrid disks, such as the back side of the CP/AM 5.1
+floppy.  The extent must cover a range of allocation blocks starting at 0x38, which is track 17
+on a 5.25" disk.
 
 ### Text Files ###
 
