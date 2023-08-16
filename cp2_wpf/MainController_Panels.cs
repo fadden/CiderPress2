@@ -74,14 +74,21 @@ namespace cp2_wpf {
 
         // True if blocks/sectors are readable.  If we support custom sector codecs we will want
         // to relax this restriction for floppy disk images.
-        public bool CanEditBlocks { get { return CanAccessChunk(false); } }
-        public bool CanEditSectors { get { return CanAccessChunk(true); } }
+        public bool CanEditBlocks {
+            get { return CanAccessChunk(EditSector.SectorEditMode.Blocks); }
+        }
+        public bool CanEditBlocksCPM {
+            get { return CanAccessChunk(EditSector.SectorEditMode.CPMBlocks); }
+        }
+        public bool CanEditSectors {
+            get { return CanAccessChunk(EditSector.SectorEditMode.Sectors); }
+        }
 
         public bool HasChunks { get { return GetCurrentWorkChunks() != null; } }
 
         /// <summary>
         /// Determines whether the current work object can be sector-edited as blocks or sectors.
-        /// This only works for IDiskImage and Partition.
+        /// This is only possible for IDiskImage and Partition.
         /// </summary>
         /// <remarks>
         /// <para>IFileSystem and IMultiPart also have chunk access objects, but filesystems have
@@ -89,13 +96,17 @@ namespace cp2_wpf {
         /// meant to be carved up into smaller pieces.</para>
         /// <para>A "True" result does not indicate that the storage is writable.</para>
         /// </remarks>
-        private bool CanAccessChunk(bool asSectors) {
+        private bool CanAccessChunk(EditSector.SectorEditMode mode) {
             IChunkAccess? chunks = GetCurrentWorkChunks();
             if (chunks != null) {
-                if (asSectors) {
-                    return chunks.HasSectors;
-                } else {
-                    return chunks.HasBlocks;
+                switch (mode) {
+                    case EditSector.SectorEditMode.Sectors:
+                        return chunks.HasSectors;
+                    case EditSector.SectorEditMode.Blocks:
+                        return chunks.HasBlocks;
+                    case EditSector.SectorEditMode.CPMBlocks:
+                        // Only enable CP/M mode for 5.25" and 3.5" disks.
+                        return chunks.HasBlocks && CPM.IsSizeAllowed(chunks.FormattedLength);
                 }
             }
             return false;

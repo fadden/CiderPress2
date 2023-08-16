@@ -488,9 +488,8 @@ namespace DiskArc.FS {
             if (IsPreppedForFileAccess) {
                 throw new IOException("Must be in raw access mode");
             }
-            if (ChunkAccess.FormattedLength < MIN_VOL_SIZE ||
-                    ChunkAccess.FormattedLength > MAX_VOL_SIZE + BLOCK_SIZE) {  // allow 1 over
-                throw new ArgumentOutOfRangeException("total length");
+            if (!IsSizeAllowed(ChunkAccess.FormattedLength)) {
+                throw new ArgumentException("size not valid");
             }
             long formatBlockCount = ChunkAccess.FormattedLength / BLOCK_SIZE;
             if (formatBlockCount == 65536) {

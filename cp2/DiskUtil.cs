@@ -85,6 +85,9 @@ namespace cp2 {
             FileSystemType fsType = FileSystemType.Unknown;
             if (formatStr != null) {
                 switch (formatStr.ToLowerInvariant()) {
+                    case "cpm":
+                        fsType = FileSystemType.CPM;
+                        break;
                     case "dos":
                         fsType = FileSystemType.DOS33;
                         break;

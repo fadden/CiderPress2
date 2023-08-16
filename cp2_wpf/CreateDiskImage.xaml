@@ -166,7 +166,7 @@ limitations under the License.
                                Text="&#x2022; Must be 0-254"
                                Foreground="{Binding VolNumSyntaxForeground}"/>
                 </Grid>
-                <CheckBox Content="Allocate boot tracks (DOS 3.x)"
+                <CheckBox Content="Allocate boot tracks (DOS 3.x, CP/M)"
                           IsChecked="{Binding IsChecked_MakeBootable}"/>
             </StackPanel>
         </Grid>

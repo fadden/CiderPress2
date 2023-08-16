@@ -169,7 +169,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource EditBlocksCmd}"
                         CanExecute="CanEditBlocks" Executed="EditBlocksCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditBlocksCPMCmd}"
-                        CanExecute="CanEditBlocks" Executed="EditBlocksCPMCmd_Executed"/>
+                        CanExecute="CanEditBlocksCPM" Executed="EditBlocksCPMCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditDirAttributesCmd}"
                         CanExecute="IsEditableFileSystemSelected" Executed="EditDirAttributesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditSectorsCmd}"

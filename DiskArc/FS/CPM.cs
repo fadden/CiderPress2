@@ -150,14 +150,14 @@ namespace DiskArc.FS {
         /// <summary>
         /// Gets the magic parameters for the disk volume.
         /// </summary>
-        /// <param name="chunks">Chunk access object.</param>
+        /// <param name="volumeSize">Filesystem size, in bytes..</param>
         /// <param name="allocUnit">Result: size of an allocation unit, in bytes.</param>
         /// <param name="dirStartBlock">Result: directory start block number (512-byte).</param>
         /// <param name="dirBlockCount">Result: number of (512-byte) blocks in directory.</param>
         /// <returns>True if the configuration is known, false if not.</returns>
-        private static bool GetDiskParameters(IChunkAccess chunks, out uint allocUnit,
+        private static bool GetDiskParameters(long volumeSize, out uint allocUnit,
                 out uint dirStartBlock, out uint dirBlockCount, out bool doBlocksWrap) {
-            switch (chunks.FormattedLength) {
+            switch (volumeSize) {
                 case 140 * 1024:        // 140KB 5.25" disk
                     allocUnit = 1024;
                     dirStartBlock = 24;
@@ -177,6 +177,39 @@ namespace DiskArc.FS {
             }
         }
 
+        /// <summary>
+        /// Converts an absolute 512-byte disk block number to an allocation block number.  In
+        /// some cases, such as blocks 0-31 on an 800K disk, there is no conversion.
+        /// </summary>
+        /// <param name="blockNum">Disk block number.</param>
+        /// <param name="volumeSize">Filesystem size, in bytes.</param>
+        /// <param name="offset">Result: offset of disk block within allocation block.</param>
+        /// <returns>Allocation block number, or uint.MaxValue if no conversion is
+        ///   possible.</returns>
+        public static uint BlockToAllocBlock(uint blockNum, long volumeSize, out uint offset) {
+            if (blockNum * (long)BLOCK_SIZE >= volumeSize) {
+                throw new ArgumentOutOfRangeException(nameof(blockNum));
+            }
+            if (!GetDiskParameters(volumeSize, out uint allocUnit, out uint dirStartBlock,
+                    out uint dirBlockCount, out bool doBlocksWrap)) {
+                offset = 0;
+                return uint.MaxValue;
+            }
+            uint div = allocUnit / BLOCK_SIZE;
+            uint allocBlockNum;
+            if (blockNum < dirStartBlock) {
+                if (doBlocksWrap) {
+                    blockNum += (uint)(volumeSize / BLOCK_SIZE);
+                } else {
+                    offset = 0;
+                    return uint.MaxValue;
+                }
+            }
+            allocBlockNum = (blockNum - dirStartBlock) / div;
+            offset = (blockNum % div) * BLOCK_SIZE;
+            return allocBlockNum;
+        }
+
         // Delegate: test image to see if it's ours.
         public static TestResult TestImage(IChunkAccess chunks, AppHook appHook) {
             if (!chunks.HasBlocks) {
@@ -184,8 +217,8 @@ namespace DiskArc.FS {
             }
 
             // Get disk parameters and make some calculations.
-            if (!GetDiskParameters(chunks, out uint allocUnit, out uint dirStartBlock,
-                    out uint dirBlockCount, out bool doBlocksWrap)) {
+            if (!GetDiskParameters(chunks.FormattedLength, out uint allocUnit,
+                    out uint dirStartBlock, out uint dirBlockCount, out bool doBlocksWrap)) {
                 return TestResult.No;
             }
             long usableLen = chunks.FormattedLength - dirStartBlock * BLOCK_SIZE;
@@ -201,7 +234,7 @@ namespace DiskArc.FS {
             // pretty good indication that it's CP/M.  It does not, however, offer any clues to
             // the disk image's sector ordering.
             byte[] buf = new byte[BLOCK_SIZE];
-            int extentsFound = 0;
+            int goodExtents = 0;
             int badExtents = 0;
             for (uint block = dirStartBlock; block < dirStartBlock + dirBlockCount; block++) {
                 chunks.ReadBlockCPM(block, buf, 0);
@@ -211,17 +244,15 @@ namespace DiskArc.FS {
                     if (status == NO_DATA) {
                         // Empty directory slot.
                         continue;
-                    } else if (status == RESERVED_SPACE) {
-                        // Some disks have a special file that reserves space for the boot image
-                        // or DOS hybrid tracks.  Ignore it here.
-                        continue;
                     } else if (status > MAX_VALID_STATUS) {
+                        // Status is outside the valid range.
                         badExtents++;
                         continue;
                     }
-                    if (status > MAX_USER_NUM) {
+                    if (status > MAX_USER_NUM && status != RESERVED_SPACE) {
                         // We don't interpret extents with special status values, so they don't
-                        // count for or against.
+                        // count for or against.  The user=31 reserved space extent does look like
+                        // a valid file though, so check that.
                         //Debug.WriteLine("Ignoring extent with status=$" + status.ToString("x2"));
                         continue;
                     }
@@ -271,18 +302,25 @@ namespace DiskArc.FS {
                         continue;
                     }
 
-                    extentsFound++;
+                    goodExtents++;
+                    // In theory, awarding more points for extents in the first block would help
+                    // disambiguate the sector order on 5.25" disk images.  In practice, the
+                    // first block starts in sector 0, which is mapped the same way in all skew
+                    // tables.  We could look at the second half, but our main concern is for
+                    // disks with few files, where everything is coming up 0xe5.
                 }
             }
 
-            Debug.WriteLine("CP/M order=" + chunks.FileOrder + " extentsFound=" + extentsFound +
+            Debug.WriteLine("CP/M order=" + chunks.FileOrder + " goodExtents=" + goodExtents +
                 " badExtents=" + badExtents);
-            if (badExtents > 0) {
+            if (badExtents > 0 && goodExtents == 0) {
                 return TestResult.No;
-            } else if (extentsFound == 0) {
-                return TestResult.Maybe;
-            } else if (extentsFound <= 4) {
-                return TestResult.Good;
+            } else if (badExtents < 4 && goodExtents > 4) {
+                return TestResult.Barely;       // could be CP/M disk with minor damage
+            } else if (goodExtents == 0) {
+                return TestResult.Maybe;        // could be a totally blank CP/M disk
+            } else if (goodExtents <= 4) {
+                return TestResult.Good;         // almost certainly CP/M, might be wrong order
             } else {
                 return TestResult.Yes;
             }
@@ -311,8 +349,8 @@ namespace DiskArc.FS {
             RawAccess = new GatedChunkAccess(chunks);
             mVolDirEntry = IFileEntry.NO_ENTRY;
 
-            if (!GetDiskParameters(ChunkAccess, out uint allocUnit, out uint dirStartBlock,
-                    out uint dirBlockCount, out bool doBlocksWrap)) {
+            if (!GetDiskParameters(ChunkAccess.FormattedLength, out uint allocUnit,
+                    out uint dirStartBlock, out uint dirBlockCount, out bool doBlocksWrap)) {
                 throw new DAException("CP/M filesystem can't live here");
             }
             AllocUnitSize = allocUnit;
@@ -548,11 +586,44 @@ namespace DiskArc.FS {
             return null;
         }
 
+        private static readonly byte[] s525BootExtent = {
+            RESERVED_SPACE,
+            (byte)'c', (byte)'p', (byte)'/', (byte)'m', (byte)' ', (byte)' ', (byte)' ', (byte)' ',
+            (byte)'s', (byte)'y', (byte)'s', 0, 0, 0, (12 * 1024 / 128),
+            0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0, 0, 0, 0
+        };
+
         // IFileSystem
         public void Format(string volumeName, int volumeNum, bool makeBootable) {
-            // TODO: makeBootable should create a user=31 file that spans the boot area on
-            //   5.25" disks.  Including boot image is optional.
-            throw new NotImplementedException();
+            // We only reject the call if the underlying storage is read-only.  If the filesystem
+            // is read-only because of file damage, reformatting it is fine.
+            if (ChunkAccess.IsReadOnly) {
+                throw new IOException("Can't format read-only data");
+            }
+            if (IsPreppedForFileAccess) {
+                throw new IOException("Must be in raw access mode");
+            }
+            if (!IsSizeAllowed(ChunkAccess.FormattedLength)) {
+                throw new ArgumentException("size not valid");
+            }
+            long formatBlockCount = ChunkAccess.FormattedLength / BLOCK_SIZE;
+
+            // Fill the entire disk with 0xe5.
+            byte[] blockBuf = new byte[BLOCK_SIZE];
+            RawData.MemSet(blockBuf, 0, blockBuf.Length, NO_DATA);
+            for (uint block = 0; block < formatBlockCount; block++) {
+                ChunkAccess.WriteBlockCPM(block, blockBuf, 0);
+            }
+
+            if (makeBootable && ChunkAccess.FormattedLength == 140 * 1024) {
+                // Reserve the first 3 tracks for the OS image by creating a special extent.
+                Debug.Assert(s525BootExtent.Length == CPM_FileEntry.Extent.LENGTH);
+                Array.Copy(s525BootExtent, blockBuf, s525BootExtent.Length);
+                ChunkAccess.WriteBlockCPM(24, blockBuf, 0);
+            }
+
+            // Reset state.
+            PrepareRawAccess();
         }
 
         /// <summary>

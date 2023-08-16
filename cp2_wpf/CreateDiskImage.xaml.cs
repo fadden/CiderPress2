@@ -867,10 +867,7 @@ namespace cp2_wpf {
             }
         }
         public bool IsEnabled_FS_CPM {
-            get {   // TODO
-                long volSize = GetVolSize();
-                return volSize == 140 * 1024 || volSize == 800 * 1024;
-            }
+            get { return CPM.IsSizeAllowed(GetVolSize()); }
         }
 
         public Brush VolNameSyntaxForeground {

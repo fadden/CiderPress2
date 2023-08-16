@@ -581,9 +581,8 @@ namespace DiskArc.FS {
             if (IsPreppedForFileAccess) {
                 throw new IOException("Must be in raw access mode");
             }
-            if (ChunkAccess.FormattedLength < MIN_VOL_SIZE ||
-                    ChunkAccess.FormattedLength > MAX_VOL_SIZE) {
-                throw new ArgumentOutOfRangeException("Invalid length for HFS volume");
+            if (!IsSizeAllowed(ChunkAccess.FormattedLength)) {
+                throw new ArgumentException("size not valid");
             }
 
             if (!HFS_FileEntry.IsVolumeNameValid(volumeName)) {

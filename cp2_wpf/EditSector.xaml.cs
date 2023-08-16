@@ -559,10 +559,21 @@ namespace cp2_wpf {
         private void SetSectorDataLabel() {
             string dirtyStr = IsDirty ? " [*]" : string.Empty;
             if (mEditMode == SectorEditMode.Sectors) {
-                SectorDataLabel = string.Format("Track {0} (${0:X}), Sector {1} (${1:X}) {2}",
+                SectorDataLabel = string.Format("Track {0} (${0:X2}), Sector {1} (${1:X}) {2}",
                     mCurBlockOrTrack, mCurSector, dirtyStr);
+            } else if (mEditMode == SectorEditMode.CPMBlocks) {
+                uint allocBlock = DiskArc.FS.CPM.BlockToAllocBlock(mCurBlockOrTrack,
+                        mChunkAccess.FormattedLength, out uint offset);
+                if (allocBlock != uint.MaxValue) {
+                    SectorDataLabel =
+                        string.Format("Block {0} (${0:X}) / Alloc {1}.{2} (${1:X2}) {3}",
+                            mCurBlockOrTrack, allocBlock, offset / BLOCK_SIZE, dirtyStr);
+                } else {
+                    SectorDataLabel = string.Format("Block {0} (${0:X2}) / Alloc --.- ($--) {1}",
+                        mCurBlockOrTrack, dirtyStr);
+                }
             } else {
-                SectorDataLabel = string.Format("Block {0} (${0:X}) {1}",
+                SectorDataLabel = string.Format("Block {0} (${0:X2}) {1}",
                     mCurBlockOrTrack, dirtyStr);
             }
         }

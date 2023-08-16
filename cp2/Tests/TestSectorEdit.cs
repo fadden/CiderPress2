@@ -20,7 +20,8 @@ using CommonUtil;
 
 namespace cp2.Tests {
     /// <summary>
-    /// Tests "read-sector", "write-sector", "read-block", "write-block".
+    /// Tests "read-sector", "write-sector", "read-block", "write-block", "read-block-cpm", and
+    /// "write-block-cpm".
     /// </summary>
     internal static class TestSectorEdit {
         public static void RunTest(ParamsBag parms) {
@@ -36,6 +37,7 @@ namespace cp2.Tests {
             TestReadTrack(parms);
             TestTurduckenSectors(parms);
             TestTurduckenBlocks(parms);
+            TestCPMBlocks(parms);
 
             Controller.RemoveTestTmp(parms);
         }
@@ -155,6 +157,29 @@ namespace cp2.Tests {
                 "again.txt",
             };
             Controller.CompareLines(expected, stdout);
+        }
+
+        private static void TestCPMBlocks(ParamsBag parms) {
+            // Just exercise the calls, which are minor variants of read-block/write-block.
+            string inputFile = Path.Join(Controller.TEST_DATA, "cpm", "CPAM51a.do");
+            string tdnFile = Path.Join(Controller.TEST_TMP, "cpm-btest.do");
+            FileUtil.CopyFile(inputFile, tdnFile);
+
+            MemoryStream stdout = Controller.CaptureConsoleOut();
+            if (!SectorEdit.HandleReadBlockCPM("rbc", new string[] { tdnFile, "2" }, parms)) {
+                throw new Exception("rbc " + tdnFile + " 2 failed");
+            }
+
+            string dataFile = Path.Combine(Controller.TEST_TMP, "bcout.hex");
+            using (StreamWriter sw = new StreamWriter(
+                    new FileStream(dataFile, FileMode.CreateNew))) {
+                sw.Write(ConvertStreamToString(stdout));
+            }
+
+            if (!SectorEdit.HandleWriteBlockCPM("wbc",
+                    new string[] { tdnFile, "2", dataFile }, parms)) {
+                throw new Exception("wb " + tdnFile + " 2 " + dataFile + " failed");
+            }
         }
 
         private static string ConvertStreamToString(Stream stream) {

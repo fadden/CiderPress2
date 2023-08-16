@@ -617,7 +617,7 @@ namespace DiskArc.FS {
                 throw new IOException("Must be in raw access mode");
             }
             if (!IsSizeAllowed(ChunkAccess.FormattedLength)) {
-                throw new ArgumentOutOfRangeException("Invalid length for DOS volume");
+                throw new ArgumentException("Invalid length for DOS volume");
             }
 
             // Validate volume number.  Use default if invalid.  This allows the caller to pass -1
