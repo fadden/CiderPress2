@@ -21,12 +21,6 @@ using static DiskArc.Defs;
 using static DiskArc.FileAnalyzer.DiskLayoutEntry;
 using static DiskArc.IFileSystem;
 
-// TODO:
-// - create AllocMap class in commonutil to track allocation bitmap
-//   - simple bit vector based on 32-bit ints
-//   - need FreeCount, FindFirstFree, MarkFree/MarkUsed
-//   - makes VolumeAlloc calls
-
 namespace DiskArc.FS {
     /// <summary>
     /// CP/M filesystem implementation.  Focus is on the Apple II implementation, which was
@@ -34,6 +28,7 @@ namespace DiskArc.FS {
     /// </summary>
     public class CPM : IFileSystem {
         public const int MAX_FILE_LEN = 8 * 1024*1024;  // 8MB (v2.2 limitation)
+        public const int MAX_EXTENT_NUM = 512;          // v2.2 limitation
         public const int DIR_ENTRY_LEN = 32;            // length of a dir entry extent record
         public const int FILE_REC_LEN = 128;            // length of a "record" in a file
         public const int RECS_PER_EXTENT = 128;         // constant for 5.25" and 3.5" disks
@@ -71,7 +66,15 @@ namespace DiskArc.FS {
 
         public bool IsDubious { get; internal set; }
 
-        public long FreeSpace => 1234567;       // TODO
+        public long FreeSpace {
+            get {
+                if (AllocMap != null) {
+                    return AllocMap.FreeSpace;
+                } else {
+                    return -1;
+                }
+            }
+        }
 
         public GatedChunkAccess RawAccess { get; }
 
@@ -110,9 +113,9 @@ namespace DiskArc.FS {
         internal IChunkAccess ChunkAccess { get; private set; }
 
         /// <summary>
-        /// Volume usage map.  Only valid in file-access mode.
+        /// Allocation block in-use map.  Only valid in file-access mode.
         /// </summary>
-        internal VolumeUsage? VolUsage { get; private set; }
+        internal CPM_AllocMap? AllocMap { get; private set; }
 
         internal AppHook AppHook { get; private set; }
 
@@ -155,7 +158,7 @@ namespace DiskArc.FS {
         /// <param name="dirStartBlock">Result: directory start block number (512-byte).</param>
         /// <param name="dirBlockCount">Result: number of (512-byte) blocks in directory.</param>
         /// <returns>True if the configuration is known, false if not.</returns>
-        private static bool GetDiskParameters(long volumeSize, out uint allocUnit,
+        internal static bool GetDiskParameters(long volumeSize, out uint allocUnit,
                 out uint dirStartBlock, out uint dirBlockCount, out bool doBlocksWrap) {
             switch (volumeSize) {
                 case 140 * 1024:        // 140KB 5.25" disk
@@ -258,7 +261,8 @@ namespace DiskArc.FS {
                     }
 
                     // Check the extent counter.  The low byte must be 0-31.
-                    if (buf[offset + 0x0c] > 31) {
+                    const int MAX_HI_EXT = MAX_EXTENT_NUM / 32;
+                    if (buf[offset + 0x0c] > 31 || buf[offset + 0x0e] > MAX_HI_EXT) {
                         badExtents++;
                         continue;
                     }
@@ -311,18 +315,28 @@ namespace DiskArc.FS {
                 }
             }
 
+            // Results from CPAM51a.do:
+            //  DOS: good 27, bad 0
+            //  ProDOS: good 19, bad 17
+            //  Physical: good 27, bad 4
+            //  CPM: good 19, bad 17
             Debug.WriteLine("CP/M order=" + chunks.FileOrder + " goodExtents=" + goodExtents +
                 " badExtents=" + badExtents);
-            if (badExtents > 0 && goodExtents == 0) {
-                return TestResult.No;
-            } else if (badExtents < 4 && goodExtents > 4) {
-                return TestResult.Barely;       // could be CP/M disk with minor damage
-            } else if (goodExtents == 0) {
-                return TestResult.Maybe;        // could be a totally blank CP/M disk
-            } else if (goodExtents <= 4) {
-                return TestResult.Good;         // almost certainly CP/M, might be wrong order
+            if (badExtents > 0) {
+                // Could be CP/M disk with minor damage, or we have the wrong sector ordering.
+                if (goodExtents > 4) {
+                    return TestResult.Barely;
+                } else {
+                    return TestResult.No;
+                }
             } else {
-                return TestResult.Yes;
+                if (goodExtents == 0) {
+                    return TestResult.Maybe;        // could be a totally blank CP/M disk
+                } else if (goodExtents <= 4) {
+                    return TestResult.Good;         // almost certainly CP/M, might be wrong order
+                } else {
+                    return TestResult.Yes;
+                }
             }
         }
 
@@ -449,7 +463,29 @@ namespace DiskArc.FS {
         /// Flushes the contents of the volume directory, if they have been changed.
         /// </summary>
         internal void FlushVolumeDir() {
-            // TODO
+            bool needWrite = false;
+            foreach (GroupBool gb in mDirectoryDirtyFlags) {
+                if (gb.IsSet) {
+                    needWrite = true;
+                    break;
+                }
+            }
+            if (!needWrite) {
+                return;
+            }
+
+            // Copy current data to buffer.  We could save a few cycles by only copying out
+            // the data in the blocks that are dirty.
+            foreach (CPM_FileEntry.Extent ext in Extents) {
+                ext.Store(mDirectoryBuf);
+            }
+            // Write the dirty blocks.
+            for (int i = 0; i < mDirectoryDirtyFlags.Length; i++) {
+                if (mDirectoryDirtyFlags[i].IsSet) {
+                    uint diskBlock = DirStartBlock + (uint)i;
+                    ChunkAccess.WriteBlockCPM(diskBlock, mDirectoryBuf, BLOCK_SIZE * i);
+                }
+            }
         }
 
         // IFileSystem
@@ -487,7 +523,7 @@ namespace DiskArc.FS {
             }
 
             mVolDirEntry = IFileEntry.NO_ENTRY;
-            VolUsage = null;
+            AllocMap = null;
             IsDubious = false;
             RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
         }
@@ -524,11 +560,11 @@ namespace DiskArc.FS {
         /// <exception cref="IOException">Disk access failure.</exception>
         /// <exception cref="DAException">Invalid filesystem.</exception>
         private void ScanVolume() {
-            // Create volume usage map.  Assign "system" usage to the boot and directory blocks.
-            VolUsage = new VolumeUsage(TotalAllocBlocks);
-            for (uint block = 0; block < DirStartBlock + DirBlockCount; block++) {
-                VolUsage.MarkInUse(block);
-                VolUsage.SetUsage(block, IFileEntry.NO_ENTRY);
+            // Create volume usage map.  Assign "system" usage to the directory blocks.
+            AllocMap = new CPM_AllocMap(ChunkAccess.FormattedLength);
+            uint dirCount = DirBlockCount / (AllocUnitSize / BLOCK_SIZE);
+            for (uint ablk = 0; ablk <  dirCount; ablk++) {
+                AllocMap.MarkAllocBlockUsed(ablk, IFileEntry.NO_ENTRY);
             }
 
             // Read the directory into memory.
@@ -549,6 +585,8 @@ namespace DiskArc.FS {
 
             // Handle the "reserved space" entries on 140KB 5.25" disks.  Make a map, marking
             // entire tracks as reserved.  (The sector skew makes marking partial tracks tricky.)
+            // This used when checking whether a hybrid DOS+CP/M disk is safe, and lets us add
+            // a note so people can see that some space was reserved.
             if (ChunkAccess.FormattedLength == 140 * 1024) {
                 Array.Clear(mIs525TrackReserved);
                 int allocCount = 0;
@@ -579,6 +617,8 @@ namespace DiskArc.FS {
                     }
                 }
             }
+
+            Debug.WriteLine(AllocMap.VolUsage.DebugDump());
         }
 
         // IFileSystem
@@ -733,8 +773,52 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public IFileEntry CreateFile(IFileEntry dirEntry, string fileName, CreateMode mode) {
-            throw new NotImplementedException();
+        public IFileEntry CreateFile(IFileEntry idirEntry, string fileName, CreateMode mode) {
+            CheckFileAccess("create", idirEntry, true, FilePart.Unknown);
+            Debug.Assert(idirEntry == mVolDirEntry);
+            if (mode != CreateMode.File) {
+                throw new ArgumentException("Invalid CP/M creation mode: " + mode);
+            }
+            CPM_FileEntry dirEntry = (CPM_FileEntry)idirEntry;
+            if (fileName == null || !CPM_FileEntry.IsFileNameValid(fileName)) {
+                throw new ArgumentException("Invalid filename '" + fileName + "'");
+            }
+
+            // Check for an entry with a duplicate filename in the list of children.
+            foreach (IFileEntry entry in dirEntry) {
+                if (entry.CompareFileName(fileName) == 0) {
+                    throw new IOException("A file with that name already exists");
+                }
+            }
+
+            // Allocate the first free extent.  Throw an exception if the volume dir is full.
+            CPM_FileEntry.Extent ext = FindFreeExtent();
+
+            // Create a new entry.
+            CPM_FileEntry newEntry = CPM_FileEntry.CreateEntry(this, mVolDirEntry, ext, fileName);
+
+            // Add it to the list of children.  The file order isn't really defined, so just
+            // add it to the end.  We can't use ext.DirIndex because there can be multiple dir
+            // entries per file in ChildList.
+            dirEntry.ChildList.Add(newEntry);
+
+            // Save the updated directory.
+            FlushVolumeDir();
+            return newEntry;
+        }
+
+        /// <summary>
+        /// Finds the first available extent.
+        /// </summary>
+        /// <returns>Extent reference.</returns>
+        /// <exception cref="DiskFullException">No free slots are available.</exception>
+        private CPM_FileEntry.Extent FindFreeExtent() {
+            for (uint slot = 0; slot < Extents.Count(); slot++) {
+                if (Extents[slot].Status == NO_DATA) {
+                    return Extents[slot];
+                }
+            }
+            throw new DiskFullException("Volume directory is full");
         }
 
         // IFileSystem
@@ -743,13 +827,35 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public void MoveFile(IFileEntry entry, IFileEntry destDir, string newFileName) {
-            throw new NotImplementedException();
+        public void MoveFile(IFileEntry ientry, IFileEntry destDir, string newFileName) {
+            CheckFileAccess("move", ientry, true, FilePart.Unknown);
+            if (destDir != mVolDirEntry) {
+                throw new IOException("Destination directory is invalid");
+            }
+
+            // Just a rename.
+            ientry.FileName = newFileName;
+            ientry.SaveChanges();
         }
 
         // IFileSystem
-        public void DeleteFile(IFileEntry entry) {
-            throw new NotImplementedException();
+        public void DeleteFile(IFileEntry ientry) {
+            CheckFileAccess("delete", ientry, true, FilePart.Unknown);
+            if (ientry == mVolDirEntry) {
+                throw new IOException("Can't delete volume directory");
+            }
+            CPM_FileEntry entry = (CPM_FileEntry)ientry;
+
+            // Mark extents is available, and update our disk usage map.
+            entry.ReleaseStorage();
+
+            ((CPM_FileEntry)mVolDirEntry).ChildList.Remove(entry);
+
+            // This entry may no longer be used.
+            entry.Invalidate();
+
+            // Save the updated directory.
+            FlushVolumeDir();
         }
     }
 }

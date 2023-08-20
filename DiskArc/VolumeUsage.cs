@@ -122,11 +122,19 @@ namespace DiskArc {
         /// marked as other than "unused", the Conflict flag will be raised.  Does not alter
         /// the in-use flag.
         /// </summary>
+        /// <remarks>
+        /// <para>This is intended to be used in the second pass of a two-pass system.  The first
+        /// pass sets the "in use" flags by reading the volume bitmap, the second pass associates
+        /// files with blocks.  Situations where multiple files are sharing the same block (or a
+        /// single file includes the same block twice) are identified here, and handled by
+        /// calling the "add conflict" method on the file entries.  The conflict can exist whether
+        /// or not the block is marked as being in use.</para>
+        /// </remarks>
         /// <param name="chunk">Chunk number.</param>
-        /// <param name="entry">File entry for chunk user, or null if the block is unused.</param>
-        /// <param name="hasConflict">Value set to true if a conflict is found.</param>
-        internal void SetUsage(uint chunk, IFileEntry? entry) {
+        /// <param name="entry">File entry for chunk user.</param>
+        internal void SetUsage(uint chunk, IFileEntry entry) {
             IFileEntry? cflct = mChunks[chunk].mFileEntry;
+            Debug.Assert(entry != null);        // this used to be a thing... is it still?
             if (entry != null && cflct != null) {
                 // Chunk isn't empty, and we're not clearing it; this is bad.
                 mChunks[chunk].mFlags |= UsageFlags.Conflict;

@@ -140,6 +140,10 @@ A file with multiple extents will have multiple copies of the access flags.  It 
 whether the first entry in the directory or the entry for extent #0 should take precedence.
 When setting the flags, it's probably best to set the bit in all extents.
 
+When listing files, the order in which they should be shown is not clearly defined.  Ordering
+by first occurrence in the directory, regardless of extent number, is the simplest.  Listing them
+in alphabetical order is also entirely reasonable.
+
 CP/M v3 introduced "disc labels" and date stamps.  Date stamps are stored by reserving every
 fourth directory entry as date storage for the three previous entries.  The date stamp format
 exists in some third-party implementations of CP/M v2.2, but the format is incompatible.

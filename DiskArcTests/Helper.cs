@@ -127,7 +127,8 @@ namespace DiskArcTests {
             CreateParams parms = new CreateParams() {
                 FSType = fsType,
                 VolumeName = volumeName,
-                Size = size
+                Size = size,
+                MakeBootable = false
             };
 
             byte[] buffer = new byte[size];

@@ -119,6 +119,9 @@ namespace DiskArcTests {
                 }
                 Helper.ExpectByte(FileAttribs.FILE_TYPE_PDA, file0.FileType, "wrong default type");
                 Helper.ExpectInt(0, file0.AuxType, "wrong aux type");
+                if (file0.CreateWhen != TimeStamp.NO_DATE) {
+                    throw new Exception("Incorrect create date");
+                }
 
                 DateTime testDate = new DateTime(1977, 06, 01);
                 file1.FileName = "New/FILE1";
@@ -142,7 +145,7 @@ namespace DiskArcTests {
                     throw new Exception("volume attribute changes didn't take");
                 }
 
-                // Bounce the filesystem.
+                // Bounce the filesystem without calling SaveChanges().
                 fs.PrepareRawAccess();
                 fs.PrepareFileAccess(true);
                 Helper.CheckNotes(fs, 0, 0);
@@ -429,6 +432,5 @@ namespace DiskArcTests {
         }
 
         #endregion Utilities
-
     }
 }

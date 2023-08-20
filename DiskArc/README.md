@@ -286,17 +286,29 @@ The description field for DiskCopy, Trackstar, and 2IMG is editable via the meta
 Modification dates on files are *not* updated automatically when files are modified.  The
 assumption is that the library is being used for file archiving, not general file access.
 
+The order in which files appear in directories is important for most filesystems.  For HFS the
+sort order is rigidly defined and is a key part of the disk organization.  For ProDOS it can
+affect how things work, e.g. when booting the first ".system" file is executed.  DOS 3.3 disks
+would sometimes use the first few entries as a disk title, so changing the order would scramble
+the message.  Pascal file entries are sorted by their position on the disk.  CP/M is more relaxed,
+with the "natural" ordering harder to define because each file can have multiple directory entries.
+
 ### CP/M ###
 
+CP/M is well supported, for reading and writing.  The filesystem is thoroughly scanned for errors.
+All v2.2 features, and some v3 features, are supported.
+
 [ ... ]
-- does extending file with SetLength() create sparse region, or fill with 0xe5?
-- extending with seek + write creates sparse region in the middle?
+
+Sparse files are supported, but uncommon.  Extending a file with `SetLength()` does not create
+a sparse section, but seeking past the end of file and writing data will cause the middle
+section to be allocated sparsely.
 
 Implementations of the CP/M operating system are many and varied.  The disk format function
-does not currently create bootable disks.  While the IFileSystem `Format()` call is defined as a
-fast-format operation that lays down the directory tracks without erasing the storage, the CP/M
-implementation does a full clear, because empty blocks are expected to be filled with 0xe5
-rather than 0x00.
+does not currently create bootable disks, since it's probably best to leave the choice of OS
+implementation to the user.  While the IFileSystem `Format()` call is defined as a fast-format
+operation that lays down the directory tracks without erasing the storage, the CP/M implementation
+does a full clear, because empty blocks are expected to be filled with 0xe5 rather than 0x00.
 
 Most file lengths are expressed in 128-byte increments, though some disks store precise lengths.
 Text files work around this issue by ending at the first Ctrl+Z character (0x1a).  The filesystem

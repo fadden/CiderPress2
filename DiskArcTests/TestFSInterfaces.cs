@@ -39,6 +39,28 @@ namespace DiskArcTests {
 
         #region FS Drivers
 
+        public static void TestCPM(AppHook appHook) {
+            using (Stream dataFile = Helper.OpenTestFile("cpm/CPAM51a.do", true, appHook)) {
+                using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
+                        FileKind.UnadornedSector, appHook)!) {
+                    diskImage.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)diskImage.Contents!;
+
+                    TestReadOnly(fs, "COPY.COM", "NO.SUCH.FILE", appHook);
+                }
+            }
+
+            using (IFileSystem wfs = Helper.CreateTestImage("TESTVOL", FileSystemType.CPM,
+                    35, 16, 254, false, appHook, out MemoryStream memFile)) {
+                wfs.PrepareRawAccess();
+                TestReadWrite(wfs, "TEST.TXT", "INVAL?ID", appHook);
+
+                wfs.PrepareRawAccess();
+                wfs.PrepareFileAccess(true);
+                Helper.CheckNotes(wfs, 0, 0);
+            }
+        }
+
         public static void TestDOS(AppHook appHook) {
             using (Stream dataFile = Helper.OpenTestFile("dos33/system-master-1983.po",
                     true, appHook)) {
@@ -263,6 +285,9 @@ namespace DiskArcTests {
 
             IFileEntry volDir = fs.GetVolDirEntry();
             IFileEntry newFile = fs.CreateFile(volDir, fileName, CreateMode.File);
+            if (newFile.ContainingDir == IFileEntry.NO_ENTRY) {
+                throw new Exception("file has no containing dir");
+            }
             using (fs.OpenFile(newFile, FileAccessMode.ReadWrite, FilePart.DataFork)) {
                 // just want to confirm that we can open read-write
             }

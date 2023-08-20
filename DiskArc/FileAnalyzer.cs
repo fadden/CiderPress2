@@ -722,7 +722,7 @@ namespace DiskArc {
             SectorOrder.DOS_Sector,
             SectorOrder.ProDOS_Block,
             SectorOrder.Physical,
-            SectorOrder.CPM_KBlock
+            SectorOrder.CPM_KBlock      // only useful for disk images created by CP/M software
         };
 
         /// <summary>

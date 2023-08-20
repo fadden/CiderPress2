@@ -53,7 +53,16 @@ namespace DiskArc.FS {
             }
             set {
                 CheckChangeAllowed();
-                throw new NotImplementedException();
+                if (IsVolumeDirectory) {
+                    throw new ArgumentException("No volume name for CP/M");
+                }
+                if (!IsFileNameValid(value)) {
+                    throw new ArgumentException("Invalid filename");
+                }
+                // Update all copies of the filename.
+                foreach (Extent ext in mExtentList) {
+                    ext.FileName = value;
+                }
             }
         }
         public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
@@ -74,13 +83,24 @@ namespace DiskArc.FS {
                 if (IsVolumeDirectory) {
                     return new byte[] { (byte)'?' };
                 }
+                // Return it in 8+3 form.
                 byte[] result = new byte[Extent.FILENAME_FIELD_LEN];
-                Array.Copy(mExtentList[0].RawFileName, 1, result, 0, result.Length);
+                Array.Copy(mExtentList[0].RawFileName, result, result.Length);
                 return result;
             }
             set {
                 CheckChangeAllowed();
-                throw new NotImplementedException();
+                // Minimal checks.
+                if (value.Length != Extent.FILENAME_FIELD_LEN) {
+                    throw new ArgumentException("Must be an 11-byte 8+3 name");
+                }
+                // Update all copies of the raw filename.  The access flags are stored in the
+                // filename bytes, so we want to save and restore them.
+                byte savedFlags = Access;
+                foreach (Extent ext in mExtentList) {
+                    ext.RawFileName = value;
+                }
+                Access = savedFlags;
             }
         }
 
@@ -103,7 +123,9 @@ namespace DiskArc.FS {
             }
             set {
                 CheckChangeAllowed();
-                throw new NotImplementedException();
+                foreach (Extent ext in mExtentList) {
+                    ext.AccessFlags = value;
+                }
             }
         }
 
@@ -183,6 +205,7 @@ namespace DiskArc.FS {
 
         /// <summary>
         /// Directory extent record.  We have one of these for every slot in the volume directory.
+        /// Changing a value sets the "is dirty" flag for the associated disk block.
         /// </summary>
         internal class Extent : IComparable<Extent> {
             public const int LENGTH = 32;
@@ -197,9 +220,19 @@ namespace DiskArc.FS {
             private byte mRecordCount;
             private ushort[] mBlockPtrs = new ushort[MAX_BLOCK_PTRS];
 
-            public byte Status => mStatus;
+            public byte Status {
+                get { return mStatus; }
+                set { mStatus = value; mDirtyFlag.IsSet = true; }
+            }
             public byte[] RawFileName {
-                get { return mRawFileName; }        // do not modify return value
+                get { return mRawFileName; }        // caller must not modify array contents
+                set {
+                    // This tramples the access flags.  The caller must preserve them.
+                    Debug.Assert(value.Length == FILENAME_FIELD_LEN);
+                    Array.Copy(value, mRawFileName, FILENAME_FIELD_LEN);
+                    mFileName = CookFileName(mRawFileName);
+                    mDirtyFlag.IsSet = true;
+                }
             }
             public byte AccessFlags {
                 get {
@@ -216,9 +249,38 @@ namespace DiskArc.FS {
                     }
                     return (byte)flags;
                 }
+                set {
+                    if ((value & (byte)FileAttribs.AccessFlags.Write) == 0) {
+                        mRawFileName[8] |= 0x80;
+                    } else {
+                        mRawFileName[8] &= 0x7f;
+                    }
+                    if ((value & (byte)FileAttribs.AccessFlags.Invisible) != 0) {
+                        mRawFileName[9] |= 0x80;
+                    } else {
+                        mRawFileName[9] &= 0x7f;
+                    }
+                    if ((value & (byte)FileAttribs.AccessFlags.Backup) != 0) {
+                        mRawFileName[10] |= 0x80;
+                    } else {
+                        mRawFileName[10] &= 0x7f;
+                    }
+                    mDirtyFlag.IsSet = true;
+                }
             }
-            public int ExtentNumber { get { return mExtentHigh * 32 + mExtentLow; } }
-            public int RecordCount => mRecordCount;
+            public int ExtentNumber {
+                get { return mExtentHigh * 32 + mExtentLow; }
+                set {
+                    Debug.Assert(value <= CPM.MAX_EXTENT_NUM);
+                    mExtentLow = (byte)(value % 32);
+                    mExtentHigh = (byte)(value / 32);
+                    mDirtyFlag.IsSet = true;
+                }
+            }
+            public int RecordCount {
+                get { return mRecordCount; }
+                set { mRecordCount = (byte)value; mDirtyFlag.IsSet = true; }
+            }
             public byte ByteCount {
                 get {
                     if (mByteCount == 0 || mByteCount > CPM.FILE_REC_LEN) {
@@ -227,16 +289,33 @@ namespace DiskArc.FS {
                         return mByteCount;
                     }
                 }
+                set {
+                    Debug.Assert(value <= 128);
+                    mByteCount = value;
+                }
             }
             public ushort this[int i] {
                 get {
                     return mBlockPtrs[i];
                 }
+                set {
+                    mBlockPtrs[i] = value;
+                    mDirtyFlag.IsSet = true;
+                }
             }
 
             public int DirIndex { get; }
             public int PtrsPerExtent { get; }
-            public string FileName { get; private set; } = string.Empty;
+            public string FileName {
+                get { return mFileName; }
+                set {
+                    Debug.Assert(mStatus != CPM.NO_DATA);
+                    RawifyFileName(value, mRawFileName);
+                    mFileName = value;
+                    mDirtyFlag.IsSet = true;
+                }
+            }
+            private string mFileName;
 
             private GroupBool mDirtyFlag;
 
@@ -246,6 +325,18 @@ namespace DiskArc.FS {
                 DirIndex = dirIndex;
                 PtrsPerExtent = ptrsPerExtent;
                 mDirtyFlag = dirtyFlag;
+                mFileName = string.Empty;
+            }
+
+            public void SetForNew(string fileName) {
+                Status = 0;         // user zero
+                FileName = fileName;
+                ExtentNumber = 0;
+                RecordCount = 0;
+                ByteCount = 0;
+                for (int i = 0; i < PtrsPerExtent; i++) {
+                    this[i] = 0;
+                }
             }
 
             public void Load(byte[] buf) {
@@ -271,7 +362,7 @@ namespace DiskArc.FS {
                 Debug.Assert(offset - startOffset == LENGTH);
 
                 if (mStatus != CPM.NO_DATA) {
-                    FileName = CookFileName(mRawFileName);
+                    mFileName = CookFileName(mRawFileName);
                 }
             }
             public void Store(byte[] buf) {
@@ -411,7 +502,6 @@ namespace DiskArc.FS {
         /// <returns>Fake file entry object for the volume directory.</returns>
         internal static IFileEntry ScanDirectory(CPM fileSystem) {
             CPM_FileEntry volDir = CreateFakeVolDirEntry(fileSystem);
-            VolumeUsage vu = fileSystem.VolUsage!;
             Notes notes = fileSystem.Notes;
 
             // Generate a sorted list of extents, so all parts of a given file will be
@@ -433,29 +523,33 @@ namespace DiskArc.FS {
             // Generate file entries, validating the extents as we go.
             string prevFileName = string.Empty;
             int prevStatus = -1;
-            CPM_FileEntry? newEntry = null;
+            CPM_FileEntry? curEntry = null;
             foreach (Extent ext in sortex.Keys) {
                 if (ext.Status > CPM.MAX_USER_NUM) {
                     // Don't create a file entry for these.
                     // TODO(someday): extract v3 date info and disc label
+                    if (ext.Status == CPM.RESERVED_SPACE) {
+                        MarkExtentBlocks(ext, fileSystem, IFileEntry.NO_ENTRY);
+                    }
                     continue;
                 }
 
                 if (ext.Status == prevStatus && ext.FileName == prevFileName) {
                     // Add this extent to the entry in progress.  It should not be possible to
                     // find a duplicate here, since we didn't add those to the sorted list.
-                    Debug.Assert(newEntry != null);
-                    Debug.Assert(!newEntry.mExtentList.Contains(ext));
-                    newEntry.mExtentList.Add(ext);
+                    Debug.Assert(curEntry != null);
+                    Debug.Assert(!curEntry.mExtentList.Contains(ext));
+                    curEntry.mExtentList.Add(ext);
                 } else {
                     // Create a new file entry.
-                    newEntry = new CPM_FileEntry(fileSystem);
-                    newEntry.mExtentList.Add(ext);
-                    volDir.ChildList.Add(newEntry);
+                    curEntry = new CPM_FileEntry(fileSystem);
+                    curEntry.mExtentList.Add(ext);
+                    volDir.ChildList.Add(curEntry);
 
                     prevStatus = ext.Status;
                     prevFileName = ext.FileName;
                 }
+                MarkExtentBlocks(ext, fileSystem, curEntry);
             }
 
             // The outcome of the above is a fully-sorted list, but we want the child list to be
@@ -465,23 +559,54 @@ namespace DiskArc.FS {
             volDir.ChildList.Sort(delegate (IFileEntry ientry1, IFileEntry ientry2) {
                 CPM_FileEntry entry1 = (CPM_FileEntry)ientry1;
                 CPM_FileEntry entry2 = (CPM_FileEntry)ientry2;
-                int index1 = int.MaxValue, index2 = int.MaxValue;
-                //foreach (Extent ext in entry1.mExtentList) {
-                //    if (index1 > ext.DirIndex) {
-                //        index1 = ext.DirIndex;
-                //    }
-                //}
-                //foreach (Extent ext in entry2.mExtentList) {
-                //    if (index2 > ext.DirIndex) {
-                //        index2 = ext.DirIndex;
-                //    }
-                //}
-                index1 = entry1.mExtentList[0].DirIndex;
-                index2 = entry2.mExtentList[0].DirIndex;
+                int index1 = entry1.mExtentList[0].DirIndex;
+                int index2 = entry2.mExtentList[0].DirIndex;
                 return (index1 - index2);
             });
 
             return volDir;
+        }
+
+        /// <summary>
+        /// Marks the allocation blocks listed in the extent as being in use.  Conflicts will
+        /// be reported through <see cref="AddConflict"/>.
+        /// </summary>
+        /// <param name="ext">Extent to process.</param>
+        /// <param name="entry">File entry to associate the blocks with, or NO_ENTRY if this
+        ///   is a system area.</param>
+        private static void MarkExtentBlocks(Extent ext, CPM fs, IFileEntry entry) {
+            CPM_AllocMap map = fs.AllocMap!;
+            for (int i = 0; i < ext.PtrsPerExtent; i++) {
+                ushort allocNum = ext[i];
+                if (allocNum != 0) {
+                    map.MarkUsedByScan(ext[i], entry);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Releases the storage associated with this file.
+        /// </summary>
+        internal void ReleaseStorage() {
+            CPM_AllocMap allocMap = FileSystem!.AllocMap!;
+            foreach (Extent ext in mExtentList) {
+                ext.Status = CPM.NO_DATA;
+                for (int i = 0; i < ext.PtrsPerExtent; i++) {
+                    uint allocNum = ext[i];
+                    if (allocNum != 0) {
+                        allocMap.MarkAllocBlockUnused(ext[i]);
+                    }
+                }
+            }
+        }
+
+        internal static CPM_FileEntry CreateEntry(CPM fs, IFileEntry volDir, Extent ext,
+                string fileName) {
+            CPM_FileEntry newEntry = new CPM_FileEntry(fs);
+            newEntry.ContainingDir = volDir;
+            newEntry.mExtentList.Add(ext);
+            ext.SetForNew(fileName);
+            return newEntry;
         }
 
         /// <summary>
@@ -528,6 +653,8 @@ namespace DiskArc.FS {
             @"((?:\.)((?![<>\.,;:=\?\*\[\] ])[\x20-\x7e]){1,3})?$";
         private static Regex sFileNameRegex = new Regex(FILE_NAME_PATTERN);
 
+        private const string INVALID_CHARS = @"<>.,;:=?*[] ";
+
         // IFileEntry
         public int CompareFileName(string fileName) {
             return string.Compare(FileName, fileName, StringComparison.OrdinalIgnoreCase);
@@ -547,7 +674,55 @@ namespace DiskArc.FS {
         }
 
         public static string AdjustFileName(string fileName) {
-            throw new NotImplementedException();
+            // Split in half at the last '.'.
+            string namePart, extPart;
+            int lastDot = fileName.LastIndexOf('.');
+            if (lastDot == -1) {
+                namePart = fileName;
+                extPart = string.Empty;
+            } else {
+                namePart = fileName.Substring(0, lastDot);
+                extPart = fileName.Substring(lastDot + 1, fileName.Length - (lastDot + 1));
+            }
+
+            namePart = CleanPart(namePart);
+            if (string.IsNullOrEmpty(namePart)) {
+                namePart = "Q";
+            }
+            extPart = CleanPart(extPart);
+
+            // Clamp name part to max length by removing characters from the middle.
+            if (namePart.Length > 8) {
+                namePart = namePart.Substring(0, 4) + "_" +
+                    namePart.Substring(namePart.Length - 3, 3);
+                Debug.Assert(namePart.Length == 8);
+            }
+            // Clamp extension by keeping the first 3 chars.
+            if (extPart.Length > 3) {
+                extPart = extPart.Substring(0, 3);
+            }
+
+            // Combine and convert to upper case.
+            string combined = namePart;
+            if (extPart != string.Empty) {
+                combined += "." + extPart;
+            }
+            return combined.ToUpperInvariant();
+        }
+
+        private static string CleanPart(string part) {
+            // Convert the string to ASCII values, stripping diacritical marks.
+            char[] chars = part.ToCharArray();
+            ASCIIUtil.ReduceToASCII(chars, '_');
+
+            // Replace invalid characters.
+            for (int i = 0; i < chars.Length; i++) {
+                char ch = chars[i];
+                if (ch < 0x20 || ch == 0x7f || INVALID_CHARS.Contains(ch)) {
+                    chars[i] = '_';
+                }
+            }
+            return new string(chars);
         }
 
         /// <summary>
@@ -577,6 +752,27 @@ namespace DiskArc.FS {
                 }
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Converts an 8.3 filename string to a "raw" 11-byte buffer.
+        /// </summary>
+        /// <param name="fileName">Filename to rawify.</param>
+        /// <param name="outBuf">Buffer that receives filename bytes.</param>
+        internal static void RawifyFileName(string fileName, byte[] outBuf) {
+            Debug.Assert(IsFileNameValid(fileName));
+            for (int i = 0; i < Extent.FILENAME_FIELD_LEN; i++) {
+                outBuf[i] = (byte)' ';
+            }
+            int index = 0;
+            foreach (char ch in fileName) {
+                if (ch == '.') {
+                    index = 8;
+                } else {
+                    outBuf[index] = (byte)ch;
+                    index++;
+                }
+            }
         }
 
         #endregion Filenames

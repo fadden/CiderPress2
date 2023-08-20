@@ -250,6 +250,8 @@ namespace DiskArc.FS {
             if (mIsReadOnly) {
                 return;
             }
+            // TODO: update record count and byte count in last extent
+            FileEntry.SaveChanges();
             throw new NotImplementedException();
         }
 
