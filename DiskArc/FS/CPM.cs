@@ -31,10 +31,11 @@ namespace DiskArc.FS {
         public const int MAX_EXTENT_NUM = 512;          // v2.2 limitation
         public const int DIR_ENTRY_LEN = 32;            // length of a dir entry extent record
         public const int FILE_REC_LEN = 128;            // length of a "record" in a file
-        public const int RECS_PER_EXTENT = 128;         // constant for 5.25" and 3.5" disks
         public const byte NO_DATA = 0xe5;
 
-        internal const int MAX_USER_NUM = 15;
+        internal const int RECS_PER_EXTENT = 128;       // constant for 5.25" and 3.5" disks
+        internal const int BYTES_PER_EXTENT = FILE_REC_LEN * RECS_PER_EXTENT;   // 16384
+        internal const int MAX_USER_NUM = 15;           // limit to 0-15, though 0-31 is possible
         internal const int RESERVED_SPACE = 31;         // extent status indicating reservation
         internal const int MAX_VALID_STATUS = 0x21;     // CP/M v3 timestamp
 
@@ -103,7 +104,8 @@ namespace DiskArc.FS {
         public bool DoBlocksWrap { get; }
 
         /// <summary>
-        /// Total allocation blocks present in the filesystem (directory and data areas).
+        /// Total allocation blocks present in the filesystem (directory and data areas, but not
+        /// necessarily the boot area).
         /// </summary>
         public int TotalAllocBlocks { get; }
 
@@ -189,7 +191,7 @@ namespace DiskArc.FS {
         /// <param name="offset">Result: offset of disk block within allocation block.</param>
         /// <returns>Allocation block number, or uint.MaxValue if no conversion is
         ///   possible.</returns>
-        public static uint BlockToAllocBlock(uint blockNum, long volumeSize, out uint offset) {
+        public static uint DiskBlockToAllocBlock(uint blockNum, long volumeSize, out uint offset) {
             if (blockNum * (long)BLOCK_SIZE >= volumeSize) {
                 throw new ArgumentOutOfRangeException(nameof(blockNum));
             }
@@ -211,6 +213,25 @@ namespace DiskArc.FS {
             allocBlockNum = (blockNum - dirStartBlock) / div;
             offset = (blockNum % div) * BLOCK_SIZE;
             return allocBlockNum;
+        }
+
+        /// <summary>
+        /// Converts an allocation block number to a disk block number.  The value returned is
+        /// the lowest-numbered disk block in the allocation block.
+        /// </summary>
+        /// <param name="allocNum">Allocation block number.</param>
+        /// <returns>Disk block number.</returns>
+        public uint AllocBlockToDiskBlock(uint allocNum) {
+            uint blocksPerAlloc = AllocUnitSize / BLOCK_SIZE;
+            uint diskBlock = DirStartBlock + allocNum * blocksPerAlloc;
+            if (DoBlocksWrap) {
+                uint volBlocks = (uint)TotalAllocBlocks * blocksPerAlloc;
+                Debug.Assert(volBlocks == 280);     // only expected for 5.25" disk
+                if (diskBlock >= volBlocks) {
+                    diskBlock -= volBlocks;
+                }
+            }
+            return diskBlock;
         }
 
         // Delegate: test image to see if it's ours.
@@ -317,9 +338,11 @@ namespace DiskArc.FS {
 
             // Results from CPAM51a.do:
             //  DOS: good 27, bad 0
-            //  ProDOS: good 19, bad 17
+            //  ProDOS: good 27, bad 15
             //  Physical: good 27, bad 4
             //  CPM: good 19, bad 17
+            // Newly-formatted disks are ambiguous.  Once a file gets written that has something
+            // other than 0xe5 in it things get easier.
             Debug.WriteLine("CP/M order=" + chunks.FileOrder + " goodExtents=" + goodExtents +
                 " badExtents=" + badExtents);
             if (badExtents > 0) {
@@ -484,6 +507,9 @@ namespace DiskArc.FS {
                 if (mDirectoryDirtyFlags[i].IsSet) {
                     uint diskBlock = DirStartBlock + (uint)i;
                     ChunkAccess.WriteBlockCPM(diskBlock, mDirectoryBuf, BLOCK_SIZE * i);
+                    Debug.WriteLine("FlushVolumeDir: write block " + diskBlock);
+
+                    mDirectoryDirtyFlags[i].IsSet = false;
                 }
             }
         }
@@ -812,7 +838,7 @@ namespace DiskArc.FS {
         /// </summary>
         /// <returns>Extent reference.</returns>
         /// <exception cref="DiskFullException">No free slots are available.</exception>
-        private CPM_FileEntry.Extent FindFreeExtent() {
+        internal CPM_FileEntry.Extent FindFreeExtent() {
             for (uint slot = 0; slot < Extents.Count(); slot++) {
                 if (Extents[slot].Status == NO_DATA) {
                     return Extents[slot];

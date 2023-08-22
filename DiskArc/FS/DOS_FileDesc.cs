@@ -547,7 +547,7 @@ namespace DiskArc.FS {
                 throw new NotSupportedException("File was opened read-only");
             }
             if (newEof < 0 || newEof > mMaxFileLength) {
-                throw new ArgumentOutOfRangeException("Invalid EOF (" + newEof + ")");
+                throw new ArgumentOutOfRangeException(nameof(newEof), newEof, "Invalid length");
             }
 
             if (newEof == mEOF) {

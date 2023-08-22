@@ -268,12 +268,15 @@ namespace DiskArc {
             orderHint1 = SectorOrder.Unknown;
 
             switch (fileNameExt) {
+                case ".co":     // "unofficial" CP/M-ordered
                 case ".do":
                 case ".po":
                 case ".iso":
                 case ".hdv":
                     fileKind1 = FileKind.UnadornedSector;
-                    if (fileNameExt == ".do") {
+                    if (fileNameExt == ".co") {
+                        orderHint1 = SectorOrder.CPM_KBlock;
+                    } else if (fileNameExt == ".do") {
                         orderHint1 = SectorOrder.DOS_Sector;
                     } else {
                         orderHint1 = SectorOrder.ProDOS_Block;

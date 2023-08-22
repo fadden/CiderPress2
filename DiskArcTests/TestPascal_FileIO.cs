@@ -167,32 +167,32 @@ namespace DiskArcTests {
             using (IFileSystem fs = Make525Floppy("RdWr", appHook)) {
                 IFileEntry volDir = fs.GetVolDirEntry();
                 IFileEntry file0 = fs.CreateFile(volDir, "FILE_0", CreateMode.File);
-                CheckFill(fs, file0, 0);
+                Helper.CheckFill(fs, file0, 0);
                 Helper.ExpectLong(BLOCK_SIZE, file0.StorageSize, "wrong storage size");
 
                 IFileEntry file1 = fs.CreateFile(volDir, "FILE_1", CreateMode.File);
-                FillFile(fs, file1, 1);
-                CheckFill(fs, file1, 1);
+                Helper.FillFile(fs, file1, 1);
+                Helper.CheckFill(fs, file1, 1);
                 Helper.ExpectLong(BLOCK_SIZE, file1.StorageSize, "wrong storage size");
 
                 IFileEntry file511 = fs.CreateFile(volDir, "FILE_511", CreateMode.File);
-                FillFile(fs, file511, 511);
-                CheckFill(fs, file511, 511);
+                Helper.FillFile(fs, file511, 511);
+                Helper.CheckFill(fs, file511, 511);
                 Helper.ExpectLong(BLOCK_SIZE, file511.StorageSize, "wrong storage size");
 
                 IFileEntry file512 = fs.CreateFile(volDir, "FILE_512", CreateMode.File);
-                FillFile(fs, file512, 512);
-                CheckFill(fs, file512, 512);
+                Helper.FillFile(fs, file512, 512);
+                Helper.CheckFill(fs, file512, 512);
                 Helper.ExpectLong(BLOCK_SIZE, file512.StorageSize, "wrong storage size");
 
                 IFileEntry file513 = fs.CreateFile(volDir, "FILE_513", CreateMode.File);
-                FillFile(fs, file513, 513);
-                CheckFill(fs, file513, 513);
+                Helper.FillFile(fs, file513, 513);
+                Helper.CheckFill(fs, file513, 513);
                 Helper.ExpectLong(BLOCK_SIZE * 2, file513.StorageSize, "wrong storage size");
 
                 IFileEntry file4096 = fs.CreateFile(volDir, "FILE_4096", CreateMode.File);
-                FillFile(fs, file4096, 4096);
-                CheckFill(fs, file4096, 4096);
+                Helper.FillFile(fs, file4096, 4096);
+                Helper.CheckFill(fs, file4096, 4096);
                 Helper.ExpectLong(BLOCK_SIZE * 8, file4096.StorageSize, "wrong storage size");
 
                 fs.PrepareRawAccess();
@@ -200,16 +200,16 @@ namespace DiskArcTests {
                 Helper.CheckNotes(fs, 0, 0);
                 volDir = fs.GetVolDirEntry();
 
-                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_0"), 0);
-                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_1"), 1);
-                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_511"), 511);
-                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_512"), 512);
-                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_513"), 513);
-                CheckFill(fs, fs.FindFileEntry(volDir, "FILE_4096"), 4096);
+                Helper.CheckFill(fs, fs.FindFileEntry(volDir, "FILE_0"), 0);
+                Helper.CheckFill(fs, fs.FindFileEntry(volDir, "FILE_1"), 1);
+                Helper.CheckFill(fs, fs.FindFileEntry(volDir, "FILE_511"), 511);
+                Helper.CheckFill(fs, fs.FindFileEntry(volDir, "FILE_512"), 512);
+                Helper.CheckFill(fs, fs.FindFileEntry(volDir, "FILE_513"), 513);
+                Helper.CheckFill(fs, fs.FindFileEntry(volDir, "FILE_4096"), 4096);
 
                 IFileEntry overFill = fs.CreateFile(volDir, "OVER!FILL", CreateMode.File);
                 try {
-                    FillFile(fs, overFill, 140 * 1024);
+                    Helper.FillFile(fs, overFill, 140 * 1024);
                 } catch (DiskFullException) { /*expected*/ }
 
                 Helper.ExpectLong(0, fs.FreeSpace, "some space still free");
@@ -220,8 +220,8 @@ namespace DiskArcTests {
                 Helper.ExpectLong(BLOCK_SIZE, file511.StorageSize, "wrong storage size");
                 fs.DeleteFile(file511);
                 IFileEntry new512 = fs.CreateFile(volDir, "FILE_512_NEW", CreateMode.File);
-                FillFile(fs, new512, 512);
-                CheckFill(fs, new512, 512);
+                Helper.FillFile(fs, new512, 512);
+                Helper.CheckFill(fs, new512, 512);
 
                 // Try to append another byte.  We should get "disk full".
                 using (Stream stream = fs.OpenFile(new512, FileAccessMode.ReadWrite,
@@ -256,11 +256,13 @@ namespace DiskArcTests {
                         throw new Exception("Data read doesn't match data written");
                     }
 
-                    // Truncate file, confirm additional space is zeroed.
+                    // Truncate/expand file, confirm additional space is zeroed.
                     const int PARTIAL = 768;        // halfway into second block
                     stream.SetLength(PARTIAL);
+                    stream.Flush();
                     Helper.ExpectLong(PARTIAL, file1.DataLength, "incorrect length / PARTIAL");
                     stream.SetLength(TEST_SIZE);
+                    stream.Flush();
                     Helper.ExpectLong(TEST_SIZE, file1.DataLength, "incorrect length / TEST_SIZE");
                     stream.Position = 0;
                     stream.ReadExactly(readBuf, 0, TEST_SIZE);
@@ -274,9 +276,13 @@ namespace DiskArcTests {
                     }
 
                     // Seek past the end and write a byte.  This may or may not zero the
-                    // intervening storage (currently it doesn't, but that's not required).
+                    // intervening storage (currently it doesn't, but it's not required to).
                     stream.SetLength(0);
+                    Helper.ExpectLong(0, stream.Length, "incorrect trunc stream len");
+                    stream.Flush();
                     Helper.ExpectLong(0, file1.DataLength, "incorrect truncated length");
+                    Helper.ExpectLong(BLOCK_SIZE, file1.StorageSize, "incorrect trunc size");
+
                     stream.Position = 0;
                     stream.WriteByte(0xaa);
                     Helper.ExpectLong(1, stream.Length, "incorrect stream length (1)");
@@ -402,33 +408,6 @@ namespace DiskArcTests {
         private static IFileSystem Make525Floppy(string volName, AppHook appHook) {
             return Helper.CreateTestImage(volName, FileSystemType.Pascal, 280, appHook,
                 out MemoryStream memFile);
-        }
-
-        private static void FillFile(IFileSystem fs, IFileEntry entry, int count) {
-            using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadWrite,
-                    FilePart.DataFork)) {
-                for (int i = 0; i < count; i++) {
-                    stream.WriteByte((byte)i);
-                }
-            }
-        }
-
-        private static void CheckFill(IFileSystem fs, IFileEntry entry, int count) {
-            if (entry.DataLength != count) {
-                throw new Exception("Expected length " + count + ", actual=" + entry.DataLength);
-            }
-            using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadWrite,
-                    FilePart.DataFork)) {
-                for (int i = 0; i < count; i++) {
-                    if (stream.ReadByte() != (byte)i) {
-                        throw new Exception("Mismatched byte in " + entry.FileName +
-                            " at offset " + i);
-                    }
-                }
-                if (stream.ReadByte() != -1) {
-                    throw new Exception("Failed to get EOF result at end");
-                }
-            }
         }
 
         #endregion Utilities

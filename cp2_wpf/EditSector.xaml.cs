@@ -562,7 +562,7 @@ namespace cp2_wpf {
                 SectorDataLabel = string.Format("Track {0} (${0:X2}), Sector {1} (${1:X}) {2}",
                     mCurBlockOrTrack, mCurSector, dirtyStr);
             } else if (mEditMode == SectorEditMode.CPMBlocks) {
-                uint allocBlock = DiskArc.FS.CPM.BlockToAllocBlock(mCurBlockOrTrack,
+                uint allocBlock = DiskArc.FS.CPM.DiskBlockToAllocBlock(mCurBlockOrTrack,
                         mChunkAccess.FormattedLength, out uint offset);
                 if (allocBlock != uint.MaxValue) {
                     SectorDataLabel =

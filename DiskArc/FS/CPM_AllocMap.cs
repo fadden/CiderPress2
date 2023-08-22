@@ -181,7 +181,7 @@ namespace DiskArc.FS {
             int maxOffset = (TotalAllocBlocks + 7) / 8;
             for (int offset = 0; offset < maxOffset; offset++) {
                 byte mapVal = mVolBitmap[offset];
-                if (mapVal != 0) {
+                if (mapVal != 0xff) {
                     // At least one block is free.
                     int subBlock = 0;
                     while ((mapVal & 0x80) != 0) {
@@ -196,7 +196,7 @@ namespace DiskArc.FS {
                     return allocNum;
                 }
             }
-            Debug.WriteLine("Disk full");
+            Debug.WriteLine("AllocateAllocBlock: disk full");
             throw new DiskFullException("Disk full");
         }
     }

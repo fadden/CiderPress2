@@ -28,7 +28,7 @@ namespace DiskArcTests {
             const int DIR_LEN_35 = 8192;        // 2KB * 4
 
             // 140KB floppy, with boot area reserved.
-            using (IFileSystem fs = Helper.CreateTestImage("NEW140K", FileSystemType.CPM,
+            using (IFileSystem fs = Helper.CreateTestImage(string.Empty, FileSystemType.CPM,
                     35, 16, 1, true, appHook, out MemoryStream memFile)) {
                 // 1 warning for reserved-space file (because of wrap-around).
                 if (fs.Notes.WarningCount != 1 || fs.Notes.ErrorCount != 0) {
@@ -42,7 +42,7 @@ namespace DiskArcTests {
             }
 
             // 140KB floppy, no reserved space.
-            using (IFileSystem fs = Helper.CreateTestImage("NEW140K", FileSystemType.CPM,
+            using (IFileSystem fs = Helper.CreateTestImage(string.Empty, FileSystemType.CPM,
                     35, 16, 1, false, appHook, out MemoryStream memFile)) {
                 // No reserved-space file.
                 if (fs.Notes.WarningCount != 0 || fs.Notes.ErrorCount != 0) {
@@ -55,7 +55,7 @@ namespace DiskArcTests {
             }
 
             // 800KB floppy.
-            using (IFileSystem fs = Helper.CreateTestImage("NEW800K", FileSystemType.CPM,
+            using (IFileSystem fs = Helper.CreateTestImage(string.Empty, FileSystemType.CPM,
                     1600, appHook, out MemoryStream memFile)) {
                 // System space is present but disk doesn't wrap around, so no reserved-space file.
                 if (fs.Notes.WarningCount != 0 || fs.Notes.ErrorCount != 0) {

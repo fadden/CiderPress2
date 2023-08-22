@@ -330,10 +330,6 @@ namespace DiskArc.FS {
             // VolBitmap and MDB are flushed when the file is closed.
         }
 
-        // A buffer filled with zeroes, equal in size to an allocation block.  Allocated on
-        // first use.
-        private byte[]? mZeroBuf = null;
-
         // Stream
         public override void SetLength(long newEof) {
             CheckValid();
@@ -341,40 +337,26 @@ namespace DiskArc.FS {
                 throw new NotSupportedException("File was opened read-only");
             }
             if (newEof < 0 || newEof > HFS.MAX_FILE_LEN) {
-                throw new ArgumentOutOfRangeException("Invalid EOF: " + newEof);
+                throw new ArgumentOutOfRangeException(nameof(newEof), newEof, "Invalid length");
+            }
+            if (newEof == mEndOfFile) {
+                return;
             }
 
             if (newEof > mEndOfFile) {
                 // Extend the physical storage space immediately.  We can't simply call
                 // mFileStorage.ExtendTo, because that won't zero out the existing data
                 // in the disk blocks.  Use repeated Write calls instead.
-                int blockSize = (int)FileSystem.VolMDB!.BlockSize;
-                if (mZeroBuf == null) {
-                    mZeroBuf = new byte[blockSize];
-                }
-                int savedMark = mMark;
+                //
+                // If we run out of space or hit a bad block, an exception will be thrown.  We
+                // don't need to discard the storage because it will be truncated automatically
+                // when the file is closed.
+                int origEOF = mEndOfFile;
                 try {
-                    mMark = mEndOfFile;
-                    int needed = (int)(newEof - mEndOfFile);
-
-                    // Do a potentially smaller write on the first one so we're aligned with
-                    // the allocation block size.  This avoids partial block writes in the
-                    // Write() call on subsequent iterations.
-                    int partialCount = mMark % BLOCK_SIZE;
-                    while (needed > 0) {
-                        int thisCount = blockSize - partialCount;
-                        if (thisCount > needed) {
-                            thisCount = needed;
-                        }
-                        Write(mZeroBuf, 0, thisCount);
-
-                        needed -= thisCount;
-                        partialCount = 0;
-                    }
+                    int chunkSize = (int)FileSystem.VolMDB!.BlockSize;
+                    FSUtil.ExtendFile(this, newEof, chunkSize);
                 } catch {
-                    // We don't undo the allocations, but we leave the EOF unchanged.  The
-                    // file close code will truncate the excess if necessary.
-                    mMark = savedMark;
+                    mEndOfFile = origEOF;
                     throw;
                 }
             } else {

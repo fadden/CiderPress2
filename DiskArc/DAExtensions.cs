@@ -570,8 +570,9 @@ namespace DiskArc {
         /// switched to raw-access mode.
         /// </summary>
         /// <remarks>
-        /// DOS filesystems will be written to a DOS-ordered (.do) file, everything else will
-        /// be written to a ProDOS-ordered (.po) file.
+        /// DOS filesystems will be written to a DOS-ordered (.do) file, ProDOS/Pascal/HFS will
+        /// be written to a ProDOS-ordered (.po) file, CP/M will be written to a CP/M-ordered
+        /// (.co?) file.
         /// </remarks>
         /// <param name="pathName">Pathname of output file.</param>
         public static void DumpToFile(this IFileSystem fs, string pathName) {

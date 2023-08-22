@@ -277,9 +277,15 @@ namespace DiskArc.FS {
                     mDirtyFlag.IsSet = true;
                 }
             }
-            public int RecordCount {
+            public byte RecordCount {
                 get { return mRecordCount; }
-                set { mRecordCount = (byte)value; mDirtyFlag.IsSet = true; }
+                set {
+                    Debug.Assert(value <= 128);
+                    if (mRecordCount != value) {
+                        mRecordCount = value;
+                        mDirtyFlag.IsSet = true;
+                    }
+                }
             }
             public byte ByteCount {
                 get {
@@ -291,7 +297,9 @@ namespace DiskArc.FS {
                 }
                 set {
                     Debug.Assert(value <= 128);
-                    mByteCount = value;
+                    if (mByteCount != value) {
+                        mByteCount = value;
+                    }
                 }
             }
             public ushort this[int i] {
@@ -328,8 +336,8 @@ namespace DiskArc.FS {
                 mFileName = string.Empty;
             }
 
-            public void SetForNew(string fileName) {
-                Status = 0;         // user zero
+            public void SetForNew(byte userNumber, string fileName) {
+                Status = userNumber;
                 FileName = fileName;
                 ExtentNumber = 0;
                 RecordCount = 0;
@@ -419,18 +427,173 @@ namespace DiskArc.FS {
         }
 
         /// <summary>
+        /// Special extent use as a placeholder in sparse files, and as a return value when a
+        /// requested extent doesn't exist.
+        /// </summary>
+        internal static readonly Extent NO_EXTENT = new Extent(65535, 8, new GroupBool());
+
+        /// <summary>
+        /// List of extents associated with this file.  There will be at least one entry here.
+        /// The list is kept sorted by extent number.  There may be gaps for sparse files.
+        /// </summary>
+        private List<Extent> mExtentList = new List<Extent>();
+        internal Extent GetExtent(int extNum) {
+            // Try the common case, where extent N is in slot N.
+            if (extNum < mExtentList.Count) {
+                Extent extent = mExtentList[extNum];
+                if (extent.ExtentNumber == extNum) {
+                    return extent;
+                }
+            }
+            // There are sparse gaps, need to walk the list.  We could avoid this by inserting
+            // dummy entries, but then we couldn't use entry[0] for file attributes.  This should
+            // be extremely rare.
+            foreach (Extent ext in mExtentList) {
+                if (ext.ExtentNumber == extNum) {
+                    return ext;
+                }
+            }
+            return NO_EXTENT;
+        }
+
+        /// <summary>
+        /// Adds a new extent to the list of extents.  The extent number must not already exist.
+        /// </summary>
+        /// <param name="ext">Extent to add.</param>
+        internal void AddExtent(Extent ext) {
+            Debug.Assert(GetExtent(ext.ExtentNumber) == NO_EXTENT);
+            Debug.Assert(ext.Status == mExtentList[0].Status);
+            Debug.Assert(ext.FileName == mExtentList[0].FileName);
+            if (ext.ExtentNumber == mExtentList.Count) {
+                // At end of list.
+                mExtentList.Add(ext);
+            } else {
+                // Find correct spot.
+                bool wasInserted = false;
+                for (int i = 0; i < mExtentList.Count; i++) {
+                    if (ext.ExtentNumber < mExtentList[i].ExtentNumber) {
+                        mExtentList.Insert(i, ext);
+                        wasInserted = true;
+                        break;
+                    }
+                }
+                if (!wasInserted) {
+                    mExtentList.Add(ext);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Truncates a file to the specified length.
+        /// </summary>
+        /// <param name="length">New length.</param>
+        /// <exception cref="DiskFullException">Rare sparse file edge case.</exception>
+        internal void TruncateTo(long length) {
+            CPM_AllocMap allocMap = FileSystem!.AllocMap!;
+
+            // Compute the number of extents needed.
+            int extNeeded, bytesInLast;
+            if (length == 0) {
+                // We always need at least one extent, to hold the filename.  This is the only
+                // one that's allowed to have zero assigned alloc blocks.
+                extNeeded = 1;
+                bytesInLast = 0;
+            } else {
+                extNeeded = (int)((length + CPM.BYTES_PER_EXTENT - 1) / CPM.BYTES_PER_EXTENT);
+                bytesInLast = (int)(length - (extNeeded - 1) * CPM.BYTES_PER_EXTENT);
+                Debug.Assert(bytesInLast > 0 && bytesInLast <= CPM.BYTES_PER_EXTENT);
+            }
+
+            // Compute the number of alloc blocks needed in the last extent.
+            uint allocSize = FileSystem.AllocUnitSize;
+            int allocInLast = (int)((bytesInLast + allocSize - 1) / allocSize);
+            int maxPerExt = (FileSystem.TotalAllocBlocks <= 256) ? 16 : 8;
+            Debug.Assert(allocInLast >= 0 && allocInLast <= maxPerExt);
+            Debug.Assert(allocInLast > 0 || length == 0);
+
+            // Find the extent in which things are expected to end.  If it doesn't exist,
+            // because we're truncating to a sparse hole, we have to create a new one.  In theory
+            // we could run out of disk space (volume directory full) while doing this.  We
+            // could potentially avoid that by removing the later extents first, but if we fail
+            // here we can just bail out because we haven't changed anything yet.
+            int lastExtNum = extNeeded - 1;
+            Extent lastExt = GetExtent(lastExtNum);
+            if (lastExt == NO_EXTENT) {
+                lastExt = FileSystem.FindFreeExtent();      // could throw
+                lastExt.SetForNew(UserNumber, FileName);
+                lastExt.ExtentNumber = lastExtNum;
+                AddExtent(lastExt);
+            }
+
+            // Remove any extents beyond the last one we need.
+            for (int i = mExtentList.Count - 1; i >= 0; i--) {
+                Extent ext = mExtentList[i];
+                if (ext.ExtentNumber > lastExtNum) {
+                    ReleaseExtent(ext, allocMap);
+                    mExtentList.RemoveAt(i);
+                }
+            }
+
+            // Release un-needed allocation blocks in the last extent.
+            for (int i = allocInLast; i < maxPerExt; i++) {
+                uint allocNum = lastExt[i];
+                if (allocNum != 0) {
+                    allocMap.MarkAllocBlockUnused(lastExt[i]);
+                    lastExt[i] = 0;
+                }
+            }
+
+            // Update the record and byte counts.
+            UpdateLength(length);
+        }
+
+        /// <summary>
+        /// Updates the length fields in the extents to match recent activity.
+        /// </summary>
+        /// <param name="length">Length of file.</param>
+        internal void UpdateLength(long length) {
+            // Update all extents.  The Extent code will refrain from setting the dirty flag
+            // if we don't actually change anything.
+            for (int i = 0; i < mExtentList.Count; i++) {
+                Extent ext = mExtentList[i];
+                if (i == mExtentList.Count - 1) {
+                    // Last extent, set RC and BC based on the amount of data held in it.
+                    int extentLen = (int)(length - (ext.ExtentNumber * CPM.BYTES_PER_EXTENT));
+                    ext.RecordCount = (byte)((extentLen + 127) / CPM.FILE_REC_LEN);
+                    ext.ByteCount = (byte)(extentLen % CPM.FILE_REC_LEN);
+                } else {
+                    // Not the last extent, so we set to show that the full 16KB is used.
+                    ext.RecordCount = 128;
+                    ext.ByteCount = 0;
+                }
+            }
+        }
+
+        /// <summary>
         /// Reference to filesystem object.
         /// </summary>
         public CPM FileSystem { get; private set; }
 
         /// <summary>
-        /// List of extents associated with this file.  There will be at least one entry here.
-        /// The list is kept sorted by extent number.  There will be gaps for sparse files.
+        /// User number.
         /// </summary>
-        private List<Extent> mExtentList = new List<Extent>();
-        internal Extent GetExtent(int extNum) {
-            // TODO: handle sparse files
-            return mExtentList[extNum];
+        /// <remarks>
+        /// </remarks>
+        public byte UserNumber {
+            get { return mExtentList[0].Status; }
+            set {
+                CheckChangeAllowed();
+                if (IsVolumeDirectory) {
+                    return;
+                }
+                if (value > CPM.MAX_USER_NUM) {
+                    throw new ArgumentException("Invalid user number");
+                }
+                // Update all copies of the user number.
+                foreach (Extent ext in mExtentList) {
+                    ext.Status = value;
+                }
+            }
         }
 
         /// <summary>
@@ -438,6 +601,9 @@ namespace DiskArc.FS {
         /// </summary>
         private bool IsVolumeDirectory { get; set; }
 
+        /// <summary>
+        /// For volume directory objects, the "fake" volume name.
+        /// </summary>
         private string mVolDirName;
 
         /// <summary>
@@ -525,11 +691,17 @@ namespace DiskArc.FS {
             int prevStatus = -1;
             CPM_FileEntry? curEntry = null;
             foreach (Extent ext in sortex.Keys) {
+                Debug.Assert(ext.Status != CPM.NO_DATA);    // these were omitted
                 if (ext.Status > CPM.MAX_USER_NUM) {
                     // Don't create a file entry for these.
                     // TODO(someday): extract v3 date info and disc label
                     if (ext.Status == CPM.RESERVED_SPACE) {
                         MarkExtentBlocks(ext, fileSystem, IFileEntry.NO_ENTRY);
+                    } else {
+                        // Assume this is a special entry that doesn't have any associated disk
+                        // allocation.
+                        notes.AddI("Found extent with unexpected status 0x" +
+                            ext.Status.ToString("x2"));
                     }
                     continue;
                 }
@@ -545,6 +717,11 @@ namespace DiskArc.FS {
                     curEntry = new CPM_FileEntry(fileSystem);
                     curEntry.mExtentList.Add(ext);
                     volDir.ChildList.Add(curEntry);
+
+                    if (!IsFileNameValid(curEntry.FileName)) {
+                        notes.AddW("Invalid filename '" + curEntry.FileName + "'");
+                        // No need to mark as dubious.
+                    }
 
                     prevStatus = ext.Status;
                     prevFileName = ext.FileName;
@@ -572,14 +749,23 @@ namespace DiskArc.FS {
         /// be reported through <see cref="AddConflict"/>.
         /// </summary>
         /// <param name="ext">Extent to process.</param>
-        /// <param name="entry">File entry to associate the blocks with, or NO_ENTRY if this
+        /// <param name="ientry">File entry to associate the blocks with, or NO_ENTRY if this
         ///   is a system area.</param>
-        private static void MarkExtentBlocks(Extent ext, CPM fs, IFileEntry entry) {
+        private static void MarkExtentBlocks(Extent ext, CPM fs, IFileEntry ientry) {
             CPM_AllocMap map = fs.AllocMap!;
             for (int i = 0; i < ext.PtrsPerExtent; i++) {
                 ushort allocNum = ext[i];
-                if (allocNum != 0) {
-                    map.MarkUsedByScan(ext[i], entry);
+                if (allocNum == 0) {
+                    // sparse; ignore
+                } else if (allocNum >= fs.TotalAllocBlocks) {
+                    fs.Notes.AddE("Bad alloc block in '" + ientry.FileName + "': 0x" +
+                        allocNum.ToString("x2"));
+                    CPM_FileEntry? entry = ientry as CPM_FileEntry;
+                    if (entry != null) {
+                        entry.IsDamaged = true;
+                    }
+                } else {
+                    map.MarkUsedByScan(ext[i], ientry);
                 }
             }
         }
@@ -590,14 +776,23 @@ namespace DiskArc.FS {
         internal void ReleaseStorage() {
             CPM_AllocMap allocMap = FileSystem!.AllocMap!;
             foreach (Extent ext in mExtentList) {
-                ext.Status = CPM.NO_DATA;
-                for (int i = 0; i < ext.PtrsPerExtent; i++) {
-                    uint allocNum = ext[i];
-                    if (allocNum != 0) {
-                        allocMap.MarkAllocBlockUnused(ext[i]);
-                    }
+                ReleaseExtent(ext, allocMap);
+            }
+        }
+
+        /// <summary>
+        /// Frees the blocks associated with an extent, and marks the extent as unused.
+        /// </summary>
+        /// <param name="ext"></param>
+        /// <param name="allocMap"></param>
+        private static void ReleaseExtent(Extent ext, CPM_AllocMap allocMap) {
+            for (int i = 0; i < ext.PtrsPerExtent; i++) {
+                uint allocNum = ext[i];
+                if (allocNum != 0) {
+                    allocMap.MarkAllocBlockUnused(ext[i]);
                 }
             }
+            ext.Status = CPM.NO_DATA;
         }
 
         internal static CPM_FileEntry CreateEntry(CPM fs, IFileEntry volDir, Extent ext,
@@ -605,7 +800,7 @@ namespace DiskArc.FS {
             CPM_FileEntry newEntry = new CPM_FileEntry(fs);
             newEntry.ContainingDir = volDir;
             newEntry.mExtentList.Add(ext);
-            ext.SetForNew(fileName);
+            ext.SetForNew(0, fileName);
             return newEntry;
         }
 

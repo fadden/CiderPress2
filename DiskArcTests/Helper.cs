@@ -21,6 +21,7 @@ using System.Text;
 using CommonUtil;
 using DiskArc;
 using static DiskArc.Defs;
+using static DiskArc.IFileSystem;
 
 namespace DiskArcTests {
     internal static class Helper {
@@ -253,9 +254,16 @@ namespace DiskArcTests {
                 } else if (val == 255) {
                     val = 0;
                 }
+                //Debug.Assert(SeqPattern(i) == val);
                 buffer[i] = val++;
             }
             return buffer;
+        }
+
+        private static byte SeqPattern(int index) {
+            int modIndex = index % 8192;
+            int indexVal = modIndex - (modIndex / 255) * 255;
+            return (byte)indexVal;
         }
 
         /// <summary>
@@ -371,6 +379,46 @@ namespace DiskArcTests {
                     if (fd.ReadByte() != -1) {
                         throw new Exception("rsrc fork too long");
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Fills a file with a sequential byte value, one byte at a time.
+        /// </summary>
+        /// <param name="fs">Filesystem object.</param>
+        /// <param name="entry">File entry object.</param>
+        /// <param name="count">Number of bytes to write.</param>
+        public static void FillFile(IFileSystem fs, IFileEntry entry, int count) {
+            using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadWrite,
+                    FilePart.DataFork)) {
+                for (int i = 0; i < count; i++) {
+                    stream.WriteByte(SeqPattern(i));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Confirms the contents of a file filled with <see cref="FillFile"/>.  Tests the
+        /// file length as well.
+        /// </summary>
+        /// <param name="fs">Filesystem object.</param>
+        /// <param name="entry">File entry object.</param>
+        /// <param name="count">Number of bytes to expect.</param>
+        public static void CheckFill(IFileSystem fs, IFileEntry entry, int count) {
+            if (entry.DataLength != count) {
+                throw new Exception("CheckFill '" + entry.FileName + "': expected length=" +
+                    count + ", actual=" + entry.DataLength);
+            }
+            using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadOnly, FilePart.DataFork)) {
+                for (int i = 0; i < count; i++) {
+                    if (stream.ReadByte() != SeqPattern(i)) {
+                        throw new Exception("CheckFill '" + entry.FileName +
+                            "': mismatched byte in " + entry.FileName + " at offset " + i);
+                    }
+                }
+                if (stream.ReadByte() != -1) {
+                    throw new Exception("Failed to get EOF result at end");
                 }
             }
         }
@@ -553,14 +601,14 @@ namespace DiskArcTests {
         /// <summary>
         /// <para>Populates a data file with a single filesystem.  The contents of the data file
         /// will be overwritten.</para>
-        ///
-        /// <para>Not for use with multi-partition formats.</para>
-        ///
-        /// <para>The filesystem will initially be in raw (sector-edit) mode.</para>
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="parms"></param>
-        /// <param name="log"></param>
+        /// <remarks>
+        /// <para>Not for use with multi-partition formats.</para>
+        /// <para>The filesystem will initially be in raw (sector-edit) mode.</para>
+        /// </remarks>
+        /// <param name="file">File to fill with filesystem.</param>
+        /// <param name="parms">Creation parameters.</param>
+        /// <param name="appHook">Application hook reference.</param>
         /// <returns>IFileSystem reference.</returns>
         public static IFileSystem CreateNewFS(Stream file, CreateParams parms, AppHook appHook) {
             if (!file.CanWrite) {

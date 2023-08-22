@@ -159,6 +159,17 @@ namespace DiskArcTests {
                 if (file1.DataLength != buf.Length || file1.StorageSize != 4096) {
                     throw new Exception("Unexpected logical/physical length");
                 }
+
+                long origLen = file1.DataLength;
+                using (DiskFileStream fd = fs.OpenFile(file1, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    try {
+                        fd.SetLength(800 * 1024);
+                        throw new Exception("file is larger than disk can hold");
+                    } catch (IOException) { /*expected*/ }
+                    Helper.ExpectLong(origLen, fd.Length, "fd length mismatch");
+                }
+                Helper.ExpectLong(origLen, file1.DataLength, "entry length mismatch");
             }
         }
 

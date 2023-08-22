@@ -1246,13 +1246,17 @@ namespace DiskArc.FS {
             FileSystem.VolBitmap?.Flush();
         }
 
+        // Stream
         public override void SetLength(long newEof) {
             CheckValid();
             if (mIsReadOnly) {
                 throw new NotSupportedException("File was opened read-only");
             }
             if (newEof < 0 || newEof > ProDOS.MAX_FILE_LEN) {
-                throw new ArgumentOutOfRangeException("Invalid EOF (" + newEof + ")");
+                throw new ArgumentOutOfRangeException(nameof(newEof), newEof, "Invalid length");
+            }
+            if (newEof == mEndOfFile) {
+                return;
             }
 
             if (newEof > mEndOfFile) {
@@ -1381,6 +1385,11 @@ namespace DiskArc.FS {
         /// <summary>
         /// Finds the next data area or hole, starting from the specified absolute file offset.
         /// </summary>
+        /// <param name="offset">Initial offset.</param>
+        /// <param name="findData">If true, look for data; if false, for a hole.</param>
+        /// <returns>Offset to data or hole.  If it's in the current block, the current offset
+        ///   will be returned.  Otherwise, the offset of the start of the disk block (or
+        ///   block-sized hole) will be returned.</returns>
         private int SeekDataOrHole(int offset, bool findData) {
             while (offset < mEndOfFile) {
                 int blockIndex = offset / BLOCK_SIZE;

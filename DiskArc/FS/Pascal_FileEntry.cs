@@ -582,7 +582,8 @@ namespace DiskArc.FS {
         }
 
         /// <summary>
-        /// Truncates the file to the specified number of blocks.
+        /// Truncates the file to the specified number of blocks.  The file will contain the Nth
+        /// block, so if blockIndex is zero the file will have one block in it.
         /// </summary>
         /// <param name="blockIndex">Block index within the file.</param>
         internal void TruncateTo(int blockIndex) {

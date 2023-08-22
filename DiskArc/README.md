@@ -300,9 +300,11 @@ All v2.2 features, and some v3 features, are supported.
 
 [ ... ]
 
-Sparse files are supported, but uncommon.  Extending a file with `SetLength()` does not create
-a sparse section, but seeking past the end of file and writing data will cause the middle
-section to be allocated sparsely.
+Sparse files are supported, but uncommon.  Extending a file with `SetLength()` does not create a
+sparse section, but seeking past the end of file and writing data will cause the middle section
+to be allocated sparsely.  NOTE: I have no examples of OS-created sparse files, and no sense of
+how they behave on the Apple II.  The implementation behaves the way that documentation found
+online indicates it should, but it might be wise not to create sparse files on Apple II disks.
 
 Implementations of the CP/M operating system are many and varied.  The disk format function
 does not currently create bootable disks, since it's probably best to leave the choice of OS

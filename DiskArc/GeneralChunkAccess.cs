@@ -246,17 +246,18 @@ namespace DiskArc {
 
         // IChunkAccess
         public void ReadBlock(uint block, byte[] data, int offset) {
-            DoReadBlock(block, data, offset, sProdos2Phys);
+            DoReadBlock(block, data, offset, SectorOrder.ProDOS_Block, sProdos2Phys);
         }
 
         // IChunkAccess
         public void ReadBlockCPM(uint block, byte[] data, int offset) {
-            DoReadBlock(block, data, offset, sCpm2Phys);
+            DoReadBlock(block, data, offset, SectorOrder.CPM_KBlock, sCpm2Phys);
         }
 
-        public void DoReadBlock(uint block, byte[] data, int offset, uint[] skewMap) {
+        public void DoReadBlock(uint block, byte[] data, int offset, SectorOrder expectedOrder,
+                uint[] skewMap) {
             CheckBlockArgs(block, false);
-            if (NumSectorsPerTrack == 16 && FileOrder != SectorOrder.ProDOS_Block) {
+            if (NumSectorsPerTrack == 16 && FileOrder != expectedOrder) {
                 // Read as a pair of sectors, using DOS skewing.
                 uint track = block >> 3;            // block / (NumSectorsPerTrack/2)
                 uint sect = (block & 0x07) << 1;    // (block % (NumSectorsPerTrack/2)) * 2
@@ -351,17 +352,18 @@ namespace DiskArc {
 
         // IChunkAccess
         public void WriteBlock(uint block, byte[] data, int offset) {
-            DoWriteBlock(block, data, offset, sProdos2Phys);
+            DoWriteBlock(block, data, offset, SectorOrder.ProDOS_Block, sProdos2Phys);
         }
 
         // IChunkAccess
         public void WriteBlockCPM(uint block, byte[] data, int offset) {
-            DoWriteBlock(block, data, offset, sCpm2Phys);
+            DoWriteBlock(block, data, offset, SectorOrder.CPM_KBlock, sCpm2Phys);
         }
 
-        private void DoWriteBlock(uint block, byte[] data, int offset, uint[] skewMap) {
+        private void DoWriteBlock(uint block, byte[] data, int offset, SectorOrder expectedOrder,
+                uint[] skewMap) {
             CheckBlockArgs(block, true);
-            if (NumSectorsPerTrack == 16 && FileOrder == SectorOrder.DOS_Sector) {
+            if (NumSectorsPerTrack == 16 && FileOrder != expectedOrder) {
                 // Write as a pair of sectors.
                 uint track = block >> 3;            // block / (NumSectorsPerTrack/2)
                 uint sect = (block & 0x07) << 1;    // (block % (NumSectorsPerTrack/2)) * 2

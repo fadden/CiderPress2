@@ -19,8 +19,8 @@ namespace DiskArc {
     /// <summary>
     /// Stream for performing I/O on a file stored in an emulated filesystem.  Most of the
     /// interface is defined by the Stream base class; see
-    /// <see href="https://docs.microsoft.com/en-us/dotnet/api/system.io.stream"/>
-    /// for full documentation.
+    /// <see href="https://docs.microsoft.com/en-us/dotnet/api/system.io.stream"/> for full
+    /// documentation.
     /// </summary>
     /// <remarks>
     /// <para>These are created through calls on the filesystem object.</para>
@@ -31,20 +31,22 @@ namespace DiskArc {
     ///
     /// <para>Notes on differences vs. standard Stream behavior:</para>
     /// <list type="bullet">
-    ///   <item>Write and SetLength calls may cause a <see cref="DiskFullException"/> to
-    ///     be thrown.  In such a case, partially-completed writes are possible.</item>
+    ///   <item><see cref="Write"/> and <see cref="SetLength"/> calls may cause a
+    ///     <see cref="DiskFullException"/> to be thrown.  In such a case, partially-completed
+    ///     writes are possible, but SetLength() will leave the file with its original
+    ///     length.</item>
     ///   <item>Extending a file's length with <see cref="SetLength"/> may or may not cause
     ///     storage to be allocated, depending on how the filesystem handles sparse files.
-    ///     The additional space will be zeroed out.
+    ///     The added space will be initialized.
     ///     Truncation of a fork may not cause storage to be released until the file
     ///     is closed.</item>
     ///   <item>The <see cref="Seek"/> call supports two additional origin values, for
     ///     working with sparse files: <see cref="Defs.SEEK_ORIGIN_DATA"/> and
     ///     <see cref="Defs.SEEK_ORIGIN_HOLE"/>.</item>
     /// </list>
-    /// <para>Read calls should return the full amount of data requested, unless EOF is reached.
-    /// This not guaranteed, but is the expected behavior of disk and memory streams.  Use
-    /// <see cref="ReadExactly"/> to ensure full reads.</para>
+    /// <para><see cref="Read"/> calls should return the full amount of data requested, unless
+    /// EOF is reached.  This not guaranteed, but is the expected behavior of disk and memory
+    /// streams.  Use <see cref="ReadExactly"/> to ensure full reads.</para>
     /// </remarks>
     public abstract class DiskFileStream : Stream {
         // Single-byte buffer for ReadByte/WriteByte, allocated on first use.

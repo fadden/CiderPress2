@@ -153,8 +153,11 @@ namespace DiskArc.FS {
             if (mIsReadOnly) {
                 throw new NotSupportedException("File was opened read-only");
             }
-            if (offset < 0 || count < 0) {
-                throw new ArgumentOutOfRangeException("Bad offset / count");
+            if (offset < 0) {
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, "bad offset");
+            }
+            if (count < 0) {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "bad count");
             }
             if (buffer == null) {
                 throw new ArgumentNullException("Buffer is null");
@@ -263,7 +266,7 @@ namespace DiskArc.FS {
                 throw new NotSupportedException("File was opened read-only");
             }
             if (newEof < 0 || newEof > Pascal.MAX_FILE_LEN) {
-                throw new ArgumentOutOfRangeException("Invalid EOF (" + newEof + ")");
+                throw new ArgumentOutOfRangeException(nameof(newEof), newEof, "Invalid length");
             }
             if (newEof == mEOF) {
                 return;
@@ -273,14 +276,13 @@ namespace DiskArc.FS {
             // the number of blocks required is ((EOF - 1) / 512) + 1, with a special case
             // for zero because we still want to allocate a block even if we don't have data.
             // We want the index of the last block, which is (length - 1).
-
+            //
+            // Note (-1 / BLOCK_SIZE) == 0.
             int oldLastBlockIndex = (mEOF - 1) / BLOCK_SIZE;
             int newLastBlockIndex = ((int)newEof - 1) / BLOCK_SIZE;
             if (oldLastBlockIndex == newLastBlockIndex) {
-                // No change to number of blocks used.  If the EOF is different, update it.
-                if (mEOF != (int)newEof) {
-                    mEOF = (int)newEof;
-                }
+                // No change to number of blocks used.  Just update the EOF.
+                mEOF = (int)newEof;
                 Flush();
                 return;
             }
@@ -291,32 +293,13 @@ namespace DiskArc.FS {
                 // Grow the file as much as possible.  This will throw when we run out of space.
                 // We could do a simple "FileEntry.ExpandIfNeeded(newLastBlockIndex)", but that
                 // would leave the previous contents of the disk in the file.  Better to zero it.
-                int savedMark = mMark;
-                ushort origNextBlock = FileEntry.NextBlock;
                 int origEOF = mEOF;
                 try {
-                    mMark = mEOF;
-                    int needed = (int)(newEof - mEOF);
-
-                    // Do a potentially smaller write on the first one so we're aligned with
-                    // the allocation block size.  This avoids partial block writes in the
-                    // Write() call on subsequent iterations.
-                    int partialCount = mMark % BLOCK_SIZE;
-                    while (needed > 0) {
-                        int thisCount = BLOCK_SIZE - partialCount;
-                        if (thisCount > needed) {
-                            thisCount = needed;
-                        }
-                        Write(sZeroBuf, 0, thisCount);
-
-                        needed -= thisCount;
-                        partialCount = 0;
-                    }
+                    FSUtil.ExtendFile(this, newEof, BLOCK_SIZE);
                 } catch {
                     // Probably a DiskFullException.  Undo the growth and re-throw.
                     FileEntry.TruncateTo(oldLastBlockIndex);
                     mEOF = origEOF;
-                    mMark = savedMark;
                     throw;
                 }
             } else {
