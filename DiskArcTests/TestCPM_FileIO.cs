@@ -511,7 +511,7 @@ namespace DiskArcTests {
                 Helper.CheckNotes(fs, 0, 0);
 
                 volDir = fs.GetVolDirEntry();
-                file1 = fs.FindFileEntry(volDir, "FILE1A");
+                file1 = fs.FindFileEntry(volDir, "FILE1A,6");
                 if ((file1.Access & (byte)FileAttribs.AccessFlags.Invisible) == 0) {
                     throw new Exception("lost invisible flag");
                 }
@@ -522,6 +522,27 @@ namespace DiskArcTests {
                 fs.PrepareRawAccess();
                 fs.PrepareFileAccess(true);
                 Helper.CheckNotes(fs, 0, 0);
+            }
+        }
+
+        public static void TestUserNumberName(AppHook appHook) {
+            Helper.ExpectBool(true, CPM_FileEntry.IsFileNameValid("FOO.BAR"), "rejected none");
+            Helper.ExpectBool(true, CPM_FileEntry.IsFileNameValid("FOO.BAR,6"), "rejected ,6");
+            Helper.ExpectBool(true, CPM_FileEntry.IsFileNameValid("FOO.BAR,12"), "rejected ,12");
+
+            Helper.ExpectBool(false, CPM_FileEntry.IsFileNameValid("FOO.BAR,0"), "allowed ,0");
+            Helper.ExpectBool(false, CPM_FileEntry.IsFileNameValid("FOO.BAR,16"), "allowed ,16");
+            Helper.ExpectBool(false, CPM_FileEntry.IsFileNameValid("FOO.BAR,001"), "allowed ,001");
+
+            using (IFileSystem fs = Make525Floppy(appHook)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+
+                for (int i = 1; i < 15; i++) {
+                    fs.CreateFile(volDir, "FILE," + i, CreateMode.File);
+                }
+                for (int i = 1; i < 15; i++) {
+                    fs.FindFileEntry(volDir, "FILE," + i);
+                }
             }
         }
 

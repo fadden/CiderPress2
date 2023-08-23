@@ -41,7 +41,7 @@ namespace DiskArc.FS {
 
         private const string FILENAME_RULES =
             "8.3 format, using printable ASCII characters except for spaces and " +
-                "\u201c<>.,;:=?*[]\u201d.";
+                "\u201c<>.,;:=?*[]\u201d.  Optionally follow with comma and non-zero user number.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
             name: "CP/M",
             canWrite: true,

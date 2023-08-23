@@ -34,7 +34,7 @@ namespace DiskArc.FS {
 
         public bool IsDamaged { get; private set; }
 
-        public bool IsDirectory { get { return IsVolumeDirectory; } }
+        public bool IsDirectory { get; private set; }
 
         public bool HasDataFork => true;
         public bool HasRsrcFork => false;
@@ -46,15 +46,15 @@ namespace DiskArc.FS {
 
         public string FileName {
             get {
-                if (IsVolumeDirectory) {
-                    return mVolDirName;
+                if (IsDirectory) {
+                    return mFakeDirName;
                 }
                 return mExtentList[0].FileName;
             }
             set {
                 CheckChangeAllowed();
-                if (IsVolumeDirectory) {
-                    throw new ArgumentException("No volume name for CP/M");
+                if (IsDirectory) {
+                    return;
                 }
                 if (!IsFileNameValid(value)) {
                     throw new ArgumentException("Invalid filename");
@@ -68,8 +68,8 @@ namespace DiskArc.FS {
         public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
         public string FullPathName {
             get {
-                if (IsVolumeDirectory) {
-                    return mVolDirName;
+                if (IsDirectory) {
+                    return mFakeDirName;
                 }
                 string pathName = mExtentList[0].FileName;
                 if (FileSystem == null) {
@@ -80,7 +80,7 @@ namespace DiskArc.FS {
         }
         public byte[] RawFileName {
             get {
-                if (IsVolumeDirectory) {
+                if (IsDirectory) {
                     return new byte[] { (byte)'?' };
                 }
                 // Return it in 8+3 form.
@@ -90,6 +90,9 @@ namespace DiskArc.FS {
             }
             set {
                 CheckChangeAllowed();
+                if (IsDirectory) {
+                    return;
+                }
                 // Minimal checks.
                 if (value.Length != Extent.FILENAME_FIELD_LEN) {
                     throw new ArgumentException("Must be an 11-byte 8+3 name");
@@ -115,7 +118,7 @@ namespace DiskArc.FS {
 
         public byte Access {
             get {
-                if (IsVolumeDirectory) {
+                if (IsDirectory) {
                     return FileAttribs.FILE_ACCESS_UNLOCKED;
                 }
                 // Pull the attribute flags out of the lowest-numbered extent (usually #0).
@@ -123,6 +126,9 @@ namespace DiskArc.FS {
             }
             set {
                 CheckChangeAllowed();
+                if (IsDirectory) {
+                    return;
+                }
                 foreach (Extent ext in mExtentList) {
                     ext.AccessFlags = value;
                 }
@@ -135,6 +141,9 @@ namespace DiskArc.FS {
 
         public long StorageSize {
             get {
+                if (IsDirectory) {
+                    return 0;
+                }
                 long total = 0;
                 foreach (Extent ext in mExtentList) {
                     for (int i = 0; i < ext.PtrsPerExtent; i++) {
@@ -149,6 +158,9 @@ namespace DiskArc.FS {
 
         public long DataLength {
             get {
+                if (IsDirectory) {
+                    return 0;
+                }
                 // Get the extent number of the last extent in the list.
                 Extent lastExt = mExtentList[mExtentList.Count - 1];
                 int fullExtents = lastExt.ExtentNumber;
@@ -222,7 +234,11 @@ namespace DiskArc.FS {
 
             public byte Status {
                 get { return mStatus; }
-                set { mStatus = value; mDirtyFlag.IsSet = true; }
+                set {
+                    mStatus = value;
+                    mFileName = CookFileName(mRawFileName, mStatus);
+                    mDirtyFlag.IsSet = true;
+                }
             }
             public byte[] RawFileName {
                 get { return mRawFileName; }        // caller must not modify array contents
@@ -230,7 +246,7 @@ namespace DiskArc.FS {
                     // This tramples the access flags.  The caller must preserve them.
                     Debug.Assert(value.Length == FILENAME_FIELD_LEN);
                     Array.Copy(value, mRawFileName, FILENAME_FIELD_LEN);
-                    mFileName = CookFileName(mRawFileName);
+                    mFileName = CookFileName(mRawFileName, mStatus);
                     mDirtyFlag.IsSet = true;
                 }
             }
@@ -318,8 +334,9 @@ namespace DiskArc.FS {
                 get { return mFileName; }
                 set {
                     Debug.Assert(mStatus != CPM.NO_DATA);
-                    RawifyFileName(value, mRawFileName);
+                    RawifyFileName(value, mRawFileName, out byte userNum);
                     mFileName = value;
+                    mStatus = userNum;
                     mDirtyFlag.IsSet = true;
                 }
             }
@@ -370,7 +387,7 @@ namespace DiskArc.FS {
                 Debug.Assert(offset - startOffset == LENGTH);
 
                 if (mStatus != CPM.NO_DATA) {
-                    mFileName = CookFileName(mRawFileName);
+                    mFileName = CookFileName(mRawFileName, mStatus);
                 }
             }
             public void Store(byte[] buf) {
@@ -583,7 +600,7 @@ namespace DiskArc.FS {
             get { return mExtentList[0].Status; }
             set {
                 CheckChangeAllowed();
-                if (IsVolumeDirectory) {
+                if (IsDirectory) {
                     return;
                 }
                 if (value > CPM.MAX_USER_NUM) {
@@ -604,7 +621,7 @@ namespace DiskArc.FS {
         /// <summary>
         /// For volume directory objects, the "fake" volume name.
         /// </summary>
-        private string mVolDirName;
+        private string mFakeDirName = string.Empty;
 
         /// <summary>
         /// List of files contained in this entry.  Only the volume dir has children.
@@ -623,11 +640,6 @@ namespace DiskArc.FS {
         internal CPM_FileEntry(CPM fileSystem) {
             ContainingDir = IFileEntry.NO_ENTRY;
             FileSystem = fileSystem;
-            if (fileSystem.AllocUnitSize == 1024) {
-                mVolDirName = "5.25\" disk";
-            } else {
-                mVolDirName = "3.5\" disk";
-            }
         }
 
         // IDisposable generic finalizer.
@@ -737,9 +749,17 @@ namespace DiskArc.FS {
             volDir.ChildList.Sort(delegate (IFileEntry ientry1, IFileEntry ientry2) {
                 CPM_FileEntry entry1 = (CPM_FileEntry)ientry1;
                 CPM_FileEntry entry2 = (CPM_FileEntry)ientry2;
-                int index1 = entry1.mExtentList[0].DirIndex;
-                int index2 = entry2.mExtentList[0].DirIndex;
-                return (index1 - index2);
+                if (entry1.IsDirectory && !entry2.IsDirectory) {
+                    return 1;
+                } else if (!entry1.IsDirectory && entry2.IsDirectory) {
+                    return -1;
+                } else if (entry1.IsDirectory && entry2.IsDirectory) {
+                    return entry1.mFakeDirName.CompareTo(entry2.mFakeDirName);
+                } else {
+                    int index1 = entry1.mExtentList[0].DirIndex;
+                    int index2 = entry2.mExtentList[0].DirIndex;
+                    return (index1 - index2);
+                }
             });
 
             return volDir;
@@ -796,10 +816,18 @@ namespace DiskArc.FS {
             ext.Status = CPM.NO_DATA;
         }
 
-        internal static CPM_FileEntry CreateEntry(CPM fs, IFileEntry volDir, Extent ext,
+        /// <summary>
+        /// Creates a new directory entry.
+        /// </summary>
+        /// <param name="fs">Filesystem object.</param>
+        /// <param name="parentDir">Parent directory.</param>
+        /// <param name="ext">Initial extent.  Contents will be overwritten.</param>
+        /// <param name="fileName">Filename.</param>
+        /// <returns>New directory entry object.</returns>
+        internal static CPM_FileEntry CreateEntry(CPM fs, IFileEntry parentDir, Extent ext,
                 string fileName) {
             CPM_FileEntry newEntry = new CPM_FileEntry(fs);
-            newEntry.ContainingDir = volDir;
+            newEntry.ContainingDir = parentDir;
             newEntry.mExtentList.Add(ext);
             ext.SetForNew(0, fileName);
             return newEntry;
@@ -809,10 +837,21 @@ namespace DiskArc.FS {
         /// Creates a "fake" file entry for the volume directory.
         /// </summary>
         private static CPM_FileEntry CreateFakeVolDirEntry(CPM fs) {
-            CPM_FileEntry newEntry = new CPM_FileEntry(fs);
-            newEntry.IsVolumeDirectory = true;
-            //newEntry.mExtentList.Add(new Extent(0, 16, new GroupBool()));
-            return newEntry;
+            CPM_FileEntry volDirEntry = new CPM_FileEntry(fs);
+            volDirEntry.IsVolumeDirectory = volDirEntry.IsDirectory = true;
+            if (fs.AllocUnitSize == 1024) {
+                volDirEntry.mFakeDirName = "5.25\" disk";
+            } else {
+                volDirEntry.mFakeDirName = "3.5\" disk";
+            }
+            //for (int i = 1; i <= CPM.MAX_USER_NUM; i++) {
+            //    CPM_FileEntry fakeDir = new CPM_FileEntry(fs);
+            //    fakeDir.IsDirectory = true;
+            //    fakeDir.mFakeDirName = i.ToString();
+            //    fakeDir.ContainingDir = volDirEntry;
+            //    volDirEntry.ChildList.Add(fakeDir);
+            //}
+            return volDirEntry;
         }
 
         // IFileEntry
@@ -846,7 +885,8 @@ namespace DiskArc.FS {
         // allows "NAME" and "NAME.EXT" but not "NAME.".
         // (Exclusion uses "negative lookahead": https://stackoverflow.com/a/35427132/294248.)
         private const string FILE_NAME_PATTERN = @"^((?![<>\.,;:=\?\*\[\] ])[\x20-\x7e]){1,8}" +
-            @"((?:\.)((?![<>\.,;:=\?\*\[\] ])[\x20-\x7e]){1,3})?$";
+            @"((?:\.)((?![<>\.,;:=\?\*\[\] ])[\x20-\x7e]){1,3})?" +
+            @"((?:,)(\d{1,2}))?$";
         private static Regex sFileNameRegex = new Regex(FILE_NAME_PATTERN);
 
         private const string INVALID_CHARS = @"<>.,;:=?*[] ";
@@ -862,14 +902,53 @@ namespace DiskArc.FS {
         }
 
         /// <summary>
-        /// Returns true if the string is a valid ProDOS filename.
+        /// Returns true if the string is a valid CP/M filename.
         /// </summary>
         public static bool IsFileNameValid(string fileName) {
             MatchCollection matches = sFileNameRegex.Matches(fileName);
-            return (matches.Count == 1);
+            if (matches.Count != 1) {
+                return false;
+            }
+            if (matches[0].Groups.Count != 6) {
+                Debug.Assert(false, "filename regex failed");
+                return false;
+            }
+            // Check for a user number string.  We don't append the user number when user==0, so
+            // we don't accept it here either.  If we did, a single file could effectively have
+            // two different filenames, which could cause confusion elsewhere.
+            string userNumStr = matches[0].Groups[5].Value;
+            if (!string.IsNullOrEmpty(userNumStr)) {
+                if (!byte.TryParse(userNumStr, out byte num)) {
+                    return false;
+                }
+                if (num == 0 || num > CPM.MAX_USER_NUM) {
+                    return false;
+                }
+            }
+            return true;
         }
 
+        /// <summary>
+        /// Adjusts a filename to be compatible with this filesystem, removing invalid characters
+        /// and shortening the name.
+        /// </summary>
+        /// <param name="fileName">Filename to adjust.</param>
+        /// <returns>Adjusted filename.</returns>
         public static string AdjustFileName(string fileName) {
+            // Check for a user number suffix.  If we find one, strip it off the end of the string
+            // and preserve it for later.
+            int userNumber = -1;
+            int lastComma = fileName.LastIndexOf(',');
+            if (lastComma != -1 && lastComma >= fileName.Length - 3) {
+                if (byte.TryParse(fileName.Substring(lastComma + 1), out byte parsedNum)) {
+                    if (parsedNum > 0 && parsedNum < CPM.MAX_USER_NUM) {
+                        // Strip it off the filename before continuing.
+                        fileName = fileName.Substring(0, lastComma);
+                        userNumber = parsedNum;
+                    }
+                }
+            }
+
             // Split in half at the last '.'.
             string namePart, extPart;
             int lastDot = fileName.LastIndexOf('.');
@@ -901,7 +980,10 @@ namespace DiskArc.FS {
             // Combine and convert to upper case.
             string combined = namePart;
             if (extPart != string.Empty) {
-                combined += "." + extPart;
+                combined += '.' + extPart;
+            }
+            if (userNumber != -1) {
+                combined += ',' + userNumber.ToString();
             }
             return combined.ToUpperInvariant();
         }
@@ -927,7 +1009,7 @@ namespace DiskArc.FS {
         /// </summary>
         /// <param name="rawFileName">Raw filename bytes.</param>
         /// <returns>Cooked filename string.</returns>
-        internal static string CookFileName(byte[] rawFileName) {
+        internal static string CookFileName(byte[] rawFileName, byte userNum) {
             Debug.Assert(rawFileName.Length == Extent.FILENAME_FIELD_LEN);
             StringBuilder sb = new StringBuilder(Extent.FILENAME_FIELD_LEN + 1);
             for (int i = 0; i < 8; i++) {
@@ -947,6 +1029,10 @@ namespace DiskArc.FS {
                     sb.Append((char)ch);
                 }
             }
+            if (userNum != 0 && userNum <= CPM.MAX_USER_NUM) {
+                sb.Append(',');
+                sb.Append(userNum.ToString());
+            }
             return sb.ToString();
         }
 
@@ -955,10 +1041,25 @@ namespace DiskArc.FS {
         /// </summary>
         /// <param name="fileName">Filename to rawify.</param>
         /// <param name="outBuf">Buffer that receives filename bytes.</param>
-        internal static void RawifyFileName(string fileName, byte[] outBuf) {
+        internal static void RawifyFileName(string fileName, byte[] outBuf, out byte userNum) {
             Debug.Assert(IsFileNameValid(fileName));
             for (int i = 0; i < Extent.FILENAME_FIELD_LEN; i++) {
                 outBuf[i] = (byte)' ';
+            }
+            int commaIndex = fileName.IndexOf(',');
+            if (commaIndex != -1) {
+                if (byte.TryParse(fileName.Substring(commaIndex + 1), out userNum)) {
+                    if (userNum > CPM.MAX_USER_NUM) {
+                        Debug.Assert(false, "Bad user number in " + fileName);
+                        userNum = 0;
+                    }
+                } else {
+                    Debug.Assert(false, "failed to parse user number");
+                    userNum = 0;
+                }
+                fileName = fileName.Substring(0, commaIndex);
+            } else {
+                userNum = 0;
             }
             int index = 0;
             foreach (char ch in fileName) {
@@ -975,8 +1076,8 @@ namespace DiskArc.FS {
 
         public override string ToString() {
             string fileName;
-            if (IsVolumeDirectory) {
-                fileName = mVolDirName;
+            if (IsDirectory) {
+                fileName = mFakeDirName;
             } else if (mExtentList.Count > 0) {
                 fileName = mExtentList[0].FileName;
             } else {

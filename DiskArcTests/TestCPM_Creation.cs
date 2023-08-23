@@ -85,6 +85,9 @@ namespace DiskArcTests {
                     name[i] = "USER" + i + ".TXT";
                     IFileEntry newFile = fs.CreateFile(volDir, name[i], CreateMode.File);
                     ((CPM_FileEntry)newFile).UserNumber = (byte)i;
+                    if (i != 0) {
+                        name[i] += "," + i;
+                    }
 
                     contents[i] =
                         Encoding.ASCII.GetBytes("Hello, world!\r\nUser #" + i + "\r\n\x1a");

@@ -296,9 +296,12 @@ with the "natural" ordering harder to define because each file can have multiple
 ### CP/M ###
 
 CP/M is well supported, for reading and writing.  The filesystem is thoroughly scanned for errors.
-All v2.2 features, and some v3 features, are supported.
+All v2.2 features, and some v3 features, are supported.  Timestamps are not currently recognized
+or updated.
 
-[ ... ]
+User numbers are handled by modifying the filename in the filesystem code.  Files with a nonzero
+user number will have a filename suffix, e.g. "FILE.TXT,3".  This is handled transparently, so
+changing a file's user number can be accomplished by renaming the file.
 
 Sparse files are supported, but uncommon.  Extending a file with `SetLength()` does not create a
 sparse section, but seeking past the end of file and writing data will cause the middle section

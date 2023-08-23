@@ -232,7 +232,7 @@ on a 5.25" disk.
 ### Text Files ###
 
 On many disks, files will be a multiple of 128 bytes long.  For a text file, the actual file
-EOF occurs when a Ctrl-Z (0x1a) byte is read.
+EOF occurs when the first Ctrl-Z (0x1a) byte is read.
 
 
 ## Appendix: User Numbers and CiderPress ##
@@ -244,25 +244,31 @@ and provides a way to group files on a filesystem that lacks subdirectories.
 
 There are a few ways to handle them in CiderPress.  Ideally we'd use an approach that doesn't
 require introducing significant CP/M-specific mechanisms, so that the same set of commands used
-for other filesystems will also work here.  Some approaches are:
+for other filesystems will also work with minimal alterations.  Some approaches are:
 
- 1. Ignore them.  The original CiderPress used this approach.
+ 0. No special treatment.  User numbers are just another editable file attribute, albeit a
+	CP/M-specific one.
+ 1. Define a global user number setting (similar to what CP/M does).
  2. Embed the number in the filename, as a prefix or suffix, to ensure filename uniqueness.
- 3. Treat them as "virtual" directories.
+ 3. Define "virtual" directories that hold files associated with each user number.
 
-Approach #1 is the simplest, but it can lead to difficulties on disks where multiple files have
+Approach #0 is the simplest, but it can lead to difficulties on disks where multiple files have
 the same filename.  Selecting files with the command-line interface is ambiguous, and extracting
-files causes collisions.  Copying files between disks will cause the values to be lost.
+files can cause collisions.  Copying files between disks will cause the user number to be lost.
+
+Approach #1 would add a user number setting to the filesystem object.  Newly-created files would
+receive that user number, and list/extract operations would filter their results.
 
 Approach #2 provides a simple way to view and modify the user number associated with a file.  A
 suffix that involves a reserved character, such as "FILE.TXT,3", would identify the user number
 in file listings, and ensure that extracted files are given unique names.  Adding the user number
 as a two-digit prefix, e.g. "03,FILE.TXT", would ensure that all files with the same user number
-naturally sort together.
+naturally sort together.  When adding files, the prefix/suffix would be parsed, stripped, and
+used to configure the file's user number.
 
 Approach #3 requires that the filesystem implementation define a set of virtual subdirectories
-internally, e.g. "user03", that cannot be created or destroyed.  All files with the same user
-number would appear to live in the matching subdirectory.  File listings for a given directory
+internally, e.g. "3" or "user03", that cannot be created or destroyed.  All files with the same
+user number would appear to live in the matching subdirectory.  File listings for a given directory
 would show only the files associated with that user number, while a recursive listing would show
 all files, naturally grouped by user number.
 
@@ -271,21 +277,49 @@ additional designator for files associated with user 0 would be useful.  For app
 simply omit the prefix/suffix, for approach #3 we treat user 0 files as living in the root
 directory.
 
+There are a number of operations to consider:
+
+ - Adding files to a nonzero user from GUI/CLI.
+ - Extracting files from a nonzero user from GUI/CLI.
+ - Copying files between volumes, retaining or altering the user number.
+ - Changing the user number of one or more files.
+
 Analysis:
 
-Approach #1 is the easiest.  If user numbers are rarely used, the additional effort and
-weirdness associated with the other approaches can be avoided.
+Approach #1 (global setting) works reasonably well for the command line, where the user number can
+be specified as an additional argument, but is a bit awkward for the GUI.  It provides no
+mechanism for changing a user number.  When copying files, the user number would need to be set
+for both the source and destination.
 
-Approach #2 is the most direct.  User numbers are essentially part of the filename for files in
-a flat filesystem, so this is a natural fit.  Suffixes feel more natural than prefixes, but
-prefixes are easier to sort, and don't disrupt the file extension.  The user number for a file
-can be changed by renaming the file.
+Approach #2 (filename tweak) is the most direct.  User numbers are essentially part of the filename
+for files in a flat filesystem, so this is a natural fit.  Suffixes feel more natural than
+prefixes, but prefixes are easier to sort, and don't disrupt the file extension for extracted
+files.  The user number for a file can be changed by renaming the file.  The trouble with this
+approach is that there is no longer a way to get the actual filename from the API.  Anything that
+wants to hide the user number will have to parse the filename and manually exclude the
+prefix/suffix.  Tools that do file extraction will want to keep the user number to ensure filename
+uniqueness, and also so that it's not lost if the file is added back, but it could be annoying to
+have to rename files for use with tools that don't understand the prefix/suffix.
 
-Approach #3 allows files to be extracted with the correct filenames, regardless of user number,
-while still allowing multiple files with the same name to coexist.  Tools for moving files between
-directories can be used to alter user numbers.  We don't want to clutter up file listings with a
-bunch of virtual directories, so they would need to be included in some places but omitted in
-others.  The directory juggling makes this the most complicated approach to implement.
+Approach #3 (virtual directories) allows files to be extracted with the correct filenames,
+regardless of user number, while still allowing multiple files with the same name to coexist.
+Tools for moving files between directories can be used to alter user numbers.  We don't want to
+clutter up file listings with a bunch of virtual directories, so they would need to be included in
+some places but omitted in others.  Unfortunately it's not possible to show the directory entries
+to the pathname resolver but hide them from the file list generator, so this needs to be done at
+the application level, and all of the unit tests need to be aware of the situation.  The directory
+juggling and the added burden on application code makes this the most complicated approach to
+implement.
 
 None of this has an impact on the file attribute preservation technique.  User numbers aren't
 preserved by AppleSingle or NAPS, so their preservation is independent of other attributes.
+
+Conclusions:
+
+There isn't an ideal way to handle this.  Some part of the application will need to have
+CP/M-specific handling, even if we solve part of the problem in the filesystem code.
+
+One common feature of all filesystems is that the names of files in a given directory are
+expected to be unique.  To preserve that we can filter some of the files away, we can uniquify
+the filename, or we can generate a partial path; but we do need to do *something* or basic
+operations like CLI file selection become impossible.
