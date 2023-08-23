@@ -502,6 +502,7 @@ namespace DiskArcTests {
                 // Change the filename, now that it has multiple extents.
                 file1.FileName = "FILE1A";
                 file1.Access |= (byte)FileAttribs.AccessFlags.Invisible;
+                ((CPM_FileEntry)file1).UserNumber = 6;
 
                 // Let the validity checker poke at it.
                 fs.PrepareRawAccess();
@@ -514,6 +515,7 @@ namespace DiskArcTests {
                 if ((file1.Access & (byte)FileAttribs.AccessFlags.Invisible) == 0) {
                     throw new Exception("lost invisible flag");
                 }
+                Helper.ExpectInt(6, ((CPM_FileEntry)file1).UserNumber, "wrong user number");
                 fs.DeleteFile(file1);
 
                 Helper.ExpectLong(initialFree, fs.FreeSpace, "deletion left stuff");

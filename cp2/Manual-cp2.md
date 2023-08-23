@@ -1802,6 +1802,7 @@ Some ideas for the future:
  - Add resource fork manipulation routines (`rez`/`derez` commands).
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add `get-attr` to get file attributes in machine-readable form.
+ - Add a better way to set access flags in `set-attr`, e.g. by letter.
  - Add `show-vol-bitmap` to display free/in-use blocks.
  - Allow `test` to descend into the archive (use `--depth` option).
  - Add command to zero out unused blocks on disk images, and perhaps the

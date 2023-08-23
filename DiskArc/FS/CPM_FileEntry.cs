@@ -715,6 +715,7 @@ namespace DiskArc.FS {
                 } else {
                     // Create a new file entry.
                     curEntry = new CPM_FileEntry(fileSystem);
+                    curEntry.ContainingDir = volDir;
                     curEntry.mExtentList.Add(ext);
                     volDir.ChildList.Add(curEntry);
 
@@ -936,7 +937,7 @@ namespace DiskArc.FS {
                 }
                 sb.Append((char)ch);
             }
-            if (rawFileName[8] != ' ') {
+            if ((rawFileName[8] & 0x7f) != ' ') {
                 sb.Append('.');
                 for (int i = 0; i < 3; i++) {
                     int ch = rawFileName[8 + i] & 0x7f;

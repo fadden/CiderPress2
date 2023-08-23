@@ -129,10 +129,14 @@ namespace cp2_wpf {
         private string mGraphicsZoomStr = string.Empty;
 
         public bool IsDOSRaw {
-            get { return mIsDOSRaw; }
-            set { mIsDOSRaw = value; OnPropertyChanged(); ShowFile(false); }
+            get { return AppSettings.Global.GetBool(AppSettings.VIEW_RAW_ENABLED, false); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.VIEW_RAW_ENABLED, value);
+                OnPropertyChanged();
+                //ShowFile(false);
+                ShowFile(true);
+            }
         }
-        private bool mIsDOSRaw;
 
         public bool IsDOSRawEnabled {
             get { return mIsDOSRawEnabled; }
@@ -288,8 +292,8 @@ namespace cp2_wpf {
         /// <summary>
         /// Configures the dialog to display a new file.
         /// </summary>
-        /// <param name="fileChanged">True if we switched to a new file.  False if we're
-        ///   just changing the "raw DOS" setting.</param>
+        /// <param name="fileChanged">True if we switched to a new file.  False if we want to
+        ///   keep the previous combo box selection.</param>
         private void ShowFile(bool fileChanged) {
             IsDOSRawEnabled = (mArchiveOrFileSystem is DOS);
 

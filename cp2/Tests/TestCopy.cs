@@ -49,8 +49,10 @@ namespace cp2.Tests {
             CreateBinary2(parms);
             CreateNuFX(parms);
             CreateZip(parms);
+            CreateCPM(parms);
             CreateDOS(parms);
             CreateHFS(parms);
+            CreatePascal(parms);
             CreateProDOS(parms);
 
             // Run the NxN matrix of tests.
@@ -60,10 +62,14 @@ namespace cp2.Tests {
             TestCopyToArchive("nufx-out.shk", TweakForNuFX, parms);
             Console.WriteLine("*** Testing ZIP destination...");
             TestCopyToArchive("zip-out.zip", TweakForZip, parms);
+            Console.WriteLine("*** Testing CP/M destination...");
+            TestCopyToDisk("cpm-out.po", "cpm", TweakForCPM, parms);
             Console.WriteLine("*** Testing DOS destination...");
             TestCopyToDisk("dos-out.do", "dos", TweakForDOS, parms);
             Console.WriteLine("*** Testing HFS destination...");
             TestCopyToDisk("hfs-out.po", "hfs", TweakForHFS, parms);
+            Console.WriteLine("*** Testing Pascal destination...");
+            TestCopyToDisk("pascal-out.po", "pascal", TweakForPascal, parms);
             Console.WriteLine("*** Testing ProDOS destination...");
             TestCopyToDisk("prodos-out.po", "prodos", TweakForProDOS, parms);
 
@@ -651,7 +657,9 @@ namespace cp2.Tests {
         private const string NUFX_TEST_NAME = "nufx-test.shk";
         private const string ZIP_TEST_NAME = "zip-test.zip";
         private const string DOS_TEST_NAME = "dos-test.do";
+        private const string CPM_TEST_NAME = "cpm-test.do";
         private const string HFS_TEST_NAME = "hfs-test.po";
+        private const string PASCAL_TEST_NAME = "pascal-test.po";
         private const string PRODOS_TEST_NAME = "prodos-test.po";
 
         private static MatrixItem[] sMatrixTestSet = new MatrixItem[] {
@@ -659,7 +667,9 @@ namespace cp2.Tests {
             new MatrixItem(NUFX_TEST_NAME, TweakForNuFX),
             new MatrixItem(ZIP_TEST_NAME, TweakForZip),
             new MatrixItem(DOS_TEST_NAME, TweakForDOS),
+            new MatrixItem(CPM_TEST_NAME, TweakForCPM),
             new MatrixItem(HFS_TEST_NAME, TweakForHFS),
+            new MatrixItem(PASCAL_TEST_NAME, TweakForPascal),
             new MatrixItem(PRODOS_TEST_NAME, TweakForProDOS),
         };
 
@@ -1043,6 +1053,44 @@ namespace cp2.Tests {
                 ContentType.Unknown, 0, 0);
         }
 
+        private static void CreateCPM(ParamsBag parms) {
+            string pathName = Path.Combine(Controller.TEST_TMP, CPM_TEST_NAME);
+            using (FileStream stream = new FileStream(pathName, FileMode.CreateNew)) {
+                // Create 140K CP/M disk image.
+                using (IDiskImage image = UnadornedSector.CreateSectorImage(stream, 35, 16,
+                        SectorOrder.DOS_Sector, parms.AppHook)) {
+                    image.FormatDisk(FileSystemType.CPM, string.Empty, 0, false, parms.AppHook);
+                    IFileSystem fs = (IFileSystem)image.Contents!;
+                    fs.PrepareFileAccess(true);
+
+                    foreach (FileDefinition def in sAllDefs) {
+                        FileDefinition expected = TweakForCPM(def);
+                        AddFile(fs, expected, "CP/M set");
+                    }
+                }
+            }
+        }
+
+        private static FileDefinition TweakForCPM(FileDefinition def) {
+            if (def.DataType == ContentType.Unknown) {
+                return NO_DEF;
+            }
+            string adjPathName = AdjustPathName(def.PathName, def.DirSep,
+                CPM_FileEntry.AdjustFileName, CPM.SCharacteristics.DirSep);
+
+            // Access is either locked or unlocked for this test.
+            byte access = ((def.Access & (byte)AccessFlags.Write) != 0) ?
+                (byte)ACCESS_UNLOCKED : (byte)ACCESS_UNWRITABLE;
+
+            return new FileDefinition(adjPathName, DOS.SCharacteristics.DirSep,
+                0, 0,
+                0, 0,
+                access,
+                TimeStamp.NO_DATE, TimeStamp.NO_DATE,
+                def.DataType, def.DataValue, def.DataLength,
+                ContentType.Unknown, 0, 0);
+        }
+
         private static void CreateDOS(ParamsBag parms) {
             string pathName = Path.Combine(Controller.TEST_TMP, DOS_TEST_NAME);
             using (FileStream stream = new FileStream(pathName, FileMode.CreateNew)) {
@@ -1162,6 +1210,46 @@ namespace cp2.Tests {
                 TimeStamp.ConvertDateTime_HFS(hfsModWhen),
                 def.DataType, def.DataValue, def.DataLength,
                 rsrcType, def.RsrcValue, def.RsrcLength);
+        }
+
+        private static void CreatePascal(ParamsBag parms) {
+            string pathName = Path.Combine(Controller.TEST_TMP, PASCAL_TEST_NAME);
+            using (FileStream stream = new FileStream(pathName, FileMode.CreateNew)) {
+                // Create 140KB Pascal disk image.
+                using (IDiskImage image = UnadornedSector.CreateBlockImage(stream, 280,
+                        parms.AppHook)) {
+                    image.FormatDisk(FileSystemType.Pascal, "CP.TEST", 0, true, parms.AppHook);
+                    IFileSystem fs = (IFileSystem)image.Contents!;
+                    fs.PrepareFileAccess(true);
+
+                    foreach (FileDefinition def in sAllDefs) {
+                        FileDefinition expected = TweakForPascal(def);
+                        AddFile(fs, expected, "Pascal set");
+                    }
+                }
+            }
+        }
+
+        private static FileDefinition TweakForPascal (FileDefinition def) {
+            if (def.DataType == ContentType.Unknown) {
+                return NO_DEF;
+            }
+            string adjPathName = AdjustPathName(def.PathName, def.DirSep,
+                Pascal_FileEntry.AdjustFileName, Pascal.SCharacteristics.DirSep);
+            bool isExtended = def.RsrcType != ContentType.Unknown;
+
+            // Date range is limited, we don't store the time, and we only have the modification
+            // date.  Convert it in and out of Pascal format to fix the date limitation.
+            ushort pasModWhen = TimeStamp.ConvertDateTime_Pascal(def.ModWhen);
+            DateTime fixedModWhen = TimeStamp.ConvertDateTime_Pascal(pasModWhen);
+
+            byte access = FileAttribs.FILE_ACCESS_UNLOCKED;
+            return new FileDefinition(adjPathName, Pascal.SCharacteristics.DirSep,
+                0, 0,
+                0, 0,
+                access, TimeStamp.NO_DATE, fixedModWhen,
+                def.DataType, def.DataValue, def.DataLength,
+                ContentType.Unknown, 0, 0);
         }
 
         private static void CreateProDOS(ParamsBag parms) {

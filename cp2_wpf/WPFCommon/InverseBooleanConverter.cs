@@ -19,9 +19,10 @@ using System.Windows.Data;
 namespace cp2_wpf.WPFCommon {
     /// <summary>
     /// A value inverter for negating a boolean value in XAML (value --> !value).
-    ///
-    /// From <see href="https://stackoverflow.com/a/1039681/294248"/>.
     /// </summary>
+    /// <remarks>
+    /// From <see href="https://stackoverflow.com/a/1039681/294248"/>.
+    /// </remarks>
     [ValueConversion(typeof(bool), typeof(bool))]
     public class InverseBooleanConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter,

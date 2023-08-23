@@ -211,6 +211,9 @@ namespace DiskArcTests {
                 fs.OpenFile(volDir, FileAccessMode.ReadWrite, FilePart.DataFork);
                 throw new Exception("Opened vol dir read-write");
             } catch (IOException) { /* expected*/ }
+            if (volDir.ContainingDir != IFileEntry.NO_ENTRY) {
+                throw new Exception("Volume dir must not have parent");
+            }
 
             try {
                 fs.CreateFile(volDir, "NAME", CreateMode.File);
@@ -350,6 +353,16 @@ namespace DiskArcTests {
             } catch (IOException) { /*expected*/ }
 
             ExerciseMultiOpen(fs);
+
+            // Check a file entry that was scanned, rather than newly-created.
+            fs.CreateFile(volDir, "CHECK", CreateMode.File);
+            fs.PrepareRawAccess();
+            fs.PrepareFileAccess(true);
+            volDir = fs.GetVolDirEntry();
+            IFileEntry checkFile = fs.FindFileEntry(volDir, "CHECK");
+            if (checkFile.ContainingDir == IFileEntry.NO_ENTRY) {
+                throw new Exception("Scanned file has no parent");
+            }
         }
 
         private static void TestDirectoryReadOnly(IFileSystem fs, string dirName) {

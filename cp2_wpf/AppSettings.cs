@@ -73,6 +73,9 @@ namespace cp2_wpf {
         public const string CONV_EXPORT_TAG = "conv-export-tag";
         public const string CONV_EXPORT_BEST = "conv-export-best";
 
+        // File viewer.
+        public const string VIEW_RAW_ENABLED = "view-raw-enabled";
+
         // New archive/disk.
         public const string NEW_ARC_MODE = "new-arc-mode";
         public const string NEW_DISK_SIZE = "new-disk-size";

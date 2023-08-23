@@ -204,11 +204,43 @@ limitations under the License.
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <CheckBox Grid.Row="0" Content="Locked (read-only)"
-                          IsChecked="{Binding AccessLocked}"/>
-                <CheckBox Grid.Row="1" Margin="0,4,0,0" Content="Invisible"
-                          IsEnabled="{Binding AccessInvisibleEnabled}"
-                          IsChecked="{Binding AccessInvisible}"/>
+                <Grid Grid.Row="0" Visibility="{Binding ShowLockedOnlyVisibility}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <CheckBox Grid.Row="0" Content="Locked (read-only)"
+                              IsChecked="{Binding AccessLocked}"/>
+                    <CheckBox Grid.Row="1" Margin="0,4,0,0" Content="Invisible"
+                              IsEnabled="{Binding AccessInvisibleEnabled}"
+                              IsChecked="{Binding AccessInvisible}"/>
+                </Grid>
+                <Grid Grid.Row="1" Visibility="{Binding ShowAllFlagsVisibility}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Grid.Row="0" Grid.Column="0" Content="Read"
+                              IsChecked="{Binding AccessRead}"
+                              IsEnabled="{Binding AccessReadEnabled}"/>
+                    <CheckBox Grid.Row="1" Grid.Column="0" Content="Write"
+                              IsChecked="{Binding AccessWrite}"/>
+                    <CheckBox Grid.Row="2" Grid.Column="0" Content="Rename"
+                              IsChecked="{Binding AccessRename}"
+                              IsEnabled="{Binding AccessRenameEnabled}"/>
+                    <CheckBox Grid.Row="0" Grid.Column="1" Content="Backup"
+                              IsChecked="{Binding AccessBackup}"/>
+                    <CheckBox Grid.Row="1" Grid.Column="1" Content="Delete"
+                              IsChecked="{Binding AccessDelete}"
+                              IsEnabled="{Binding AccessDeleteEnabled}"/>
+                    <CheckBox Grid.Row="2" Grid.Column="1" Content="Invisible"
+                              IsChecked="{Binding AccessInvisible}"/>
+                </Grid>
             </Grid>
         </GroupBox>
 

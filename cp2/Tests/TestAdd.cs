@@ -113,7 +113,7 @@ namespace cp2.Tests {
             //
             // We want to exercise failure cases (should return cleanly, not throw uncaught):
             // - disk full during add
-            // - disk full while adding files to an archive on the disk
+            // - disk full while adding files to an archive on a disk image
             //
 
             // Configure parameters.
@@ -167,6 +167,15 @@ namespace cp2.Tests {
             VerifyContents(fileName, sAddTestZip, parms);
             parms.MacZip = true;
 
+            // Test CP/M
+            fileName = Path.Combine(Controller.TEST_TMP, "addtest-cpm.po");
+            if (!DiskUtil.HandleCreateDiskImage("cdi", new string[] { fileName, "140k", "CPM" },
+                    parms)) {
+                throw new Exception("cdi " + fileName + " failed");
+            }
+            CallAdd(fileName, SAMPLE_DIR, parms);
+            VerifyContents(fileName, sAddTestCPM, parms);
+
             // Test DOS 3.3
             fileName = Path.Combine(Controller.TEST_TMP, "addtest-dos33.po");
             if (!DiskUtil.HandleCreateDiskImage("cdi", new string[] { fileName, "140k", "DOS" },
@@ -184,6 +193,15 @@ namespace cp2.Tests {
             }
             CallAdd(fileName, SAMPLE_DIR, parms);
             VerifyContents(fileName, sAddTestHFS, parms);
+
+            // Test Pascal
+            fileName = Path.Combine(Controller.TEST_TMP, "addtest-pascal.po");
+            if (!DiskUtil.HandleCreateDiskImage("cdi", new string[] { fileName, "140k", "Pascal" },
+                    parms)) {
+                throw new Exception("cdi " + fileName + " failed");
+            }
+            CallAdd(fileName, SAMPLE_DIR, parms);
+            VerifyContents(fileName, sAddTestPascal, parms);
 
             // Test ProDOS
             fileName = Path.Combine(Controller.TEST_TMP, "addtest-prodos.po");
@@ -1114,6 +1132,30 @@ namespace cp2.Tests {
                 hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
         };
 
+        // Expected contents of CP/M filesystem after files added.
+        private static ExpectedContents[] sAddTestCPM = new ExpectedContents[] {
+            new ExpectedContents("ADF_BOTH", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("ADF_DATA", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("PART_E__", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("COLO_ME!", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("SOME_DED", 0, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("HOST_OTH", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("HOST_ATA", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("NAPS_OTH", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("NAPS_ATA", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("PLAI_ILE", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+        };
+
         // Expected contents of DOS filesystem after files added.
         private static ExpectedContents[] sAddTestDOS = new ExpectedContents[] {
             new ExpectedContents("ADF_BOTH", DATA_LEN, -1,
@@ -1164,6 +1206,30 @@ namespace cp2.Tests {
                 hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
             new ExpectedContents(Path.Combine(SAMPLE_DIR, "SomethingVeryLo..henFileIsAdded"), 0, RSRC_LEN,
                 hasProType: false, hasHfsType: true, hasCreateDate: true, hasModDate: true),
+        };
+
+        // Expected contents of Pascal filesystem after files added.
+        private static ExpectedContents[] sAddTestPascal = new ExpectedContents[] {
+            new ExpectedContents("ADF_BOTH", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: true),
+            new ExpectedContents("ADF_DATA", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: true),
+            new ExpectedContents("PART_UNICODE__", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: true),
+            new ExpectedContents("COLON_NAME!", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: true),
+            new ExpectedContents("SOMETHI..SADDED", 0, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: true),
+            new ExpectedContents("HOST_BOTH", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("HOST_DATA", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("NAPS_BOTH", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("NAPS_DATA", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
+            new ExpectedContents("PLAINFILE", DATA_LEN, -1,
+                hasProType: false, hasHfsType: false, hasCreateDate: false, hasModDate: false),
         };
 
         // Expected contents of ProDOS filesystem after files added.
@@ -1331,13 +1397,24 @@ namespace cp2.Tests {
                 }
             }
             if (exp.HasModDate) {
-                if (entry.ModWhen != MOD_WHEN) {
-                    throw new Exception(hdr + "incorrect ModWhen: " + entry.ModWhen);
+                DateTime expected = MOD_WHEN;
+                if (entry is Pascal_FileEntry) {
+                    // date only, no time
+                    expected = new DateTime(expected.Year, expected.Month, expected.Day);
+                }
+                if (entry.ModWhen != expected) {
+                    throw new Exception(hdr + "incorrect ModWhen: " + entry.ModWhen +
+                        " vs expected " + expected);
                 }
             } else {
                 // Date should either be unset or based off of the host timestamp.
-                if (entry.ModWhen != TimeStamp.NO_DATE && entry.ModWhen < RECENT_WHEN) {
-                    throw new Exception(hdr + "unexpected ModWhen: " + entry.ModWhen + " vs " + RECENT_WHEN);
+                DateTime expected = RECENT_WHEN;
+                if (entry is Pascal_FileEntry) {
+                    expected = new DateTime(expected.Year, expected.Month, expected.Day);
+                }
+                if (entry.ModWhen != TimeStamp.NO_DATE && entry.ModWhen < expected) {
+                    throw new Exception(hdr + "unexpected ModWhen: " + entry.ModWhen +
+                        " vs expected " + expected);
                 }
             }
         }

@@ -764,6 +764,9 @@ namespace cp2_wpf {
 
         public Visibility AccessVisibility { get; private set; } = Visibility.Visible;
 
+        public Visibility ShowLockedOnlyVisibility { get; private set; } = Visibility.Visible;
+        public Visibility ShowAllFlagsVisibility { get; private set; } = Visibility.Visible;
+
         // Bits to modify when flipping between locked and unlocked.  All other bits are
         // left unchanged, except that we want to enable "read" access when unlocking just
         // in case they're trying to clear a file with no permissions at all.
@@ -787,6 +790,85 @@ namespace cp2_wpf {
         }
         private bool mAccessLocked;
 
+        public bool AccessRead {
+            get { return mAccessRead; }
+            set {
+                mAccessRead = value;
+                OnPropertyChanged();
+                if (value) {
+                    NewAttribs.Access |= (byte)FileAttribs.AccessFlags.Read;
+                } else {
+                    NewAttribs.Access =
+                        (byte)(NewAttribs.Access & (byte)~FileAttribs.AccessFlags.Read);
+                }
+            }
+        }
+        private bool mAccessRead;
+        public bool AccessReadEnabled { get; private set; } = true;
+
+        public bool AccessWrite {
+            get { return mAccessWrite; }
+            set {
+                mAccessWrite = value;
+                OnPropertyChanged();
+                if (value) {
+                    NewAttribs.Access |= (byte)FileAttribs.AccessFlags.Write;
+                } else {
+                    NewAttribs.Access =
+                        (byte)(NewAttribs.Access & (byte)~FileAttribs.AccessFlags.Write);
+                }
+            }
+        }
+        private bool mAccessWrite;
+
+        public bool AccessRename {
+            get { return mAccessRename; }
+            set {
+                mAccessRename = value;
+                OnPropertyChanged();
+                if (value) {
+                    NewAttribs.Access |= (byte)FileAttribs.AccessFlags.Rename;
+                } else {
+                    NewAttribs.Access =
+                        (byte)(NewAttribs.Access & (byte)~FileAttribs.AccessFlags.Rename);
+                }
+            }
+        }
+        private bool mAccessRename;
+        public bool AccessRenameEnabled { get; private set; } = true;
+
+        public bool AccessDelete {
+            get { return mAccessDelete; }
+            set {
+                mAccessDelete = value;
+                OnPropertyChanged();
+                if (value) {
+                    NewAttribs.Access |= (byte)FileAttribs.AccessFlags.Delete;
+                } else {
+                    NewAttribs.Access =
+                        (byte)(NewAttribs.Access & (byte)~FileAttribs.AccessFlags.Delete);
+                }
+            }
+        }
+        private bool mAccessDelete;
+        public bool AccessDeleteEnabled { get; private set; } = true;
+
+
+        public bool AccessBackup {
+            get { return mAccessBackup; }
+            set {
+                mAccessBackup = value;
+                OnPropertyChanged();
+                if (value) {
+                    NewAttribs.Access |= (byte)FileAttribs.AccessFlags.Backup;
+                } else {
+                    NewAttribs.Access =
+                        (byte)(NewAttribs.Access & (byte)~FileAttribs.AccessFlags.Backup);
+                }
+            }
+        }
+        private bool mAccessBackup;
+
         public bool AccessInvisible {
             get { return mAccessInvisible; }
             set {
@@ -801,8 +883,7 @@ namespace cp2_wpf {
             }
         }
         private bool mAccessInvisible;
-
-        public bool AccessInvisibleEnabled { get; private set; }
+        public bool AccessInvisibleEnabled { get; private set; } = true;
 
         /// <summary>
         /// Prepares the access flag UI during construction.
@@ -826,18 +907,38 @@ namespace cp2_wpf {
                 return;
             }
 
-            // "Locked" flag depends on value of "write" bit.
-            mAccessLocked = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Write) == 0;
+            if (mArchiveOrFileSystem is ProDOS || mArchiveOrFileSystem is NuFX ||
+                    mArchiveOrFileSystem is CPM) {
+                // Expose full set of flags.
+                ShowAllFlagsVisibility = Visibility.Visible;
+                ShowLockedOnlyVisibility = Visibility.Collapsed;
+                if (mArchiveOrFileSystem is CPM) {
+                    AccessReadEnabled = AccessRenameEnabled = AccessDeleteEnabled = false;
+                }
+                mAccessRead = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Read) != 0;
+                mAccessWrite = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Write) != 0;
+                mAccessRename = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Rename) != 0;
+                mAccessBackup = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Backup) != 0;
+                mAccessDelete = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Delete) != 0;
+                mAccessInvisible =
+                    (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Invisible) != 0;
+            } else {
+                // Expose generic "locked" flag, and maybe "invisible" flag.
+                ShowAllFlagsVisibility = Visibility.Collapsed;
+                ShowLockedOnlyVisibility = Visibility.Visible;
 
-            // Anything with ProDOS access flags has the "hidden" bit.  HFS has an "invisible"
-            // flag in the FinderInfo fdFlags, but DiskArc doesn't currently support it.
-            AccessInvisibleEnabled =
-                mArchiveOrFileSystem is ProDOS ||
-                mArchiveOrFileSystem is AppleSingle ||
-                mArchiveOrFileSystem is Binary2 ||
-                mArchiveOrFileSystem is NuFX ||
-                mADFEntry != IFileEntry.NO_ENTRY;
-            mAccessInvisible = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Invisible) != 0;
+                // "Locked" flag depends on value of "write" bit.
+                mAccessLocked = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Write) == 0;
+
+                // Anything with ProDOS access flags has the "hidden" bit.  HFS has an "invisible"
+                // flag in the FinderInfo fdFlags, but DiskArc doesn't currently support it.
+                AccessInvisibleEnabled =
+                    mArchiveOrFileSystem is AppleSingle ||
+                    mArchiveOrFileSystem is Binary2 ||
+                    mADFEntry != IFileEntry.NO_ENTRY;
+                mAccessInvisible =
+                    (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Invisible) != 0;
+            }
         }
 
         #endregion Access Flags

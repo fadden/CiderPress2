@@ -41,11 +41,21 @@ namespace cp2.Tests {
 
         // Args for disk images that are 16-sector or block-oriented.
         private static string[][] sTestArgs = new string[][] {
+            new string[] { "140k-cpm.do", "140K", "cpm" },
+            new string[] { "800k-cpm.po", "800K", "cpm" },
+
             new string[] { "140k-dos.do", "140KiB", "dos" },
             new string[] { "35trk-dos.do", "35tracks", "dos" },
             new string[] { "40trk-dos.do", "40trk", "dos" },
             new string[] { "50trk-dos.do", "50Trk", "dos" },
             new string[] { "80trk-dos.do", "80TRK", "dos" },
+
+            new string[] { "400k-hfs.po", "400k", "hfs" },
+            new string[] { "800k-hfs.po", "800k", "hfs" },
+            new string[] { "32m-hfs.po", "32M", "hfs" },
+
+            new string[] { "140k-pascal.do", "140KB", "pascal" },
+            new string[] { "800k-pascal.po", "800KB", "pascal" },
 
             new string[] { "140k-prodos.po", "140k", "prodos" },
             new string[] { "35trk-prodos.po", "35trk", "prodos" },
@@ -53,10 +63,6 @@ namespace cp2.Tests {
             new string[] { "800k-prodos.po", "800K", "prodos" },
             new string[] { "319m-prodos.po", "65535blk", "prodos" },
             new string[] { "32m-prodos.po", "32m", "prodos" },
-
-            new string[] { "400k-hfs.po", "400k", "hfs" },
-            new string[] { "800k-hfs.po", "800k", "hfs" },
-            new string[] { "32m-hfs.po", "32M", "hfs" },
         };
 
         // Create a bunch of disk images with different characteristics, and then verify that

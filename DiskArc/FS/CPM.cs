@@ -32,10 +32,10 @@ namespace DiskArc.FS {
         public const int DIR_ENTRY_LEN = 32;            // length of a dir entry extent record
         public const int FILE_REC_LEN = 128;            // length of a "record" in a file
         public const byte NO_DATA = 0xe5;
+        public const int MAX_USER_NUM = 15;             // limit to 0-15, though 0-31 is possible
 
         internal const int RECS_PER_EXTENT = 128;       // constant for 5.25" and 3.5" disks
         internal const int BYTES_PER_EXTENT = FILE_REC_LEN * RECS_PER_EXTENT;   // 16384
-        internal const int MAX_USER_NUM = 15;           // limit to 0-15, though 0-31 is possible
         internal const int RESERVED_SPACE = 31;         // extent status indicating reservation
         internal const int MAX_VALID_STATUS = 0x21;     // CP/M v3 timestamp
 

@@ -411,6 +411,7 @@ namespace DiskArc.FS {
                     }
                 }
 
+                newEntry.ContainingDir = volDir;
                 if (newEntry.StartBlock < prevStart) {
                     notes.AddE("File entries are out of order");
                     fileSystem.IsDubious = true;

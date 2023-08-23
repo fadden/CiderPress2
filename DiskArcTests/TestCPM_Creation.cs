@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 using System;
+using System.Text;
 
 using CommonUtil;
 using DiskArc;
 using DiskArc.Disk;
+using DiskArc.FS;
 using static DiskArc.Defs;
+using static DiskArc.IFileSystem;
 
 namespace DiskArcTests {
+    /// <summary>
+    /// Basic volume and file creation tests.
+    /// </summary>
     public class TestCPM_Creation : ITest {
-        // Basic volume creation tests.
         public static void TestCreateVol(AppHook appHook) {
             const int DIR_LEN_525 = 2048;       // 1KB * 2
             const int DIR_LEN_35 = 8192;        // 2KB * 4
@@ -65,6 +70,49 @@ namespace DiskArcTests {
                 // 32 blocks are reserved for OS area.
                 if (fs.FreeSpace != (1600 - 32) * BLOCK_SIZE - DIR_LEN_35) {
                     throw new Exception("Incorrect free space #3: " + fs.FreeSpace);
+                }
+            }
+        }
+
+        public static void TestCreateUserFiles(AppHook appHook) {
+            string[] name = new string[CPM.MAX_USER_NUM + 1];
+            byte[][] contents = new byte[CPM.MAX_USER_NUM + 1][];
+
+            using (IFileSystem fs = Helper.CreateTestImage(string.Empty, FileSystemType.CPM,
+                    280, appHook, out MemoryStream memFile)) {
+                IFileEntry volDir = fs.GetVolDirEntry();
+                for (int i = 0; i <= CPM.MAX_USER_NUM; i++) {
+                    name[i] = "USER" + i + ".TXT";
+                    IFileEntry newFile = fs.CreateFile(volDir, name[i], CreateMode.File);
+                    ((CPM_FileEntry)newFile).UserNumber = (byte)i;
+
+                    contents[i] =
+                        Encoding.ASCII.GetBytes("Hello, world!\r\nUser #" + i + "\r\n\x1a");
+                    using (Stream stream = fs.OpenFile(newFile,
+                            FileAccessMode.ReadWrite, FilePart.DataFork)) {
+                        stream.Write(contents[i]);
+                    }
+                }
+                //fs.DumpToFile(@"C:\src\CiderPress2\cpm-users.co");
+
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                volDir = fs.GetVolDirEntry();
+                byte[] buf = new byte[128];
+                for (int i = 0; i <= CPM.MAX_USER_NUM; i++) {
+                    IFileEntry file = fs.FindFileEntry(volDir, name[i]);
+                    if (((CPM_FileEntry)file).UserNumber != i) {
+                        throw new Exception("User number mismatch on " + name[i]);
+                    }
+
+                    using (Stream stream = fs.OpenFile(file, FileAccessMode.ReadOnly,
+                            FilePart.DataFork)) {
+                        int actual = stream.Read(buf, 0, (int)stream.Length);
+                        if (actual != contents[i].Length ||
+                                !RawData.CompareBytes(buf, contents[i], actual)) {
+                            throw new Exception("Content mismatch on " + name[i]);
+                        }
+                    }
                 }
             }
         }
