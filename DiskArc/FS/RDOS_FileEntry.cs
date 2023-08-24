@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using CommonUtil;
@@ -29,64 +30,122 @@ namespace DiskArc.FS {
 
         public bool IsValid { get { return FileSystem != null; } }
 
-        public bool IsDubious => throw new NotImplementedException();
+        public bool IsDubious { get; private set; }
+        public bool IsDamaged { get; private set; }
 
-        public bool IsDamaged => throw new NotImplementedException();
-
-        public bool IsDirectory => throw new NotImplementedException();
-
-        public bool HasDataFork => throw new NotImplementedException();
-        public bool HasRsrcFork => throw new NotImplementedException();
-        public bool IsDiskImage => throw new NotImplementedException();
+        public bool IsDirectory { get; private set; }
+        public bool HasDataFork => true;
+        public bool HasRsrcFork => false;
+        public bool IsDiskImage => false;
 
         public IFileEntry ContainingDir { get; private set; }
 
-        public int Count => throw new NotImplementedException();
+        public int Count => ChildList.Count;        // fake vol dir only
 
-        public string FileName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public char DirectorySeparatorChar { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public string FullPathName => throw new NotImplementedException();
-        public byte[] RawFileName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string FileName {
+            get => mFileName;
+            set => throw new IOException();
+        }
+        public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
+        public string FullPathName {
+            get {
+                string pathName;
+                pathName = mFileName;
+                if (FileSystem == null) {
+                    pathName = "!INVALID! was:" + pathName;
+                }
+                return pathName;
+            }
+        }
+        public byte[] RawFileName {
+            get {
+                byte[] result = new byte[mFileName.Length];
+                Array.Copy(mRawFileName, 1, result, 0, result.Length);
+                return result;
+            }
+            set => throw new IOException();
+        }
 
-        public bool HasProDOSTypes => throw new NotImplementedException();
+        public bool HasProDOSTypes => true;
 
-        public byte FileType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public ushort AuxType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public byte FileType {
+            get {
+                if (IsVolumeDirectory) {
+                    return FileAttribs.FILE_TYPE_DIR;
+                } else {
+                    return TypeToProDOS(mFileType);
+                }
+            }
+            set => throw new IOException();
+        }
+        public ushort AuxType {
+            get => mLoadAddr;
+            set => throw new IOException();
+        }
 
         public bool HasHFSTypes { get { return false; } }
         public uint HFSFileType { get { return 0; } set { } }
         public uint HFSCreator { get { return 0; } set { } }
 
-        public byte Access { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public DateTime CreateWhen { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public DateTime ModWhen { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public byte Access {
+            get => FileAttribs.FILE_ACCESS_UNLOCKED;
+            set => throw new IOException();
+        }
+        public DateTime CreateWhen { get => TimeStamp.NO_DATE; set { } }
+        public DateTime ModWhen { get => TimeStamp.NO_DATE; set { } }
 
-        public long StorageSize => throw new NotImplementedException();
+        public long StorageSize => mSectorCount * SECTOR_SIZE;
 
-        public long DataLength => throw new NotImplementedException();
+        public long DataLength => mFileLength;      // TODO?
 
-        public long RsrcLength => throw new NotImplementedException();
+        public long RsrcLength => 0;
 
-        public string Comment { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string Comment { get => string.Empty; set { } }
 
-        public bool GetPartInfo(FilePart part, out long length, out long storageSize, out CompressionFormat format) {
-            throw new NotImplementedException();
+        public bool GetPartInfo(FilePart part, out long length, out long storageSize,
+                out CompressionFormat format) {
+            format = CompressionFormat.Uncompressed;
+            if (part == FilePart.DataFork || part == FilePart.RawData) {    // TODO?
+                length = DataLength;
+                storageSize = StorageSize;
+                return true;
+            } else {
+                length = -1;
+                storageSize = 0;
+                return false;
+            }
         }
 
         public IEnumerator<IFileEntry> GetEnumerator() {
-            throw new NotImplementedException();
+            if (!IsValid) {
+                throw new DAException("Invalid file entry object");
+            }
+            return ChildList.GetEnumerator();
         }
         IEnumerator IEnumerable.GetEnumerator() {
-            throw new NotImplementedException();
-        }
-
-        private void CheckChangeAllowed() {
-            throw new NotImplementedException();
+            if (!IsValid) {
+                throw new DAException("Invalid file entry object");
+            }
+            return ChildList.GetEnumerator();
         }
 
         //
         // Implementation-specific.
         //
+
+        // Raw values from disk.
+        private byte[] mRawFileName = new byte[RDOS.MAX_FILENAME_LEN];
+        private byte mFileType;
+        private byte mSectorCount;
+        private ushort mLoadAddr;
+        private ushort mFileLength;
+        private ushort mStartIndex;
+
+        // Cooked filename.
+        private string mFileName = string.Empty;
+
+        public ushort StartIndex => mStartIndex;
+        public byte SectorCount => mSectorCount;
 
         /// <summary>
         /// Reference to filesystem object.
@@ -102,6 +161,31 @@ namespace DiskArc.FS {
         /// List of files contained in this entry.  Only the volume dir has children.
         /// </summary>
         internal List<IFileEntry> ChildList { get; } = new List<IFileEntry>();
+
+        /// <summary>
+        /// True if the file shares storage with another file or the system.
+        /// </summary>
+        private bool mHasConflict;
+
+        /// <summary>
+        /// Converts an RDOS type to its ProDOS equivalent.
+        /// </summary>
+        public static byte TypeToProDOS(byte fileType) {
+            switch (fileType) {
+                case TYPE_A:
+                    return FileAttribs.FILE_TYPE_BAS;
+                case TYPE_B:
+                    return FileAttribs.FILE_TYPE_BIN;
+                case TYPE_T:
+                    return FileAttribs.FILE_TYPE_TXT;
+                default:
+                    return FileAttribs.FILE_TYPE_NON;
+            }
+        }
+        private const byte TYPE_A = 'A' | 0x80;
+        private const byte TYPE_B = 'B' | 0x80;
+        private const byte TYPE_T = 'T' | 0x80;
+
 
         /// <summary>
         /// Constructor.
@@ -138,36 +222,201 @@ namespace DiskArc.FS {
             ChildList.Clear();
         }
 
-        // IFileEntry
-        public void SaveChanges() {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Scans the volume directory.
+        /// </summary>
+        /// <param name="fs">Filesystem object.</param>
+        /// <returns>Volume directory file entry.</returns>
+        /// <exception cref="IOException">Disk access failure.</exception>
+        internal static IFileEntry ScanDirectory(RDOS fs) {
+            RDOS_FileEntry volDir = CreateFakeVolDirEntry(fs);
+            VolumeUsage vu = fs.VolUsage!;
+
+            byte[] sctBuf = new byte[SECTOR_SIZE];
+
+            uint prevStart = 0;
+            for (uint sct = 0; sct < fs.NumCatSectors; sct++) {
+                fs.ChunkAccess.ReadSector(RDOS.CAT_TRACK, sct, sctBuf, 0, fs.FSOrder);
+                bool done = false;
+                for (int offset = 0; offset < SECTOR_SIZE; offset += RDOS.CAT_ENTRY_LEN) {
+                    if (sctBuf[offset] == 0x00) {
+                        done = true;
+                        break;          // end of catalog
+                    } else if (sctBuf[offset] == 0x80) {
+                        continue;       // deleted entry
+                    }
+
+                    RDOS_FileEntry newEntry = CreateEntry(fs, volDir, sctBuf, offset,
+                        sctBuf[offset + 0x18], sctBuf[offset + 0x19],
+                        RawData.GetU16LE(sctBuf, offset + 0x1a),
+                        RawData.GetU16LE(sctBuf, offset + 0x1c),
+                        RawData.GetU16LE(sctBuf, offset + 0x1e));
+                    newEntry.ContainingDir = volDir;
+
+                    if (!newEntry.Validate(fs.Notes)) {
+                        fs.IsDubious = true;
+                    } else {
+                        for (uint sctIdx = newEntry.mStartIndex;
+                                sctIdx < newEntry.mStartIndex + newEntry.mSectorCount; sctIdx++) {
+                            vu.MarkInUse(sctIdx);
+                            vu.SetUsage(sctIdx, newEntry);
+                        }
+                    }
+                    if (newEntry.mStartIndex < prevStart) {
+                        // Not sure if this matters, but it would affect the algorithm that
+                        // finds an open space to create a file.
+                        fs.Notes.AddW("File entries are out of order");
+                    }
+
+                    volDir.ChildList.Add(newEntry);
+
+                    prevStart = newEntry.mStartIndex;
+                }
+                if (done) {
+                    break;      // stop at first $00 entry
+                }
+            }
+
+            return volDir;
+        }
+
+        private static RDOS_FileEntry CreateEntry(RDOS fs, IFileEntry parentDir, byte[] rawFileName,
+                int rawFileNameOffset, byte fileType, byte sectorCount, ushort loadAddr,
+                ushort fileLength, ushort startIndex) {
+            RDOS_FileEntry newEntry = new RDOS_FileEntry(fs);
+            newEntry.ContainingDir = parentDir;
+            newEntry.mRawFileName = new byte[RDOS.MAX_FILENAME_LEN];
+            Array.Copy(rawFileName, rawFileNameOffset, newEntry.mRawFileName, 0,
+                RDOS.MAX_FILENAME_LEN);
+            newEntry.mFileType = fileType;
+            newEntry.mSectorCount = sectorCount;
+            newEntry.mLoadAddr = loadAddr;
+            newEntry.mFileLength = fileLength;
+            newEntry.mStartIndex = startIndex;
+
+            newEntry.mFileName = CookFileName(rawFileName, rawFileNameOffset);
+            return newEntry;
+        }
+
+        /// <summary>
+        /// Validates a directory entry.
+        /// </summary>
+        /// <param name="notes">Notes object.</param>
+        /// <returns>True if all is well.</returns>
+        private bool Validate(Notes notes) {
+            for (int i = 0; i < mRawFileName.Length; i++) {
+                if (mRawFileName[i] < 0xa0 || mRawFileName[i] >= 0xff) {
+                    notes.AddW("Invalid bytes in filename '" + mFileName + "'");
+                    // not fatal
+                    break;
+                }
+            }
+            if (mFileType != TYPE_A && mFileType != TYPE_B && mFileType != TYPE_T) {
+                notes.AddW("Invalid file type 0x" + mFileType.ToString("x2") + ": " +
+                    mFileName);
+                // not fatal
+            }
+            if (mSectorCount == 0) {
+                notes.AddW("Zero-length file: " + mFileName);
+                IsDamaged = true;
+                return false;
+            }
+            if (mFileLength > mSectorCount * SECTOR_SIZE) {
+                notes.AddW("Invalid file length " + mFileLength + " (count=" + mSectorCount +
+                    "): " + mFileName);
+                IsDubious = true;
+                return false;
+            }
+            if (mStartIndex >= FileSystem.TotalSectors) {
+                notes.AddE("Invalid start index " + mStartIndex + ": " + mFileName);
+                IsDamaged = true;
+                return false;
+            }
+
+            if (mStartIndex + mSectorCount > FileSystem.TotalSectors) {
+                notes.AddE("Invalid start + count: " + mFileName);
+                IsDamaged = true;
+                return false;
+            }
+            return true;
+        }
+
+        private static readonly byte[] RAW33_NAME = MakeRawName("RDOS 3.3");
+        private static readonly byte[] RAW32_NAME = MakeRawName("RDOS 3.2");
+        private static readonly byte[] RAW3_NAME = MakeRawName("RDOS 3");
+        private static RDOS_FileEntry CreateFakeVolDirEntry(RDOS fs) {
+            byte[] rawName;
+            switch (fs.Flavor) {
+                case RDOS.RDOSFlavor.RDOS33: rawName = RAW33_NAME; break;
+                case RDOS.RDOSFlavor.RDOS32: rawName = RAW32_NAME; break;
+                case RDOS.RDOSFlavor.RDOS3: rawName = RAW3_NAME; break;
+                default: throw new NotImplementedException();
+            }
+            return CreateEntry(fs, IFileEntry.NO_ENTRY, rawName, 0, (byte)'D', 0, 0, 0, 0);
         }
 
         // IFileEntry
+        public void SaveChanges() { }
+
+        // IFileEntry
         public void AddConflict(uint chunk, IFileEntry entry) {
-            throw new NotImplementedException();
+            if (!mHasConflict) {
+                string name = (entry == IFileEntry.NO_ENTRY) ?
+                    VolumeUsage.SYSTEM_STR : entry.FullPathName;
+                if (entry == IFileEntry.NO_ENTRY) {
+                    FileSystem.Notes.AddE(FullPathName + " overlaps with " + name);
+                    FileSystem.IsDubious = true;
+                } else {
+                    FileSystem.Notes.AddW(FullPathName + " overlaps with " + name);
+                }
+            }
+            mHasConflict = true;
         }
 
         #region Filenames
 
         // IFileEntry
         public int CompareFileName(string fileName) {
-            throw new NotImplementedException();
+            return string.Compare(mFileName, fileName, StringComparison.OrdinalIgnoreCase);
         }
 
         // IFileEntry
         public int CompareFileName(string fileName, char fileNameSeparator) {
-            throw new NotImplementedException();
+            return string.Compare(mFileName, fileName, StringComparison.OrdinalIgnoreCase);
         }
 
-        public static string AdjustFileName(string fileName) {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Converts a raw filename to string form.
+        /// </summary>
+        private static string CookFileName(byte[] rawFileName, int offset) {
+            Debug.Assert(rawFileName.Length - offset >= RDOS.MAX_FILENAME_LEN);
+            StringBuilder sb = new StringBuilder(RDOS.MAX_FILENAME_LEN);
+            for (int i = 0; i < RDOS.MAX_FILENAME_LEN; i++) {
+                sb.Append((char)(rawFileName[offset + i] & 0x7f));
+            }
+            return sb.ToString().TrimEnd();     // trim trailing spaces
+        }
+
+        /// <summary>
+        /// Converts a filename in string form to raw bytes.
+        /// </summary>
+        private static byte[] MakeRawName(string fileName) {
+            Debug.Assert(fileName.Length <= RDOS.MAX_FILENAME_LEN);
+            byte[] rawBuf = new byte[RDOS.MAX_FILENAME_LEN];
+            int i;
+            for (i = 0; i < fileName.Length; i++) {
+                rawBuf[i] = (byte)(fileName[i] | 0x80);
+            }
+            for (; i < RDOS.MAX_FILENAME_LEN; i++) {
+                rawBuf[i] = ' ' | 0x80;
+            }
+            return rawBuf;
         }
 
         #endregion Filenames
 
         public override string ToString() {
-            return "TODO";
+            return "[RDOS file entry: '" + mFileName + "']";
         }
     }
 }

@@ -477,11 +477,11 @@ namespace DiskArc.FS {
         /// <summary>
         /// Creates a new file entry.
         /// </summary>
-        internal static Pascal_FileEntry CreateEntry(Pascal fs, IFileEntry volDir,
+        internal static Pascal_FileEntry CreateEntry(Pascal fs, IFileEntry parentDir,
                 ushort startBlock, ushort nextBlock, FileKind kind, string fileName,
                 DateTime modWhen) {
             Pascal_FileEntry newEntry = new Pascal_FileEntry(fs);
-            newEntry.ContainingDir = volDir;
+            newEntry.ContainingDir = parentDir;
             newEntry.mStartBlock = startBlock;
             newEntry.mNextBlock = nextBlock;
             newEntry.mTypeAndFlags = (ushort)kind;

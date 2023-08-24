@@ -64,7 +64,7 @@ namespace DiskArc.FS {
 
         public bool IsDubious { get; internal set; }
 
-        public long FreeSpace => throw new NotImplementedException();
+        public long FreeSpace { get { return CalcFreeSectors() * SECTOR_SIZE; } }
 
         public GatedChunkAccess RawAccess { get; }
 
@@ -72,23 +72,87 @@ namespace DiskArc.FS {
         // Implementation-specific.
         //
 
+        /// <summary>
+        /// RDOS "flavor" identifiers, based on ProDOS RDOS 1.1 definitions.
+        /// </summary>
         public enum RDOSFlavor {
             Unknown = 0, RDOS32, RDOS33, RDOS3
         }
-
-        public RDOSFlavor Flavor { get; private set; }
 
         /// <summary>
         /// Data source.  Contents may be shared in various ways.
         /// </summary>
         internal IChunkAccess ChunkAccess { get; private set; }
 
+        /// <summary>
+        /// Which "flavor" of RDOS this is.
+        /// Only valid in file-access mode.
+        /// </summary>
+        public RDOSFlavor Flavor { get; private set; }
+
+        /// <summary>
+        /// Volume usage map.
+        /// Only valid in file-access mode.
+        /// </summary>
+        internal VolumeUsage? VolUsage { get; private set; }
+
+        /// <summary>
+        /// Number of sectors in the disk catalog.  This is 11 for RDOS32/RDOS3, but might be 16
+        /// for RDOS33.
+        /// Only valid when in file-access mode.
+        /// </summary>
+        public int NumCatSectors => 11;
+
+        /// <summary>
+        /// Filesystem sector order.
+        /// Only valid when in file-access mode.
+        /// </summary>
+        public SectorOrder FSOrder {
+            get {
+                if (Flavor == RDOSFlavor.RDOS32 || Flavor == RDOSFlavor.RDOS3) {
+                    return SectorOrder.Physical;
+                } else if (Flavor == RDOSFlavor.RDOS33) {
+                    return SectorOrder.ProDOS_Block;
+                } else {
+                    Debug.Assert(false, "flavor not set");
+                    return SectorOrder.Unknown;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Total sectors present in the filesystem.
+        /// Only valid when in file-access mode.
+        /// </summary>
+        public int TotalSectors {
+            get {
+                if (Flavor == RDOSFlavor.RDOS33) {
+                    return 16 * 35;
+                } else {
+                    return 13 * 35;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Application-specified options and message logging.
+        /// </summary>
         internal AppHook AppHook { get; private set; }
 
         /// <summary>
         /// List of open files.
         /// </summary>
         private OpenFileTracker mOpenFiles = new OpenFileTracker();
+
+        /// <summary>
+        /// "Fake" volume directory entry, used to hold directory entries.
+        /// </summary>
+        private IFileEntry mVolDirEntry;
+
+        /// <summary>
+        /// True if we're in file-access mode, false if raw-access mode.
+        /// </summary>
+        private bool IsPreppedForFileAccess { get { return mVolDirEntry != IFileEntry.NO_ENTRY; } }
 
 
         // Delegate: test image to see if it's ours.
@@ -157,51 +221,26 @@ namespace DiskArc.FS {
                 }
             }
 
-            {
-                StringBuilder sb = new StringBuilder();
-                for (uint sct = 0; sct < 10; sct++) {
-                    if (flavor == RDOSFlavor.RDOS32 || flavor == RDOSFlavor.RDOS3) {
-                        chunkSource.ReadSector(CAT_TRACK, sct, sctBuf, 0, SectorOrder.Physical);
-                    } else {
-                        chunkSource.ReadSector(CAT_TRACK, sct, sctBuf, 0, SectorOrder.ProDOS_Block);
-                    }
-                    bool done = false;
-                    for (int offset = 0; offset < SECTOR_SIZE; offset += CAT_ENTRY_LEN) {
-                        if (sctBuf[offset] == 0x00) {
-                            done = true;
-                            break;          // end of catalog
-                        } else if (sctBuf[offset] == 0x80) {
-                            continue;       // deleted
-                        }
-                        sb.Clear();
-                        for (int i = 0; i < MAX_FILENAME_LEN; i++) {
-                            sb.Append((char)(sctBuf[offset + i] & 0x7f));
-                        }
-                        Debug.WriteLine("GOT: '" + sb.ToString() + "'");
-                    }
-
-                    if (done) {
-                        break;
-                    }
-                }
-            }
-
-            //return TestResult.Yes;
-            return TestResult.No;
+            return TestResult.Yes;
         }
 
         // Delegate: returns true if the size (in bytes) is valid for this filesystem.
         public static bool IsSizeAllowed(long size) {
-            throw new NotImplementedException();
+            return size == 35 * 13 * SECTOR_SIZE || size == 35 * 16 * SECTOR_SIZE;
         }
 
         public RDOS(IChunkAccess chunks, AppHook appHook) {
+            Debug.Assert(chunks.HasSectors);
+            ChunkAccess = chunks;
             AppHook = appHook;
-            throw new NotImplementedException();
+
+            RawAccess = new GatedChunkAccess(chunks);
+            mVolDirEntry = IFileEntry.NO_ENTRY;
         }
 
         public override string ToString() {
-            return "RDOS";
+            string id = mVolDirEntry == IFileEntry.NO_ENTRY ? "raw" : mVolDirEntry.FileName;
+            return "[RDOS (" + id + ")]";
         }
 
         // IDisposable generic finalizer.
@@ -227,19 +266,135 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public void Flush() {
-            mOpenFiles.FlushAll();
-            throw new NotImplementedException();
-        }
+        public void Flush() { }
 
         // IFileSystem
         public void PrepareFileAccess(bool doScan) {
-            throw new NotImplementedException();
+            if (IsPreppedForFileAccess) {
+                Debug.WriteLine("Volume already prepared for file access");
+                return;
+            }
+
+            try {
+                // Reset all values and scan the volume.
+                IsDubious = false;
+                Notes.Clear();
+                ScanVolume();
+                RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
+            } catch (Exception ex) {
+                // Failed; reset for raw.
+                AppHook.LogE("Unable to prepare file access: " + ex.Message);
+                PrepareRawAccess();
+                throw new DAException("Unable to prepare file access", ex);
+            }
         }
 
         // IFileSystem
         public void PrepareRawAccess() {
-            throw new NotImplementedException();
+            if (mOpenFiles.Count != 0) {
+                throw new DAException("Cannot switch to raw access mode with files open");
+            }
+
+            if (mVolDirEntry != IFileEntry.NO_ENTRY) {
+                // Invalidate the FileEntry tree.  If we don't do this the application could
+                // try to use a retained object after it was switched back to file access.
+                InvalidateFileEntries();
+            }
+
+            mVolDirEntry = IFileEntry.NO_ENTRY;
+            VolUsage = null;
+            Flavor = RDOSFlavor.Unknown;
+            IsDubious = false;
+            RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Open;
+        }
+
+        /// <summary>
+        /// Marks all file entry objects as invalid.
+        /// </summary>
+        private void InvalidateFileEntries() {
+            Debug.Assert(mVolDirEntry != IFileEntry.NO_ENTRY);
+            RDOS_FileEntry volDir = (RDOS_FileEntry)mVolDirEntry;
+            if (!volDir.IsValid) {
+                // Already done?  Shouldn't happen.
+                return;
+            }
+            foreach (IFileEntry child in volDir) {
+                RDOS_FileEntry entry = (RDOS_FileEntry)child;
+                entry.SaveChanges();
+                entry.Invalidate();
+            }
+            volDir.Invalidate();
+        }
+
+        /// <summary>
+        /// Scans the contents of the volume directory.
+        /// </summary>
+        /// <exception cref="IOException">Disk access failure.</exception>
+        /// <exception cref="DAException">Invalid filesystem.</exception>
+        private void ScanVolume() {
+            // Start by detecting which flavor of RDOS this is.  We can't do this in "raw" mode
+            // because we can't distinguish RDOS33 from RDOS3 by disk format.
+            if (ChunkAccess.NumSectorsPerTrack == 13) {
+                Flavor = RDOSFlavor.RDOS32;
+            } else {
+                byte[] sctBuf = new byte[SECTOR_SIZE];
+                ChunkAccess.ReadSector(CAT_TRACK, 0, sctBuf, 0);
+                char majVers = (char)(sctBuf[SIG_PREFIX.Length] & 0x7f);
+                if (majVers == '3') {
+                    Flavor = RDOSFlavor.RDOS33;
+                } else if (majVers == '2') {
+                    Flavor = RDOSFlavor.RDOS3;
+                } else {
+                    throw new DAException("RDOS not recognized");
+                }
+            }
+
+            // Create volume usage map.  The boot/directory blocks are covered by a directory
+            // entry, so no need for special treatment.
+            VolUsage = new VolumeUsage(TotalSectors);
+
+            // Scan the full catalog.
+            mVolDirEntry = RDOS_FileEntry.ScanDirectory(this);
+
+            // Check the results of the volume usage scan for problems.
+            VolUsage.Analyze(out int markedUsed, out int unusedMarked,
+                    out int notMarkedUsed, out int conflicts);
+
+            AppHook.LogI("Usage counts: " + markedUsed + " in use, " +
+                unusedMarked + " unused but marked, " +
+                notMarkedUsed + " used but not marked, " +
+                conflicts + " conflicts");
+
+            // There's no volume bitmap, so certain things aren't possible.
+            Debug.Assert(unusedMarked == 0);
+            Debug.Assert(notMarkedUsed == 0);
+
+            if (conflicts != 0) {
+                Notes.AddW("Found " + conflicts + " blocks in use by more than one file");
+            }
+
+            Debug.WriteLine(VolUsage.DebugDump());
+        }
+
+        /// <summary>
+        /// Calculates the total number of free sectors.
+        /// </summary>
+        private int CalcFreeSectors() {
+            if (!IsPreppedForFileAccess) {
+                return -1;
+            }
+            if (IsDubious) {
+                return 0;       // not safe to traverse (e.g. a sector count could be zero)
+            }
+            int freeBlocks = 0;
+            int nextStart = 0;
+            foreach (IFileEntry ientry in mVolDirEntry) {
+                RDOS_FileEntry entry = (RDOS_FileEntry)ientry;
+                freeBlocks += entry.StartIndex - nextStart;
+                nextStart = entry.StartIndex + entry.SectorCount;
+            }
+            freeBlocks += TotalSectors - nextStart;
+            return freeBlocks;
         }
 
         // IFileSystem
@@ -249,17 +404,61 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void Format(string volumeName, int volumeNum, bool makeBootable) {
-            throw new NotImplementedException();
+            throw new IOException("Not supported for this filesystem");
         }
 
-        private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite,
-                FilePart part) {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Performs general checks on file-access calls, throwing exceptions when something
+        /// is amiss.  An exception here generally indicates an error in the program calling
+        /// into the library.
+        /// </summary>
+        /// <param name="op">Short string describing the operation.</param>
+        /// <param name="ientry">File being accessed.</param>
+        /// <param name="wantWrite">True if this operation might modify the file.</param>
+        /// <param name="part">Which part of the file we want access to.  Pass "Unknown" to
+        ///   match on any part.</param>
+        /// <exception cref="IOException">Various.</exception>
+        /// <exception cref="ArgumentException">Various.</exception>
+        private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite, FilePart part) {
+            if (mDisposed) {
+                throw new ObjectDisposedException("Object was disposed");
+            }
+            if (!IsPreppedForFileAccess) {
+                throw new IOException("Filesystem object not prepared for file access");
+            }
+            if (wantWrite && IsReadOnly) {
+                throw new IOException("Filesystem is read-only");
+            }
+            if (ientry == IFileEntry.NO_ENTRY) {
+                throw new ArgumentException("Cannot operate on NO_ENTRY");
+            }
+            if (ientry.IsDamaged) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to access");
+            }
+            if (ientry.IsDubious && wantWrite) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to modify");
+            }
+            RDOS_FileEntry? entry = ientry as RDOS_FileEntry;
+            if (entry == null || entry.FileSystem != this) {
+                if (entry != null && entry.FileSystem == null) {
+                    // Invalid entry; could be a deleted file, or from before a raw-mode switch.
+                    throw new IOException("File entry is invalid");
+                } else {
+                    throw new FileNotFoundException("File entry is not part of this filesystem");
+                }
+            }
+            if (part == FilePart.RsrcFork) {
+                throw new IOException("File does not have a resource fork");
+            }
+            if (!mOpenFiles.CheckOpenConflict(entry, wantWrite, FilePart.Unknown)) {
+                throw new IOException("File is already open; cannot " + op);
+            }
         }
-
         // IFileSystem
         public IFileEntry GetVolDirEntry() {
-            throw new NotImplementedException();
+            return mVolDirEntry;
         }
 
         // IFileSystem

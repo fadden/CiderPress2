@@ -107,6 +107,8 @@ namespace AppCommon {
                 return "Pascal";
             } else if (fs is ProDOS) {
                 return "ProDOS";
+            } else if (fs is RDOS) {
+                return "RDOS";
             } else {
                 return "?" + fs.GetType().Name;
             }

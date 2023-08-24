@@ -573,6 +573,8 @@ namespace DiskArc.FS {
             volDir.Invalidate();
         }
 
+        // Track reservation map, for use when scanning 5.25" DOS hybrids.  This is NOT kept up to
+        // date when the filesystem changes, and is only valid in file-access mode.
         private bool[] mIs525TrackReserved = new bool[35];
         public bool Check525TrackReserved(uint track) {
             if (track < mIs525TrackReserved.Length) {
@@ -613,7 +615,7 @@ namespace DiskArc.FS {
 
             // Handle the "reserved space" entries on 140KB 5.25" disks.  Make a map, marking
             // entire tracks as reserved.  (The sector skew makes marking partial tracks tricky.)
-            // This used when checking whether a hybrid DOS+CP/M disk is safe, and lets us add
+            // This is used when checking whether a hybrid DOS+CP/M disk is safe, and lets us add
             // a note so people can see that some space was reserved.
             if (ChunkAccess.FormattedLength == 140 * 1024) {
                 Array.Clear(mIs525TrackReserved);
@@ -646,7 +648,7 @@ namespace DiskArc.FS {
                 }
             }
 
-            Debug.WriteLine(AllocMap.VolUsage.DebugDump());
+            //Debug.WriteLine(AllocMap.VolUsage.DebugDump());
         }
 
         // IFileSystem

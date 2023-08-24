@@ -24,9 +24,9 @@ a simple approach: the sectors were copied to a 16-sector disk, and the OS was m
 A later effort, ProDOS RDOS, converted the files to ProDOS and replace the OS entirely.  The
 conversion program gave the formats the following labels:
 
- - `RDOS33` - 16-sector RDOS (same sector format as DOS 3.3), uses ProDOS sector skew
- - `RDOS32` - 13-sector RDOS (same sector format as DOS 3.2), uses physical sector skew
- - `RDOS3` - 13-sector RDOS on a 16-sector disk, uses physical sector skew
+ - `RDOS33` - 16-sector (same physical format as DOS 3.3), uses ProDOS sector skew
+ - `RDOS32` - 13-sector (same physical format as DOS 3.2), uses physical sector skew
+ - `RDOS3` - 13-sector layout on a 16-sector disk, uses physical sector skew
 
 To avoid confusion with other documentation sources, I will continue to use the names here.
 
@@ -47,13 +47,16 @@ Each entry is 32 bytes:
 +$00 /24: filename, high ASCII, padded with trailing spaces
 +$18 / 1: file type, high ASCII 'A', 'B', or 'T'
 +$19 / 1: number of 256-byte sectors used by this file
-+$1a / 2: load address
-+$1c / 2: file length in bytes
-+$1e / 2: index of first sector, where 0 is the start of the disk
++$1a / 2: load address for 'B', not really used for 'A' and 'T'
++$1c / 2: file length in bytes (rounded up for 'T')
++$1e / 2: index of first sector
 ```
 Two-byte integers are in little-endian byte order.
 
-Files are sorted by the index of the first sector.
+The sector index is a 16-bit value that starts in T0S0.  It works like a ProDOS block number, but
+with 256-byte sectors.  Sector index 13 is either T0S13 for RDOS33, or T1S0 for RDOS32/RDOS3.
+Files appear to be sorted by ascending sector index to simplify scanning for empty regions when
+creating new files.
 
 Filenames may include any character except double quotes, since that would interfere with the
 ampersand-based argument passing, and may not have trailing spaces.
@@ -63,7 +66,7 @@ set to $A0 (space).  If you create a new file, it will use the deleted file slot
 occupy the entire region that the previous file occupied.
 
 The first entry on every disk spans the OS and catalog tracks.  It's named either
-`RDOS 2.1 COPYRIGHT 1981 ` or `RDOS 3.3 COPYRIGHT 1986 ` (though RDOS 2.0 may exist).
+`RDOS 2.1 COPYRIGHT 1981 ` or `RDOS 3.3 COPYRIGHT 1986 ` (some notes indicate RDOS 2.0 may exist).
 
 ### File Types ###
 
