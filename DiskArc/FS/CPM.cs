@@ -261,7 +261,7 @@ namespace DiskArc.FS {
             int goodExtents = 0;
             int badExtents = 0;
             for (uint block = dirStartBlock; block < dirStartBlock + dirBlockCount; block++) {
-                chunks.ReadBlockCPM(block, buf, 0);
+                chunks.ReadBlock(block, buf, 0, SectorOrder.CPM_KBlock);
 
                 for (int offset = 0; offset < BLOCK_SIZE; offset += DIR_ENTRY_LEN) {
                     byte status = buf[offset];
@@ -506,7 +506,8 @@ namespace DiskArc.FS {
             for (int i = 0; i < mDirectoryDirtyFlags.Length; i++) {
                 if (mDirectoryDirtyFlags[i].IsSet) {
                     uint diskBlock = DirStartBlock + (uint)i;
-                    ChunkAccess.WriteBlockCPM(diskBlock, mDirectoryBuf, BLOCK_SIZE * i);
+                    ChunkAccess.WriteBlock(diskBlock, mDirectoryBuf, BLOCK_SIZE * i,
+                        SectorOrder.CPM_KBlock);
                     Debug.WriteLine("FlushVolumeDir: write block " + diskBlock);
 
                     mDirectoryDirtyFlags[i].IsSet = false;
@@ -595,7 +596,8 @@ namespace DiskArc.FS {
 
             // Read the directory into memory.
             for (int i = 0; i < DirBlockCount; i++) {
-                ChunkAccess.ReadBlockCPM(DirStartBlock + (uint)i, mDirectoryBuf, i * BLOCK_SIZE);
+                ChunkAccess.ReadBlock(DirStartBlock + (uint)i, mDirectoryBuf, i * BLOCK_SIZE,
+                    SectorOrder.CPM_KBlock);
             }
             // Mark blocks as clean.
             foreach (GroupBool gb in mDirectoryDirtyFlags) {
@@ -678,14 +680,14 @@ namespace DiskArc.FS {
             byte[] blockBuf = new byte[BLOCK_SIZE];
             RawData.MemSet(blockBuf, 0, blockBuf.Length, NO_DATA);
             for (uint block = 0; block < formatBlockCount; block++) {
-                ChunkAccess.WriteBlockCPM(block, blockBuf, 0);
+                ChunkAccess.WriteBlock(block, blockBuf, 0, SectorOrder.CPM_KBlock);
             }
 
             if (makeBootable && ChunkAccess.FormattedLength == 140 * 1024) {
                 // Reserve the first 3 tracks for the OS image by creating a special extent.
                 Debug.Assert(s525BootExtent.Length == CPM_FileEntry.Extent.LENGTH);
                 Array.Copy(s525BootExtent, blockBuf, s525BootExtent.Length);
-                ChunkAccess.WriteBlockCPM(24, blockBuf, 0);
+                ChunkAccess.WriteBlock(24, blockBuf, 0, SectorOrder.CPM_KBlock);
             }
 
             // Reset state.

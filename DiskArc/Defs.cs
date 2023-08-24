@@ -174,10 +174,8 @@ namespace DiskArc {
             // Non-GS/OS additions.
             //
 
-            RDOS33 = 20,                // 16-sector RDOS disk
-            RDOS32 = 21,                // 13-sector RDOS disk
-            RDOS3 = 22,                 // 13-sector RDOS disk converted to 16
-            Unix = 23,                  // filesystem with UNIX timestamps; used for AppleSingle
+            RDOS = 20,                  // RDOS (SSI) filesystem
+            Unix = 21,                  // filesystem with UNIX timestamps; used for AppleSingle
 
             //kFormatGutenberg = 47,      // Gutenberg word processor format
 

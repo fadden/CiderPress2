@@ -720,6 +720,8 @@ namespace cp2 {
             } else if (fs is HFS) {
                 osString = "HFS \"" + fs.GetVolDirEntry().FileName + "\"";
                 baseUnit = KBLOCK_SIZE;     // KB is more appropriate than blocks for HFS
+            } else if (fs is RDOS) {
+                osString = ThingString.RDOSFlavor(((RDOS)fs).Flavor);
             } else {
                 osString = ThingString.IFileSystem(fs);
             }
@@ -1376,9 +1378,7 @@ namespace cp2 {
                 case FileSystemType.MSDOS:
                     fmt = "MS-DOS";
                     break;
-                case FileSystemType.RDOS33:
-                case FileSystemType.RDOS32:
-                case FileSystemType.RDOS3:
+                case FileSystemType.RDOS:
                     fmt = "RDOS  ";
                     break;
                 default:

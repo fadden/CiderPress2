@@ -456,7 +456,7 @@ namespace cp2 {
             byte[] blkBuf = new byte[BLOCK_SIZE];
             try {
                 if (isCpm) {
-                    chunks.ReadBlockCPM(blockNum, blkBuf, 0);
+                    chunks.ReadBlock(blockNum, blkBuf, 0, SectorOrder.CPM_KBlock);
                 } else {
                     chunks.ReadBlock(blockNum, blkBuf, 0);
                 }
@@ -583,7 +583,7 @@ namespace cp2 {
                 byte[] blkBuf = new byte[BLOCK_SIZE];
                 try {
                     if (isCpm) {
-                        chunks.ReadBlockCPM(blockNum, blkBuf, 0);
+                        chunks.ReadBlock(blockNum, blkBuf, 0, SectorOrder.CPM_KBlock);
                     } else {
                         chunks.ReadBlock(blockNum, blkBuf, 0);
                     }
@@ -595,7 +595,7 @@ namespace cp2 {
             }
             try {
                 if (isCpm) {
-                    chunks.WriteBlockCPM(blockNum, dataBuf, 0);
+                    chunks.WriteBlock(blockNum, dataBuf, 0, SectorOrder.CPM_KBlock);
                 } else {
                     chunks.WriteBlock(blockNum, dataBuf, 0);
                 }

@@ -142,7 +142,8 @@ namespace DiskArc.FS {
                 } else {
                     // Read data into temporary buffer.
                     data = mTmpBlockBuf;
-                    FileSystem.ChunkAccess.ReadBlockCPM(blockNum, mTmpBlockBuf, 0);
+                    FileSystem.ChunkAccess.ReadBlock(blockNum, mTmpBlockBuf, 0,
+                        SectorOrder.CPM_KBlock);
                 }
 
                 // Copy everything we need out of this block.
@@ -213,7 +214,8 @@ namespace DiskArc.FS {
                 if (blockOffset != 0 || count < BLOCK_SIZE) {
                     // Partial write to the start or end of a block.  Read the block and merge
                     // the contents.
-                    FileSystem.ChunkAccess.ReadBlockCPM(blockNum, mTmpBlockBuf, 0);
+                    FileSystem.ChunkAccess.ReadBlock(blockNum, mTmpBlockBuf, 0,
+                        SectorOrder.CPM_KBlock);
                     writeLen = BLOCK_SIZE - blockOffset;
                     if (writeLen > count) {
                         writeLen = count;
@@ -229,7 +231,8 @@ namespace DiskArc.FS {
                 }
 
                 // Finally, write the block to the disk.
-                FileSystem.ChunkAccess.WriteBlockCPM(blockNum, writeSource, writeSourceOff);
+                FileSystem.ChunkAccess.WriteBlock(blockNum, writeSource, writeSourceOff,
+                    SectorOrder.CPM_KBlock);
 
                 // Advance file position.
                 mMark += writeLen;

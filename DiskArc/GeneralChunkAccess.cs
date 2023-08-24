@@ -68,6 +68,9 @@ namespace DiskArc {
         internal static readonly uint[] sCpm2Phys = new uint[16] {
             0, 3, 6, 9, 12, 15, 2, 5, 8, 11, 14, 1, 4, 7, 10, 13
         };
+        internal static readonly uint[] sPhys2Phys = new uint[16] {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+        };
 
         /// <summary>
         /// Offset of block 0 within file stream.
@@ -178,12 +181,12 @@ namespace DiskArc {
                 throw new InvalidOperationException("No sectors");
             }
             if (trk > NumTracks) {
-                throw new ArgumentOutOfRangeException("Track out of range: " + trk +
-                    " (max " + NumTracks + ")");
+                throw new ArgumentOutOfRangeException(nameof(trk), trk,
+                    "track out of range (max " + NumTracks + ")");
             }
             if (sct > NumSectorsPerTrack) {
-                throw new ArgumentOutOfRangeException("Sector out of range: " + sct +
-                    " (max " + NumSectorsPerTrack + ")");
+                throw new ArgumentOutOfRangeException(nameof(sct), sct,
+                    "sector out of range (max " + NumSectorsPerTrack + ")");
             }
             if (isWrite && IsReadOnly) {
                 throw new InvalidOperationException("Chunk access is read-only");
@@ -205,10 +208,17 @@ namespace DiskArc {
 
         // IChunkAccess
         public void ReadSector(uint track, uint sect, byte[] data, int offset) {
+            ReadSector(track, sect, data, offset, SectorOrder.DOS_Sector);
+        }
+
+        // IChunkAccess
+        public void ReadSector(uint track, uint sect, byte[] data, int offset,
+                SectorOrder requestOrder) {
             CheckSectorArgs(track, sect, false);
             long fileOffset;
-            if (NumSectorsPerTrack == 16 && FileOrder != SectorOrder.DOS_Sector) {
-                uint physSector = sDos2Phys[sect];
+            if (NumSectorsPerTrack == 16 && FileOrder != requestOrder) {
+                uint[] skewMap = GetSkew2PhysMap(requestOrder);
+                uint physSector = skewMap[sect];
                 uint logicalSector;
                 switch (FileOrder) {
                     case SectorOrder.Physical:
@@ -250,15 +260,16 @@ namespace DiskArc {
         }
 
         // IChunkAccess
-        public void ReadBlockCPM(uint block, byte[] data, int offset) {
-            DoReadBlock(block, data, offset, SectorOrder.CPM_KBlock, sCpm2Phys);
+        public void ReadBlock(uint block, byte[] data, int offset, SectorOrder order) {
+            uint[] skewMap = GetSkew2PhysMap(order);
+            DoReadBlock(block, data, offset, order, skewMap);
         }
 
-        public void DoReadBlock(uint block, byte[] data, int offset, SectorOrder expectedOrder,
+        public void DoReadBlock(uint block, byte[] data, int offset, SectorOrder requestOrder,
                 uint[] skewMap) {
             CheckBlockArgs(block, false);
-            if (NumSectorsPerTrack == 16 && FileOrder != expectedOrder) {
-                // Read as a pair of sectors, using DOS skewing.
+            if (NumSectorsPerTrack == 16 && FileOrder != requestOrder) {
+                // Read as a pair of sectors, using the requested skewing.
                 uint track = block >> 3;            // block / (NumSectorsPerTrack/2)
                 uint sect = (block & 0x07) << 1;    // (block % (NumSectorsPerTrack/2)) * 2
                 for (int i = 0; i < 2; i++) {
@@ -311,14 +322,21 @@ namespace DiskArc {
 
         // IChunkAccess
         public void WriteSector(uint track, uint sect, byte[] data, int offset) {
+            WriteSector(track, sect, data, offset, SectorOrder.DOS_Sector);
+        }
+
+        // IChunkAccess
+        public void WriteSector(uint track, uint sect, byte[] data, int offset,
+                SectorOrder requestOrder) {
             CheckSectorArgs(track, sect, true);
             if (sect > NumSectorsPerTrack) {
                 throw new ArgumentOutOfRangeException("Sector out of range: " + sect +
                     " (max " + NumSectorsPerTrack + ")");
             }
             long fileOffset;
-            if (NumSectorsPerTrack == 16 && FileOrder != SectorOrder.DOS_Sector) {
-                uint physSector = sDos2Phys[sect];
+            if (NumSectorsPerTrack == 16 && FileOrder != requestOrder) {
+                uint[] skewMap = GetSkew2PhysMap(requestOrder);
+                uint physSector = skewMap[sect];
                 uint logicalSector;
                 switch (FileOrder) {
                     case SectorOrder.Physical:
@@ -356,14 +374,15 @@ namespace DiskArc {
         }
 
         // IChunkAccess
-        public void WriteBlockCPM(uint block, byte[] data, int offset) {
-            DoWriteBlock(block, data, offset, SectorOrder.CPM_KBlock, sCpm2Phys);
+        public void WriteBlock(uint block, byte[] data, int offset, SectorOrder order) {
+            uint[] skewMap = GetSkew2PhysMap(order);
+            DoWriteBlock(block, data, offset, order, skewMap);
         }
 
-        private void DoWriteBlock(uint block, byte[] data, int offset, SectorOrder expectedOrder,
+        private void DoWriteBlock(uint block, byte[] data, int offset, SectorOrder requestOrder,
                 uint[] skewMap) {
             CheckBlockArgs(block, true);
-            if (NumSectorsPerTrack == 16 && FileOrder != expectedOrder) {
+            if (NumSectorsPerTrack == 16 && FileOrder != requestOrder) {
                 // Write as a pair of sectors.
                 uint track = block >> 3;            // block / (NumSectorsPerTrack/2)
                 uint sect = (block & 0x07) << 1;    // (block % (NumSectorsPerTrack/2)) * 2
@@ -431,6 +450,21 @@ namespace DiskArc {
             for (int i = 0; i < FormattedLength / SECTOR_SIZE; i++) {
                 // not worried about exception here
                 mFile.Write(ZEROES, 0, SECTOR_SIZE);
+            }
+        }
+
+        internal static uint[] GetSkew2PhysMap(SectorOrder order) {
+            switch (order) {
+                case SectorOrder.Physical:
+                    return sPhys2Phys;
+                case SectorOrder.DOS_Sector:
+                    return sDos2Phys;
+                case SectorOrder.ProDOS_Block:
+                    return sProdos2Phys;
+                case SectorOrder.CPM_KBlock:
+                    return sCpm2Phys;
+                default:
+                    throw new NotImplementedException("no map for order=" + order);
             }
         }
 

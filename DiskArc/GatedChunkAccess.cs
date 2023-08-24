@@ -87,14 +87,19 @@ namespace DiskArc {
             mBase.ReadSector(track, sect, data, offset);
         }
 
+        public void ReadSector(uint track, uint sect, byte[] data, int offset, SectorOrder order) {
+            CheckAccess(false);
+            mBase.ReadSector(track, sect, data, offset, order);
+        }
+
         public void ReadBlock(uint block, byte[] data, int offset) {
             CheckAccess(false);
             mBase.ReadBlock(block, data, offset);
         }
 
-        public void ReadBlockCPM(uint block, byte[] data, int offset) {
+        public void ReadBlock(uint block, byte[] data, int offset, SectorOrder order) {
             CheckAccess(false);
-            mBase.ReadBlockCPM(block, data, offset);
+            mBase.ReadBlock(block, data, offset, order);
         }
 
         public void WriteSector(uint track, uint sect, byte[] data, int offset) {
@@ -102,14 +107,19 @@ namespace DiskArc {
             mBase.WriteSector(track, sect, data, offset);
         }
 
+        public void WriteSector(uint track, uint sect, byte[] data, int offset, SectorOrder order) {
+            CheckAccess(true);
+            mBase.WriteSector(track, sect, data, offset, order);
+        }
+
         public void WriteBlock(uint block, byte[] data, int offset) {
             CheckAccess(true);
             mBase.WriteBlock(block, data, offset);
         }
 
-        public void WriteBlockCPM(uint block, byte[] data, int offset) {
+        public void WriteBlock(uint block, byte[] data, int offset, SectorOrder order) {
             CheckAccess(true);
-            mBase.WriteBlockCPM(block, data, offset);
+            mBase.WriteBlock(block, data, offset, order);
         }
 
         public bool TestSector(uint trk, uint sct, out bool writable) {

@@ -200,6 +200,7 @@ namespace DiskArc {
                     fs = new ProDOS(diskImage.ChunkAccess, appHook);
                     break;
                 default:
+                    // Not implemented for RDOS.
                     throw new NotSupportedException("FormatDisk doesn't handle: " + fsType);
             }
 
@@ -350,6 +351,8 @@ namespace DiskArc {
                 return Defs.FileSystemType.Pascal;
             } else if (fs is ProDOS) {
                 return Defs.FileSystemType.ProDOS;
+            } else if (fs is RDOS) {
+                return Defs.FileSystemType.RDOS;
             } else {
                 Debug.Assert(false, "Unhandled fs type: " + fs.GetType().Name);
                 return Defs.FileSystemType.Unknown;
@@ -610,6 +613,8 @@ namespace DiskArc {
                 return ((Pascal_FileEntry)entry).FileSystem;
             } else if (entry is ProDOS_FileEntry) {
                 return ((ProDOS_FileEntry)entry).FileSystem;
+            } else if (entry is RDOS_FileEntry) {
+                return ((RDOS_FileEntry)entry).FileSystem;
             } else {
                 return null;
             }

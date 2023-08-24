@@ -113,6 +113,22 @@ namespace AppCommon {
         }
 
         /// <summary>
+        /// Returns a short (&lt;= 8 char) string with an RDOS flavor description.
+        /// </summary>
+        public static string RDOSFlavor(RDOS.RDOSFlavor flavor) {
+            switch (flavor) {
+                case RDOS.RDOSFlavor.RDOS32:
+                    return "RDOS 3.2";
+                case RDOS.RDOSFlavor.RDOS33:
+                    return "RDOS 3.3";
+                case RDOS.RDOSFlavor.RDOS3:
+                    return "RDOS 3";
+                default:
+                    return "?" + flavor.ToString();
+            }
+        }
+
+        /// <summary>
         /// Returns a short string with a partition subclass name.
         /// </summary>
         public static string Partition(Partition fs) {
@@ -177,12 +193,8 @@ namespace AppCommon {
                     return "High Sierra";
                 case Defs.FileSystemType.ISO9660:
                     return "ISO-9660";
-                case Defs.FileSystemType.RDOS33:
-                    return "RDOS (16-sector)";
-                case Defs.FileSystemType.RDOS32:
-                    return "RDOS (13-sector)";
-                case Defs.FileSystemType.RDOS3:
-                    return "RDOS (13->16)";
+                case Defs.FileSystemType.RDOS:
+                    return "RDOS";
                 case Defs.FileSystemType.Unix:
                     return "UNIX";
                 case Defs.FileSystemType.APM:

@@ -195,6 +195,25 @@ namespace DiskArc {
         void ReadSector(uint trk, uint sct, byte[] data, int offset);
 
         /// <summary>
+        /// Reads a 256-byte sector from the underlying storage, using a specific sector order.
+        /// </summary>
+        /// <remarks>
+        /// It is possible for the read to fail if the underlying media has real or emulated
+        /// errors.
+        /// </remarks>
+        /// <param name="trk">Track number.</param>
+        /// <param name="sct">Sector number.</param>
+        /// <param name="data">Data buffer.</param>
+        /// <param name="offset">Initial offset within data buffer.</param>
+        /// <param name="order">Sector order to use.  Only meaningful for 16-sector disks.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Track or sector number out
+        ///   of range.</exception>
+        /// <exception cref="BadBlockException">The storage is damaged, rendering the data
+        ///   unreadable.</exception>
+        /// <exception cref="InvalidOperationException">Disk does not have sectors.</exception>
+        void ReadSector(uint trk, uint sct, byte[] data, int offset, SectorOrder order);
+
+        /// <summary>
         /// Reads a 512-byte block from the underlying storage, as if requested by ProDOS/Pascal.
         /// </summary>
         /// <param name="block">Block number.</param>
@@ -207,7 +226,7 @@ namespace DiskArc {
         void ReadBlock(uint block, byte[] data, int offset);
 
         /// <summary>
-        /// Reads a 512-byte block from the underlying storage, as if requested by CP/M.
+        /// Reads a 512-byte block from the underlying storage, using a specific sector order.
         /// </summary>
         /// <remarks>
         /// On anything but 5.25" media, this is equivalent to ReadBlock().
@@ -215,14 +234,15 @@ namespace DiskArc {
         /// <param name="block">Block number.</param>
         /// <param name="data">Data buffer.</param>
         /// <param name="offset">Initial offset within data buffer.</param>
+        /// <param name="order">Sector order to use.</param>
         /// <exception cref="ArgumentOutOfRangeException">Block number out of range.</exception>
         /// <exception cref="BadBlockException">The storage is damaged, rendering the data
         ///   unreadable.</exception>
         /// <exception cref="InvalidOperationException">Disk does not have blocks.</exception>
-        void ReadBlockCPM(uint block, byte[] data, int offset);
+        void ReadBlock(uint block, byte[] data, int offset, SectorOrder order);
 
         /// <summary>
-        /// Writes a 256-byte sector to the underlying storage.
+        /// Writes a 256-byte sector to the underlying storage, as if requested by DOS.
         /// </summary>
         /// <remarks>
         /// It is possible for the write to fail if the underlying media has real or emulated
@@ -240,6 +260,25 @@ namespace DiskArc {
         void WriteSector(uint trk, uint sct, byte[] data, int offset);
 
         /// <summary>
+        /// Writes a 256-byte sector to the underlying storage, using a specific sector order.
+        /// </summary>
+        /// <remarks>
+        /// It is possible for the write to fail if the underlying media has real or emulated
+        /// errors.
+        /// </remarks>
+        /// <param name="trk">Track number.</param>
+        /// <param name="sct">Sector number.</param>
+        /// <param name="data">Data buffer.</param>
+        /// <param name="offset">Initial offset within data buffer.</param>
+        /// <param name="order">Sector order to use.  Only meaningful for 16-sector disks.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Track or sector number out
+        ///   of range.</exception>
+        /// <exception cref="BadBlockException">The storage is damaged.</exception>
+        /// <exception cref="NotSupportedException">Storage was opened read-only.</exception>
+        /// <exception cref="InvalidOperationException">Disk does not have sectors.</exception>
+        void WriteSector(uint trk, uint sct, byte[] data, int offset, SectorOrder order);
+
+        /// <summary>
         /// Writes a 512-byte block to the underlying storage, as if requested by ProDOS/Pascal.
         /// </summary>
         /// <param name="block">Block number.</param>
@@ -252,7 +291,7 @@ namespace DiskArc {
         void WriteBlock(uint block, byte[] data, int offset);
 
         /// <summary>
-        /// Writes a 512-byte block to the underlying storage, as if requested by CP/M.
+        /// Writes a 512-byte block to the underlying storage, using a specific sector order.
         /// </summary>
         /// <remarks>
         /// On anything but 5.25" media, this is equivalent to WriteBlock().
@@ -260,11 +299,12 @@ namespace DiskArc {
         /// <param name="block">Block number.</param>
         /// <param name="data">Data buffer.</param>
         /// <param name="offset">Initial offset within data buffer.</param>
+        /// <param name="order">Sector order to use.</param>
         /// <exception cref="ArgumentOutOfRangeException">Block number out of range.</exception>
         /// <exception cref="BadBlockException">The storage is damaged.</exception>
         /// <exception cref="NotSupportedException">Storage was opened read-only.</exception>
         /// <exception cref="InvalidOperationException">Disk does not have blocks.</exception>
-        void WriteBlockCPM(uint block, byte[] data, int offset);
+        void WriteBlock(uint block, byte[] data, int offset, SectorOrder order);
 
         /// <summary>
         /// Tests the validity of a sector.

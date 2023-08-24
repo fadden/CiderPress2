@@ -504,7 +504,8 @@ namespace cp2_wpf {
                         mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0);
                         break;
                     case SectorEditMode.CPMBlocks:
-                        mChunkAccess.ReadBlockCPM(mCurBlockOrTrack, mBuffer, 0);
+                        mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0,
+                            SectorOrder.CPM_KBlock);
                         break;
                     default:
                         Debug.Assert(false);
@@ -539,7 +540,8 @@ namespace cp2_wpf {
                         mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0);
                         break;
                     case SectorEditMode.CPMBlocks:
-                        mChunkAccess.WriteBlockCPM(mCurBlockOrTrack, mBuffer, 0);
+                        mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0,
+                            SectorOrder.CPM_KBlock);
                         break;
                     default:
                         Debug.Assert(false);

@@ -242,6 +242,12 @@ namespace DiskArc.Multi {
 
         // IChunkAccess
         public void ReadSector(uint trk, uint sct, byte[] data, int offset) {
+            ReadSector(trk, sct, data, offset, SectorOrder.DOS_Sector);
+        }
+
+        // IChunkAccess
+        public void ReadSector(uint trk, uint sct, byte[] data, int offset,
+                SectorOrder requestOrder) {
             CheckSectorArgs(trk, sct, false);
             if (mBase.HasSectors) {
                 mBase.ReadSector(trk, sct, data, offset);
@@ -255,7 +261,7 @@ namespace DiskArc.Multi {
                 }
             } else if (mBase.HasBlocks) {
                 // Probably DOS embedded in ProDOS.
-                if (FileOrder != SectorOrder.DOS_Sector) {
+                if (FileOrder != requestOrder) {
                     // This should only happen if somebody calls AnalyzePartition() on us, which
                     // isn't necessary, and it failed to recognize the OS and started probing
                     // through the file orders.  We could handle this, but shouldn't need to.
@@ -289,11 +295,11 @@ namespace DiskArc.Multi {
         }
 
         // IChunkAccess
-        public void ReadBlockCPM(uint block, byte[] data, int offset) {
+        public void ReadBlock(uint block, byte[] data, int offset, SectorOrder order) {
             CheckBlockArgs(block, false);
             if (mBase.HasBlocks) {
                 Debug.Assert(FileOrder == SectorOrder.CPM_KBlock);
-                mBase.ReadBlockCPM(StartBlock + block, data, offset);
+                mBase.ReadBlock(StartBlock + block, data, offset, order);
             } else {
                 throw new InvalidOperationException("No blocks");
             }
@@ -301,6 +307,12 @@ namespace DiskArc.Multi {
 
         // IChunkAccess
         public void WriteSector(uint trk, uint sct, byte[] data, int offset) {
+            WriteSector(trk, sct, data, offset, SectorOrder.DOS_Sector);
+        }
+
+        // IChunkAccess
+        public void WriteSector(uint trk, uint sct, byte[] data, int offset,
+                SectorOrder requestOrder) {
             CheckSectorArgs(trk, sct, true);
             if (mBase.HasSectors) {
                 mBase.WriteSector(trk, sct, data, offset);
@@ -315,7 +327,7 @@ namespace DiskArc.Multi {
                 mBase.WriteBlock(StartBlock + blockIndex, mTmpBuf, 0);
             } else if (mBase.HasBlocks) {
                 // Probably DOS embedded in ProDOS.
-                if (FileOrder != SectorOrder.DOS_Sector) {
+                if (FileOrder != requestOrder) {
                     throw new BadBlockException("Shouldn't be using this disk order");
                 }
                 uint index = trk * NumSectorsPerTrack + sct;
@@ -345,10 +357,10 @@ namespace DiskArc.Multi {
         }
 
         // IChunkAccess
-        public void WriteBlockCPM(uint block, byte[] data, int offset) {
+        public void WriteBlock(uint block, byte[] data, int offset, SectorOrder order) {
             CheckBlockArgs(block, true);
             if (mBase.HasBlocks) {
-                mBase.WriteBlockCPM(StartBlock + block, data, offset);
+                mBase.WriteBlock(StartBlock + block, data, offset, order);
             } else {
                 throw new InvalidOperationException("No blocks");
             }

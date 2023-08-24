@@ -46,6 +46,7 @@ namespace DiskArc {
             new DiskLayoutEntry("ProDOS", FileSystemType.ProDOS, typeof(FS.ProDOS)),
             new DiskLayoutEntry("Pascal", FileSystemType.Pascal, typeof(FS.Pascal)),
             new DiskLayoutEntry("HFS", FileSystemType.HFS, typeof(FS.HFS)),
+            new DiskLayoutEntry("RDOS", FileSystemType.RDOS, typeof(FS.RDOS)),
             new DiskLayoutEntry("CPM", FileSystemType.CPM, typeof(FS.CPM)),
 
             new DiskLayoutEntry("Am/UniDOS", FileSystemType.AmUniDOS, typeof(Multi.AmUniDOS)),

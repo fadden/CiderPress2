@@ -243,8 +243,14 @@ namespace DiskArc {
 
         // IChunkAccess
         public void ReadSector(uint trk, uint sct, byte[] data, int offset) {
+            ReadSector(trk, sct, data, offset, SectorOrder.DOS_Sector);
+        }
+
+        // IChunkAccess
+        public void ReadSector(uint trk, uint sct, byte[] data, int offset,
+                SectorOrder requestOrder) {
             CheckSectorArgs(trk, sct, false);
-            uint physSector = SectorSetup(trk, sct, out TrackEntry trkEnt);
+            uint physSector = SectorSetup(trk, sct, requestOrder, out TrackEntry trkEnt);
             DoReadSector(trk, physSector, trkEnt, data, offset);
             ReadCount++;
         }
@@ -254,14 +260,18 @@ namespace DiskArc {
         /// </summary>
         /// <param name="trk">Track number.</param>
         /// <param name="sct">Sector number.</param>
+        /// <param name="requestOrder">Requested sector order.</param>
         /// <param name="trkEnt">Result: TrackEntry for this track.</param>
         /// <returns>Physical sector number.</returns>
         /// <exception cref="IOException">No data exists for this track.</exception>
-        private uint SectorSetup(uint trk, uint sct, out TrackEntry trkEnt) {
+        private uint SectorSetup(uint trk, uint sct, SectorOrder requestOrder,
+                out TrackEntry trkEnt) {
             uint physSector = sct;
             if (NumSectorsPerTrack == 16) {
-                // Apply DOS 3.3 sector skew.
-                physSector = GeneralChunkAccess.sDos2Phys[sct];
+                // Apply requested sector skew.
+                //physSector = GeneralChunkAccess.sDos2Phys[sct];
+                uint[] skewMap = GeneralChunkAccess.GetSkew2PhysMap(requestOrder);
+                physSector = skewMap[sct];
             }
             TrackEntry? te = GetTrackEntry(trk, 0);
             if (te == null) {
@@ -294,8 +304,9 @@ namespace DiskArc {
         }
 
         // IChunkAccess
-        public void ReadBlockCPM(uint block, byte[] data, int offset) {
-            DoReadBlock(block, data, offset, GeneralChunkAccess.sCpm2Phys);
+        public void ReadBlock(uint block, byte[] data, int offset, SectorOrder order) {
+            uint[] skewMap = GeneralChunkAccess.GetSkew2PhysMap(order);
+            DoReadBlock(block, data, offset,  skewMap);
         }
 
         private void DoReadBlock(uint block, byte[] data, int offset, uint[] skewMap) {
@@ -342,8 +353,14 @@ namespace DiskArc {
 
         // IChunkAccess
         public void WriteSector(uint trk, uint sct, byte[] data, int offset) {
+            WriteSector(trk, sct, data, offset, SectorOrder.DOS_Sector);
+        }
+
+        // IChunkAccess
+        public void WriteSector(uint trk, uint sct, byte[] data, int offset,
+                SectorOrder requestOrder) {
             CheckSectorArgs(trk, sct, true);
-            uint physSector = SectorSetup(trk, sct, out TrackEntry trkEnt);
+            uint physSector = SectorSetup(trk, sct, requestOrder, out TrackEntry trkEnt);
             IsModified = true;
             DoWriteSector(trk, physSector, trkEnt, data, offset);
             WriteCount++;
@@ -370,8 +387,9 @@ namespace DiskArc {
         }
 
         // IChunkAccess
-        public void WriteBlockCPM(uint block, byte[] data, int offset) {
-            DoWriteBlock(block, data, offset, GeneralChunkAccess.sCpm2Phys);
+        public void WriteBlock(uint block, byte[] data, int offset, SectorOrder order) {
+            uint[] skewMap = GeneralChunkAccess.GetSkew2PhysMap(order);
+            DoWriteBlock(block, data, offset, skewMap);
         }
 
         private void DoWriteBlock(uint block, byte[] data, int offset, uint[] skewMap) {
@@ -425,7 +443,7 @@ namespace DiskArc {
             uint physSct;
             TrackEntry trkEnt;
             try {
-                physSct = SectorSetup(trk, sct, out trkEnt);
+                physSct = SectorSetup(trk, sct, SectorOrder.DOS_Sector, out trkEnt);
             } catch (IOException) {
                 return false;       // track does not exist
             }
