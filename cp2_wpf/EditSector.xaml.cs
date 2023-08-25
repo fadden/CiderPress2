@@ -375,6 +375,8 @@ namespace cp2_wpf {
         private int mCurDigit;
         private readonly int mNumRows;
 
+        private SectorOrder mSectorOrder;
+
         private bool InTextArea { get { return mCurCol == NUM_COLS; } }
 
 
@@ -410,16 +412,20 @@ namespace cp2_wpf {
             bool asSectors = (editMode == SectorEditMode.Sectors);
             switch (editMode) {
                 case SectorEditMode.Sectors:
-                    Title = "Edit Sectors (DOS)";
+                    Title = "Edit Sectors";
+                    mSectorOrder = SectorOrder.DOS_Sector;
                     break;
                 case SectorEditMode.Blocks:
-                    Title = "Edit Blocks (ProDOS/Pascal)";
+                    Title = "Edit Blocks";
+                    mSectorOrder = SectorOrder.ProDOS_Block;
                     break;
                 case SectorEditMode.CPMBlocks:
                     Title = "Edit Blocks (CP/M)";
+                    mSectorOrder = SectorOrder.CPM_KBlock;
                     break;
                 default:
                     Debug.Assert(false);
+                    mSectorOrder = SectorOrder.Physical;
                     break;
             }
 
@@ -454,6 +460,9 @@ namespace cp2_wpf {
 
             mCurRow = mCurCol = 0;
             mCurDigit = 0;
+
+            PrepareSectorOrder();
+            PrepareSectorCodec();
         }
 
         private void Window_ContentRendered(object sender, EventArgs e) {
@@ -498,14 +507,12 @@ namespace cp2_wpf {
             try {
                 switch (mEditMode) {
                     case SectorEditMode.Sectors:
-                        mChunkAccess.ReadSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
+                        mChunkAccess.ReadSector(mCurBlockOrTrack, mCurSector, mBuffer, 0,
+                            mSectorOrder);
                         break;
                     case SectorEditMode.Blocks:
-                        mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0);
-                        break;
                     case SectorEditMode.CPMBlocks:
-                        mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0,
-                            SectorOrder.CPM_KBlock);
+                        mChunkAccess.ReadBlock(mCurBlockOrTrack, mBuffer, 0, mSectorOrder);
                         break;
                     default:
                         Debug.Assert(false);
@@ -534,14 +541,12 @@ namespace cp2_wpf {
             try {
                 switch (mEditMode) {
                     case SectorEditMode.Sectors:
-                        mChunkAccess.WriteSector(mCurBlockOrTrack, mCurSector, mBuffer, 0);
+                        mChunkAccess.WriteSector(mCurBlockOrTrack, mCurSector, mBuffer, 0,
+                            mSectorOrder);
                         break;
                     case SectorEditMode.Blocks:
-                        mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0);
-                        break;
                     case SectorEditMode.CPMBlocks:
-                        mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0,
-                            SectorOrder.CPM_KBlock);
+                        mChunkAccess.WriteBlock(mCurBlockOrTrack, mBuffer, 0, mSectorOrder);
                         break;
                     default:
                         Debug.Assert(false);
@@ -887,5 +892,144 @@ namespace cp2_wpf {
             }
             return true;
         }
+
+        #region Sector Order
+
+        private bool mInitializingAdv;
+
+        public bool IsSectorOrderEnabled { get; private set; }
+
+        public class SectorOrderItem {
+            public string Label { get; }
+            public SectorOrder Order { get; }
+
+            public SectorOrderItem(string label, SectorOrder order) {
+                Label = label;
+                Order = order;
+            }
+        }
+
+        public List<SectorOrderItem> SectorOrderList { get; } = new List<SectorOrderItem>() {
+            new SectorOrderItem("DOS 3.3", SectorOrder.DOS_Sector),
+            new SectorOrderItem("ProDOS", SectorOrder.ProDOS_Block),
+            new SectorOrderItem("CP/M", SectorOrder.CPM_KBlock),
+            new SectorOrderItem("Physical", SectorOrder.Physical)
+        };
+
+        private void PrepareSectorOrder() {
+            // Disable the control if this isn't a 16-sector disk.
+            if (!mChunkAccess.HasSectors || mChunkAccess.NumSectorsPerTrack != 16) {
+                IsSectorOrderEnabled = false;
+                sectorOrderCombo.SelectedIndex = -1;
+                return;
+            }
+            IsSectorOrderEnabled = true;
+
+            // Set selection to default value, making sure we select something.
+            int match;
+            for (match = 0; match < SectorOrderList.Count; match++) {
+                if (SectorOrderList[match].Order == mSectorOrder) {
+                    break;
+                }
+            }
+            if (match == SectorOrderList.Count) {
+                match = 0;
+            }
+            mInitializingAdv = true;
+            sectorOrderCombo.SelectedIndex = match;
+            mInitializingAdv = false;
+        }
+
+        private void SectorOrderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            if (mInitializingAdv) {
+                return;
+            }
+            SectorOrderItem? item = ((ComboBox)sender).SelectedItem as SectorOrderItem;
+            if (item != null) {
+                mSectorOrder = item.Order;
+                ReadFromDisk();
+            }
+        }
+
+        #endregion Sector Order
+
+        #region Sector Codec
+
+        public string SectorCodecName { get; private set; } = string.Empty;
+
+        private void PrepareSectorCodec() {
+            if (mChunkAccess.NibbleCodec == null) {
+                SectorCodecName = "N/A";
+            } else {
+                SectorCodecName = mChunkAccess.NibbleCodec.Name;
+            }
+        }
+
+#if false
+        // For this to work we need a way to change the SectorCodec on the fly in
+        // NibbleChunkAccess.  We need to reset some state, e.g. the TrackEntry objects
+        // hold the result of NibbleCodec.FindSectors().  Shouldn't be too difficult but
+        // it's a lower-priority feature.
+
+        public bool IsSectorCodecEnabled { get; private set; }
+
+        public class SectorCodecItem {
+            public string Label { get; }
+            public SectorCodec Codec { get; }
+            public SectorCodecItem(string label, SectorCodec codec) {
+                Label = label;
+                Codec = codec;
+            }
+        }
+
+        public List<SectorCodecItem> SectorCodecList { get; } = new List<SectorCodecItem>();
+
+        private void PrepareSectorCodec() {
+            if (mChunkAccess.NibbleCodec == null) {
+                IsSectorCodecEnabled = false;
+                return;
+            }
+            IsSectorCodecEnabled = true;
+
+            SectorCodec curCodec = mChunkAccess.NibbleCodec;
+            bool is525 = curCodec.DecodedSectorSize == 256;
+            if (is525) {
+                foreach (StdSectorCodec.CodecIndex525 index in
+                        Enum.GetValues(typeof(StdSectorCodec.CodecIndex525))) {
+                    SectorCodec codec = StdSectorCodec.GetCodec(index);
+                    SectorCodecList.Add(new SectorCodecItem(codec.Name, codec));
+                }
+            } else {
+                foreach (StdSectorCodec.CodecIndex35 index in
+                        Enum.GetValues(typeof(StdSectorCodec.CodecIndex35))) {
+                    SectorCodec codec = StdSectorCodec.GetCodec(index);
+                    SectorCodecList.Add(new SectorCodecItem(codec.Name, codec));
+                }
+            }
+
+            // Look for a match.  We have to search by label.
+            int match;
+            for (match = 0; match < SectorOrderList.Count; match++) {
+                if (SectorOrderList[match].Order == mSectorOrder) {
+                    break;
+                }
+            }
+            if (match == SectorOrderList.Count) {
+                match = 0;
+            }
+            mInitializingAdv = true;
+            sectorOrderCombo.SelectedIndex = match;
+            mInitializingAdv = false;
+        }
+
+        private void SectorCodecCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            if (mInitializingAdv) {
+                return;
+            }
+            // TODO
+        }
+#endif
+
+        #endregion Sector Codec
     }
 }

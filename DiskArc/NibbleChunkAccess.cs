@@ -217,7 +217,8 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Returns the circular bit buffer for the specified track.
+        /// Returns the track entry for the specified track, or null if the track isn't available.
+        /// Finds the sectors on first use.
         /// </summary>
         private TrackEntry? GetTrackEntry(uint trackNum, uint trackFraction) {
             uint index;
@@ -312,7 +313,7 @@ namespace DiskArc {
         private void DoReadBlock(uint block, byte[] data, int offset, uint[] skewMap) {
             CheckBlockArgs(block, false);
             if (HasSectors) {
-                // Read the block as a pair of sectors, using ProDOS skewing.
+                // Read the block as a pair of sectors, using the requested skewing.
                 if (NumSectorsPerTrack != 16) {
                     throw new InvalidOperationException("Wrong number of sectors to be here");
                 }
@@ -396,7 +397,7 @@ namespace DiskArc {
             CheckBlockArgs(block, true);
             IsModified = true;
             if (HasSectors) {
-                // Write the block as a pair of sectors, using ProDOS skewing.
+                // Write the block as a pair of sectors, using the requested skewing.
                 if (NumSectorsPerTrack != 16) {
                     throw new InvalidOperationException("Wrong number of sectors to be here");
                 }
