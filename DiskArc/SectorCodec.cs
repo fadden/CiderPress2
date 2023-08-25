@@ -482,10 +482,10 @@ namespace DiskArc {
                 throw new ArgumentNullException("buffer is null");
             }
             if (offset < 0 || offset >= buffer.Length) {
-                throw new ArgumentOutOfRangeException("Invalid offset");
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, "Invalid offset");
             }
             if (offset + DecodedSectorSize > buffer.Length) {
-                throw new ArgumentOutOfRangeException("Not enough room in buffer");
+                throw new ArgumentException("Not enough room in buffer");
             }
 
             bool decOk;
@@ -526,10 +526,10 @@ namespace DiskArc {
                 throw new ArgumentNullException("buffer is null");
             }
             if (offset < 0 || offset >= buffer.Length) {
-                throw new ArgumentOutOfRangeException("Invalid offset");
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, "Invalid offset");
             }
             if (offset + DecodedSectorSize > buffer.Length) {
-                throw new ArgumentOutOfRangeException("Not enough data in buffer");
+                throw new ArgumentException("Not enough data in buffer");
             }
 
             bool encOk;

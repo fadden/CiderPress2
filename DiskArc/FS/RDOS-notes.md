@@ -45,7 +45,7 @@ is available for file entries.
 Each entry is 32 bytes:
 ```
 +$00 /24: filename, high ASCII, padded with trailing spaces
-+$18 / 1: file type, high ASCII 'A', 'B', or 'T'
++$18 / 1: file type, high ASCII 'A', 'B', 'T', or 'S'
 +$19 / 1: number of 256-byte sectors used by this file
 +$1a / 2: load address for 'B', not really used for 'A' and 'T'
 +$1c / 2: file length in bytes (rounded up for 'T')
@@ -65,8 +65,9 @@ When a file is deleted, the first character of the filename is set to $80, and t
 set to $A0 (space).  If you create a new file, it will use the deleted file slot, and will
 occupy the entire region that the previous file occupied.
 
-The first entry on every disk spans the OS and catalog tracks.  It's named either
-`RDOS 2.1 COPYRIGHT 1981 ` or `RDOS 3.3 COPYRIGHT 1986 ` (some notes indicate RDOS 2.0 may exist).
+The first entry on every disk spans the OS and catalog tracks.  On game disks it's called
+`RDOS 2.1 COPYRIGHT 1981 ` or `RDOS 3.3 COPYRIGHT 1986 `, and on save-game disks created by
+initialization code it's `SSI SAVE GAME DISK RDOS ` or ` >-SSI GAME SAVE DISK-< `.
 
 ### File Types ###
 
@@ -78,3 +79,14 @@ use CR ($0d) for line breaks, and have a length that is rounded up to the neares
 determine the actual length of a text file it's necessary to scan it for the first occurrence of
 a $00 byte.  (When creating a text file, RDOS requires the program to pre-size it, and does not
 track the actual length in the catalog.)
+
+The catalog header on a newly-initialized RDOS 3.3 saved-game disk has type 'S'.
+
+### Copy Protection ###
+
+13-sector disks used a modified sector address header.  16-sector disks used different address
+headers on odd/even tracks, and altered the address epilog bytes.  These changes were used
+consistently across all titles.
+
+These changes were easily handled by contemporary nibble copiers, so many games had a secondary
+protection check.

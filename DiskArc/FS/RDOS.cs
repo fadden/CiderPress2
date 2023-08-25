@@ -27,14 +27,11 @@ namespace DiskArc.FS {
     /// RDOS filesystem implementation.
     /// </summary>
     public class RDOS : IFileSystem {
-        public const int CAT_TRACK = 1;             // disk catalog lives on track 1
-        public const int CAT_ENTRY_LEN = 32;        // number of bytes in one catalog entry
-        public const int MAX_FILENAME_LEN = 24;     // max length of a filename
+        public const int CAT_TRACK = 1;                 // disk catalog lives on track 1
+        public const int CAT_ENTRY_LEN = 32;            // number of bytes in one catalog entry
+        public const int MAX_FILENAME_LEN = 24;         // max length of a filename
+        public const int MAX_FILE_LEN = 256 * SECTOR_SIZE;  // size is a single-byte sector count
 
-        private static readonly byte[] SIG_PREFIX = new byte[] {
-            (byte)'R' | 0x80, (byte)'D' | 0x80, (byte)'O' | 0x80, (byte)'S' | 0x80,
-            (byte)' ' | 0x80
-        };
         private static readonly byte[] SIG_NAME = Encoding.ASCII.GetBytes("<NAME>");
 
         private const string FILENAME_RULES =
@@ -160,68 +157,82 @@ namespace DiskArc.FS {
             if (!chunkSource.HasSectors) {
                 return TestResult.No;
             }
-            bool is13Sector;
-            if (chunkSource.FormattedLength == 13 * 35 * SECTOR_SIZE) {
-                is13Sector = true;
-            } else if (chunkSource.FormattedLength == 16 * 35 * SECTOR_SIZE) {
-                is13Sector = false;
-            } else {
+            if (chunkSource.FormattedLength != 13 * 35 * SECTOR_SIZE &&
+                    chunkSource.FormattedLength != 16 * 35 * SECTOR_SIZE) {
                 return TestResult.No;
             }
 
             byte[] sctBuf = new byte[SECTOR_SIZE];
 
-            // Read T1S0 in to see if it looks like an RDOS header.  Because it's in sector 0
+            // Read T1S0 in to see if it looks like an RDOS catalog.  Because it's in sector 0
             // this won't tell us anything about the disk image sector order, or whether this
             // is RDOS33 vs RDOS3.
             chunkSource.ReadSector(CAT_TRACK, 0, sctBuf, 0);
 
-            if (!RawData.CompareBytes(sctBuf, SIG_PREFIX, SIG_PREFIX.Length)) {
-                return TestResult.No;
-            }
-
-            // "RDOS 2.1" or "RDOS 3.3"; check the major version number.
-            char majVers = (char)(sctBuf[SIG_PREFIX.Length] & 0x7f);
-            byte sysBlockCount = sctBuf[0x19];
-            ushort sysBlockStart = RawData.GetU16LE(sctBuf, 0x1e);
-            if ((majVers != '2' && majVers != '3') || sysBlockStart != 0 ||
-                    (sysBlockCount != 13 * 2 && sysBlockCount != 16 * 2)) {
-                return TestResult.No;
-            }
-
-            // This looks like an RDOS disk.  Now we need to determine which flavor and whether
-            // the disk image sector order is being interpreted correctly.
-            RDOSFlavor flavor;
-            if (is13Sector) {
-                flavor = RDOSFlavor.RDOS32;
-            } else {
-                if (majVers == '3') {
-                    flavor = RDOSFlavor.RDOS33;
-                } else {
-                    flavor = RDOSFlavor.RDOS3;
+            char[] testNameChars = new char[MAX_FILENAME_LEN];
+            for (int i = 0; i < MAX_FILENAME_LEN; i++) {
+                if (sctBuf[i] < 0xa0 || sctBuf[i] > 0xdf) {
+                    return TestResult.No;       // not a high-ASCII upper-case letter or symbol
                 }
+                testNameChars[i] = (char)(sctBuf[i] & 0x7f);
+            }
+            string testName = new string(testNameChars);
+            if (!testName.Contains("RDOS ") && !testName.Contains("SSI ")) {
+                return TestResult.No;
             }
 
             // The catalog code lives on T1S12 on 13-sector disks, and T0S1 on 16-sector disks.
             // Look for the string "<NAME>".
-            int nameOffset, orMask;
-            if (flavor == RDOSFlavor.RDOS32 || flavor == RDOSFlavor.RDOS3) {
-                chunkSource.ReadSector(1, 12, sctBuf, 0, SectorOrder.Physical);
-                nameOffset = 0xa2;
-                orMask = 0x80;
-            } else {
-                chunkSource.ReadSector(0, 1, sctBuf, 0, SectorOrder.ProDOS_Block);
-                nameOffset = 0x98;
-                orMask = 0x00;
-            }
-            for (int i = 0; i < SIG_NAME.Length; i++) {
-                if (sctBuf[nameOffset + i] != (SIG_NAME[i] | orMask)) {
-                    Debug.WriteLine("Rejecting order=" + chunkSource.FileOrder);
-                    return TestResult.No;
-                }
+            RDOSFlavor flavor = DetectFlavor(chunkSource);
+            if (flavor == RDOSFlavor.Unknown) {
+                return TestResult.No;
             }
 
             return TestResult.Yes;
+        }
+
+        /// <summary>
+        /// Detects which flavor of RDOS lives on this disk image by scanning the contents.
+        /// </summary>
+        private static RDOSFlavor DetectFlavor(IChunkAccess chunks) {
+            byte[] sctBuf = new byte[SECTOR_SIZE];
+            bool foundMismatch = false;
+
+            // RDOS33: low-ASCII string at +$98 in T0S1.
+            try {
+                chunks.ReadSector(0, 1, sctBuf, 0, SectorOrder.ProDOS_Block);
+                for (int i = 0; i < SIG_NAME.Length; i++) {
+                    if (sctBuf[0x98 + i] != SIG_NAME[i]) {
+                        foundMismatch = true;
+                        break;
+                    }
+                }
+                if (!foundMismatch) {
+                    return RDOSFlavor.RDOS33;
+                }
+            } catch (BadBlockException) {
+                // Expected result on 13-sector game-save disks, because the 13-sector formatter
+                // doesn't write the data field.
+            }
+
+            // RDOS32/RDOS3: high-ASCII string at +$a2 in T1S12.
+            foundMismatch = false;
+            chunks.ReadSector(1, 12, sctBuf, 0, SectorOrder.Physical);
+            for (int i = 0; i < SIG_NAME.Length; i++) {
+                if (sctBuf[0xa2 + i] != (byte)(SIG_NAME[i] | 0x80)) {
+                    foundMismatch = true;
+                    break;
+                }
+            }
+            if (!foundMismatch) {
+                if (chunks.NumSectorsPerTrack == 13) {
+                    return RDOSFlavor.RDOS32;
+                } else {
+                    return RDOSFlavor.RDOS3;
+                }
+            }
+
+            return RDOSFlavor.Unknown;
         }
 
         // Delegate: returns true if the size (in bytes) is valid for this filesystem.
@@ -258,8 +269,15 @@ namespace DiskArc.FS {
                 AppHook.LogW("Attempting to dispose of RDOS object twice");
                 return;
             }
+            AppHook.LogD("RDOS.Dispose");
             if (disposing) {
-                // TODO
+                if (mOpenFiles.Count != 0) {
+                    CloseAll();
+                }
+                if (mVolDirEntry != IFileEntry.NO_ENTRY) {
+                    // Invalidate all associated file entry objects.
+                    InvalidateFileEntries();
+                }
                 RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.Closed;
                 mDisposed = true;
             }
@@ -334,19 +352,9 @@ namespace DiskArc.FS {
         private void ScanVolume() {
             // Start by detecting which flavor of RDOS this is.  We can't do this in "raw" mode
             // because we can't distinguish RDOS33 from RDOS3 by disk format.
-            if (ChunkAccess.NumSectorsPerTrack == 13) {
-                Flavor = RDOSFlavor.RDOS32;
-            } else {
-                byte[] sctBuf = new byte[SECTOR_SIZE];
-                ChunkAccess.ReadSector(CAT_TRACK, 0, sctBuf, 0);
-                char majVers = (char)(sctBuf[SIG_PREFIX.Length] & 0x7f);
-                if (majVers == '3') {
-                    Flavor = RDOSFlavor.RDOS33;
-                } else if (majVers == '2') {
-                    Flavor = RDOSFlavor.RDOS3;
-                } else {
-                    throw new DAException("RDOS not recognized");
-                }
+            Flavor = DetectFlavor(ChunkAccess);
+            if (Flavor == RDOSFlavor.Unknown) {
+                throw new DAException("RDOS not recognized");
             }
 
             // Create volume usage map.  The boot/directory blocks are covered by a directory
@@ -395,6 +403,18 @@ namespace DiskArc.FS {
             }
             freeBlocks += TotalSectors - nextStart;
             return freeBlocks;
+        }
+
+        /// <summary>
+        /// Converts a file sector index into track/sector.
+        /// </summary>
+        /// <param name="sectorNum">Sector index number.</param>
+        /// <param name="trk">Result: track (0-34).</param>
+        /// <param name="sct">Result: sector (0-12 or 0-15).</param>
+        internal void SectorIndexToTrackSector(uint sectorNum, out uint trk, out uint sct) {
+            uint sctPerTrk = (Flavor == RDOSFlavor.RDOS33 ? 16U : 13U);
+            trk = sectorNum / sctPerTrk;
+            sct = sectorNum % sctPerTrk;
         }
 
         // IFileSystem
@@ -462,12 +482,46 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public DiskFileStream OpenFile(IFileEntry entry, FileAccessMode mode, FilePart part) {
-            throw new NotImplementedException();
+        public DiskFileStream OpenFile(IFileEntry ientry, FileAccessMode mode, FilePart part) {
+            if (part == FilePart.RawData) {
+                part = FilePart.DataFork;   // do this before is-file-open check
+            }
+            CheckFileAccess("open", ientry, mode != FileAccessMode.ReadOnly, part);
+            if (mode != FileAccessMode.ReadOnly && mode != FileAccessMode.ReadWrite) {
+                throw new ArgumentException("Unknown file access mode " + mode);
+            }
+            if (part != FilePart.DataFork) {
+                throw new ArgumentException("Requested file part not found");
+            }
+
+            RDOS_FileEntry entry = (RDOS_FileEntry)ientry;
+            RDOS_FileDesc pfd = RDOS_FileDesc.CreateFD(entry, mode, part);
+            mOpenFiles.Add(this, entry, pfd);
+            return pfd;
         }
 
+        /// <summary>
+        /// Closes a file, removing it from our list.  Do not call this directly -- this is
+        /// called from the file descriptor Dispose() call.
+        /// </summary>
+        /// <param name="ifd">Descriptor to close.</param>
+        /// <exception cref="IOException">File descriptor was already closed, or was opened
+        ///   by a different filesystem.</exception>
         internal void CloseFile(DiskFileStream ifd) {
-            throw new NotImplementedException();
+            RDOS_FileDesc fd = (RDOS_FileDesc)ifd;
+            if (fd.FileSystem != this) {
+                // Should be impossible, though it could be null if previous close invalidated it.
+                if (fd.FileSystem == null) {
+                    throw new IOException("Invalid file descriptor");
+                } else {
+                    throw new IOException("File descriptor was opened by a different filesystem");
+                }
+            }
+
+            // Find the file record, searching by descriptor.
+            if (!mOpenFiles.RemoveDescriptor(ifd)) {
+                throw new IOException("Open file record not found: " + fd);
+            }
         }
 
         // IFileSystem

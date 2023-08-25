@@ -115,16 +115,16 @@ namespace AppCommon {
         }
 
         /// <summary>
-        /// Returns a short (&lt;= 8 char) string with an RDOS flavor description.
+        /// Returns a short (&lt;= 6 char) string with an RDOS flavor description.
         /// </summary>
         public static string RDOSFlavor(RDOS.RDOSFlavor flavor) {
             switch (flavor) {
                 case RDOS.RDOSFlavor.RDOS32:
-                    return "RDOS 3.2";
+                    return "RDOS32";
                 case RDOS.RDOSFlavor.RDOS33:
-                    return "RDOS 3.3";
+                    return "RDOS33";
                 case RDOS.RDOSFlavor.RDOS3:
-                    return "RDOS 3";
+                    return "RDOS3";
                 default:
                     return "?" + flavor.ToString();
             }

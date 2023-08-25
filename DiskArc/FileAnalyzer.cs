@@ -194,7 +194,12 @@ namespace DiskArc {
             /// <param name="appHook">Application hook reference.</param>
             /// <returns>True if the filesystem code recognizes this as its own.</returns>
             public TestResult TestImage(IChunkAccess chunkSource, AppHook appHook) {
-                return mTestImageFunc(chunkSource, appHook);
+                try {
+                    return mTestImageFunc(chunkSource, appHook);
+                } catch (Exception ex) {
+                    appHook.LogW("Exception thrown from " + Name + " TestImage: " + ex.Message);
+                    return TestResult.No;
+                }
             }
 
             /// <summary>

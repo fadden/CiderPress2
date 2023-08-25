@@ -561,11 +561,12 @@ Most filesystems can only be placed on disks with certain sizes.
 DOS disks will be bootable unless `--no-make-bootable` is specified.  ProDOS
 and Pascal always have the Apple II boot blocks written, but the disks will
 not actually boot without "PRODOS" or "SYSTEM.APPLE".  HFS boot blocks are
-zeroed.  For CP/M, `--make-bootable` will cause the first three tracks to be
-marked as reserved, but the formatter does not write an OS image.
+zeroed.  For CP/M, `--make-bootable` will cause the first three tracks of
+5.25" disks to be marked as reserved, but the formatter does not write an OS
+image.
 
 ProDOS and HFS disks are created with the volume name "NEW.DISK".  DOS disks
-use volume #254.
+use volume #254.  These can be changed with the `move`/`rename` command.
 
 Options:
  - `--sectors={13,16,32}`
@@ -845,9 +846,11 @@ The command will fail if `<new-name>` is a partial path that includes
 non-existent directories.  Wildcards are not evaluated for `<new-name>`.
 The name will be adjusted for compatibility before it is applied.
 
-This is not very useful for gzip archives.  While these may store a
+This is not very useful for gzip archives.  While these optionally store a
 filename internally, they are usually treated as having the current name
-of the file minus ".gz".
+of the file without the ".gz" suffix.  (You can list the file with
+`--no-skip-simple`, and perhaps `--depth=shallow`, to see the name stored
+inside.)
 
 Options:
  - `--mac-zip`, `--no-mac-zip`
@@ -1429,6 +1432,8 @@ The filesystems that may be formatted onto a disk image are:
    and are limited to 65535 blocks (31.9MB).  Partitions are typically
    created as an even number of megabytes, so an "oversized" 65536-block
    image is also allowed.
+
+Creation of RDOS disks is not supported.
 
 ### Import and Export ###
 

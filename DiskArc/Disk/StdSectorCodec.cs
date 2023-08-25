@@ -75,7 +75,7 @@ namespace DiskArc.Disk {
                     codec.Name = "Std 16-sector";
                     break;
                 case CodecIndex525.RDOS33_525_16:
-                    codec.Name = "RDOS 3.3";
+                    codec.Name = "RDOS 16-sector";
                     codec.AddrEpilogReadCount = 0;
                     codec.mSpecial = Special.RDOS33;
                     break;
@@ -84,7 +84,7 @@ namespace DiskArc.Disk {
                     codec.Set13();
                     break;
                 case CodecIndex525.RDOS32_525_13:
-                    codec.Name = "RDOS 3.2";
+                    codec.Name = "RDOS 13-sector";
                     codec.Set13();
                     codec.mAddressProlog = sD4AAB7;     // $D4 not legal?
                     break;
@@ -113,7 +113,7 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Generates a codec for a 5.25" nibble disk image.
+        /// Generates a codec for a 3.5" nibble disk image.
         /// </summary>
         /// <param name="index">Codec index.</param>
         /// <returns>New codec instance.</returns>

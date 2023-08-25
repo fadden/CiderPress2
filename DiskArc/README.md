@@ -444,6 +444,19 @@ via the GS/OS extension.  Extending a file with `SetLength()` will add a sparse 
 
 Embedded DOS volumes, such as those created by DOS.MASTER, can be detected automatically.
 
+### RDOS ###
+
+RDOS is supported for reading only.  The code will look for problems with the filesystem
+structure, so that problems with disks can be identified early.
+
+RDOS text files are very similar to DOS 3.3 sequential text files, in that the length can only be
+determined by scanning the file for the first $00 byte.  This could be handled in the same way
+that DOS handles it, by setting the length to the actual length, and using "raw data" mode to
+access the full file contents.  This is not currently done.
+
+The text files use high ASCII, which suggests that transforming them when copying files would
+be helpful, but since these hold game data rather than documents it's best to leave them intact.
+
 
 ## Archive Implementation Notes ##
 

@@ -17,7 +17,6 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
 
 using CommonUtil;
 using static DiskArc.Defs;
@@ -70,7 +69,7 @@ namespace DiskArc.FS {
 
         public byte FileType {
             get {
-                if (IsVolumeDirectory) {
+                if (IsDirectory) {
                     return FileAttribs.FILE_TYPE_DIR;
                 } else {
                     return TypeToProDOS(mFileType);
@@ -79,7 +78,16 @@ namespace DiskArc.FS {
             set => throw new IOException();
         }
         public ushort AuxType {
-            get => mLoadAddr;
+            get {
+                // Don't return the load address for text files, as it's usually $B100, which
+                // confuses the file viewer into thinking it's a random-access text file.  The
+                // value is similarly useless for Applesoft files, but it's harmless there.
+                if (mFileType == TYPE_T) {
+                    return 0;
+                } else {
+                    return mLoadAddr;
+                }
+            }
             set => throw new IOException();
         }
 
@@ -96,7 +104,7 @@ namespace DiskArc.FS {
 
         public long StorageSize => mSectorCount * SECTOR_SIZE;
 
-        public long DataLength => mFileLength;      // TODO?
+        public long DataLength => mFileLength;
 
         public long RsrcLength => 0;
 
@@ -105,7 +113,7 @@ namespace DiskArc.FS {
         public bool GetPartInfo(FilePart part, out long length, out long storageSize,
                 out CompressionFormat format) {
             format = CompressionFormat.Uncompressed;
-            if (part == FilePart.DataFork || part == FilePart.RawData) {    // TODO?
+            if (part == FilePart.DataFork || part == FilePart.RawData) {
                 length = DataLength;
                 storageSize = StorageSize;
                 return true;
@@ -153,11 +161,6 @@ namespace DiskArc.FS {
         public RDOS FileSystem { get; private set; }
 
         /// <summary>
-        /// True if this is the "fake" volume directory object.
-        /// </summary>
-        private bool IsVolumeDirectory { get; set; }
-
-        /// <summary>
         /// List of files contained in this entry.  Only the volume dir has children.
         /// </summary>
         internal List<IFileEntry> ChildList { get; } = new List<IFileEntry>();
@@ -178,12 +181,14 @@ namespace DiskArc.FS {
                     return FileAttribs.FILE_TYPE_BIN;
                 case TYPE_T:
                     return FileAttribs.FILE_TYPE_TXT;
+                case TYPE_S:
                 default:
                     return FileAttribs.FILE_TYPE_NON;
             }
         }
         private const byte TYPE_A = 'A' | 0x80;
         private const byte TYPE_B = 'B' | 0x80;
+        private const byte TYPE_S = 'S' | 0x80;
         private const byte TYPE_T = 'T' | 0x80;
 
 
@@ -311,7 +316,8 @@ namespace DiskArc.FS {
                     break;
                 }
             }
-            if (mFileType != TYPE_A && mFileType != TYPE_B && mFileType != TYPE_T) {
+            if (mFileType != TYPE_A && mFileType != TYPE_B && mFileType != TYPE_S &&
+                    mFileType != TYPE_T) {
                 notes.AddW("Invalid file type 0x" + mFileType.ToString("x2") + ": " +
                     mFileName);
                 // not fatal
@@ -344,6 +350,7 @@ namespace DiskArc.FS {
         private static readonly byte[] RAW33_NAME = MakeRawName("RDOS 3.3");
         private static readonly byte[] RAW32_NAME = MakeRawName("RDOS 3.2");
         private static readonly byte[] RAW3_NAME = MakeRawName("RDOS 3");
+
         private static RDOS_FileEntry CreateFakeVolDirEntry(RDOS fs) {
             byte[] rawName;
             switch (fs.Flavor) {
@@ -352,7 +359,10 @@ namespace DiskArc.FS {
                 case RDOS.RDOSFlavor.RDOS3: rawName = RAW3_NAME; break;
                 default: throw new NotImplementedException();
             }
-            return CreateEntry(fs, IFileEntry.NO_ENTRY, rawName, 0, (byte)'D', 0, 0, 0, 0);
+            RDOS_FileEntry newEntry =
+                CreateEntry(fs, IFileEntry.NO_ENTRY, rawName, 0, (byte)'D', 0, 0, 0, 0);
+            newEntry.IsDirectory = true;
+            return newEntry;
         }
 
         // IFileEntry
