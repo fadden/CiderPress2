@@ -41,12 +41,13 @@ namespace DiskArc {
             new DiskLayoutEntry("CFFA", FileSystemType.CFFA, typeof(Multi.CFFA)),
             // MSDOS/FAT (mostly to rule it out)
 
-            // We want to check for DOS before ProDOS, so that we can identify DOS hybrids.
+            // We want to check for DOS before ProDOS/Pascal/CPM, so that we can identify hybrids.
             new DiskLayoutEntry("DOS 3.x", FileSystemType.DOS33, typeof(FS.DOS)),
             new DiskLayoutEntry("ProDOS", FileSystemType.ProDOS, typeof(FS.ProDOS)),
             new DiskLayoutEntry("Pascal", FileSystemType.Pascal, typeof(FS.Pascal)),
             new DiskLayoutEntry("HFS", FileSystemType.HFS, typeof(FS.HFS)),
             new DiskLayoutEntry("RDOS", FileSystemType.RDOS, typeof(FS.RDOS)),
+            new DiskLayoutEntry("Gutenberg", FileSystemType.Gutenberg, typeof(FS.Gutenberg)),
             new DiskLayoutEntry("CPM", FileSystemType.CPM, typeof(FS.CPM)),
 
             new DiskLayoutEntry("Am/UniDOS", FileSystemType.AmUniDOS, typeof(Multi.AmUniDOS)),

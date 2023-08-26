@@ -29,7 +29,7 @@ namespace DiskArc.FS {
 
         public bool IsValid { get { return FileSystem != null; } }
 
-        public bool IsDubious { get; private set; }
+        public bool IsDubious => mHasConflict;
         public bool IsDamaged { get; private set; }
 
         public bool IsDirectory { get; private set; }
@@ -201,17 +201,10 @@ namespace DiskArc.FS {
             FileSystem = fileSystem;
         }
 
-        // IDisposable generic finalizer.
-        ~RDOS_FileEntry() {
-            Dispose(false);
-        }
         // IDisposable generic Dispose() implementation.
         public void Dispose() {
-            Dispose(true);
+            //Dispose(true);
             GC.SuppressFinalize(this);
-        }
-        protected virtual void Dispose(bool disposing) {
-            // nothing to do
         }
 
         /// <summary>
@@ -285,6 +278,9 @@ namespace DiskArc.FS {
             return volDir;
         }
 
+        /// <summary>
+        /// Creates a new file entry object.
+        /// </summary>
         private static RDOS_FileEntry CreateEntry(RDOS fs, IFileEntry parentDir, byte[] rawFileName,
                 int rawFileNameOffset, byte fileType, byte sectorCount, ushort loadAddr,
                 ushort fileLength, ushort startIndex) {
@@ -330,7 +326,7 @@ namespace DiskArc.FS {
             if (mFileLength > mSectorCount * SECTOR_SIZE) {
                 notes.AddW("Invalid file length " + mFileLength + " (count=" + mSectorCount +
                     "): " + mFileName);
-                IsDubious = true;
+                IsDamaged = true;
                 return false;
             }
             if (mStartIndex >= FileSystem.TotalSectors) {
@@ -347,6 +343,7 @@ namespace DiskArc.FS {
             return true;
         }
 
+        // Fake volume names; these will appear in the GUI.
         private static readonly byte[] RAW33_NAME = MakeRawName("RDOS 3.3");
         private static readonly byte[] RAW32_NAME = MakeRawName("RDOS 3.2");
         private static readonly byte[] RAW3_NAME = MakeRawName("RDOS 3");

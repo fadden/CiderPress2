@@ -318,7 +318,6 @@ namespace DiskArc.FS {
                 // try to use a retained object after it was switched back to file access.
                 InvalidateFileEntries();
             }
-
             mVolDirEntry = IFileEntry.NO_ENTRY;
             VolUsage = null;
             Flavor = RDOSFlavor.Unknown;
@@ -476,6 +475,7 @@ namespace DiskArc.FS {
                 throw new IOException("File is already open; cannot " + op);
             }
         }
+
         // IFileSystem
         public IFileEntry GetVolDirEntry() {
             return mVolDirEntry;

@@ -387,12 +387,13 @@ through the "embedded volume" mechanism.
 
 ### Gutenberg ###
 
-Gutenberg is supported for reading only.
-
-[...]
+Gutenberg is supported for reading only.  Various error conditions are checked for, such as
+overlapping files and bad sector links.
 
 File lengths are multiples of 250, so determining the exact length of a document requires
 scanning for the first occurrence of $00.  This is not currently done by the filesystem code.
+The Gutenberg editor doesn't seem to do this either, as evidenced by a broken file that skips
+over a large number of nulls before displaying the "boot other side" message from T0 S0.
 
 ### HFS ###
 

@@ -56,7 +56,7 @@ namespace DiskArc.FS {
 
         public bool IsValid { get { return FileSystem != null; } }
 
-        public bool IsDubious { get { return mHasConflict; } }
+        public bool IsDubious => mHasConflict;
 
         public bool IsDamaged { get; private set; }
 
