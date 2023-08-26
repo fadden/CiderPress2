@@ -200,7 +200,7 @@ namespace DiskArc {
                     fs = new ProDOS(diskImage.ChunkAccess, appHook);
                     break;
                 default:
-                    // Not implemented for RDOS.
+                    // Not implemented for Gutenberg or RDOS.
                     throw new NotSupportedException("FormatDisk doesn't handle: " + fsType);
             }
 
@@ -345,6 +345,8 @@ namespace DiskArc {
                 return Defs.FileSystemType.CPM;
             } else if (fs is DOS) {
                 return Defs.FileSystemType.DOS33;   // we don't really use the DOS32 enum value
+            } else if (fs is Gutenberg) {
+                return Defs.FileSystemType.Gutenberg;
             } else if (fs is HFS) {
                 return Defs.FileSystemType.HFS;
             } else if (fs is Pascal) {
@@ -607,6 +609,8 @@ namespace DiskArc {
                 return ((CPM_FileEntry)entry).FileSystem;
             } else if (entry is DOS_FileEntry) {
                 return ((DOS_FileEntry)entry).FileSystem;
+            } else if (entry is Gutenberg_FileEntry) {
+                return ((Gutenberg_FileEntry)entry).FileSystem;
             } else if (entry is HFS_FileEntry) {
                 return ((HFS_FileEntry)entry).FileSystem;
             } else if (entry is Pascal_FileEntry) {

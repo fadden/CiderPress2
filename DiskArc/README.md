@@ -385,6 +385,15 @@ continues past an unused entry.
 Hybrid volumes, where DOS peacefully overlaps with ProDOS, Pascal, or CP/M, can be detected
 through the "embedded volume" mechanism.
 
+### Gutenberg ###
+
+Gutenberg is supported for reading only.
+
+[...]
+
+File lengths are multiples of 250, so determining the exact length of a document requires
+scanning for the first occurrence of $00.  This is not currently done by the filesystem code.
+
 ### HFS ###
 
 HFS is well supported, for both reading and writing, on volumes up to 4GB.  The initial file
@@ -446,8 +455,9 @@ Embedded DOS volumes, such as those created by DOS.MASTER, can be detected autom
 
 ### RDOS ###
 
-RDOS is supported for reading only.  The code will look for problems with the filesystem
-structure, so that problems with disks can be identified early.
+RDOS is supported for reading only.  All three variants, known as RDOS32, RDOS33, and RDOS3, are
+supported.  The filesystem scan will look for problems with the file structure, so that damaged
+disks can be identified early.
 
 RDOS text files are very similar to DOS 3.3 sequential text files, in that the length can only be
 determined by scanning the file for the first $00 byte.  This could be handled in the same way

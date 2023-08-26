@@ -101,6 +101,8 @@ namespace AppCommon {
                 return "CP/M";
             } else if (fs is DOS) {
                 return "DOS 3.x";
+            } else if (fs is Gutenberg) {
+                return "Gutnbrg";
             } else if (fs is HFS) {
                 return "HFS";
             } else if (fs is Pascal) {
@@ -195,10 +197,13 @@ namespace AppCommon {
                     return "High Sierra";
                 case Defs.FileSystemType.ISO9660:
                     return "ISO-9660";
+
                 case Defs.FileSystemType.RDOS:
                     return "RDOS";
                 case Defs.FileSystemType.Unix:
                     return "UNIX";
+                case Defs.FileSystemType.Gutenberg:
+                    return "Gutenberg";
                 case Defs.FileSystemType.APM:
                     return "Apple Partition Map";
                 case Defs.FileSystemType.MacTS:

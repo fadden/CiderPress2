@@ -381,7 +381,7 @@ namespace DiskArc.FS {
                 Notes.AddW("Found " + conflicts + " blocks in use by more than one file");
             }
 
-            Debug.WriteLine(VolUsage.DebugDump());
+            //Debug.WriteLine(VolUsage.DebugDump());
         }
 
         /// <summary>

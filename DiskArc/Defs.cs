@@ -176,8 +176,7 @@ namespace DiskArc {
 
             RDOS = 20,                  // RDOS (SSI) filesystem
             Unix = 21,                  // filesystem with UNIX timestamps; used for AppleSingle
-
-            //kFormatGutenberg = 47,      // Gutenberg word processor format
+            Gutenberg = 22,             // Gutenberg word processor format
 
             //
             // Multi-partition formats.  These aren't really filesystems, but it's handy to have a
