@@ -26,6 +26,12 @@ namespace DiskArc.FS {
     /// Macintosh File System (MFS) implementation.
     /// </summary>
     public class MFS : IFileSystem {
+        public const int MAX_VOL_NAME_LEN = 27;
+        public const int MAX_FILE_NAME_LEN = 255;
+
+        internal const long MIN_VOL_SIZE = 32 * BLOCK_SIZE;     // arbitrary
+        internal const long MAX_VOL_SIZE = 1600 * BLOCK_SIZE;   // arbitrary
+
         private const string VOLNAME_RULES =
             "1-27 characters.";
         private const string FILENAME_RULES =
@@ -99,17 +105,51 @@ namespace DiskArc.FS {
             if (!chunkSource.HasBlocks) {
                 return TestResult.No;
             }
-            throw new NotImplementedException();
+            if (!IsSizeAllowed(chunkSource.FormattedLength)) {
+                return TestResult.No;
+            }
+
+            MFS_MDB mdb = new MFS_MDB(chunkSource);
+            mdb.Read();
+            if (mdb.Signature != MFS_MDB.SIGNATURE) {
+                return TestResult.No;
+            }
+            if (mdb.AllocBlockSize == 0 || (mdb.AllocBlockSize & 0x1ff) != 0) {
+                // Allocation block size must be a nonzero multiple of 512.
+                return TestResult.No;
+            }
+            if (string.IsNullOrEmpty(mdb.VolumeName)) {
+                return TestResult.No;
+            }
+            int diskBlockCount = (int)(chunkSource.FormattedLength / BLOCK_SIZE);
+            if (mdb.DirectoryStart >= diskBlockCount || mdb.AllocBlockStart >= diskBlockCount) {
+                return TestResult.No;
+            }
+
+            int blocksPerAlloc = (int)(mdb.AllocBlockSize / BLOCK_SIZE);
+            int diskAllocCount = (diskBlockCount - mdb.AllocBlockStart) / blocksPerAlloc;
+            if (mdb.NumAllocBlocks > diskAllocCount) {
+                Debug.WriteLine("MFS claims to have " + mdb.NumAllocBlocks +
+                    " alloc blocks, but max is " + diskAllocCount);
+                return TestResult.No;
+            }
+
+            return TestResult.Yes;
         }
 
         // Delegate: returns true if the size (in bytes) is valid for this filesystem.
         public static bool IsSizeAllowed(long size) {
-            return size == 35 * 16 * SECTOR_SIZE;
+            if (size % BLOCK_SIZE != 0) {
+                return false;       // must be blocks
+            }
+            if (size < MIN_VOL_SIZE || size > MAX_VOL_SIZE) {
+                return false;
+            }
+            return true;
         }
 
-
         public MFS(IChunkAccess chunks, AppHook appHook) {
-            Debug.Assert(chunks.HasSectors);
+            Debug.Assert(chunks.HasBlocks);
             ChunkAccess = chunks;
             AppHook = appHook;
 
@@ -165,7 +205,7 @@ namespace DiskArc.FS {
                 // Reset all values and scan the volume.
                 IsDubious = false;
                 Notes.Clear();
-                ScanVolume();
+                ScanVolume(doScan);
                 RawAccess.AccessLevel = GatedChunkAccess.AccessLvl.ReadOnly;
             } catch (Exception ex) {
                 // Failed; reset for raw.
@@ -215,8 +255,14 @@ namespace DiskArc.FS {
         /// </summary>
         /// <exception cref="IOException">Disk access failure.</exception>
         /// <exception cref="DAException">Invalid filesystem.</exception>
-        private void ScanVolume() {
-            throw new NotImplementedException();
+        private void ScanVolume(bool doScan) {
+            VolMDB = new MFS_MDB(ChunkAccess);
+            VolMDB.Read();
+            if (doScan) {
+                VolMDB.InitVolumeUsage();
+            }
+
+            mVolDirEntry = MFS_FileEntry.ScanDirectory(this);
         }
 
         // IFileSystem
@@ -236,7 +282,7 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public IFileEntry GetVolDirEntry() {
-            throw new NotImplementedException();
+            return mVolDirEntry;
         }
 
         // IFileSystem

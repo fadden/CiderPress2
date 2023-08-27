@@ -140,8 +140,9 @@ namespace cp2_wpf {
                 } else if (entry.HFSCreator != 0 || entry.HFSFileType != 0) {
                     // Stringify the HFS types.  No need to show as hex.
                     // All HFS files have a resource fork, so only show a '+' if it has data in it.
-                    Type = MacChar.StringifyMacConstant(entry.HFSFileType) +
-                        (entry.RsrcLength > 0 ? '+' : ' ');
+                    // (Or maybe just don't bother?)
+                    Type = MacChar.StringifyMacConstant(entry.HFSFileType) /*+
+                        (entry.RsrcLength > 0 ? '+' : ' ')*/;
                     AuxType = ' ' + MacChar.StringifyMacConstant(entry.HFSCreator);
                 } else if (entry.HasProDOSTypes) {
                     // Use the ProDOS types instead.  GSHK does this for ProDOS files.

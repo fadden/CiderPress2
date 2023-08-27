@@ -30,23 +30,26 @@ Files are stored in "allocation blocks", which are a multiple of 512 bytes.
 Blocks 0 and 1 hold "system startup information" for startup disks.  On non-bootable disks, the
 blocks were filled with zeroes.
 
-Block 2 and 3 are the Master Directory Block (MDB), which is comprised of the 64-byte Volume
+Block 2 and 3 are the Master Directory "Block" (MDB), which is comprised of the 64-byte Volume
 Information chunk and the Volume Allocation Block Map.  The Volume Information specifies how the
 disk is laid out.  The block map is an array of 12-bit values that act as both a block-in-use
 indicator and a link in a file's block list.
 
 The MDB is usually followed by the file directory, which starts on block 4, and will be 12 blocks
 long on a 400KB volume.  The directory's size is fixed.  The allocation blocks used to hold files
-begin immediately after.  It's valid to have the file directory in the allocation block area,
-though, in which case the blocks it lives on must be marked as in use in the block map (using
-alloc block $fff).
+begin immediately after.  It's also possible to have the file directory created in the allocation
+block area, though, in which case the blocks it lives on must be marked as in use in the block
+map (using alloc block $fff).
+
+A backup copy of the MDB blocks is stored at the end of the disk.
 
 Given this structure, a 400KB floppy disk should look like:
 ```
 block 0-1: system startup information
 block 2-3: volume information (64 bytes) and block map (960 bytes)
 block 4-15: file directory
-block 16-799: file contents
+block 16-797: allocation blocks with file contents
+block 798-799: backup copy of MDB
 ```
 With an allocation block size of 1KB, there will be 392 allocation units.  At 12 bits each,
 that requires 588 bytes, which fits easily in the space available.  (If the allocation block
@@ -80,15 +83,15 @@ on characters are specified in the documentation.
 ### Volume Allocation Block Map ###
 
 The block map is an array of 12-bit values, stored in big-endian order.  The bytes 0xAB 0xCD 0xEF
-would become 0x0ABC and 0x0DEF.  Allocation block numbers 0 and 1 are reserved, so the first
-entry in the table is for alloc block #2.  (This has nothing to do with disk block numbers or
-the system boot area.)
+would become 0x0ABC and 0x0DEF.  Allocation block numbers 0, 1, and 0x0fff are reserved, so the
+first entry in the table is for alloc block #2.  (This has nothing to do with disk block numbers
+or the system boot area.)
 
 The block map has one entry for each allocation block on the disk.  The size of the map is
 a bit vague, as the documentation first says "the master directory 'block' always occupies two
-blocks", and then later says it "continues for as many logical blocks as needed".  However, if
+blocks", and then later says it "continues for as many logical blocks as needed".  Of course, if
 the disk initialization code ensures that the MDB always fits in two blocks, then the second
-statement is also true.
+statement is always true.  In any event, a 1024-byte MDB can cover 640 allocation blocks.
 
 The file directory entry provides the number of the first block in a file.  The block map entry
 for that block holds the allocation block number of the next block in the file.  This provides
@@ -100,7 +103,7 @@ If a block is unused, the map entry will be zero.
 
 MFS has a single directory for the entire volume.  Each entry has a variable size, 51 bytes plus
 the filename.  Entries aren't allowed to cross block boundaries, so it's not necessary to hold
-multiple catalog blocks in memory at once.
+multiple catalog blocks in memory at once.  The start of each entry is aligned to a 16-bit word.
 
 Each entry has the form:
 ```
@@ -127,9 +130,14 @@ File numbers start at 1 and are never re-used within a volume.
 The "logical" length is the actual length of the fork.  The "physical" length is the storage
 required, and is always a multiple of the allocation block size.
 
-Entries can be marked as deleted without needing to "crunch" the directory, but it would likely
-be necessary to defragment the directory to make room for new files.  Renaming a file could
-necessitate relocating the entry to a different directory block.
+Finding an entry for which `flFlags` does not have the high bit set would seem to indicate the
+end of entries in that block.  In theory an entry could be deleted without being zeroed, and
+the directory traversal code would then continue to process the bytes to determine the full
+length of the deleted entry.  This would allow un-deletion.  The MFSLives project interprets
+attributes==0 to mean that there are no further entries in the block, so that's the recommended
+approach.
+
+Renaming a file could necessitate relocating the entry to a different directory block.
 
 Page IV-90 in _Inside Macintosh: Volume IV_ notes:
 > The 64K ROM version of the File Manager allows file names of up to 255 characters.  File names

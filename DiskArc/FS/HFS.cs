@@ -160,12 +160,12 @@ namespace DiskArc.FS {
             }
 
             // Read the volume master directory header block.
-            byte[] blkBuf = new byte[BLOCK_SIZE];
-            try {
-                chunkSource.ReadBlock(MDB_BLOCK_NUM, blkBuf, 0);
-            } catch (BadBlockException) {
-                return TestResult.No;
-            }
+            //byte[] blkBuf = new byte[BLOCK_SIZE];
+            //try {
+            //    chunkSource.ReadBlock(MDB_BLOCK_NUM, blkBuf, 0);
+            //} catch (BadBlockException) {
+            //    return TestResult.No;
+            //}
 
             HFS_MDB mdb = new HFS_MDB(chunkSource);
             mdb.Read();
@@ -183,12 +183,13 @@ namespace DiskArc.FS {
 
             // Count up the number of logical blocks spanned by the declared allocation block
             // count, and see if it fits inside the data source.
-            // (I've seen this be wrong on some CD-ROMs produced by Apple.)
             uint minBlocks =
                 mdb.TotalBlocks * (mdb.BlockSize / BLOCK_SIZE) + mdb.AllocBlockStart + 2;
             if (minBlocks > chunkSource.FormattedLength / BLOCK_SIZE) {
                 Debug.WriteLine("Volume spans " + minBlocks + " blocks, but chunk len is " +
                     (chunkSource.FormattedLength / BLOCK_SIZE) + " blocks");
+                // I've seen this be wrong on some CD-ROMs produced by Apple; don't use this
+                // as a validity test.
                 //return TestResult.No;
             }
 

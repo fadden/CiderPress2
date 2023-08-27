@@ -18,70 +18,148 @@ using System.Collections;
 using System.Diagnostics;
 
 using CommonUtil;
+using static CommonUtil.Notes;
 using static DiskArc.Defs;
 
 namespace DiskArc.FS {
     public class MFS_FileEntry : IFileEntryExt, IDisposable {
+        internal const int ENTRY_BASE_LEN = 50;         // 50 bytes plus the filename
+        internal const int FINDER_INFO_LEN = 16;        // FInfo struct
+
         //
         // IFileEntry interfaces.
         //
 
         public bool IsValid { get { return FileSystem != null; } }
 
-        public bool IsDubious => throw new NotImplementedException();
+        public bool IsDubious => mHasConflict;
+        public bool IsDamaged { get; internal set; }
 
-        public bool IsDamaged => throw new NotImplementedException();
-
-        public bool IsDirectory => throw new NotImplementedException();
-
-        public bool HasDataFork => throw new NotImplementedException();
-        public bool HasRsrcFork => throw new NotImplementedException();
-        public bool IsDiskImage => throw new NotImplementedException();
+        public bool IsDirectory { get; private set; }
+        public bool HasDataFork => mDataStartBlock != 0;
+        public bool HasRsrcFork => mRsrcStartBlock != 0;
+        public bool IsDiskImage => false;
 
         public IFileEntry ContainingDir { get; private set; }
 
-        public int Count => throw new NotImplementedException();
+        public int Count => ChildList.Count;        // fake vol dir only
 
-        public string FileName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public char DirectorySeparatorChar { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public string FullPathName => throw new NotImplementedException();
-        public byte[] RawFileName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string FileName {
+            get => mFileName;
+            set => throw new IOException();
+        }
+        public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
+        public string FullPathName {
+            get {
+                string pathName = mFileName;
+                if (FileSystem == null) {
+                    pathName = "!INVALID! was:" + pathName;
+                }
+                return pathName;
+            }
+        }
+        public byte[] RawFileName {
+            get {
+                byte[] result = new byte[mFileName.Length];
+                Array.Copy(mRawFileName, 1, result, 0, result.Length);
+                return result;
+            }
+            set => throw new IOException();
+        }
 
-        public bool HasProDOSTypes => throw new NotImplementedException();
+        public bool HasProDOSTypes => false;
 
-        public byte FileType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public ushort AuxType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public byte FileType { get => 0; set { } }
+        public ushort AuxType { get => 0; set { } }
 
-        public bool HasHFSTypes { get { return false; } }
-        public uint HFSFileType { get { return 0; } set { } }
-        public uint HFSCreator { get { return 0; } set { } }
+        public bool HasHFSTypes => true;
+        public uint HFSFileType {
+            get { return RawData.GetU32BE(mFinderInfo, 0); }    // fdType
+            set => throw new IOException();
+        }
+        public uint HFSCreator {
+            get { return RawData.GetU32BE(mFinderInfo, 4); }    // fdCreator
+            set => throw new IOException();
+        }
 
-        public byte Access { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public DateTime CreateWhen { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public DateTime ModWhen { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public byte Access {
+            get {
+                return (mFlags & (byte)FileFlags.Locked) != 0 ?
+                    FileAttribs.FILE_ACCESS_LOCKED : FileAttribs.FILE_ACCESS_UNLOCKED;
+            }
+            set => throw new IOException();
+        }
+        public DateTime CreateWhen {
+            get { return TimeStamp.ConvertDateTime_HFS(mCreateWhen); }
+            set => throw new IOException();
+        }
+        public DateTime ModWhen {
+            get { return TimeStamp.ConvertDateTime_HFS(mModWhen); }
+            set => throw new IOException();
+        }
 
-        public long StorageSize => throw new NotImplementedException();
+        public long StorageSize => mDataPhysicalLen + mRsrcPhysicalLen;
 
-        public long DataLength => throw new NotImplementedException();
+        public long DataLength => mDataLogicalLen;
 
-        public long RsrcLength => throw new NotImplementedException();
+        public long RsrcLength => mRsrcLogicalLen;
 
-        public string Comment { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string Comment { get => string.Empty; set { } }
 
-        public bool GetPartInfo(FilePart part, out long length, out long storageSize, out CompressionFormat format) {
-            throw new NotImplementedException();
+        public bool GetPartInfo(FilePart part, out long length, out long storageSize,
+                out CompressionFormat format) {
+            format = CompressionFormat.Uncompressed;
+            if (part == FilePart.DataFork || part == FilePart.RawData) {
+                length = mDataLogicalLen;
+                storageSize = mDataPhysicalLen;
+                return true;
+            } else if (part == FilePart.RsrcFork) {
+                length = mRsrcLogicalLen;
+                storageSize = mRsrcPhysicalLen;
+                return true;
+            } else {
+                length = -1;
+                storageSize = 0;
+                return false;
+            }
         }
 
         public IEnumerator<IFileEntry> GetEnumerator() {
-            throw new NotImplementedException();
+            if (!IsValid) {
+                throw new DAException("Invalid file entry object");
+            }
+            return ChildList.GetEnumerator();
         }
         IEnumerator IEnumerable.GetEnumerator() {
-            throw new NotImplementedException();
+            if (!IsValid) {
+                throw new DAException("Invalid file entry object");
+            }
+            return ChildList.GetEnumerator();
         }
 
-        private void CheckChangeAllowed() {
-            throw new NotImplementedException();
+        //
+        // MFS file entry values
+        //
+
+        [Flags]
+        public enum FileFlags : byte {
+            Locked = 0x01,
+            EntryUsed = 0x80,
         }
+
+        private byte mFlags;                    // flFlags
+        private byte mVersion;                  // flTyp
+        private byte[] mFinderInfo = new byte[FINDER_INFO_LEN]; // flUsrWds
+        private uint mFileNumber;               // flFlNum
+        private ushort mDataStartBlock;         // flStBlk
+        private uint mDataLogicalLen;           // flLgLen
+        private uint mDataPhysicalLen;          // flPyLen
+        private ushort mRsrcStartBlock;         // flRstBlk
+        private uint mRsrcLogicalLen;           // flRLgLen
+        private uint mRsrcPhysicalLen;          // flRPyLen
+        private uint mCreateWhen;               // flCrDat
+        private uint mModWhen;                  // flMdDat
+        private byte[] mRawFileName = new byte[MFS.MAX_FILE_NAME_LEN + 1];  // flNam
 
         //
         // Implementation-specific.
@@ -99,6 +177,12 @@ namespace DiskArc.FS {
         /// List of files contained in this entry.  Only the volume dir has children.
         /// </summary>
         internal List<IFileEntry> ChildList { get; } = new List<IFileEntry>();
+
+        /// <summary>
+        /// True if we've detected (and Noted) a conflict with another file.
+        /// </summary>
+        private bool mHasConflict;
+
 
         /// <summary>
         /// Constructor.
@@ -135,26 +219,141 @@ namespace DiskArc.FS {
             ChildList.Clear();
         }
 
-        // IFileEntry
-        public void SaveChanges() {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Scans the volume directory.
+        /// </summary>
+        /// <param name="fs">Filesystem object.</param>
+        /// <returns>Volume directory file entry.</returns>
+        /// <exception cref="IOException">Disk access failure.</exception>
+        internal static IFileEntry ScanDirectory(MFS fs) {
+            MFS_MDB mdb = fs.VolMDB!;
+
+            MFS_FileEntry volDir = CreateFakeVolDirEntry(fs);
+
+            byte[] blkBuf = new byte[BLOCK_SIZE];
+            // Walk through all the directory blocks.
+            for (uint blk = mdb.DirectoryStart; blk < mdb.DirectoryStart + mdb.DirectoryLength;
+                    blk++) {
+                fs.ChunkAccess.ReadBlock(blk, blkBuf, 0);
+
+                // Walk through the entries in this block.
+                int offset = 0;
+                while (offset < BLOCK_SIZE) {
+                    MFS_FileEntry? newEntry = ExtractFileEntry(fs, blk, blkBuf, ref offset);
+                    if (newEntry == null) {
+                        break;          // no more in this block
+                    }
+                    if ((offset & 0x01) != 0) {
+                        offset++;       // align to 16-bit word
+                    }
+                    Debug.Assert(offset <= BLOCK_SIZE);
+
+                    volDir.ChildList.Add(newEntry);
+                }
+            }
+            return volDir;
+        }
+
+        private static MFS_FileEntry? ExtractFileEntry(MFS fs, uint blk,
+                byte[] blkBuf, ref int offset) {
+            if (blkBuf.Length - offset < FINDER_INFO_LEN + 1) {
+                return null;        // not enough room left
+            }
+            if ((blkBuf[offset] & (byte)FileFlags.EntryUsed) == 0) {
+                return null;        // no more entries in this block
+            }
+            int startOffset = offset;
+
+            MFS_FileEntry newEntry = new MFS_FileEntry(fs);
+            newEntry.mFlags = blkBuf[offset++];
+            newEntry.mVersion = blkBuf[offset++];
+            Array.Copy(blkBuf, offset, newEntry.mFinderInfo, 0, FINDER_INFO_LEN);
+            offset += FINDER_INFO_LEN;
+            newEntry.mFileNumber = RawData.ReadU32BE(blkBuf, ref offset);
+            newEntry.mDataStartBlock = RawData.ReadU16LE(blkBuf, ref offset);
+            newEntry.mDataLogicalLen = RawData.ReadU32BE(blkBuf, ref offset);
+            newEntry.mDataPhysicalLen = RawData.ReadU32BE(blkBuf, ref offset);
+            newEntry.mRsrcStartBlock = RawData.ReadU16LE(blkBuf, ref offset);
+            newEntry.mRsrcLogicalLen = RawData.ReadU32BE(blkBuf, ref offset);
+            newEntry.mRsrcPhysicalLen = RawData.ReadU32BE(blkBuf, ref offset);
+            newEntry.mCreateWhen = RawData.ReadU32BE(blkBuf, ref offset);
+            newEntry.mModWhen = RawData.ReadU32BE(blkBuf, ref offset);
+            Debug.Assert(offset - startOffset == ENTRY_BASE_LEN);
+
+            byte nameLen = blkBuf[offset++];
+            if (offset + nameLen > blkBuf.Length) {
+                fs.Notes.AddW("Directory entry ran off end of block " + blk);
+                return null;
+            }
+            newEntry.mRawFileName[0] = nameLen;
+            Array.Copy(blkBuf, offset, newEntry.mRawFileName, 1, nameLen);
+            offset += nameLen;
+
+            newEntry.mFileName = GenerateCookedName(newEntry.mRawFileName, false);
+            return newEntry;
+        }
+
+        private static MFS_FileEntry CreateFakeVolDirEntry(MFS fs) {
+            Debug.Assert(fs.VolMDB != null);
+
+            MFS_FileEntry volDir = new MFS_FileEntry(fs);
+            volDir.IsDirectory = true;
+            volDir.mFileName = fs.VolMDB.VolumeName;
+            return volDir;
         }
 
         // IFileEntry
+        public void SaveChanges() { }
+
+        // IFileEntry
         public void AddConflict(uint chunk, IFileEntry entry) {
-            throw new NotImplementedException();
+            if (!mHasConflict) {
+                string name = (entry == IFileEntry.NO_ENTRY) ?
+                    VolumeUsage.SYSTEM_STR : entry.FullPathName;
+                if (entry == IFileEntry.NO_ENTRY) {
+                    FileSystem.Notes.AddE(FullPathName + " overlaps with " + name);
+                    FileSystem.IsDubious = true;
+                } else {
+                    FileSystem.Notes.AddW(FullPathName + " overlaps with " + name);
+                }
+            }
+            mHasConflict = true;
         }
 
         #region Filenames
 
         // IFileEntry
         public int CompareFileName(string fileName) {
-            throw new NotImplementedException();
+            return MacChar.CompareHFSFileNames(mFileName, fileName);
         }
 
         // IFileEntry
         public int CompareFileName(string fileName, char fileNameSeparator) {
-            throw new NotImplementedException();
+            return MacChar.CompareHFSFileNames(mFileName, fileName);
+        }
+
+        /// <summary>
+        /// Generates the "cooked" form of the file or volume name.
+        /// </summary>
+        /// <remarks>
+        /// <para>MFS allows all characters, with a minimum length of 1 character and a
+        /// maximum length of 255 characters.  Volume names follow the same rules, but are
+        /// limited to 27 characters.</para>
+        /// <para>We convert control characters to printable glyphs for display.</para>
+        /// </remarks>
+        /// <param name="rawFileName">Raw filename data (variable length).</param>
+        /// <returns>Filename string, or the empty string if name has an invalid length.  We
+        ///   don't test for invalid characters here.</returns>
+        public static string GenerateCookedName(byte[] rawFileName, bool isVolumeName) {
+            int maxNameLen = isVolumeName ? MFS.MAX_VOL_NAME_LEN : MFS.MAX_FILE_NAME_LEN;
+
+            byte nameLen = rawFileName[0];
+            if (nameLen < 1 || nameLen > maxNameLen || nameLen >= rawFileName.Length) {
+                Debug.WriteLine("Invalid raw MFS filename");
+                return string.Empty;
+            }
+
+            return MacChar.MacToUnicode(rawFileName, 1, nameLen, MacChar.Encoding.RomanShowCtrl);
         }
 
         #endregion Filenames

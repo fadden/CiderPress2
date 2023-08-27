@@ -78,6 +78,10 @@ namespace DiskArcTests {
         /// Opens a file from the TestData directory.  If read-only access is requested, the
         /// file is accessed directly from disk, otherwise the file is read into memory.
         /// </summary>
+        /// <remarks>
+        /// When opening a gzipped file, omit the ".gz" from the name if you want to open the
+        /// inner file rather than the gzip stream itself.
+        /// </remarks>
         /// <param name="fileName">Name of file to open.</param>
         /// <param name="isReadOnly">True if returned stream will not be written to.</param>
         /// <returns>File or memory stream.</returns>
