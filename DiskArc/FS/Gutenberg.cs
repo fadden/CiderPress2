@@ -38,9 +38,9 @@ namespace DiskArc.FS {
         internal const long MAX_FILE_LEN = MAX_FILE_SECTORS * SECTOR_SIZE;
 
         private const string VOLNAME_RULES =
-            "9 ASCII characters, no spaces or control characters.";
+            "1-9 ASCII characters, no spaces or control characters.";
         private const string FILENAME_RULES =
-            "12 ASCII characters, no spaces, '/', or control characters.";
+            "1-12 ASCII characters, no spaces, '/', or control characters.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
             name: "Gutenberg",
             canWrite: false,

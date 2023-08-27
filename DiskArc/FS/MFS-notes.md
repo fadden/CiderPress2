@@ -18,8 +18,131 @@ MFS was introduced with the original Macintosh in 1984.  It was replaced with HF
 the launch of the Macintosh Plus.  Support for MFS was included in the operating system until
 Mac OS 8.1.
 
-The volume directory was stored in a fixed-size area, but the size of each entry was variable.
-Filenames could be up to 255 characters long.  File entries were not allowed to cross block
-boundaries.
+The Macintosh desktop provided an environment with files in folders, but that was implemented
+entirely within the Finder.  The filesystem itself has a single directory.
 
-[ TODO ]
+Apple's 3.5" disk drives stored 524 bytes per block.  512 bytes were part of the logical block
+available to the filesystem, while the additional 12 were accessible through the disk driver.
+Files are stored in "allocation blocks", which are a multiple of 512 bytes.
+
+## Disk Structure ##
+
+Blocks 0 and 1 hold "system startup information" for startup disks.  On non-bootable disks, the
+blocks were filled with zeroes.
+
+Block 2 and 3 are the Master Directory Block (MDB), which is comprised of the 64-byte Volume
+Information chunk and the Volume Allocation Block Map.  The Volume Information specifies how the
+disk is laid out.  The block map is an array of 12-bit values that act as both a block-in-use
+indicator and a link in a file's block list.
+
+The MDB is usually followed by the file directory, which starts on block 4, and will be 12 blocks
+long on a 400KB volume.  The directory's size is fixed.  The allocation blocks used to hold files
+begin immediately after.  It's valid to have the file directory in the allocation block area,
+though, in which case the blocks it lives on must be marked as in use in the block map (using
+alloc block $fff).
+
+Given this structure, a 400KB floppy disk should look like:
+```
+block 0-1: system startup information
+block 2-3: volume information (64 bytes) and block map (960 bytes)
+block 4-15: file directory
+block 16-799: file contents
+```
+With an allocation block size of 1KB, there will be 392 allocation units.  At 12 bits each,
+that requires 588 bytes, which fits easily in the space available.  (If the allocation block
+size were 512 bytes, we'd have 784 allocation units, which would need 1176 bytes.)
+
+The Volume Information chunk is:
+```
++$00 / 2: drSigWord - signature ($D2D7, 'RW' in high ASCII)
++$02 / 4: drCrDate - date/time of initialization
++$06 / 4: drLsBkUp - date/time of last backup
++$0a / 2: drAtrb - volume attributes
++$0c / 2: drNmFls - number of files in directory
++$0e / 2: drDrSt - first block of directory
++$10 / 2: drBlLen - length of directory, in blocks
++$12 / 2: drNmAlBlks - number of allocation blocks in volume
++$14 / 4: drAlBlkSiz - size of an allocation block, in bytes
++$18 / 4: drClpSiz - number of bytes to allocate at a time ("clump" size)
++$1c / 2: drAlBlSt - block number where file allocation blocks start
++$1e / 4: drNxtFNum - next unused file number
++$22 / 2: drFreeBks - number of unused allocation blocks
++$24 /28: drVN - volume name, starting with a length byte
+```
+All values are in big-endian order.
+
+The `drAtrb` field has two bits defined: bit 7 is set if the volume is locked by hardware, bit 15
+is set if the volume is locked by software.
+
+The volume name uses the Macintosh character set.  Mac OS Roman may be assumed.  No restrictions
+on characters are specified in the documentation.
+
+### Volume Allocation Block Map ###
+
+The block map is an array of 12-bit values, stored in big-endian order.  The bytes 0xAB 0xCD 0xEF
+would become 0x0ABC and 0x0DEF.  Allocation block numbers 0 and 1 are reserved, so the first
+entry in the table is for alloc block #2.  (This has nothing to do with disk block numbers or
+the system boot area.)
+
+The block map has one entry for each allocation block on the disk.  The size of the map is
+a bit vague, as the documentation first says "the master directory 'block' always occupies two
+blocks", and then later says it "continues for as many logical blocks as needed".  However, if
+the disk initialization code ensures that the MDB always fits in two blocks, then the second
+statement is also true.
+
+The file directory entry provides the number of the first block in a file.  The block map entry
+for that block holds the allocation block number of the next block in the file.  This provides
+a chain of block numbers that ends when an entry with the value 1 is reached.
+
+If a block is unused, the map entry will be zero.
+
+### File Directory ###
+
+MFS has a single directory for the entire volume.  Each entry has a variable size, 51 bytes plus
+the filename.  Entries aren't allowed to cross block boundaries, so it's not necessary to hold
+multiple catalog blocks in memory at once.
+
+Each entry has the form:
+```
++$00 / 1: flFlags - bit 7 = 1 if entry used; bit 0 = 1 if file locked
++$01 / 1: flTyp - version number (usually $00)
++$02 /16: flUsrWds - Finder information; includes file type and creator
++$12 / 4: flFlNum - unique file number
++$16 / 2: flStBlk - first allocation block of data fork (0 if none)
++$18 / 4: flLgLen - logical length of data fork
++$1c / 4: flPyLen - physical length of data fork
++$20 / 2: flRStBlk - first allocation block of rsrc fork (0 if none)
++$22 / 4: flRLgLen - logical length of resource fork
++$26 / 4: flRPyLen - physical length of resource fork
++$2a / 4: flCrDat - date/time of creation
++$2e / 4: flMdDat - date/time of last modification
++$32 /nn: flNam - filename, starting with a length byte
+```
+The filename uses the Macintosh character set, and may be up to 255 characters long.  No
+restrictions on characters are mentioned in the documentation.  Since MFS is a flat filesystem,
+even ':' should be allowed.
+
+File numbers start at 1 and are never re-used within a volume.
+
+The "logical" length is the actual length of the fork.  The "physical" length is the storage
+required, and is always a multiple of the allocation block size.
+
+Entries can be marked as deleted without needing to "crunch" the directory, but it would likely
+be necessary to defragment the directory to make room for new files.  Renaming a file could
+necessitate relocating the entry to a different directory block.
+
+Page IV-90 in _Inside Macintosh: Volume IV_ notes:
+> The 64K ROM version of the File Manager allows file names of up to 255 characters.  File names
+> should be contrained to 31 characters, however, to maintain compatibility with the 128K ROM
+> version of the File Manager.
+
+With regard to the `flTyp` version number field, it continues:
+> The 64K ROM version of the File Manager also allows the specification of a version number
+> to distinguish between different files with the same name.  Version numbers are generally
+> set to 0, though, because the Resource Manager, Segment Loader, and Standard File Package
+> won't operate on files with nonzero version numbers, and the Finder ignores version numbers.
+
+### Timestamps ###
+
+Timestamps are unsigned 32-bit values indicating the time in seconds since midnight on
+Jan 1, 1904, in local time.  (This is identical to HFS.)

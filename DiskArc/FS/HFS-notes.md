@@ -75,7 +75,8 @@ problems when using the C interfaces and don't work on AppleShare servers.
 Filenames (except for the volume name) are mostly stored in variable-length structures, and
 start with a length byte.  In theory this could allow filenames to be up to 255 characters long,
 but in practice the catalog file keys used in index blocks have a fixed size.  (Some online
-resources claim that HFS supports 255-character filenames.  They are wrong.)
+resources claim that HFS supports 255-character filenames.  They are likely confusing HFS with
+MFS, which did support the longer names.)
 
 Officially, names starting with a ':' are partial paths, while names that don't start with a
 colon are full paths, in which the first component is the volume name.

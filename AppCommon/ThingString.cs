@@ -105,6 +105,8 @@ namespace AppCommon {
                 return "Gutnbrg";
             } else if (fs is HFS) {
                 return "HFS";
+            } else if (fs is MFS) {
+                return "MFS";
             } else if (fs is Pascal) {
                 return "Pascal";
             } else if (fs is ProDOS) {

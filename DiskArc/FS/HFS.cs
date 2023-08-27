@@ -24,7 +24,7 @@ using static DiskArc.IFileSystem;
 
 namespace DiskArc.FS {
     /// <summary>
-    /// Apple's Hierarchical File System.
+    /// Hierarchical File System (HFS) implementation.
     /// </summary>
     public class HFS : IFileSystem {
         public const int MAX_VOL_NAME_LEN = 27;         // max length of volume name
@@ -123,7 +123,7 @@ namespace DiskArc.FS {
         /// <summary>
         /// Master directory block.
         /// </summary>
-        internal HFS_MDB? VolMDB { get; set; }
+        internal HFS_MDB? VolMDB { get; private set; }
 
         /// <summary>
         /// Volume allocation bitmap.

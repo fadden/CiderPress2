@@ -421,6 +421,12 @@ hfsutils v3.2.6 by Robert Leslie.  That code incorrectly handled Daylight Saving
 for file timestamps.  This means that CiderPress II will report some timestamps offset by an hour
 from some other utilities.  (They will match the values shown on a Mac or Apple IIgs.)
 
+### MFS ###
+
+MFS is supported for reading only.
+
+[...]
+
 ### Pascal ###
 
 The Apple Pascal filesystem is very well supported.  The structure is very simple, so very

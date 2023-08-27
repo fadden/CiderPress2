@@ -1433,7 +1433,7 @@ The filesystems that may be formatted onto a disk image are:
    created as an even number of megabytes, so an "oversized" 65536-block
    image is also allowed.
 
-Creation of Gutenberg and RDOS disks is not supported.
+Creation of Gutenberg, MFS, and RDOS disks is not supported.
 
 ### Import and Export ###
 
