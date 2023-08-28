@@ -183,12 +183,12 @@ namespace DiskArc.Arc {
             }
         }
 
-    /// <summary>
-    /// Private constructor.
-    /// </summary>
-    /// <param name="stream">Data stream if existing file, null if new archive.</param>
-    /// <param name="appHook">Application hook reference.</param>
-    private AppleSingle(Stream? stream, AppHook appHook) {
+        /// <summary>
+        /// Private constructor.
+        /// </summary>
+        /// <param name="stream">Data stream if existing file, null if new archive.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        private AppleSingle(Stream? stream, AppHook appHook) {
             DataStream = stream;
             AppHook = appHook;
         }
