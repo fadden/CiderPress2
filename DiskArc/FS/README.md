@@ -32,7 +32,7 @@ Update general tests and the applications:
  - Add driver to TestFSInterfaces.
  - Check switch statements in DAExtensions.
  - Update the filesystem-specific commands in "cp2", like `create-disk-image`.
- - Update TestAdd in "cp2".
+ - Update TestAdd and TestCopy in "cp2".
 
 ## Hybrids ##
 

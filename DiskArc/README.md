@@ -423,9 +423,7 @@ from some other utilities.  (They will match the values shown on a Mac or Apple 
 
 ### MFS ###
 
-MFS is supported for reading only.
-
-[...]
+MFS is supported for reading only.  In most respects it behaves like HFS without directories.
 
 ### Pascal ###
 

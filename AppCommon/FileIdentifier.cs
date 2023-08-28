@@ -78,7 +78,7 @@ namespace AppCommon {
             }
 
             if (entry is GZip_FileEntry) {
-                ext = Path.GetExtension(GZip.StripGZExtension(gzipName));
+                ext = Path.GetExtension(GZip.StripGZExtension(gzipName)).ToLowerInvariant();
             } else {
                 ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
                 if (string.IsNullOrEmpty(ext)) {
@@ -133,7 +133,7 @@ namespace AppCommon {
             }
 
             if (entry is GZip_FileEntry) {
-                ext = Path.GetExtension(GZip.StripGZExtension(gzipName));
+                ext = Path.GetExtension(GZip.StripGZExtension(gzipName)).ToLowerInvariant();
             } else {
                 ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
                 if (string.IsNullOrEmpty(ext) && !looksGood) {

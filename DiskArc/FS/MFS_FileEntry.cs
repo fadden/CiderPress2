@@ -18,8 +18,8 @@ using System.Collections;
 using System.Diagnostics;
 
 using CommonUtil;
-using static CommonUtil.Notes;
 using static DiskArc.Defs;
+using static DiskArc.IFileSystem;
 
 namespace DiskArc.FS {
     public class MFS_FileEntry : IFileEntryExt, IDisposable {
@@ -32,12 +32,12 @@ namespace DiskArc.FS {
 
         public bool IsValid { get { return FileSystem != null; } }
 
-        public bool IsDubious => mHasConflict;
+        public bool IsDubious => mHasConflict || HasBadLink;
         public bool IsDamaged { get; internal set; }
 
         public bool IsDirectory { get; private set; }
-        public bool HasDataFork => mDataStartBlock != 0;
-        public bool HasRsrcFork => mRsrcStartBlock != 0;
+        public bool HasDataFork => true;            // both forks are always present, but they
+        public bool HasRsrcFork => true;            //  might have zero length
         public bool IsDiskImage => false;
 
         public IFileEntry ContainingDir { get; private set; }
@@ -161,6 +161,11 @@ namespace DiskArc.FS {
         private uint mModWhen;                  // flMdDat
         private byte[] mRawFileName = new byte[MFS.MAX_FILE_NAME_LEN + 1];  // flNam
 
+        internal ushort DataStartBlock => mDataStartBlock;
+        internal uint DataLogicalLen => mDataLogicalLen;
+        internal ushort RsrcStartBlock => mRsrcStartBlock;
+        internal uint RsrcLogicalLen => mRsrcLogicalLen;
+
         //
         // Implementation-specific.
         //
@@ -182,6 +187,11 @@ namespace DiskArc.FS {
         /// True if we've detected (and Noted) a conflict with another file.
         /// </summary>
         private bool mHasConflict;
+
+        /// <summary>
+        /// True if the entry has a bad block link in the alloc map.
+        /// </summary>
+        internal bool HasBadLink { get; set; }
 
 
         /// <summary>
@@ -225,7 +235,7 @@ namespace DiskArc.FS {
         /// <param name="fs">Filesystem object.</param>
         /// <returns>Volume directory file entry.</returns>
         /// <exception cref="IOException">Disk access failure.</exception>
-        internal static IFileEntry ScanDirectory(MFS fs) {
+        internal static IFileEntry ScanDirectory(MFS fs, bool doFullScan) {
             MFS_MDB mdb = fs.VolMDB!;
 
             MFS_FileEntry volDir = CreateFakeVolDirEntry(fs);
@@ -248,7 +258,55 @@ namespace DiskArc.FS {
                     }
                     Debug.Assert(offset <= BLOCK_SIZE);
 
+                    newEntry.ContainingDir = volDir;
                     volDir.ChildList.Add(newEntry);
+
+                    if (newEntry.mDataStartBlock == 1 ||
+                            newEntry.mDataStartBlock >= mdb.NumAllocBlocks) {
+                        fs.Notes.AddW("Bad data start block " + newEntry.mDataStartBlock + ": '" +
+                            newEntry.FileName + "'");
+                        newEntry.IsDamaged = true;
+                    }
+                    if (newEntry.mRsrcStartBlock == 1 ||
+                            newEntry.mRsrcStartBlock >= mdb.NumAllocBlocks) {
+                        fs.Notes.AddW("Bad rsrc start block " + newEntry.mRsrcStartBlock + ": '" +
+                            newEntry.FileName + "'");
+                        newEntry.IsDamaged = true;
+                    }
+
+                    if (doFullScan && !newEntry.IsDamaged) {
+                        Debug.Assert(mdb.VolUsage != null);
+                        if (newEntry.mDataStartBlock != 0) {
+                            using (MFS_FileDesc fd = MFS_FileDesc.CreateFD(newEntry,
+                                    FileAccessMode.ReadOnly, FilePart.DataFork, true)) {
+                                fd.SetVolumeUsage();
+                                if (!newEntry.IsDubious && !newEntry.IsDamaged) {
+                                    if (fd.GetBlocksUsed() * mdb.AllocBlockSize !=
+                                            newEntry.mDataPhysicalLen) {
+                                        fs.Notes.AddW("Data fork physical length is incorrect " +
+                                            " for '" + newEntry.mFileName + "': len=" +
+                                            newEntry.mDataPhysicalLen + " blocks=" +
+                                            fd.GetBlocksUsed());
+                                    }
+                                }
+                            }
+                        }
+                        if (newEntry.mRsrcStartBlock != 0) {
+                            using (MFS_FileDesc fd = MFS_FileDesc.CreateFD(newEntry,
+                                    FileAccessMode.ReadOnly, FilePart.RsrcFork, true)) {
+                                fd.SetVolumeUsage();
+                                if (!newEntry.IsDubious && !newEntry.IsDamaged) {
+                                    if (fd.GetBlocksUsed() * mdb.AllocBlockSize !=
+                                            newEntry.mRsrcPhysicalLen) {
+                                        fs.Notes.AddW("Rsrc fork physical length is incorrect " +
+                                            " for '" + newEntry.mFileName + "': len=" +
+                                            newEntry.mRsrcPhysicalLen + " blocks=" +
+                                            fd.GetBlocksUsed());
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             return volDir;
@@ -270,10 +328,10 @@ namespace DiskArc.FS {
             Array.Copy(blkBuf, offset, newEntry.mFinderInfo, 0, FINDER_INFO_LEN);
             offset += FINDER_INFO_LEN;
             newEntry.mFileNumber = RawData.ReadU32BE(blkBuf, ref offset);
-            newEntry.mDataStartBlock = RawData.ReadU16LE(blkBuf, ref offset);
+            newEntry.mDataStartBlock = RawData.ReadU16BE(blkBuf, ref offset);
             newEntry.mDataLogicalLen = RawData.ReadU32BE(blkBuf, ref offset);
             newEntry.mDataPhysicalLen = RawData.ReadU32BE(blkBuf, ref offset);
-            newEntry.mRsrcStartBlock = RawData.ReadU16LE(blkBuf, ref offset);
+            newEntry.mRsrcStartBlock = RawData.ReadU16BE(blkBuf, ref offset);
             newEntry.mRsrcLogicalLen = RawData.ReadU32BE(blkBuf, ref offset);
             newEntry.mRsrcPhysicalLen = RawData.ReadU32BE(blkBuf, ref offset);
             newEntry.mCreateWhen = RawData.ReadU32BE(blkBuf, ref offset);

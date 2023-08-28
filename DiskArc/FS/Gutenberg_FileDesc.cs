@@ -185,6 +185,10 @@ namespace DiskArc.FS {
             }
         }
 
+        /// <summary>
+        /// Sets the volume usage for the sectors associated with this file.  Call this during
+        /// the initial disk scan.
+        /// </summary>
         internal void SetVolumeUsage() {
             VolumeUsage vu = FileSystem.VolUsage!;
             foreach (TrackSector ts in mSectorList) {

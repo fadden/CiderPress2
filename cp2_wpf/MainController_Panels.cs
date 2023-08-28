@@ -299,6 +299,7 @@ namespace cp2_wpf {
             if (CurrentWorkObject is IFileSystem) {
                 ObservableCollection<DirectoryTreeItem> tvRoot = mMainWin.DirectoryTreeRoot;
                 IFileSystem fs = (IFileSystem)CurrentWorkObject;
+                Debug.Assert(fs.GetVolDirEntry() != IFileEntry.NO_ENTRY);
                 PopulateDirectoryTree(null, tvRoot, fs.GetVolDirEntry());
                 tvRoot[0].IsSelected = true;
                 mMainWin.SetNotesList(fs.Notes);

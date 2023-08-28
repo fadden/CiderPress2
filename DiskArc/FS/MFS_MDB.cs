@@ -29,6 +29,7 @@ namespace DiskArc.FS {
         public const int VABM_LENGTH = BLOCK_SIZE * 2 - INFO_LENGTH;    // 960 bytes
         public const int MAX_ALLOC_BLOCKS = (VABM_LENGTH * 2) / 3;      // 640 entries
         public const uint MDB_BLOCK_NUM = 2;        // first block number
+        public const int RESERVED_BLOCKS = 2;       // alloc blocks 0 and 1 are reserved
 
         //
         // Properties that map to fields.
@@ -125,10 +126,19 @@ namespace DiskArc.FS {
             mVolumeName = MFS_FileEntry.GenerateCookedName(drVN, true);
         }
 
+        /// <summary>
+        /// Number of logical (512-byte) blocks per allocation block.
+        /// </summary>
+        public uint LogicalPerAllocBlock { get { return AllocBlockSize / BLOCK_SIZE; } }
+
         //
         // Volume Allocation Block Map
         //
 
+        /// <summary>
+        /// Expanded form of allocation block map.  This array spans the full master directory
+        /// block, and may be over-sized for a given volume.
+        /// </summary>
         private ushort[] mAllocBlockMap = new ushort[MAX_ALLOC_BLOCKS];
 
         /// <summary>
@@ -167,7 +177,7 @@ namespace DiskArc.FS {
         /// <summary>
         /// Optional volume usage tracking.
         /// </summary>
-        private VolumeUsage? mVolumeUsage;
+        public VolumeUsage? VolUsage { get; private set; }
 
 
         /// <summary>
@@ -196,15 +206,43 @@ namespace DiskArc.FS {
         /// This is optional.  Only call this if you're interested in the VolumeUsage data.
         /// </remarks>
         public void InitVolumeUsage() {
-            Debug.Assert(mVolumeUsage == null);
+            Debug.Assert(VolUsage == null);
             Debug.Assert(NumAllocBlocks != 0);
-            mVolumeUsage = new VolumeUsage(NumAllocBlocks);
+            VolUsage = new VolumeUsage(NumAllocBlocks);
 
             for (uint chunk = 0; chunk < NumAllocBlocks; chunk++) {
                 if (mAllocBlockMap[chunk] != 0) {
-                    mVolumeUsage.MarkInUse(chunk);
+                    VolUsage.MarkInUse(chunk);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the 12-bit allocation map entry for allocation block N.  Allocation blocks
+        /// start at 2.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public ushort GetAllocMapEntry(int index) {
+            if (index < RESERVED_BLOCKS || index >= NumAllocBlocks + RESERVED_BLOCKS) {
+                throw new ArgumentOutOfRangeException(nameof(index), index,
+                    "range is [2," + (NumAllocBlocks + RESERVED_BLOCKS - 1) + "]");
+            }
+            return mAllocBlockMap[index - RESERVED_BLOCKS];
+        }
+
+        /// <summary>
+        /// Counts up the number of free blocks in the allocation map.
+        /// </summary>
+        public uint CalcFreeBlocks() {
+            uint freeCount = 0;
+            for (int i = 0; i < NumAllocBlocks; i++) {
+                if (mAllocBlockMap[i] == 0) {
+                    freeCount++;
+                }
+            }
+            return freeCount;
         }
 
         public override string ToString() {

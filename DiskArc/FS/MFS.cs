@@ -28,9 +28,10 @@ namespace DiskArc.FS {
     public class MFS : IFileSystem {
         public const int MAX_VOL_NAME_LEN = 27;
         public const int MAX_FILE_NAME_LEN = 255;
+        public const long MAX_FILE_LEN = 0x7fffffff;    // int.MaxValue; one byte shy of 2GB
 
-        internal const long MIN_VOL_SIZE = 32 * BLOCK_SIZE;     // arbitrary
-        internal const long MAX_VOL_SIZE = 1600 * BLOCK_SIZE;   // arbitrary
+        internal const long MIN_VOL_SIZE = 16 * 2 * BLOCK_SIZE;     // 16KB (arbitrary)
+        internal const long MAX_VOL_SIZE = 1440 * 2 * BLOCK_SIZE;   // 1440KB (arbitrary)
 
         private const string VOLNAME_RULES =
             "1-27 characters.";
@@ -262,7 +263,47 @@ namespace DiskArc.FS {
                 VolMDB.InitVolumeUsage();
             }
 
-            mVolDirEntry = MFS_FileEntry.ScanDirectory(this);
+            mVolDirEntry = MFS_FileEntry.ScanDirectory(this, doScan);
+
+            if (VolMDB.CalcFreeBlocks() != VolMDB.FreeAllocBlocks) {
+                Notes.AddW("MDB free block count (" + VolMDB.FreeAllocBlocks +
+                    ") differs from calculation (" + VolMDB.CalcFreeBlocks() + ")");
+                IsDubious = true;
+            }
+
+            if (doScan) {
+                VolumeUsage vu = VolMDB.VolUsage!;
+                vu.Analyze(out int markedUsed, out int unusedMarked,
+                        out int notMarkedUsed, out int conflicts);
+                AppHook.LogI("Usage counts: " + markedUsed + " in use, " +
+                    unusedMarked + " unused but marked, " +
+                    notMarkedUsed + " used but not marked, " +
+                    conflicts + " conflicts");
+
+                if (notMarkedUsed != 0) {
+                    // Danger!
+                    Notes.AddE("Found " + notMarkedUsed + " used blocks that are marked free");
+                    IsDubious = true;
+                }
+                if (conflicts != 0) {
+                    // Individual files are marked "dubious", and can't be modified.
+                    Notes.AddW("Found " + conflicts + " blocks in use by more than one file");
+                }
+
+                if (unusedMarked != 0) {
+                    bool doWarnUnused =
+                        AppHook.GetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, false);
+                    if (doWarnUnused) {
+                        Notes.AddW("Found " + unusedMarked +
+                            " unused sectors that are marked used");
+                    } else {
+                        Notes.AddI("Found " + unusedMarked +
+                            " unused sectors that are marked used");
+                    }
+                }
+
+                Debug.WriteLine(vu.DebugDump());
+            }
         }
 
         // IFileSystem
@@ -275,23 +316,101 @@ namespace DiskArc.FS {
             throw new IOException("Not supported for this filesystem");
         }
 
-        private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite,
-                FilePart part) {
-            throw new NotImplementedException();
+        /// <summary>
+        /// Performs general checks on file-access calls, throwing exceptions when something
+        /// is amiss.  An exception here generally indicates an error in the program calling
+        /// into the library.
+        /// </summary>
+        /// <param name="op">Short string describing the operation.</param>
+        /// <param name="ientry">File being accessed.</param>
+        /// <param name="wantWrite">True if this operation might modify the file.</param>
+        /// <param name="part">Which part of the file we want access to.  Pass "Unknown" to
+        ///   match on any part.</param>
+        /// <exception cref="IOException">Various.</exception>
+        /// <exception cref="ArgumentException">Various.</exception>
+        private void CheckFileAccess(string op, IFileEntry ientry, bool wantWrite, FilePart part) {
+            if (mDisposed) {
+                throw new ObjectDisposedException("Object was disposed");
+            }
+            if (!IsPreppedForFileAccess) {
+                throw new IOException("Filesystem object not prepared for file access");
+            }
+            if (wantWrite && IsReadOnly) {
+                throw new IOException("Filesystem is read-only");
+            }
+            if (ientry == IFileEntry.NO_ENTRY) {
+                throw new ArgumentException("Cannot operate on NO_ENTRY");
+            }
+            if (ientry.IsDamaged) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to access");
+            }
+            if (ientry.IsDubious && wantWrite) {
+                throw new IOException("File '" + ientry.FileName +
+                    "' is too damaged to modify");
+            }
+            MFS_FileEntry? entry = ientry as MFS_FileEntry;
+            if (entry == null || entry.FileSystem != this) {
+                if (entry != null && entry.FileSystem == null) {
+                    // Invalid entry; could be a deleted file, or from before a raw-mode switch.
+                    throw new IOException("File entry is invalid");
+                } else {
+                    throw new FileNotFoundException("File entry is not part of this filesystem");
+                }
+            }
+            if (!mOpenFiles.CheckOpenConflict(entry, wantWrite, part)) {
+                throw new IOException("File is already open; cannot " + op);
+            }
         }
-
         // IFileSystem
         public IFileEntry GetVolDirEntry() {
             return mVolDirEntry;
         }
 
         // IFileSystem
-        public DiskFileStream OpenFile(IFileEntry entry, FileAccessMode mode, FilePart part) {
-            throw new NotImplementedException();
+        public DiskFileStream OpenFile(IFileEntry ientry, FileAccessMode mode, FilePart part) {
+            if (part == FilePart.RawData) {
+                part = FilePart.DataFork;   // do this before is-file-open check
+            }
+            CheckFileAccess("open", ientry, mode != FileAccessMode.ReadOnly, part);
+            if (mode != FileAccessMode.ReadOnly && mode != FileAccessMode.ReadWrite) {
+                throw new ArgumentException("Unknown file access mode " + mode);
+            }
+            if (ientry.IsDirectory) {
+                throw new IOException("Cannot open directories");   // nothing there to see
+            }
+
+            MFS_FileEntry entry = (MFS_FileEntry)ientry;
+            switch (part) {
+                case FilePart.DataFork:
+                case FilePart.RawData:
+                case FilePart.RsrcFork:
+                    break;
+                default:
+                    throw new ArgumentException("Unknown file part " + part);
+            }
+
+            MFS_FileDesc pfd = MFS_FileDesc.CreateFD(entry, mode, part, false);
+            mOpenFiles.Add(this, entry, pfd);
+            return pfd;
         }
 
         internal void CloseFile(DiskFileStream ifd) {
-            throw new NotImplementedException();
+            MFS_FileDesc fd = (MFS_FileDesc)ifd;
+            if (fd.FileSystem != this) {
+                // Should be impossible, though it could be null if previous close invalidated it.
+                if (fd.FileSystem == null) {
+                    throw new IOException("Invalid file descriptor");
+                } else {
+                    throw new IOException("File descriptor was opened by a different filesystem");
+                }
+            }
+            Debug.Assert(!mDisposed, "closing file in filesystem after dispose");
+
+            // Find the file record, searching by descriptor.
+            if (!mOpenFiles.RemoveDescriptor(ifd)) {
+                throw new IOException("Open file record not found: " + fd);
+            }
         }
 
         // IFileSystem
@@ -321,5 +440,19 @@ namespace DiskArc.FS {
             CheckFileAccess("delete", ientry, true, FilePart.Unknown);
             throw new IOException("Filesystem is read-only");
         }
+
+        #region Miscellaneous
+
+        internal uint AllocBlockToLogiBlock(uint allocBlockNum) {
+            Debug.Assert(VolMDB != null);
+            if (allocBlockNum < MFS_MDB.RESERVED_BLOCKS ||
+                    allocBlockNum - MFS_MDB.RESERVED_BLOCKS >= VolMDB.NumAllocBlocks) {
+                throw new IOException("Invalid allocation block " + allocBlockNum);
+            }
+            return VolMDB.AllocBlockStart +
+                (allocBlockNum - MFS_MDB.RESERVED_BLOCKS) * VolMDB.LogicalPerAllocBlock;
+        }
+
+        #endregion
     }
 }

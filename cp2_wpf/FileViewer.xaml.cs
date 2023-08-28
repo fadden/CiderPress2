@@ -503,6 +503,7 @@ namespace cp2_wpf {
             } else {
                 Debug.Assert(false, "unknown IConvOutput impl " + mCurDataOutput);
             }
+
             IsDataTabEnabled = (mDataFork != null);
 
             if (mCurRsrcOutput == null) {
@@ -511,6 +512,16 @@ namespace cp2_wpf {
             } else {
                 IsRsrcTabEnabled = true;
                 RsrcPlainText = ((SimpleText)mCurRsrcOutput).Text.ToString();
+            }
+
+            // Don't show an empty data file if there's a resource fork.  Note it's possible
+            // we could be showing data even on a resource-only item (like an image), so we
+            // want to confirm that there's nothing to show in the data side.
+            if (IsDataTabEnabled && IsRsrcTabEnabled &&
+                    (SimpleTextVisibility == Visibility.Visible ||
+                        FancyTextVisibility == Visibility.Visible) &&
+                    DataPlainText.Length == 0) {
+                IsDataTabEnabled = false;
             }
 
             Notes comboNotes = new Notes();

@@ -856,7 +856,6 @@ namespace DiskArc.FS {
                 AppHook.LogI("CloseAll flushing volume bitmap");
                 VolBitmap.Flush();
             }
-
         }
 
         // IFileSystem

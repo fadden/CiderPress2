@@ -117,7 +117,7 @@ namespace DiskArc.FS {
         /// <summary>
         /// Determines the logical block number for the specified logical block index.
         /// </summary>
-        uint GetLogicalBlockNum(uint logiIndex) {
+        private uint GetLogicalBlockNum(uint logiIndex) {
             Debug.Assert(FileSystem.VolMDB != null);
             uint abIndex = logiIndex / FileSystem.VolMDB.LogicalPerAllocBlock;
             uint abOffset = logiIndex % FileSystem.VolMDB.LogicalPerAllocBlock;

@@ -84,6 +84,19 @@ namespace DiskArcTests {
             }
         }
 
+        public static void TestGutenberg(AppHook appHook) {
+            using (Stream dataFile = Helper.OpenTestFile("gutenberg/gjr-data.do",
+                    true, appHook)) {
+                using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
+                        FileKind.UnadornedSector, appHook)!) {
+                    diskImage.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)diskImage.Contents!;
+
+                    TestReadOnly(fs, "DIR", "NO.SUCH.FILE", appHook);
+                }
+            }
+        }
+
         public static void TestHFS(AppHook appHook) {
             using (Stream dataFile = Helper.OpenTestFile("hfs/simple-gsos.po", true, appHook)) {
                 using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
@@ -113,6 +126,19 @@ namespace DiskArcTests {
                 wfs.PrepareRawAccess();
                 wfs.PrepareFileAccess(true);
                 Helper.CheckNotes(wfs, 0, 0);
+            }
+        }
+
+        public static void TestMFS(AppHook appHook) {
+            using (Stream dataFile = Helper.OpenTestFile("mfs/Workstation Installer.IMG",
+                    true, appHook)) {
+                using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
+                        FileKind.DiskCopy, appHook)!) {
+                    diskImage.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)diskImage.Contents!;
+
+                    TestReadOnly(fs, "Desktop", "NO.SUCH.FILE", appHook);
+                }
             }
         }
 
@@ -169,6 +195,19 @@ namespace DiskArcTests {
                 wfs.PrepareRawAccess();
                 wfs.PrepareFileAccess(true);
                 Helper.CheckNotes(wfs, 0, 0);
+            }
+        }
+
+        public static void TestRDOS(AppHook appHook) {
+            using (Stream dataFile = Helper.OpenTestFile("rdos/rdos32-shiloh-save.woz",
+                    true, appHook)) {
+                using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
+                        FileKind.Woz, appHook)!) {
+                    diskImage.AnalyzeDisk();
+                    IFileSystem fs = (IFileSystem)diskImage.Contents!;
+
+                    TestReadOnly(fs, "MYSAVE", "NO.SUCH.FILE", appHook);
+                }
             }
         }
 
@@ -259,9 +298,6 @@ namespace DiskArcTests {
                 fs.OpenFile(otherFile, FileAccessMode.ReadOnly, FilePart.DataFork);
                 throw new Exception("Opened other file");
             } catch (IOException) { /*expected*/ }
-
-            // This is a static method accessed via extension.  Confirm that it exists.
-            fs.AdjustFileName("TEST");
         }
 
         private static void TestReadWrite(IFileSystem fs, string fileName, string illegalFileName,
@@ -363,6 +399,9 @@ namespace DiskArcTests {
             if (checkFile.ContainingDir == IFileEntry.NO_ENTRY) {
                 throw new Exception("Scanned file has no parent");
             }
+
+            // This is a static method accessed via extension.  Confirm that it exists.
+            fs.AdjustFileName("TEST");
         }
 
         private static void TestDirectoryReadOnly(IFileSystem fs, string dirName) {
