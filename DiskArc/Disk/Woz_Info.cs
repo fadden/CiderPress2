@@ -561,7 +561,7 @@ namespace DiskArc.Disk {
 
         /// <summary>
         /// Converts the string to UTF-8 bytes, and pads the end with spaces.  The encoded
-        /// form is limited to 32 bytes.
+        /// form is limited to 32 bytes.  Excess characters will be dropped.
         /// </summary>
         /// <param name="name">String to encode.</param>
         /// <returns>32-element byte array, end padded with ASCII spaces.</returns>

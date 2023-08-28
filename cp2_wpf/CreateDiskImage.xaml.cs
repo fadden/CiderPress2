@@ -217,7 +217,9 @@ namespace cp2_wpf {
                                 mAppHook);
                         }
                         // Let's just add a default META chunk to all disks.
-                        ((Woz)diskImage).AddMETA();
+                        Woz woz = (Woz)diskImage;
+                        woz.AddMETA();
+                        woz.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
                         break;
                     case FileTypeValue.Nib:
                         if (!GetNumTracksSectors(out tracks, out sectors)) {

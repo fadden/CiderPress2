@@ -1185,6 +1185,14 @@ namespace DiskArc.Disk {
             return false;
         }
 
+        /// <summary>
+        /// This allows the application to overwrite the creator string, so that it can replace
+        /// the library identifier with its own.  Normally info:creator is not editable.
+        /// </summary>
+        public void SetCreator(string value) {
+            Info.Creator = value;
+        }
+
         #endregion Metadata
 
         public override string ToString() {

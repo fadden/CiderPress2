@@ -315,7 +315,10 @@ namespace cp2 {
                             throw new DAException("Size not supported for WOZ disks");
                         }
                         // Let's just add a default META chunk to all disks.
-                        ((Woz)image).AddMETA();
+                        Woz woz = (Woz)image;
+                        woz.AddMETA();
+                        // Replace the lib creator string.
+                        woz.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
                     }
                     break;
                 case FileKind.NuFX: {
