@@ -395,6 +395,7 @@ namespace DiskArc {
         /// <para>In some cases the sum of the storage sizes of the data and resource forks may
         /// not match the StorageSize property value, e.g. ProDOS files have an additional
         /// "extended file info" block that is not part of either fork.</para>
+        /// <para>IArchive entries do not have RawData.</para>
         /// </remarks>
         /// <param name="part">Which part to query.</param>
         /// <param name="length">Result: length of part, in bytes.  Will be -1 if the part does

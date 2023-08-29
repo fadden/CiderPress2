@@ -365,6 +365,10 @@ namespace DiskArc {
                 case ".as":
                     fileKind1 = FileKind.AppleSingle;
                     break;
+                //case ".bin":      // too generic; let the unknown-extension handler deal with it
+                case ".macbin":
+                    fileKind1 = FileKind.MacBinary;
+                    break;
                 case ".ddd":
                     fileKind1 = FileKind.DDD;
                     orderHint1 = SectorOrder.Physical;
@@ -473,11 +477,12 @@ namespace DiskArc {
             FileKind.AppleSingle,
             FileKind.DiskCopy,
             FileKind.ACU,
-            FileKind.Binary2,       // test after NuFX (.BXY > .BNY)
+            FileKind.Binary2,           // test after NuFX (.BXY > .BNY)
+            FileKind.MacBinary,         // very weak format detection
             // These are less definite, depending primarily on the size of the file.
             FileKind.Trackstar,
             FileKind.UnadornedNibble525,
-            FileKind.UnadornedSector,
+            FileKind.UnadornedSector,   // this accepts almost any multiple of 512 bytes
             // Skip: DDD
         };
 
@@ -508,6 +513,8 @@ namespace DiskArc {
                     return DiskCopy.TestKind(stream, appHook);
                 case FileKind.GZip:
                     return GZip.TestKind(stream, appHook);
+                case FileKind.MacBinary:
+                    return MacBinary.TestKind(stream, appHook);
                 case FileKind.NuFX:
                     return NuFX.TestKind(stream, appHook);
                 case FileKind.Trackstar:
@@ -897,6 +904,9 @@ namespace DiskArc {
                         break;
                     case FileKind.GZip:
                         archive = GZip.OpenArchive(stream, appHook);
+                        break;
+                    case FileKind.MacBinary:
+                        archive = MacBinary.OpenArchive(stream, appHook);
                         break;
                     case FileKind.NuFX:
                         archive = NuFX.OpenArchive(stream, appHook);

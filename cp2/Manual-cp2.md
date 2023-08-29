@@ -1397,6 +1397,7 @@ Extensions not supported for file creation:
  - ".raw" - unadorned sector or unadorned nibble (ambiguous)
  - ".gz" - gzip file (just use "gzip" utility)
  - ".as" - AppleSingle file (extract a file as AppleSingle instead)
+ - ".bin", ".macbin" - MacBinary files cannot be created
  - ".bxy", ".sea", ".bse" - ShrinkIt archive with a Binary II header,
    GSHK self-extracting header, or both (not needed)
  - ".acu" - Applelink Compression Utility archive (archive creation

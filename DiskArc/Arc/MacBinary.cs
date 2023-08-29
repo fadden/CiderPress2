@@ -25,8 +25,12 @@ namespace DiskArc.Arc {
     /// MacBinary (I, II, III) archive handling.
     /// </summary>
     public class MacBinary : IArchiveExt {
-        private const string FILENAME_RULES = "1-31 characters.  Must not include ':'.";
+        public const int CHUNK_LEN = 128;
+        public const int HEADER_LEN = CHUNK_LEN;
 
+        // The file format allows up to 63 characters, but that may have been a concession to
+        // MFS, which allowed 255.  MacBinary III limits it to 31.
+        private const string FILENAME_RULES = "1-31 characters.  Must not include ':'.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "MacBinary",
             canWrite: false,
@@ -45,7 +49,7 @@ namespace DiskArc.Arc {
         // IArchive interfaces.
         //
 
-        public ArcCharacteristics Characteristics => throw new NotImplementedException();
+        public ArcCharacteristics Characteristics => sCharacteristics;
         public static ArcCharacteristics SCharacteristics => sCharacteristics;
 
         public Stream? DataStream { get; internal set; }
@@ -111,14 +115,28 @@ namespace DiskArc.Arc {
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>True if this looks like MacBinary.</returns>
         public static bool TestKind(Stream stream, AppHook appHook) {
-            throw new NotImplementedException();
+            if (stream.Length < HEADER_LEN) {
+                return false;
+            }
+            stream.Position = 0;
+            byte[] buf = new byte[HEADER_LEN];
+            stream.ReadExactly(buf, 0, HEADER_LEN);
+            MacBinary_FileEntry.Header hdr = new MacBinary_FileEntry.Header();
+            hdr.Load(buf, 0);
+            return hdr.Process(stream.Length);
         }
 
         /// <summary>
         /// Private constructor.
         /// </summary>
+        /// <param name="stream">File data stream.</param>
+        /// <param name="appHook">Application hook reference.</param>
         private MacBinary(Stream? stream, AppHook appHook) {
-            throw new NotImplementedException();
+            if (stream == null) {
+                throw new ArgumentNullException(nameof(stream), "Can't create new instances");
+            }
+            DataStream = stream;
+            AppHook = appHook;
         }
 
         /// <summary>
@@ -166,13 +184,25 @@ namespace DiskArc.Arc {
         }
 
         // IArchive
-        public ArcReadStream OpenPart(IFileEntry entry, FilePart part) {
-            throw new NotImplementedException();
+        public ArcReadStream OpenPart(IFileEntry ientry, FilePart part) {
+            MacBinary_FileEntry entry = (MacBinary_FileEntry)ientry;
+            if (entry.Archive != this) {
+                throw new ArgumentException("Entry is not part of this archive");
+            }
+            ArcReadStream newStream = entry.CreateReadStream(part);
+            mOpenFiles.Add(new OpenFileRec(newStream));
+            return newStream;
         }
 
         // IArchiveExt
         public void StreamClosing(ArcReadStream stream) {
-            throw new NotImplementedException();
+            for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
+                if (mOpenFiles[i].ReadStream == stream) {
+                    mOpenFiles.RemoveAt(i);
+                    return;
+                }
+            }
+            Debug.Assert(false, "Got StreamClosing for unknown stream");
         }
 
         // IArchive

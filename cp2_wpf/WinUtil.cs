@@ -30,7 +30,7 @@ namespace cp2_wpf {
             "*.shk;*.sdk;*.sea;*.bny;*.bqy;*.bxy;*.bse;" +
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;" +
-            "*.gz;*.zip;*.as;*.acu";
+            "*.gz;*.zip;*.as;*.bin;*.macbin;*.acu";
         public const string FILE_FILTER_ALL_DISK = "Disk image formats|" +
             "*.sdk;*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;";

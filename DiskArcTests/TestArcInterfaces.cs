@@ -62,6 +62,8 @@ namespace DiskArcTests {
             }
         }
 
+        // No tests for MacBinary, because it's read-only.
+
         public static void TestNuFX(AppHook appHook) {
             using (IArchive archive = NuFX.CreateArchive(appHook)) {
                 TestGeneral(archive, appHook);

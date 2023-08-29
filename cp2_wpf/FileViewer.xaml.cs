@@ -518,8 +518,7 @@ namespace cp2_wpf {
             // we could be showing data even on a resource-only item (like an image), so we
             // want to confirm that there's nothing to show in the data side.
             if (IsDataTabEnabled && IsRsrcTabEnabled &&
-                    (SimpleTextVisibility == Visibility.Visible ||
-                        FancyTextVisibility == Visibility.Visible) &&
+                    SimpleTextVisibility == Visibility.Visible &&
                     DataPlainText.Length == 0) {
                 IsDataTabEnabled = false;
             }

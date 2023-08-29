@@ -63,6 +63,7 @@ namespace cp2 {
             switch (createKind) {
                 case FileKind.AppleSingle:
                 case FileKind.GZip:
+                case FileKind.MacBinary:
                     Console.Error.WriteLine("Cannot create single-record archive files");
                     return false;
                 case FileKind.ACU:

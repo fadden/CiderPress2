@@ -510,11 +510,20 @@ want to assume it's a single-entry file, you can get the last data length field 
 
 The only way to accurately determine the uncompressed length of a gzip file is to uncompress it.
 
+### MacBinary ###
+
+The format is supported read-only.  MacBinary I, II, and III are handled, though some features are
+relatively untested due to lack of examples.
+
+It's very easy to false-positive on the early MacBinary format definition.  The fact that most
+files are given the very generic ".bin" file extension doesn't help.
+
 ### NuFX (ShrinkIt) ###
 
-The implementation is less general than that in NufxLib, but it should handle all of the
-situations that will actually come up in real life.
+The format is fully supported.  The implementation is less general than that in NufxLib, but it
+should handle all of the situations that will actually come up in real life.
 
 ### ZIP ###
 
-Currently, only the basic MS-DOS timestamps are supported.
+The format is fully supported, except for the ZIP64 extensions.  Currently, only the basic MS-DOS
+timestamps are supported.

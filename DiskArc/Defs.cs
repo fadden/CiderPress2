@@ -131,6 +131,7 @@ namespace DiskArc {
             // Single-file wrappers.
             GZip,                       // .gz
             AppleSingle,                // .as (includes AppleDouble)
+            MacBinary,                  // .bin, .macbin
             DDD,                        // .ddd
             // ? DDDDeluxe
         }

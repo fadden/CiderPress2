@@ -36,6 +36,8 @@ namespace AppCommon {
                 return "Binary II";
             } else if (arc is GZip) {
                 return "gzip";
+            } else if (arc is MacBinary) {
+                return "MacBinary";
             } else if (arc is NuFX) {
                 return "ShrinkIt";
             } else if (arc is Zip) {
@@ -250,6 +252,8 @@ namespace AppCommon {
                     return "gzip";
                 case Defs.FileKind.AppleSingle:
                     return "AppleSingle";
+                case Defs.FileKind.MacBinary:
+                    return "MacBinary";
                 case Defs.FileKind.DDD:
                     return "Dalton's Disk Disintegrator";
                 default:

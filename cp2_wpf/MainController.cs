@@ -638,6 +638,7 @@ namespace cp2_wpf {
                 switch (parentKind) {
                     case WorkTree.DepthParentKind.GZip:
                         return true;
+                    case WorkTree.DepthParentKind.Archive:
                     case WorkTree.DepthParentKind.Zip:
                         // Descend into disk images, but don't open archives.
                         if (childKind == WorkTree.DepthChildKind.DiskImage) {
