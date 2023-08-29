@@ -2,7 +2,7 @@
 
 ## Primary Sources ##
 
- - "Macintosh Binary Transfer Format ("MacBinary") Standard Proposal, revision 3, dated 6-May-1985
+ - "Macintosh Binary Transfer Format ("MacBinary") Standard Proposal", revision 3, dated 6-May-1985
  - "MacBinary II Standard", revised 24-Jul-1987
  - "MacBinary III Standard", revised Dec-1996
  - https://code.google.com/archive/p/theunarchiver/wikis/MacBinarySpecs.wiki
