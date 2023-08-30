@@ -228,10 +228,14 @@ namespace cp2_wpf {
             }
             totalSize += rsrcSize;
 
-            if (entry is DOS_FileEntry) {
+            if (entry is DOS_FileEntry || entry is RDOS_FileEntry || entry is Gutenberg_FileEntry) {
                 TotalSize = fmt.FormatSizeOnDisk(totalSize, SECTOR_SIZE);
-            } else if (entry is ProDOS_FileEntry || entry is HFS_FileEntry) {
+            } else if (entry is ProDOS_FileEntry || entry is Pascal_FileEntry) {
                 TotalSize = fmt.FormatSizeOnDisk(totalSize, BLOCK_SIZE);
+            } else if (entry is HFS_FileEntry || entry is MFS_FileEntry ||
+                    entry is CPM_FileEntry) {
+                // These aren't necessarily stored in 1KB units, but it feels natural.
+                TotalSize = fmt.FormatSizeOnDisk(totalSize, KBLOCK_SIZE);
             } else {
                 TotalSize = totalSize.ToString();
             }

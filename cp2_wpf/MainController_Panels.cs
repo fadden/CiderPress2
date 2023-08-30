@@ -859,11 +859,11 @@ namespace cp2_wpf {
             }
             if (fs != null) {
                 int baseUnit;
-                if (fs is DOS) {
+                if (fs is DOS || fs is RDOS || fs is Gutenberg) {
                     baseUnit = SECTOR_SIZE;
-                } else if (fs is ProDOS) {
+                } else if (fs is ProDOS || fs is Pascal) {
                     baseUnit = BLOCK_SIZE;
-                } else {
+                } else {    // HFS, MFS, CP/M
                     baseUnit = KBLOCK_SIZE;
                 }
                 sb.Append(", ");

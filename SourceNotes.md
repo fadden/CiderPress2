@@ -35,11 +35,11 @@ Applications:
 
  - cp2: command-line application for Windows, Linux, Mac, et.al.
  - cp2_wpf: GUI application for Windows.
- - Examples/*: some simple command-line applications that demonstrate
-   the use of the libraries.
 
 Other (not included in binary distribution):
 
+ - Examples/*: some simple command-line applications that demonstrate
+   the use of the libraries.
  - MakeDist: build utility that creates distribution packages.
  - TestData: a collection of file archives and disk images, used by the
    DiskArc library tests and the cp2 command-line application tests.

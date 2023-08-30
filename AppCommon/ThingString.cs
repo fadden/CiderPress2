@@ -96,7 +96,7 @@ namespace AppCommon {
         }
 
         /// <summary>
-        /// Returns a short (&lt;= 7 char) string with a filesystem class name.
+        /// Returns a short (&lt;= 9 char) string with a filesystem class name.
         /// </summary>
         public static string IFileSystem(IFileSystem fs) {
             if (fs is CPM) {
@@ -104,7 +104,7 @@ namespace AppCommon {
             } else if (fs is DOS) {
                 return "DOS 3.x";
             } else if (fs is Gutenberg) {
-                return "Gutnbrg";
+                return "Gutenberg";
             } else if (fs is HFS) {
                 return "HFS";
             } else if (fs is MFS) {

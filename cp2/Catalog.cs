@@ -706,12 +706,18 @@ namespace cp2 {
 
             string osString;
             int baseUnit = BLOCK_SIZE;
-            if (fs is DOS) {
+            if (fs is CPM) {
+                osString = ThingString.IFileSystem(fs);
+                baseUnit = KBLOCK_SIZE;
+            } else if (fs is DOS) {
                 if (fs.RawAccess.NumSectorsPerTrack == 13) {
                     osString = "DOS 3.2 Vol " + ((DOS)fs).VolumeNum.ToString("D3");
                 } else {
                     osString = "DOS 3.3 Vol " + ((DOS)fs).VolumeNum.ToString("D3");
                 }
+                baseUnit = SECTOR_SIZE;
+            } else if (fs is Gutenberg) {
+                osString = "Gutenberg \"" + fs.GetVolDirEntry().FileName + "\"";
                 baseUnit = SECTOR_SIZE;
             } else if (fs is ProDOS) {
                 osString = "ProDOS \"" + fs.GetVolDirEntry().FileName + "\"";
@@ -720,8 +726,12 @@ namespace cp2 {
             } else if (fs is HFS) {
                 osString = "HFS \"" + fs.GetVolDirEntry().FileName + "\"";
                 baseUnit = KBLOCK_SIZE;     // KB is more appropriate than blocks for HFS
+            } else if (fs is MFS) {
+                osString = "MFS \"" + fs.GetVolDirEntry().FileName + "\"";
+                baseUnit = KBLOCK_SIZE;     // KB is more appropriate than blocks for HFS
             } else if (fs is RDOS) {
                 osString = ThingString.RDOSFlavor(((RDOS)fs).Flavor);
+                baseUnit = SECTOR_SIZE;
             } else {
                 osString = ThingString.IFileSystem(fs);
             }

@@ -9,15 +9,15 @@ Proper documentation will be added later.
 To start the program, double-click `CiderPress2.exe` in the download/install
 directory.
 
-The initial window has an "open file" button and buttons for the two files
-that were opened most recently.
+The initial window has buttons for opening an existing file, creating a new
+file, for the two files that were opened most recently (if any).
 
 ## Work Area ##
 
 Once you've opened a file, the screen divides into four windows: a
 hierarchical view of the file contents, a hierarchical view of the directory
 structure, a file list / info panel, and the add/extract/import/export
-options panel.
+options panel.  The latter can be hidden with a button at the bottom right.
 
 ### File Tree ###
 
@@ -61,12 +61,12 @@ three possible views:
  - Info panel.  This is the default for disk images and multi-partition
    layouts, which don't have files.
 
-You can switch between the views with buttons on the toolbar.
+You can switch between the views with buttons on the toolbar.  Ctrl+I toggles
+between the current file view and the info view.
 
 The info panel changes based on what is selected:
 
- - Disk image: notes list, metadata list (WOZ and 2IMG).  (Editing of metadata
-   will happen here.)
+ - Disk image: notes list, metadata list (WOZ and 2IMG).
  - Filesystem: notes list.
  - File archive: notes list.
  - Multi-partition layout: partition map.  Double-clicking on a map entry
@@ -75,7 +75,8 @@ The info panel changes based on what is selected:
 
 The "notes list" is a collection of messages generated while the structure
 in question was being analyzed.  If an entry is shown in the file tree with
-a warning or error icon, the cause of the problems will be reported here.
+a warning or error icon, the cause of the problems will be reported here.  If
+nothing remarkable was found, the list will not be present.
 
 ### Options Panel ###
 
@@ -83,7 +84,6 @@ Options that affect add, extract, import, and export, including drag &
 drop operations.
 
 The panel can be minimized by clicking the show/hide button.
-
 
 ## Add, Extract, Import, Export ##
 
@@ -103,10 +103,3 @@ There are four distinct operations for adding and extracting files:
 
 Utilities such as NuLib2 and the original CiderPress blend the operations
 together, which can lead to some ambiguous behavior.
-
-The current Add Files feature is only able to add files, not whole directories,
-due to limitations in the file dialog.  To add a directory, drag it from a
-Windows Explorer window and drop it onto the file list.  The files will be
-added to the current directory; if you are viewing the full list of files, the
-target directory is the one selected in the directory tree window.
-(Note: the drag & drop mechanics haven't really been developed yet.)

@@ -45,8 +45,9 @@ run "cp2":
 
 In the shell, change to the directory where the files were unzipped.  Then:
 
- - Windows: run `./cp2 version`.  You will probably need to click through some security warnings.
-   If you're only interested in the GUI version, just double-click `CiderPress2.exe`.
+ - Windows: run `./cp2 version` to confirm it works.  You will probably need to click through some
+   security warnings.  If you're only interested in the GUI version, just double-click
+   `CiderPress2.exe`.
  - Linux: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
    to fix it.  Run `./cp2 version` to confirm it works.
  - Mac OS: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
@@ -57,14 +58,12 @@ In the shell, change to the directory where the files were unzipped.  Then:
 The commands are:
 
  - `cp2`: command-line interface
- - `CiderPress2`: GUI interface (Windows builds only)
- - `AddFile`: simple demo program - [README](Examples/AddFile/README.md)
- - `ListContents`: simple demo program - [README](Examples/ListContents/README.md)
+ - `CiderPress2`: desktop graphical interface (Windows builds only)
 
 The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
 of viewing in a terminal window.  The file is in "markdown" format, which is perfectly readable
-as a plain text file.  It also includes release notes for CiderPress2, `CiderPress2-notes.txt`,
-which can be opened in a web browser by hitting F1 from the GUI.
+as a plain text file.  The download also includes release notes for CiderPress2,
+`CiderPress2-notes.txt`, which can be opened in a web browser by hitting F1 from the GUI.
 
 ## Tested Systems ##
 

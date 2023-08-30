@@ -270,6 +270,7 @@ namespace DiskArc.FS {
                     ") differs from calculation (" + VolMDB.CalcFreeBlocks() + ")");
                 IsDubious = true;
             }
+            FreeSpace = (long)VolMDB.FreeAllocBlocks * VolMDB.AllocBlockSize;
 
             if (doScan) {
                 VolumeUsage vu = VolMDB.VolUsage!;

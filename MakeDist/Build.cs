@@ -22,8 +22,8 @@ namespace MakeDist {
     internal static class Build {
         private static string[] sTargets = new string[] {
             "cp2",
-            "Examples/AddFile",
-            "Examples/ListContents",
+            //"Examples/AddFile",
+            //"Examples/ListContents",
         };
         private static string[] sWinTargets = new string[] {
             "cp2_wpf",
