@@ -311,15 +311,18 @@ limitations under the License.
         <ToolBarTray DockPanel.Dock="Top">
             <ToolBar Height="32">
                 <Button Command="{StaticResource ShowFullListCmd}" IsEnabled="{Binding IsFullListEnabled}"
-                        ToolTip="Show full file list">
+                        ToolTip="Show full file list"
+                        BorderBrush="{Binding FullListBorderBrush}">
                     <ContentControl Template="{StaticResource icon_ListView}"/>
                 </Button>
                 <Button Command="{StaticResource ShowDirListCmd}" IsEnabled="{Binding IsDirListEnabled}"
-                        ToolTip="Show contents of single directory">
+                        ToolTip="Show contents of single directory"
+                        BorderBrush="{Binding DirListBorderBrush}">
                     <ContentControl Template="{StaticResource icon_MeasureTree}"/>
                 </Button>
                 <Button Command="{StaticResource ShowInfoCmd}"
-                        ToolTip="Show information (toggle: Ctrl+I)">
+                        ToolTip="Show information (toggle: Ctrl+I)"
+                        BorderBrush="{Binding InfoBorderBrush}">
                     <ContentControl Template="{StaticResource icon_StatusInformationOutlineNoColor}"/>
                 </Button>
 
@@ -738,8 +741,8 @@ limitations under the License.
                                         <DataGridTextColumn Header="#" Width="30" Binding="{Binding Index}"/>
                                         <DataGridTextColumn Header="Start Block" Width="80" Binding="{Binding StartBlock}"/>
                                         <DataGridTextColumn Header="Block Count" Width="80" Binding="{Binding BlockCount}"/>
-                                        <DataGridTextColumn Header="Name" Width="150" Binding="{Binding PartName}"/>
-                                        <DataGridTextColumn Header="Type" Width="150" Binding="{Binding PartType}"/>
+                                        <DataGridTextColumn Header="Name" Width="160" Binding="{Binding PartName}"/>
+                                        <DataGridTextColumn Header="Type" Width="*" Binding="{Binding PartType}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </StackPanel>
@@ -812,7 +815,7 @@ limitations under the License.
                                         VirtualizingStackPanel.VirtualizationMode="Recycling">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Prio" Width="32" Binding="{Binding TypeChar}"/>
-                                        <DataGridTextColumn Header="Message" Width="500" Binding="{Binding Text}"/>
+                                        <DataGridTextColumn Header="Message" Width="*" Binding="{Binding Text}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </StackPanel>

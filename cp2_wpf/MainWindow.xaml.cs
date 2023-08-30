@@ -715,6 +715,17 @@ namespace cp2_wpf {
             }
             OnPropertyChanged("ShowCenterFileList");
             OnPropertyChanged("ShowCenterInfoPanel");
+
+            if (mShowCenterInfo) {
+                InfoBorderBrush = ToolbarHighlightBrush;
+                FullListBorderBrush = DirListBorderBrush = ToolbarNohiBrush;
+            } else if (ShowSingleDirFileList) {
+                DirListBorderBrush = ToolbarHighlightBrush;
+                FullListBorderBrush = InfoBorderBrush = ToolbarNohiBrush;
+            } else {
+                FullListBorderBrush = ToolbarHighlightBrush;
+                DirListBorderBrush = InfoBorderBrush = ToolbarNohiBrush;
+            }
         }
         private bool mShowCenterInfo;
 
@@ -729,6 +740,25 @@ namespace cp2_wpf {
             set { mIsDirListEnabled = value; OnPropertyChanged(); }
         }
         private bool mIsDirListEnabled;
+
+        // Highlights for the toolbar buttons
+        private static Brush ToolbarHighlightBrush = Brushes.Green;
+        private static Brush ToolbarNohiBrush = Brushes.Transparent;
+        public Brush FullListBorderBrush {
+            get { return mFullListBorderBrush; }
+            set { mFullListBorderBrush = value; OnPropertyChanged(); }
+        }
+        private Brush mFullListBorderBrush = ToolbarNohiBrush;
+        public Brush DirListBorderBrush {
+            get { return mDirListBorderBrush; }
+            set { mDirListBorderBrush = value; OnPropertyChanged(); }
+        }
+        private Brush mDirListBorderBrush = ToolbarNohiBrush;
+        public Brush InfoBorderBrush {
+            get { return mInfoBorderBrush; }
+            set { mInfoBorderBrush = value; OnPropertyChanged(); }
+        }
+        private Brush mInfoBorderBrush = ToolbarNohiBrush;
 
         /// <summary>
         /// <para>This determines whether we populate the file list with the full set of files

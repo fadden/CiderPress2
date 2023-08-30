@@ -376,8 +376,11 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// Adds a name/value pair to the center info panel list.
+        /// </summary>
         private void AddInfoItem(string name, string value) {
-            mMainWin.CenterInfoList.Add(new MainWindow.CenterInfoItem(name, value));
+            mMainWin.CenterInfoList.Add(new MainWindow.CenterInfoItem(name + ":", value));
         }
 
         /// <summary>
