@@ -849,16 +849,22 @@ namespace cp2_wpf {
             }
         }
 
+        // Center panel info.
         public string CenterInfoText1 {
             get { return mCenterInfoText1; }
             set { mCenterInfoText1 = value; OnPropertyChanged(); }
         }
         private string mCenterInfoText1 = string.Empty;
-        public string CenterInfoText2 {
-            get { return mCenterInfoText2; }
-            set { mCenterInfoText2 = value; OnPropertyChanged(); }
+        public class CenterInfoItem {
+            public string Name { get; private set; }
+            public string Value { get; private set; }
+            public CenterInfoItem(string name, string value) {
+                Name = name;
+                Value = value;
+            }
         }
-        private string mCenterInfoText2 = string.Empty;
+        public ObservableCollection<CenterInfoItem> CenterInfoList { get; set; } =
+            new ObservableCollection<CenterInfoItem>();
 
         /// <summary>
         /// Clears the partition, notes, and metadata lists displayed on the center panel.

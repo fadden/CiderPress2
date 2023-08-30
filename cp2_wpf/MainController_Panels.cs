@@ -294,8 +294,7 @@ namespace cp2_wpf {
             mMainWin.ClearCenterInfo();
 
             CurrentWorkObject = newSel.WorkTreeNode.DAObject;
-            mMainWin.CenterInfoText1 = "Entry: " + newSel.Name;
-            mMainWin.CenterInfoText2 = GetInfoString(CurrentWorkObject);
+            ConfigureCenterInfo(CurrentWorkObject, newSel.Name);
             if (CurrentWorkObject is IFileSystem) {
                 ObservableCollection<DirectoryTreeItem> tvRoot = mMainWin.DirectoryTreeRoot;
                 IFileSystem fs = (IFileSystem)CurrentWorkObject;
@@ -377,65 +376,65 @@ namespace cp2_wpf {
             }
         }
 
+        private void AddInfoItem(string name, string value) {
+            mMainWin.CenterInfoList.Add(new MainWindow.CenterInfoItem(name, value));
+        }
+
         /// <summary>
         /// Generates a one-line blurb about the specified object, which may be any type that
         /// can be found in the archive tree.
         /// </summary>
-        private string GetInfoString(object workObj) {
+        private void ConfigureCenterInfo(object workObj, string selName) {
+            mMainWin.CenterInfoList.Clear();
+            string infoText;
             if (workObj is IArchive) {
-                return ThingString.IArchive((IArchive)workObj) + " file archive";
+                IArchive arc = (IArchive)workObj;
+                infoText = "File archive - " + ThingString.IArchive(arc) + " - " + selName;
+                AddInfoItem("Entries", arc.Count.ToString());
             } else if (workObj is IDiskImage) {
                 IDiskImage disk = (IDiskImage)workObj;
+                infoText = "Disk image - " + ThingString.IDiskImage(disk) + " - " + selName;
+
                 IChunkAccess? chunks = disk.ChunkAccess;
-                StringBuilder sb = new StringBuilder();
-                sb.Append(ThingString.IDiskImage(disk));
-                sb.Append(" disk image");
-                if (chunks != null && chunks.NibbleCodec != null) {
-                    sb.Append(", nibble codec=" + chunks.NibbleCodec.Name);
-                } else if (disk is INibbleDataAccess) {
-                    sb.Append(" (nibble)");
-                }
                 if (chunks != null) {
-                    if (chunks.HasSectors && chunks.NumSectorsPerTrack == 16) {
-                        sb.Append(", order=" + ThingString.SectorOrder(chunks.FileOrder));
+                    AddInfoItem("Total size",
+                        mFormatter.FormatSizeOnDisk(chunks.FormattedLength, KBLOCK_SIZE));
+                    if (chunks.HasSectors) {
+                        AddInfoItem("Geometry",
+                            chunks.NumTracks.ToString() + " tracks, " +
+                            chunks.NumSectorsPerTrack.ToString() + " sectors");
+                        if (chunks.NumSectorsPerTrack == 16) {
+                            AddInfoItem("File order", ThingString.SectorOrder(chunks.FileOrder));
+                        }
                     }
-                    sb.Append(", ");
-                    sb.Append(mFormatter.FormatSizeOnDisk(chunks.FormattedLength, KBLOCK_SIZE));
+                    if (chunks.NibbleCodec != null) {
+                        AddInfoItem("Nibble codec", chunks.NibbleCodec.Name);
+                    }
                 }
-                return sb.ToString();
             } else if (workObj is IFileSystem) {
                 IFileSystem fs = (IFileSystem)workObj;
-                StringBuilder sb = new StringBuilder();
-                sb.Append(ThingString.IFileSystem(fs));
-                sb.Append(" filesystem");
+                infoText = "Filesystem - " + ThingString.IFileSystem(fs) + " - " + selName;
+
                 IChunkAccess chunks = fs.RawAccess;
-                sb.Append(", size=");
-                if (fs is DOS) {
-                    sb.Append(mFormatter.FormatSizeOnDisk(chunks.FormattedLength, SECTOR_SIZE));
-                } else {
-                    sb.Append(mFormatter.FormatSizeOnDisk(chunks.FormattedLength, BLOCK_SIZE));
-                }
-                return sb.ToString();
+                AddInfoItem("Volume size",
+                    mFormatter.FormatSizeOnDisk(chunks.FormattedLength, KBLOCK_SIZE));
             } else if (workObj is IMultiPart) {
                 IMultiPart partitions = (IMultiPart)workObj;
-                StringBuilder sb = new StringBuilder();
-                sb.Append(ThingString.IMultiPart((IMultiPart)workObj));
-                sb.Append(" multi-part image, with ");
-                sb.Append(partitions.Count);
-                sb.Append(" partitions");
-                return sb.ToString();
+                infoText = "Multi-partition format - " + ThingString.IMultiPart(partitions) +
+                    " - " + selName;
+
+                AddInfoItem("Partition count", partitions.Count.ToString());
             } else if (workObj is Partition) {
                 Partition part = (Partition)workObj;
-                StringBuilder sb = new StringBuilder();
-                sb.Append(ThingString.Partition(part));
-                sb.Append(", start block=");
-                sb.Append(part.StartOffset / Defs.BLOCK_SIZE);
-                sb.Append(", block count=");
-                sb.Append(part.Length / Defs.BLOCK_SIZE);
-                return sb.ToString();
+                infoText = "Disk partition - " + ThingString.Partition(part) + " - " + selName;
+
+                AddInfoItem("Start block", (part.StartOffset / BLOCK_SIZE).ToString());
+                AddInfoItem("Block count", (part.Length / BLOCK_SIZE).ToString());
             } else {
-                return string.Empty;
+                infoText = "???";
             }
+
+            mMainWin.CenterInfoText1 = infoText;
         }
 
         /// <summary>

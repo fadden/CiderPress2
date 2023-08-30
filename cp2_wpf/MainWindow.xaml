@@ -669,8 +669,25 @@ limitations under the License.
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Text="{Binding CenterInfoText1}"/>
-                            <TextBlock Grid.Row="1" Text="{Binding CenterInfoText2}"/>
+                            <!-- information on currently-selected archive tree item -->
+                            <TextBlock Grid.Row="0" Text="{Binding CenterInfoText1}"
+                                       FontSize="16"/>
+                            <DataGrid Grid.Row="1" Name="centerInfoDataGrid" Margin="0,8,0,0"
+                                      ItemsSource="{Binding CenterInfoList}"
+                                      IsReadOnly="True"
+                                      GridLinesVisibility="None"
+                                      AutoGenerateColumns="False"
+                                      HeadersVisibility="None"
+                                      CanUserReorderColumns="False"
+                                      CanUserSortColumns="False"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      SelectionMode="Single">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Width="90" Header="Name" Binding="{Binding Name}"/>
+                                    <DataGridTextColumn Width="*" Header="Value" Binding="{Binding Value}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
 
                             <GroupBox Grid.Row="2" Padding="2,4" Margin="0,8,0,0" Width="350"
                                       Header="Disk / Partition Utilities" HorizontalAlignment="Left"
