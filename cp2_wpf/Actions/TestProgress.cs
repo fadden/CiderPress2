@@ -132,7 +132,7 @@ namespace cp2_wpf.Actions {
                 entry.FullPathName, entry.DirectorySeparatorChar);
             facts.ProgressPercent = perc;
             facts.Part = part;
-            ProgressUtil.HandleCallback(facts, "test", bkWorker);
+            ProgressUtil.HandleCallback(facts, "test", null, bkWorker);
 
             try {
                 using (Stream stream = arc.OpenPart(entry, part)) {
@@ -185,7 +185,7 @@ namespace cp2_wpf.Actions {
                 entry.FullPathName, entry.DirectorySeparatorChar);
             facts.ProgressPercent = perc;
             facts.Part = part;
-            ProgressUtil.HandleCallback(facts, "test", bkWorker);
+            ProgressUtil.HandleCallback(facts, "test", null, bkWorker);
             try {
                 using (Stream stream = fs.OpenFile(entry, FileAccessMode.ReadOnly, part)) {
                     stream.CopyTo(Stream.Null);

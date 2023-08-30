@@ -31,10 +31,11 @@ namespace cp2_wpf.Actions {
         /// </summary>
         /// <param name="what">What happened.</param>
         /// <param name="actionStr">Verb that describes the action being performed.</param>
+        /// <param name="leafNode">Leaf node of tree, if we're making updates.</param>
         /// <param name="bkWorker">Background worker that receives progress updates.</param>
         /// <returns>Result code from user query, if any.</returns>
         public static CallbackFacts.Results HandleCallback(CallbackFacts what, string actionStr,
-                BackgroundWorker bkWorker) {
+                DiskArcNode? leafNode, BackgroundWorker bkWorker) {
             CallbackFacts.Results result = CallbackFacts.Results.Continue;
             switch (what.Reason) {
                 case CallbackFacts.Reasons.QueryCancel:
@@ -57,6 +58,8 @@ namespace cp2_wpf.Actions {
                     //System.Threading.Thread.Sleep(500);
                     break;
                 case CallbackFacts.Reasons.FileNameExists:
+                    leafNode?.FlushStreams();   // flush progress before waiting for user input
+
                     string ovwr = "Overwrite '" + what.OrigPathName + "' ?";
                     WorkProgress.MessageBoxQuery query = new WorkProgress.MessageBoxQuery(ovwr,
                         "Overwrite File?", MessageBoxButton.YesNoCancel,

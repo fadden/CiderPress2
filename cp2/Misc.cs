@@ -154,6 +154,8 @@ namespace cp2 {
                         }
 
                         Console.WriteLine(msg);
+                        // DEBUG: sleep briefly to slow things down
+                        //System.Threading.Thread.Sleep(500);
                     }
                     break;
                 case CallbackFacts.Reasons.ResourceForkIgnored:
@@ -218,8 +220,61 @@ namespace cp2 {
                     Console.Error.WriteLine("Unknown callback reason: " + what.Reason);
                     break;
             }
+            if (sCancelledBySignal) {
+                // Overrule whatever came before.
+                result = CallbackFacts.Results.Cancel;
+            }
             return result;
         }
+
+        /// <summary>
+        /// True if Ctrl+C or Ctrl+Break has been set.
+        /// </summary>
+        private static bool sCancelledBySignal = false;
+
+        /// <summary>
+        /// Handles Ctrl+C.
+        /// </summary>
+        /// <remarks>
+        /// <para>This should be enabled for slow operations that modify disk images, such as
+        /// adding, deleting, or copying large numbers of files.  Anything that makes changes
+        /// and can call the progress handler callback qualifies.</para>
+        /// <para>There's no need to enable it for other operations, and possibly beneficial
+        /// not to.  For example, we want to be able to interrupt MDC running on a large data
+        /// set without needing explicit "are we cancelled" checks everywhere.</para>
+        /// </remarks>
+        public static void SignalHandler(object? sender, ConsoleCancelEventArgs args) {
+            // Raise cancel flag.  We could check args.SpecialKey to see which key was hit.
+            sCancelledBySignal = true;
+
+            // Settings args.Cancel to True means, "cancel the signal handling", which allows
+            // the process to continue running.  We need this for the case where the process
+            // is killed while running freely.  It will mean that Ctrl+C will appear to have
+            // no effect while waiting for input, but in such cases there should be a cancel
+            // option available to the user... and no matter what they enter, the operation will
+            // be cancelled.
+            args.Cancel = true;
+        }
+
+#if false
+        private static bool sCancelReported = false;
+
+        /// <summary>
+        /// Checks to see if we have been cancelled.  If so, and this is the first time we've
+        /// noticed it, output a message on stderr.
+        /// </summary>
+        /// <returns></returns>
+        public static bool CheckCancel() {
+            if (!sCancelledBySignal) {
+                return false;
+            }
+            if (!sCancelReported) {
+                Console.Error.WriteLine("Operation cancelled");
+                sCancelReported = true;
+            }
+            return true;
+        }
+#endif
 
         /// <summary>
         /// Performs a few checks on an IArchive.

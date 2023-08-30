@@ -61,7 +61,7 @@ namespace cp2_wpf.Actions {
             string curDir = Environment.CurrentDirectory;
 
             AddFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
-                return ProgressUtil.HandleCallback(what, "add", bkWorker);
+                return ProgressUtil.HandleCallback(what, "add", mLeafNode, bkWorker);
             };
             AddFileWorker addWorker = new AddFileWorker(mAddFileSet, cbFunc,
                 doCompress: DoCompress, macZip: EnableMacOSZip, stripPaths: StripPaths,
@@ -127,6 +127,10 @@ namespace cp2_wpf.Actions {
                     // blocks marked in-use but no matching file entry (probably because of
                     // buffering in the IDiskImage stream... flushing the disk image object seems
                     // to fix things).  Flushing the filesystem object doesn't help.
+                    //
+                    // Update: the new DiskArcNode.FlushStreams() call fixes this too.  I'm keeping
+                    // the failure message at the end anyway to ensure that the full update
+                    // process has completed before we stop and show an error.
                     ProgressUtil.ShowMessage(failMsg, true, bkWorker);
                 }
                 if (!success) {

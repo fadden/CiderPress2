@@ -50,6 +50,7 @@ namespace cp2 {
             DeleteFileWorker worker = new DeleteFileWorker(cbFunc, macZip: parms.MacZip,
                 parms.AppHook);
 
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Misc.SignalHandler);
             if (!ExtArchive.OpenExtArc(args[0], true, false, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
                 return false;

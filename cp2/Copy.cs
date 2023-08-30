@@ -106,6 +106,7 @@ namespace cp2 {
             DiskArcNode? srcRootNode = null;
             DiskArcNode? dstRootNode = null;
 
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Misc.SignalHandler);
             try {
                 if (!ExtArchive.OpenExtArc(dstExtArchive, true, false, parms, out dstRootNode,
                         out DiskArcNode? dstLeafNode,out object? dstLeaf,

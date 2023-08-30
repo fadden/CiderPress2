@@ -55,7 +55,7 @@ namespace cp2_wpf.Actions {
         /// <returns>Operation results.</returns>
         public object DoWork(BackgroundWorker bkWorker) {
             DeleteFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
-                return ProgressUtil.HandleCallback(what, "deleting", bkWorker);
+                return ProgressUtil.HandleCallback(what, "deleting", mLeafNode, bkWorker);
             };
             DeleteFileWorker worker = new DeleteFileWorker(cbFunc, macZip: EnableMacOSZip,
                     mAppHook);
@@ -70,6 +70,7 @@ namespace cp2_wpf.Actions {
                     bkWorker.ReportProgress(100, ProgressUtil.FINISHING_MSG);
                     mLeafNode.SaveUpdates(DoCompress);
                 } catch (Exception ex) {
+                    mLeafNode.FlushStreams();
                     ProgressUtil.ShowMessage("Error: " + ex.Message, true, bkWorker);
                     return false;
                 } finally {

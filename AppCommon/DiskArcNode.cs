@@ -201,6 +201,16 @@ namespace AppCommon {
         }
 
         /// <summary>
+        /// Flushes the contents of any data streams.  Has no effect on file archives.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is intended to provide a way to flush anything sitting in memory to disk,
+        /// so that we don't lose anything if the program is killed.  This should be called before
+        /// presenting any synchronous UI to reduce risk.</para>
+        /// </remarks>
+        public abstract void FlushStreams();
+
+        /// <summary>
         /// Call after changes have been made to a disk image or archive.  For an archive, this
         /// will handle the details of committing the file to the parent archive or disk image.
         /// When this returns, all changes must be flushed to the host filesystem, ensuring that
@@ -374,6 +384,11 @@ namespace AppCommon {
                 Archive.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        public override void FlushStreams() {
+            mTmpStream?.Flush();
+            Parent?.FlushStreams();
         }
 
         // Save updates to a file archive.
@@ -559,6 +574,12 @@ namespace AppCommon {
             base.Dispose(disposing);
         }
 
+        public override void FlushStreams() {
+            DiskImage.Flush();
+            mTmpStream?.Flush();
+            Parent?.FlushStreams();
+        }
+
         // Save updates to a disk image.
         public override void SaveUpdates(bool doCompress) {
             AppHook.LogI("Disk image updated");
@@ -690,6 +711,8 @@ namespace AppCommon {
             base.Dispose(disposing);
         }
 
+        public override void FlushStreams() { }
+
         public override void SaveUpdates(bool doCompress) {
             throw new NotImplementedException("should not call here");
         }
@@ -795,6 +818,8 @@ namespace AppCommon {
             base.Dispose(disposing);
         }
 
+        public override void FlushStreams() { }
+
         public override void SaveUpdates(bool doCompress) {
             throw new NotImplementedException("should not call here");
         }
@@ -803,7 +828,8 @@ namespace AppCommon {
             throw new NotImplementedException("should not be a file archive here");
         }
 
-        protected internal override Stream? FinishArchiveOutputFile(ref IFileEntry entryHere, bool doCompress, bool success) {
+        protected internal override Stream? FinishArchiveOutputFile(ref IFileEntry entryHere,
+                bool doCompress, bool success) {
             throw new NotImplementedException("should not be a file archive here");
         }
 

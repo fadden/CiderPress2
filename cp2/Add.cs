@@ -94,6 +94,7 @@ namespace cp2 {
 
         private static bool HandleAddImport(string extArchive, string[] paths,
                 ConvConfig.FileConvSpec? importSpec, ParamsBag parms) {
+
             bool isSimple = false;
             int lastPosn = extArchive.LastIndexOf(ExtArchive.SPLIT_CHAR);
             if (lastPosn < 0 || lastPosn == 1) {
@@ -115,6 +116,7 @@ namespace cp2 {
                 }
             }
 
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Misc.SignalHandler);
             if (!ExtArchive.OpenExtArc(extArchive, true, false, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
                 return false;

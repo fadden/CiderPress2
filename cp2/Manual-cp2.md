@@ -126,6 +126,15 @@ Changes to file archives are made by creating a new archive, and renaming
 it in place of the original when the update has completed.  If the operation
 is cancelled partway through, none of the changes will be retained.
 
+One important consequence of this arrangement is that, if you kill the process
+while updating a file archive, you will at worst be left with a
+partially-written temporary file.  If you do the same while updating a disk
+image, you can corrupt disk data structures in the same way you would if the
+power failed while writing to the disk.  The filesystem code does its best to
+order operations so that interruptions are as low-risk as possible, but it's
+wise to avoid interrupting add, import, copy, move, and delete operations.
+(The program catches Ctrl+C for those operations.)
+
 ### Add, Extract, Import, Export ###
 
 There are four distinct operations for adding and extracting files:

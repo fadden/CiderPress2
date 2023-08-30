@@ -44,6 +44,7 @@ namespace cp2 {
                 oldPaths[i - 1] = args[i];
             }
 
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Misc.SignalHandler);
             if (!ExtArchive.OpenExtArc(args[0], true, false, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
                 return false;
