@@ -401,13 +401,21 @@ limitations under the License.
                 <ScrollViewer Grid.Column="1" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                               HorizontalAlignment="Center" VerticalAlignment="Center">
                     <StackPanel>
-                        <Button Content="Create new disk image" Width="240" Height="50" Margin="10"
-                                Command="{StaticResource NewDiskImageCmd}"/>
-                        <Button Content="Create new file archive" Width="240" Height="50" Margin="10"
-                                Command="{StaticResource NewFileArchiveCmd}"/>
-                        <Button Content="Open file" Width="240" Height="50" Margin="10"
+                        <Grid Width="300" Height="50" Margin="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="Create new disk image"
+                                    Command="{StaticResource NewDiskImageCmd}"/>
+                            <Button Grid.Column="2" Content="Create new file archive"
+                                    Command="{StaticResource NewFileArchiveCmd}"/>
+                        </Grid>
+                        <Button Content="Open file" Width="300" Height="50" Margin="10"
                                 Command="Open"/>
-                        <Button Width="240" Height="50" Margin="10"
+
+                        <Button Width="300" Height="50" Margin="10"
                                 Visibility="{Binding ShowRecentFile1, Converter={StaticResource BoolToVis}}"
                                 ToolTip="{Binding RecentFilePath1}" ToolTipService.InitialShowDelay="750"
                                 Command="{DynamicResource RecentFileCmd}" CommandParameter="0">
@@ -418,7 +426,7 @@ limitations under the License.
                                 </StackPanel>
                             </Button.Content>
                         </Button>
-                        <Button Width="240" Height="50" Margin="10"
+                        <Button Width="300" Height="50" Margin="10"
                                 Visibility="{Binding ShowRecentFile2, Converter={StaticResource BoolToVis}}"
                                 ToolTip="{Binding RecentFilePath2}" ToolTipService.InitialShowDelay="750"
                                 Command="{DynamicResource RecentFileCmd}" CommandParameter="1">

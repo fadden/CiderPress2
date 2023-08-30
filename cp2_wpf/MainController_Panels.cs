@@ -1016,9 +1016,13 @@ namespace cp2_wpf {
                     metaObj.DeleteMetaEntry(dialog.KeyText);
                     mMainWin.RemoveMetadata(item.Key);
                 } else {
-                    // Save the change, then update the metadata list.
+                    // Save the change, then update the metadata list.  If we want a formatted
+                    // version of the bit flag entries we need to re-query it.
                     metaObj.SetMetaValue(item.Key, dialog.ValueText);
-                    mMainWin.UpdateMetadata(item.Key, dialog.ValueText);
+                    string? fancyValue = metaObj.GetMetaValue(item.Key, true);
+                    if (fancyValue != null) {       // shouldn't be null
+                        mMainWin.UpdateMetadata(item.Key, fancyValue);
+                    }
                 }
                 if (metaObj is IDiskImage) {
                     ((IDiskImage)metaObj).Flush();

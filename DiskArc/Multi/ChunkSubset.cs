@@ -298,7 +298,7 @@ namespace DiskArc.Multi {
         public void ReadBlock(uint block, byte[] data, int offset, SectorOrder order) {
             CheckBlockArgs(block, false);
             if (mBase.HasBlocks) {
-                Debug.Assert(FileOrder == SectorOrder.CPM_KBlock);
+                Debug.Assert(FileOrder == order);
                 mBase.ReadBlock(StartBlock + block, data, offset, order);
             } else {
                 throw new InvalidOperationException("No blocks");

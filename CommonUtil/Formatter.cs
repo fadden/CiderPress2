@@ -66,6 +66,11 @@ namespace CommonUtil {
         /// </summary>
         private FormatConfig mConfig;
 
+        /// <summary>
+        /// Copy of configuration.
+        /// </summary>
+        public FormatConfig Config { get { return new FormatConfig(mConfig); } }
+
         // Buffer to use when generating hex dump lines.
         private char[] mHexDumpBuffer;
 

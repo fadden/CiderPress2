@@ -220,7 +220,7 @@ namespace DiskArc.Disk {
                     value = Cleaned ? TRUE_LOWER : FALSE_LOWER;
                     break;
                 case "creator":
-                    value = Creator;
+                    value = Creator.TrimEnd();  // trim the trailing space padding
                     break;
                 case "disk_sides":
                     value = DiskSides.ToString();

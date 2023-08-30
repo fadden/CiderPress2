@@ -25,7 +25,8 @@ limitations under the License.
         SizeToContent="WidthAndHeight" ResizeMode="NoResize"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
         ContentRendered="Window_ContentRendered"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        PreviewKeyDown="Window_KeyEventHandler">
 
     <Grid Margin="8">
         <Grid.ColumnDefinitions>
@@ -120,7 +121,6 @@ limitations under the License.
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Grid.Column="0">
@@ -168,11 +168,11 @@ limitations under the License.
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Row="5" Grid.Column="0" Width="40" Margin="0,0,5,0"
+                    <Button Grid.Column="0" Width="40" Margin="0,0,5,0"
                         Content="_Prev" HorizontalAlignment="Right"
                         IsEnabled="{Binding IsPrevEnabled}"
                         Click="PrevButton_Click"/>
-                    <Button Grid.Row="5" Grid.Column="1" Width="40" Margin="5,0,0,0"
+                    <Button Grid.Column="1" Width="40" Margin="5,0,0,0"
                         Content="_Next" HorizontalAlignment="Left"
                         IsEnabled="{Binding IsNextEnabled}"
                         Click="NextButton_Click"/>
@@ -185,6 +185,8 @@ limitations under the License.
                 <Button Grid.Row="3" Grid.Column="0" Width="90" Content="_Write" Margin="0,16,0,0"
                     IsEnabled="{Binding IsWriteButtonEnabled}"
                     Click="WriteButton_Click"/>
+                <Button Grid.Row="4" Grid.Column="0" Width="110" Content="Copy to Clipboard" Margin="0,16,0,0"
+                    Click="CopyButton_Click"/>
             </Grid>
 
             <!-- column 1, right side: advanced configuration-->

@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Media;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -44,8 +45,7 @@ namespace cp2_wpf {
         }
 
         public enum TxtConvMode { HighASCII, MOR, Latin }
-        private delegate char TextConverter(byte b);
-        private static TextConverter ModeToConverter(TxtConvMode mode) {
+        private static Formatter.CharConvFunc ModeToConverter(TxtConvMode mode) {
             switch (mode) {
                 case TxtConvMode.HighASCII:
                 default:
@@ -134,7 +134,7 @@ namespace cp2_wpf {
                 }
             }
             private TxtConvMode mConvMode;
-            private TextConverter mConverter;
+            private Formatter.CharConvFunc mConverter;
 
             private char[] mTextHolder = new char[16];
             public string AsText {
@@ -363,6 +363,7 @@ namespace cp2_wpf {
 
         private IChunkAccess mChunkAccess;
         private SectorEditMode mEditMode;
+        private Formatter mFormatter;
 
         private uint mCurBlockOrTrack;
         private uint mCurSector;
@@ -391,7 +392,7 @@ namespace cp2_wpf {
         ///   we don't allow writes (read-only volume).</param>
         /// <param name="formatter">Text formatter.</param>
         public EditSector(Window owner, IChunkAccess chunks, SectorEditMode editMode,
-                EnableWriteFunc? enableWriteFunc, Formatter unused) {
+                EnableWriteFunc? enableWriteFunc, Formatter formatter) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
@@ -399,6 +400,7 @@ namespace cp2_wpf {
             mChunkAccess = chunks;
             mEditMode = editMode;
             mEnableWriteFunc = enableWriteFunc;
+            mFormatter = formatter;
 
             Debug.Assert(mEnableWriteFunc == null || !mChunkAccess.IsReadOnly);
 
@@ -439,6 +441,7 @@ namespace cp2_wpf {
             mCurBlockOrTrack = 0;
             mCurSector = 0;
             SetPrevNextEnabled();
+            UpdateTxtConv();
             ReadFromDisk();
 
             if (asSectors) {
@@ -473,6 +476,15 @@ namespace cp2_wpf {
             // be to read something other than the boot block.
             trackBlockNumBox.Focus();
             trackBlockNumBox.SelectAll();
+        }
+
+        // Handles PreviewKeyDown event.
+        private void Window_KeyEventHandler(object sender, KeyEventArgs e) {
+            // Handle Ctrl+C (but not Ctrl+Shift+C or other variants).
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C) {
+                e.Handled = true;
+                CopyToClipboard();
+            }
         }
 
         private void Window_Closing(object sender, CancelEventArgs e) {
@@ -617,6 +629,9 @@ namespace cp2_wpf {
             foreach (SectorRow row in SectorData) {
                 row.ConvMode = mTxtConvMode;
             }
+            Formatter.FormatConfig config = mFormatter.Config;
+            config.HexDumpConvFunc = ModeToConverter(mTxtConvMode);
+            mFormatter = new Formatter(config);
         }
 
         /// <summary>
@@ -739,6 +754,10 @@ namespace cp2_wpf {
             mCurSector = (uint)mEnteredSector;
             SetPrevNextEnabled();
             WriteToDisk();
+        }
+
+        private void CopyButton_Click(object sender, RoutedEventArgs e) {
+            CopyToClipboard();
         }
 
         /// <summary>
@@ -893,6 +912,20 @@ namespace cp2_wpf {
             return true;
         }
 
+        private void CopyToClipboard() {
+            if (IOErrorMsgVisibility == Visibility.Visible) {
+                // Showing an error, nothing to copy.
+                SystemSounds.Exclamation.Play();
+                return;
+            }
+
+            string dumpText = mFormatter.FormatHexDump(mBuffer).ToString();
+
+            DataObject clipObj = new DataObject();
+            clipObj.SetText(dumpText);
+            Clipboard.SetDataObject(clipObj, true);
+        }
+
         #region Sector Order
 
         private bool mInitializingAdv;
@@ -916,6 +949,9 @@ namespace cp2_wpf {
             new SectorOrderItem("Physical", SectorOrder.Physical)
         };
 
+        /// <summary>
+        /// Prepares the sector-order selection combo box.  Does not alter the sector order.
+        /// </summary>
         private void PrepareSectorOrder() {
             // Disable the control if this isn't a 16-sector disk.
             if (!mChunkAccess.HasSectors || mChunkAccess.NumSectorsPerTrack != 16) {
@@ -957,6 +993,9 @@ namespace cp2_wpf {
 
         public string SectorCodecName { get; private set; } = string.Empty;
 
+        /// <summary>
+        /// Prepares the sector codec display.
+        /// </summary>
         private void PrepareSectorCodec() {
             if (mChunkAccess.NibbleCodec == null) {
                 SectorCodecName = "N/A";

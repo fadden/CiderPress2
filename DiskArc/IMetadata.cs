@@ -42,6 +42,7 @@ namespace DiskArc {
             /// </remarks>
             public ValType ValueType { get; private set; }
             public enum ValType { Unknown = 0, String, Bool, Int };
+            // TODO(mabye): add something that indicates a bit-flag entry, like compatible_hardware
 
             /// <summary>
             /// Human-readable description of the meaning of the key.  This will be empty for

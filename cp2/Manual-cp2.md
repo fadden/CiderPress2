@@ -1750,44 +1750,50 @@ Additional information, not required reading.
 
 ### Mac ZIP ###
 
-The Finder's "compress file" feature will store one or more files in a ZIP
-archive, storing them in AppleDouble format if they have resource forks
-or extended attributes.  The header file's name is modified in two ways,
-adding `__MACOSX/` to the start of the pathname and `._` to the start of
-the filename.  This results in the AppleDouble files being extracted to
-a parallel directory hierarchy by tools that don't have special handling
-for the layout.
+The Mac Finder's "compress file" feature will store one or more files in a ZIP
+archive, storing them in AppleDouble format if they have resource forks or
+extended attributes.  The header file's name is modified in two ways, adding
+`__MACOSX/` to the start of the pathname and `._` to the start of the
+filename.  This convention can result in the AppleDouble header files being
+extracted to a parallel directory hierarchy by tools that don't have special
+handling for the layout.
 
 The `--mac-zip` option is enabled by default.  This causes paired entries to
-be handled as a single entry that can have both forks and extended file
+be handled as a single entry that can have two forks and extended file
 attributes such as HFS file type and creator.  Disabling the option allows
 the entries to be managed as they would by a standard ZIP utility.
 
 ### AppleWorks Filename Formatting ###
 
-ProDOS filenames are limited to upper-case letters, numbers, and '.'.
-Files created by AppleWorks use the auxtype field as a set of flags that
-determine whether a character is upper- or lower-case.  It also allows space
-(' ') to be encoded as a lower-case period ('.').
+ProDOS filenames are limited to 15 upper-case letters, numbers, and '.'.
+Files created by AppleWorks can appear within the program to have lower-case
+letters and spaces, because the program uses the ProDOS auxtype field as a set
+of flags that specify whether a character is upper- or lower-case.  Spaces are
+encoded as "lower-case" periods ('.').
 
 While this looks nice, handling it in a command-line utility is problematic,
-because a general case-insensitive comparison won't treat ' ' and '.' as
-equivalent.  An appropriate conversion can be applied for ProDOS disks, but
-if the file is extacted or copied to HFS or NuFX with spaces in the name,
-some confusion may arise because the base ProDOS name is different.  If the
-file is copied *without* spaces in the name, the situation is confusing in
-a different way, because the name displayed by an AppleWorks-aware utility
-is different.
+because the standard case-insensitive comparison function won't treat ' ' and
+'.' as equivalent.  If AppleWorks names a file "My File", we need to be able
+to give the filename on the command line as "My File" or "My.File" (or
+even "mY.filE").  A special conversion could be applied for ProDOS disks,
+but if the file is extacted or copied to a filesystem or archive format that
+allows spaces, we could have "My.File" and "My File" on the same volume.  Now
+the file *must* be referenced as "My.File" or you'll get the wrong one, and we
+can't apply the AppleWorks transformation on anything but ProDOS because it
+will potentially be ambiguous.
 
-It must be possible to extract files using the output from "catalog" or
-"list", so the conversion needs to be always-on or always-off.  It's best
-to avoid having lots of special-case behavior, and leaving it off is
-much simpler.  AppleWorks-formatted names are not currently displayed;
-the output matches what ProDOS or GS/OS would show.
+A major sticking point is that we want to be able to "catalog" or "list" an
+archive and use the output as command-line arguments, so we need to output a
+name with no ambiguity.  Having a context-sensitive filename makes things
+more complicated while providing little benefit.  Consequently, cp2 does not
+perform the AppleWorks-specific case conversion.  Instead, the output matches
+what ProDOS or GS/OS would show in a directory listing.  (We *could* safely do
+the lower-case conversion if we left periods alone, but currently don't.)
 
-GS/OS extended the definition to allow lower-case letters by repurposing
-a 16-bit field as a set of flags, but did not allow spaces.  This is
-fully supported.
+Lower case letters on ProDOS are still possible, because GS/OS defined a
+filesystem tweak that repurposes a rarely-used 16-bit field as a set of
+lower-case flags.  GS/OS does not allow spaces in ProDOS names, however.
+This extension is fully supported.
 
 ### "TO DO" List ###
 
@@ -1805,6 +1811,7 @@ Some ideas for the future:
  - Provide a way to set the volume number when creating a new 5.25" disk image.
  - Add track/sector ranges to copy-sectors command.
  - Add options to configure the character set in sector edit hex dumps.
+ - Add sector skew order option for sector edit commands.
  - Add resource fork manipulation routines (`rez`/`derez` commands).
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add `get-attr` to get file attributes in machine-readable form.
