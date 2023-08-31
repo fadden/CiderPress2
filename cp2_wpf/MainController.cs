@@ -605,6 +605,7 @@ namespace cp2_wpf {
                 Mouse.OverrideCursor = null;
             }
 
+            AppHook.LogI("Opened device '" + deviceName + "'");
             mWorkPathName = deviceName;
             UpdateTitle();
             mMainWin.ShowLaunchPanel = false;
@@ -774,7 +775,12 @@ namespace cp2_wpf {
         private void UpdateTitle() {
             StringBuilder sb = new StringBuilder();
             if (mWorkTree != null) {
-                sb.Append(Path.GetFileName(mWorkPathName));
+                string fileName = Path.GetFileName(mWorkPathName);
+                if (string.IsNullOrEmpty(fileName)) {
+                    // Physical devices don't have filenames, so this comes up empty.
+                    fileName = mWorkPathName;
+                }
+                sb.Append(fileName);
                 if (!mWorkTree.CanWrite) {
                     sb.Append(" *READONLY*");
                 }
