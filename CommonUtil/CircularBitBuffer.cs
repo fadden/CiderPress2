@@ -434,21 +434,21 @@ namespace CommonUtil {
         /// first bit past the end of the sequence, NOT the start of the sequence.</para>
         /// </remarks>
         /// <param name="sequence">Byte pattern to search for.</param>
-        /// <param name="seqLen">Sequence byte count.</param>
+        /// <param name="seqByteLen">Sequence length, in bytes.</param>
         /// <param name="maxBitDistance">Maximum search distance, in bits.  The search stops
         ///   when the query point has reached or passed this many bits from the start point when
         ///   latching a new byte at the start of a pattern.  Pass -1 to search the entire
         ///   buffer.</param>
         /// <returns>The bit position of the start of the sequence, or -1 if the sequence
         ///   was not found.</returns>
-        public int FindNextLatchSequence(byte[] sequence, int seqLen, int maxBitDistance) {
+        public int FindNextLatchSequence(byte[] sequence, int seqByteLen, int maxBitDistance) {
             if (sequence.Length == 0) {
                 throw new ArgumentException("Empty sequence");
             }
-            if (seqLen <= 0 || seqLen > sequence.Length) {
-                throw new ArgumentOutOfRangeException(nameof(seqLen), "invalid sequence length");
+            if (seqByteLen <= 0 || seqByteLen > sequence.Length) {
+                throw new ArgumentOutOfRangeException(nameof(seqByteLen), "invalid sequence length");
             }
-            if (seqLen > BitCount) {
+            if (seqByteLen * 8 > BitCount) {
                 throw new ArgumentException("Sequence length exceeds bit buffer length");
             }
             if (maxBitDistance >= BitCount) {
@@ -491,6 +491,11 @@ namespace CommonUtil {
             while (true) {
                 // If we've reached the end, and aren't in the middle of a match, give up.
                 if (seqIndex == 0 && (!endAfterWrap || wrapped) && mBitOffset >= searchEndOffset) {
+                    return -1;
+                }
+                // If we didn't expect to wrap, but we have, then we probably overshot the end by
+                // a couple of bits.
+                if (!endAfterWrap && wrapped) {
                     return -1;
                 }
 
@@ -890,6 +895,15 @@ namespace CommonUtil {
                 Debug.Assert(false, "Incorrect seq7query3");
                 return false;
             }
+
+
+            // Test a case where the search zone ends exactly at the end of the buffer, but the
+            // end of the buffer isn't bit-aligned and the sequence isn't found.  This causes us
+            // to wrap around by a couple of bits unexpectedly.
+            CircularBitBuffer shortCirc = new CircularBitBuffer(testData, 0, 0, 7 * 8);
+            shortCirc.BitPosition = 3 * 8;
+            int shortQuery1 = shortCirc.FindNextLatchSequence(seq1, 3, 4 * 8);
+            Debug.Assert(shortQuery1 == -1);
 
             return true;
         }
