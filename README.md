@@ -16,13 +16,15 @@ set metadata, copy blocks or sectors, edit blocks or sectors, and view raw track
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
- - Video demo of v0.2 GUI here: https://www.youtube.com/watch?v=esEHP6Bo8GI .
-   Video demo of v0.1 CLI/GUI here: https://www.youtube.com/watch?v=_jDVdC6-eoA
  - The command-line tool is alpha quality.  The command set is feature-complete for v1.0, though
    support for some key formats is missing.  See [the manual](cp2/Manual-cp2.md) for a thorough
    description of commands and features.
- - The GUI tool is partly functional but substantially incomplete.  It's only available for
-   Windows at this time; see notes in [GUI Tool Development](#gui-tool-development).
+ - The GUI tool is functional but incomplete.  It's only available for  Windows at this time;
+   see notes in [GUI Tool Development](#gui-tool-development).
+ - Video demos:
+   - v0.3 disk handling: https://youtu.be/5tE07owhcCc
+   - v0.2 new GUI: https://www.youtube.com/watch?v=esEHP6Bo8GI
+   - v0.1 CLI/GUI: https://www.youtube.com/watch?v=_jDVdC6-eoA
 
 ## Features ##
 
@@ -33,13 +35,17 @@ File archive support:
 Type                | Filename Extensions      | Status
 ------------------- | ------------------------ | ------
 AppleLink Comp Util | .acu                     | not yet
-AppleDouble         | ("._" prefix pair)       | add/extract
-AppleSingle         | .as                      | read, add/extract
+AppleDouble         | ("._" prefix pair)       | read/add/extract
+AppleSingle         | .as                      | read/add/extract
 Binary ][           | .bny .bqy                | full support
 gzip                | .gz                      | full support
+MacBinary           | .bin .macbin             | read
 NuFX (ShrinkIt)     | .shk .sdk .bxy .sea .bse | full support
 Stuffit (vintage)   | .sit                     | not yet
 ZIP                 | .zip                     | full support, including __MACOSX handling
+
+"Read" indicates the archives can be read, but not created or written.  "Full support" means the
+archives can be created, read, and written.
 
 "Add/extract" means that you can add or extract files to and from the format, e.g. adding an
 AppleDouble file pair to an HFS disk image results in a single new file with a resource fork
@@ -58,9 +64,9 @@ Type             | Filename Extensions              | Status
 ---------------- | -------------------------------- | ------
 2IMG             | .2mg .2img                       | full support
 Dalton Disk Dis. | .ddd                             | not yet
-DiskCopy 4.2     | .dc .image                       | not yet
+DiskCopy 4.2     | .dc .image                       | full support
 FDI              | .fdi                             | no
-Trackstar        | .app                             | not yet
+Trackstar        | .app                             | full support
 Unadorned Block  | .do .po .dsk .d13 .iso .hdv .img | full support
 Unadorned Nibble | .nib .nb2                        | full support
 WOZ              | .woz                             | full support (FLUX is read-only)
@@ -72,13 +78,14 @@ Filesystem support:
 
 Type             | Status
 ---------------- | ------
-CP/M             | not yet
+CP/M             | full support (140KB and 800KB floppies)
 DOS 3.2/3.3      | full support (incl. 40/80 track disks)
-Gutenberg        | not yet
+Gutenberg        | read-only
 HFS              | full support (up to 4GB volumes)
+MFS              | read-only
+Pascal (Apple)   | full support (includes defragmenter)
 ProDOS           | full support
-RDOS 3/3.2/3.3   | not yet
-UCSD (Pascal)    | not yet
+RDOS             | read-only (all three variants)
 
 Multi-volume support:
 
@@ -89,11 +96,12 @@ Apple Partition Map (APM)   | read/write
 CFFA with 4/6/8 partitions  | read/write
 DOS hybrids                 | read/write
 DOS.MASTER embedded volumes | read/write
-FocusDrive partitions       | not yet
-MicroDrive partitions       | not yet
+FocusDrive partitions       | read/write
+MicroDrive partitions       | read/write
 Early Mac 'TS' Format       | read/write
 
-Creation of multi-volume disk images is not yet supported.
+Creation of multi-volume disk images is not yet supported.  Extracting and replacing individual
+partitions is supported in the GUI.  (It's possible in the CLI, but very awkward.)
 
 File conversion (export):
 

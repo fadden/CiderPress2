@@ -24,14 +24,14 @@ or use one of these links to download a recent release:
 
 System      | Self-Cont'd? | Link
 ----------- | ------------ | ----
-Windows x86 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x86_fd.zip
-Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x86_sc.zip
-Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x64_fd.zip
-Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_win-x64_sc.zip
-Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_osx-x64_fd.zip
-Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_osx-x64_sc.zip
-Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_linux-x64_fd.zip
-Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.2.0-dev1/cp2_0.2.0-d1_linux-x64_sc.zip
+Windows x86 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_win-x86_fd.zip
+Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_win-x86_sc.zip
+Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_win-x64_fd.zip
+Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_win-x64_sc.zip
+Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_osx-x64_fd.zip
+Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_osx-x64_sc.zip
+Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_linux-x64_fd.zip
+Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.3.0-dev1/cp2_0.3.0-d1_linux-x64_sc.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they were unzipped.

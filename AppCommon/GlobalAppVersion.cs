@@ -27,6 +27,6 @@ namespace AppCommon {
         /// Overall application version.
         /// </summary>
         public static readonly CommonUtil.Version AppVersion =
-            new CommonUtil.Version(0, 2, 0, CommonUtil.Version.PreRelType.Dev, 1);
+            new CommonUtil.Version(0, 3, 0, CommonUtil.Version.PreRelType.Dev, 1);
     }
 }
