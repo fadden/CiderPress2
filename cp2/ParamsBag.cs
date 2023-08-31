@@ -91,7 +91,7 @@ namespace cp2 {
         private static Option OptInteractive = new Option("interactive", OptionType.Bool, false);
         private static Option OptLatch = new Option("latch", OptionType.Bool, true);
         private static Option OptMacZip = new Option("mac-zip", OptionType.Bool, true);
-        private static Option OptMakeBootable = new Option("make-bootable", OptionType.Bool, true);
+        private static Option OptReserveBoot = new Option("reserve-boot", OptionType.Bool, true);
         private static Option OptOverwrite = new Option("overwrite", OptionType.Bool, false);
         private static Option OptPreserve = new Option("preserve", OptionType.Preserve,
             ExtractFileWorker.PreserveMode.None);
@@ -128,7 +128,7 @@ namespace cp2 {
                 { OptInteractive.Name, OptInteractive },
                 { OptLatch.Name, OptLatch },
                 { OptMacZip.Name, OptMacZip },
-                { OptMakeBootable.Name, OptMakeBootable },
+                { OptReserveBoot.Name, OptReserveBoot },
                 { OptOverwrite.Name, OptOverwrite },
                 { OptPreserve.Name, OptPreserve },
                 { OptRaw.Name, OptRaw },
@@ -218,8 +218,8 @@ namespace cp2 {
             set => SetOption(OptMacZip.Name, value);
         }
         public bool MakeBootable {
-            get => GetBoolOption(OptMakeBootable.Name);
-            set => SetOption(OptMakeBootable.Name, value);
+            get => GetBoolOption(OptReserveBoot.Name);
+            set => SetOption(OptReserveBoot.Name, value);
         }
         public bool Overwrite {
             get => GetBoolOption(OptOverwrite.Name);

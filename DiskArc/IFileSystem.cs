@@ -217,7 +217,7 @@ namespace DiskArc {
         /// <param name="volumeName">Volume name.</param>
         /// <param name="volumeNum">Volume number.  If invalid, a default number will be
         ///   substituted.</param>
-        /// <param name="makeBootable">If set, perform the minimum steps needed to create a
+        /// <param name="reserveBoot">If set, perform the minimum steps needed to create a
         ///   bootable disk.  If not set, some storage normally reserved for the
         ///   OS boot process may be reclaimed.</param>
         /// <exception cref="IOException">Error accessing underlying storage, or storage
@@ -225,7 +225,7 @@ namespace DiskArc {
         /// <exception cref="ArgumentException">Invalid volume name.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The size of the underlying storage
         ///   is incompatible with this filesystem.</exception>
-        void Format(string volumeName, int volumeNum, bool makeBootable);
+        void Format(string volumeName, int volumeNum, bool reserveBoot);
 
         /// <summary>
         /// Obtains the file entry for the top-level volume directory.  The filesystem must

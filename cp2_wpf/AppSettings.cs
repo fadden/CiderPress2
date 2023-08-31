@@ -84,7 +84,7 @@ namespace cp2_wpf {
         public const string NEW_DISK_CUSTOM_SIZE = "new-disk-custom-size";
         public const string NEW_DISK_VOLUME_NAME = "new-disk-volume-name";
         public const string NEW_DISK_VOLUME_NUM = "new-disk-volume-num";
-        public const string NEW_DISK_MAKE_BOOTABLE = "new-disk-make-bootable";
+        public const string NEW_DISK_RESERVE_BOOT = "new-disk-reserve-boot";
 
         public const string SAVE_DISK_FILE_TYPE = "save-disk-file-type";
 

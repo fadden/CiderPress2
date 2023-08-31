@@ -504,9 +504,9 @@ namespace DiskArc.FS {
 
             byte[] blockBuf = new byte[BLOCK_SIZE];
 
-            // Write the standard boot block data to block 0/1 (we ignore the "make bootable"
-            // flag).  If the chunks are from a source with room for 35 tracks * 16 sectors, use
-            // the 5.25" boot blocks; otherwise we use the 3.5" boot block.
+            // Write the standard boot block data to block 0/1.  If the chunks are from a source
+            // with room for 35 tracks * 16 sectors, use the 5.25" boot blocks; otherwise we use
+            // the 3.5" boot block.
             if (ChunkAccess.FormattedLength == 140 * 1024) {
                 ChunkAccess.WriteBlock(0, sBoot525Block0, 0);
                 ChunkAccess.WriteBlock(1, sBoot525Block1, 0);

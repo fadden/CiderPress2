@@ -421,6 +421,9 @@ namespace cp2_wpf {
                 IChunkAccess chunks = fs.RawAccess;
                 AddInfoItem("Volume size",
                     mFormatter.FormatSizeOnDisk(chunks.FormattedLength, KBLOCK_SIZE));
+
+                // TODO: can display filesystem-specific items
+                // - CP/M, HFS, MFS: alloc block size
             } else if (workObj is IMultiPart) {
                 IMultiPart partitions = (IMultiPart)workObj;
                 infoText = "Multi-partition format - " + ThingString.IMultiPart(partitions) +
@@ -432,7 +435,8 @@ namespace cp2_wpf {
                 infoText = "Disk partition - " + ThingString.Partition(part) + " - " + selName;
 
                 AddInfoItem("Start block", (part.StartOffset / BLOCK_SIZE).ToString());
-                AddInfoItem("Block count", (part.Length / BLOCK_SIZE).ToString());
+                AddInfoItem("Block count", (part.Length / BLOCK_SIZE).ToString() + " (" +
+                    (part.Length / (1024*1024.0)).ToString("N1") + " MB)");
             } else {
                 infoText = "???";
             }

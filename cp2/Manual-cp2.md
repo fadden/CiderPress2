@@ -567,10 +567,10 @@ used to format a disk see [#filesystem-types](Filesystem Types).
 
 Most filesystems can only be placed on disks with certain sizes.
 
-DOS disks will be bootable unless `--no-make-bootable` is specified.  ProDOS
+DOS disks will be bootable unless `--no-reserve-boot` is specified.  ProDOS
 and Pascal always have the Apple II boot blocks written, but the disks will
 not actually boot without "PRODOS" or "SYSTEM.APPLE".  HFS boot blocks are
-zeroed.  For CP/M, `--make-bootable` will cause the first three tracks of
+zeroed.  For CP/M, `--reserve-boot` will cause the first three tracks of
 5.25" disks to be marked as reserved, but the formatter does not write an OS
 image.
 
@@ -579,7 +579,7 @@ use volume #254.  These can be changed with the `move`/`rename` command.
 
 Options:
  - `--sectors={13,16,32}`
- - `--make-bootable`, `--no-make-bootable`
+ - `--reserve-boot`, `--no-reserve-boot`
 
 Examples:
  - `cp2 create-disk-image newdisk.nib 35trk dos33`
@@ -1244,11 +1244,10 @@ bytes into ".nib" images to make the formatted track length come out right.
 Enables or disables recognition of Mac OS ZIP tool encoding of resource
 forks and file attributes.  See [Mac ZIP](#mac-zip).
 
-#### `--make-bootable` (default), `--no-make-bootable`
+#### `--reserve-boot` (default), `--no-reserve-boot`
 
-If set, take additional steps to make a disk bootable.  This has no effect
-on ProDOS, which will always have a boot block written to block 0, or HFS,
-which always has block 0 zeroed out.
+If set, take additional steps to reserve the boot tracks.  For most
+filesystems this has no effect.
 
 For DOS 3.2/3.3, this will write a standard DOS image to tracks 0, 1,
 and 2.  If the flag is not set, the tracks are zeroed out, and tracks 1
@@ -1257,6 +1256,9 @@ and 2 will be available for file storage.
 DOS disks with unusual geometry (e.g. 80 tracks) require modified versions
 of DOS that are not included in the disk format code.  The tracks will be
 marked as in-use but not populated.
+
+For CP/M on a 5.25" disk, the first three tracks will be marked as
+reserved.
 
 #### `--overwrite`, `--no-overwrite` (default)
 
@@ -1422,7 +1424,7 @@ The filesystems that may be formatted onto a disk image are:
 
  - "cpm" - CP/M volume.  May be a 35-track 5.25" disk (140KB) or a 3.5"
    disk (800KB).  The first 3 tracks of a 5.25" disk can be reserved for an
-   OS image by formatting the disk with the "make bootable" flag.
+   OS image by formatting the disk with the `--reserve-boot` flag.
  - "dos" - DOS 3.2 or 3.3, determined by the value of the `--sectors`
    option.  Disks must have 35, 40, 50, or 80 tracks, with 13, 16, or 32
    sectors.  Supported configurations:

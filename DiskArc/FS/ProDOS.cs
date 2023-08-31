@@ -739,7 +739,7 @@ namespace DiskArc.FS {
                 throw new ArgumentException("Invalid volume name");
             }
 
-            // Write the standard boot block data to block 0 (we ignore the "make bootable" flag).
+            // Write the standard boot block data to block 0.
             ChunkAccess.WriteBlock(0, sBootBlock0, 0);
 
             byte[]? rawName = ProDOS_FileEntry.GenerateRawName(volumeName, out ushort lcFlags);

@@ -85,7 +85,7 @@ namespace cp2_wpf {
             mVolumeNumText = settings.GetInt(AppSettings.NEW_DISK_VOLUME_NUM,
                 Defs.DEFAULT_525_VOLUME_NUM).ToString();
             mCustomSizeText = settings.GetString(AppSettings.NEW_DISK_CUSTOM_SIZE, "65535");
-            mIsChecked_MakeBootable = settings.GetBool(AppSettings.NEW_DISK_MAKE_BOOTABLE, true);
+            mIsChecked_ReserveBoot = settings.GetBool(AppSettings.NEW_DISK_RESERVE_BOOT, true);
 
             UpdateControls();
         }
@@ -108,7 +108,7 @@ namespace cp2_wpf {
             settings.SetString(AppSettings.NEW_DISK_VOLUME_NAME, mVolumeNameText);
             settings.SetInt(AppSettings.NEW_DISK_VOLUME_NUM, volNum);
             settings.SetString(AppSettings.NEW_DISK_CUSTOM_SIZE, mCustomSizeText);
-            settings.SetBool(AppSettings.NEW_DISK_MAKE_BOOTABLE, mIsChecked_MakeBootable);
+            settings.SetBool(AppSettings.NEW_DISK_RESERVE_BOOT, mIsChecked_ReserveBoot);
         }
 
         /// <summary>
@@ -257,7 +257,7 @@ namespace cp2_wpf {
                         IFileSystem fs = (IFileSystem)contents;
 
                         // New stream, no need to initialize chunks.  Format the filesystem.
-                        fs.Format(VolumeNameText, volNum, IsChecked_MakeBootable);
+                        fs.Format(VolumeNameText, volNum, mIsChecked_ReserveBoot);
 
                         // Dispose of the object to ensure everything has been flushed.
                         fs.Dispose();
@@ -896,11 +896,11 @@ namespace cp2_wpf {
         }
         private string mVolumeNumText;
 
-        public bool IsChecked_MakeBootable {
-            get { return mIsChecked_MakeBootable; }
-            set { mIsChecked_MakeBootable = value; OnPropertyChanged(); }
+        public bool IsChecked_ReserveBoot {
+            get { return mIsChecked_ReserveBoot; }
+            set { mIsChecked_ReserveBoot = value; OnPropertyChanged(); }
         }
-        private bool mIsChecked_MakeBootable;
+        private bool mIsChecked_ReserveBoot;
 
         #endregion Filesystem
 

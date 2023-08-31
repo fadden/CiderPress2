@@ -167,7 +167,7 @@ limitations under the License.
                                Foreground="{Binding VolNumSyntaxForeground}"/>
                 </Grid>
                 <CheckBox Content="Allocate boot tracks (DOS 3.x, CP/M)"
-                          IsChecked="{Binding IsChecked_MakeBootable}"/>
+                          IsChecked="{Binding IsChecked_ReserveBoot}"/>
             </StackPanel>
         </Grid>
 
