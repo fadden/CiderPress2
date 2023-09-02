@@ -635,6 +635,9 @@ namespace cp2_wpf {
         private void Debug_ShowDebugLogCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.Debug_ShowDebugLog();
         }
+        private void Debug_ShowDropTargetCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.Debug_ShowDropTarget();
+        }
 
         #endregion Command handlers
 
@@ -1556,6 +1559,7 @@ namespace cp2_wpf {
 
         private void DebugMenu_SubmenuOpened(object sender, RoutedEventArgs e) {
             debugShowDebugLogMenuItem.IsChecked = mMainCtrl.IsDebugLogOpen;
+            debugShowDropTargetMenuItem.IsChecked = mMainCtrl.IsDropTargetOpen;
         }
 
         #endregion Misc

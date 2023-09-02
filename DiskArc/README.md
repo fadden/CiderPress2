@@ -255,7 +255,7 @@ defines a `FindFileEntry()` method that can be called directly on an `IFileSyste
 it functions as if it were part of the interface, even though it could be implemented in an
 entirely different library.
 
-#### MISC - TBD
+### Miscellaneous Notes ###
 
 The disk images and archives must not be modified unless a "write" operation is performed.  This
 may seem obvious, but in some cases minor corrections are made in the course of scanning files,
@@ -265,20 +265,38 @@ it's unmounted, so that a consistency check can be performed automatically after
 Any such changes must not be written to disk unless the caller explicitly changes something else,
 e.g. altering a file date could also cause the storage size to be corrected.
 
-Exception classes:
+Certain Exception classes are commonly used:
  - IOException and sub-classes mean "something unexpected happened during an operation".
    - Custom IOException sub-classes: `BadBlockException`, `DiskFullException`
- - ArgumentException and sub-classes mean you passed bad arguments in.
+ - ArgumentException and sub-classes are thrown when the library detects bad arguments without
+   having to start the operation.
  - DAException mean mis-use of APIs, like trying to switch to raw-access mode
    with files open, or an internal error.
-
-Disk analyzer tries to find a filesystem that fills a certain space.  It will not look for
-DOS 3.3 in a 32MB volume, or ProDOS in a 40MB volume.
 
 
 ## Disk Image Implementation Notes ##
 
+The "create new" methods defined for a disk image may not represent the full extent of what that
+file format is capable of holding.  For example, new Woz 5.25" disk images can only be created with
+whole tracks, even though the implementation can handle disks with half and quarter tracks created
+by other programs.
+
 The description field for DiskCopy, Trackstar, and 2IMG is editable via the metadata interface.
+
+A set of "standard" sector codecs is defined in `StdSectorCodec`.  These are used for 5.25" and
+3.5" nibble images.  The file analyzer will try to auto-detect the presence of unusual formats
+if the basic codec fails.
+
+### DiskCopy ###
+
+Only DiskCopy 4.2 is currently supported.  The 12-byte block "tags" are supported, but there is
+currently no way to set them when creating an image from a 400KB/800KB GCR disk.
+
+### 2IMG ###
+
+The 2IMG format is unusual in that it can contain a sector image or a nibble image.  It's helpful
+to be able to test for the presence of `INibbleDataAccess`, so TwoIMG uses a distinct subclass
+to hold nibble images.
 
 
 ## Filesystem Implementation Notes ##

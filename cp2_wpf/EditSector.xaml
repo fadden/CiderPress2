@@ -26,7 +26,7 @@ limitations under the License.
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
         ContentRendered="Window_ContentRendered"
         Closing="Window_Closing"
-        PreviewKeyDown="Window_KeyEventHandler">
+        PreviewKeyDown="Window_PreviewKeyDown">
 
     <Grid Margin="8">
         <Grid.ColumnDefinitions>

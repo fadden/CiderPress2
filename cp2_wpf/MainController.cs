@@ -1938,7 +1938,7 @@ namespace cp2_wpf {
         }
 
         private Tools.LogViewer? mDebugLogViewer;
-        public bool IsDebugLogOpen { get { return mDebugLogViewer != null; } }
+        public bool IsDebugLogOpen => mDebugLogViewer != null;
 
         public void Debug_ShowDebugLog() {
             if (mDebugLogViewer == null) {
@@ -1952,6 +1952,24 @@ namespace cp2_wpf {
             } else {
                 // Ask the dialog to close.  Do the cleanup in the event.
                 mDebugLogViewer.Close();
+            }
+        }
+
+        private DropTarget? mDebugDropTarget;
+        public bool IsDropTargetOpen => mDebugDropTarget != null;
+
+        public void Debug_ShowDropTarget() {
+            if (mDebugDropTarget == null) {
+                DropTarget dlg = new DropTarget();
+                dlg.Closing += (sender, e) => {
+                    Debug.WriteLine("Drop target test closed");
+                    mDebugDropTarget = null;
+                };
+                dlg.Show();
+                mDebugDropTarget = dlg;
+            } else {
+                // Ask the dialog to close.  Do the cleanup in the event.
+                mDebugDropTarget.Close();
             }
         }
 

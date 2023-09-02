@@ -479,7 +479,7 @@ namespace cp2_wpf {
         }
 
         // Handles PreviewKeyDown event.
-        private void Window_KeyEventHandler(object sender, KeyEventArgs e) {
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e) {
             // Handle Ctrl+C (but not Ctrl+Shift+C or other variants).
             if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C) {
                 e.Handled = true;

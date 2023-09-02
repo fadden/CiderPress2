@@ -140,6 +140,7 @@ limitations under the License.
             </RoutedUICommand>
             <RoutedUICommand x:Key="Debug_FileConvLibTestCmd" Text="FileConv Library Tests..."/>
             <RoutedUICommand x:Key="Debug_ShowDebugLogCmd" Text="Show Debug Log"/>
+            <RoutedUICommand x:Key="Debug_ShowDropTargetCmd" Text="Show Drop/Paste Target"/>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -231,6 +232,8 @@ limitations under the License.
                         Executed="Debug_FileConvLibTestCmd_Executed"/>
         <CommandBinding Command="{StaticResource Debug_ShowDebugLogCmd}"
                         Executed="Debug_ShowDebugLogCmd_Executed"/>
+        <CommandBinding Command="{StaticResource Debug_ShowDropTargetCmd}"
+                        Executed="Debug_ShowDropTargetCmd_Executed"/>
     </Window.CommandBindings>
 
     <DockPanel>
@@ -305,6 +308,8 @@ limitations under the License.
                 <Separator/>
                 <MenuItem Name="debugShowDebugLogMenuItem"
                           Command="{StaticResource Debug_ShowDebugLogCmd}" IsCheckable="True"/>
+                <MenuItem Name="debugShowDropTargetMenuItem"
+                          Command="{StaticResource Debug_ShowDropTargetCmd}" IsCheckable="True"/>
             </MenuItem>
         </Menu>
 
