@@ -199,6 +199,28 @@ filenames use Mac OS Roman.  Because UNIX implementations exist, the filenames s
 be compared in a case-sensitive fashion when checking for duplicate entries, but in practice a
 case-insensitive comparison works fine since nearly all archives are from ProDOS or HFS.
 
+### Filesystem ID ###
+
+The filesystem ID comes from the GS/OS FST definition:
+```
+  $00 - (unknown)
+  $01 - ProDOS
+  $02 - DOS 3.3
+  $03 - DOS 3.2
+  $04 - Apple Pascal
+  $05 - MFS
+  $06 - HFS
+  $07 - Lisa
+  $08 - CP/M
+  $09 - (character FST)
+  $0a - MS-DOS
+  $0b - High Sierra (CD-ROM)
+  $0c - ISO-9660 (CD-ROM)
+  $0d - AppleShare
+```
+
+In practice, values other than $00, $01, and $06 are unlikely.
+
 ### Disk Images ###
 
 The storage of disk images merits closer examination.  As noted earlier, certain fields in the
