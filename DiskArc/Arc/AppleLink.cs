@@ -16,33 +16,36 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Text;
 
 using CommonUtil;
 using static DiskArc.Defs;
 
 namespace DiskArc.Arc {
     /// <summary>
-    /// MacBinary (I, II, III) archive handling.
+    /// AppleLink Personal Edition Package Format, usually named ".acu" after the AppleLink
+    /// Compression Utility software.
     /// </summary>
-    public class MacBinary : IArchiveExt {
-        public const int CHUNK_LEN = 128;
-        public const int HEADER_LEN = CHUNK_LEN;
+    public class AppleLink : IArchiveExt {
+        public const int HEADER_LEN = 20;
+        internal const int MAX_RECORDS_EXPECTED = 512;      // arbitrary
+        private static readonly byte[] SIGNATURE = new byte[] {
+            (byte)'f', (byte)'Z', (byte)'i', (byte)'n', (byte)'k'
+        };
 
-        // The file format allows up to 63 characters, but that may have been a concession to
-        // MFS, which allowed 255.  MacBinary III limits it to 31.
-        private const string FILENAME_RULES = "1-31 characters.  Must not include ':'.";
+        private const string FILENAME_RULES = "Filesystem-specific.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
-            name: "MacBinary",
+            name: "AppleLink",
             canWrite: false,
-            hasSingleEntry: true,
+            hasSingleEntry: false,
             hasResourceForks: true,
             hasDiskImages: false,
             hasArchiveComment: false,
-            hasRecordComments: false,               // TODO: optional "info" chunk
-            defaultDirSep: IFileEntry.NO_DIR_SEP,   // partial paths are not supported
+            hasRecordComments: false,
+            defaultDirSep: '/',
             fnSyntax: FILENAME_RULES,
-            tsStart: TimeStamp.HFS_MIN_TIMESTAMP,
-            tsEnd: TimeStamp.HFS_MAX_TIMESTAMP
+            tsStart: TimeStamp.PRODOS_MIN_TIMESTAMP,
+            tsEnd: TimeStamp.PRODOS_MAX_TIMESTAMP
         );
 
         //
@@ -74,7 +77,6 @@ namespace DiskArc.Arc {
         //
         // Internal interfaces.
         //
-
         /// <summary>
         /// Application hook reference.
         /// </summary>
@@ -83,8 +85,8 @@ namespace DiskArc.Arc {
         /// <summary>
         /// List of records.
         /// </summary>
-        internal List<MacBinary_FileEntry> RecordList { get; private set; } =
-            new List<MacBinary_FileEntry>(1);
+        internal List<AppleLink_FileEntry> RecordList { get; private set; } =
+            new List<AppleLink_FileEntry>();
 
         /// <summary>
         /// Open-file tracking.
@@ -97,44 +99,32 @@ namespace DiskArc.Arc {
             }
 
             public override string ToString() {
-                return "[MacBinary open]";
+                return "[AppleLink open]";
             }
         }
 
         /// <summary>
-        /// List of open files.  We only have one record, but it has two openable parts, and
-        /// each can be opened more than once.
+        /// List of open files.
         /// </summary>
         private List<OpenFileRec> mOpenFiles = new List<OpenFileRec>();
 
-
         /// <summary>
-        /// Tests a stream to see if it is a MacBinary file.
+        /// Tests a stream to see if it contains an AppleLink archive.
         /// </summary>
         /// <param name="stream">Stream to test.</param>
         /// <param name="appHook">Application hook reference.</param>
-        /// <returns>True if this looks like MacBinary.</returns>
+        /// <returns>True if this looks like a match.</returns>
         public static bool TestKind(Stream stream, AppHook appHook) {
-            if (stream.Length < HEADER_LEN) {
-                return false;
-            }
             stream.Position = 0;
-            byte[] buf = new byte[HEADER_LEN];
-            stream.ReadExactly(buf, 0, HEADER_LEN);
-            MacBinary_FileEntry.Header hdr = new MacBinary_FileEntry.Header();
-            hdr.Load(buf, 0);
-            return hdr.Process(stream.Length);
+            return ReadFileHeader(stream, out ushort unused);
         }
 
         /// <summary>
         /// Private constructor.
         /// </summary>
-        /// <param name="stream">File data stream.</param>
+        /// <param name="stream">Data stream if existing file, null if new archive.</param>
         /// <param name="appHook">Application hook reference.</param>
-        private MacBinary(Stream? stream, AppHook appHook) {
-            if (stream == null) {
-                throw new ArgumentNullException(nameof(stream), "Can't create new instances");
-            }
+        private AppleLink(Stream? stream, AppHook appHook) {
             DataStream = stream;
             AppHook = appHook;
         }
@@ -145,17 +135,90 @@ namespace DiskArc.Arc {
         /// <param name="stream">Archive data stream.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>Archive instance.</returns>
-        /// <exception cref="NotSupportedException">Data stream is not in the expected
-        ///   format.</exception>
-        public static MacBinary OpenArchive(Stream stream, AppHook appHook) {
+        /// <exception cref="NotSupportedException">Data stream is not compatible.</exception>
+        public static AppleLink OpenArchive(Stream stream, AppHook appHook) {
             stream.Position = 0;
-            MacBinary archive = new MacBinary(stream, appHook);
-            MacBinary_FileEntry newEntry = new MacBinary_FileEntry(archive);
-            archive.RecordList.Add(newEntry);
-            if (!newEntry.Scan()) {
-                throw new NotSupportedException("Incompatible data stream");
+            if (!ReadFileHeader(stream, out ushort numRecords)) {
+                throw new NotSupportedException("Not an AppleLink archive");
             }
+            AppleLink archive = new AppleLink(stream, appHook);
+            archive.ScanRecords(numRecords);
             return archive;
+        }
+
+        /// <summary>
+        /// Reads the ACU file header from the current stream position.  The file will be left
+        /// positioned immediately past the file header.
+        /// </summary>
+        /// <param name="numRecords">Result: number of records reported to be stored in the
+        ///   archive.</param>
+        /// <returns>True if this is an ACU file, false if not.</returns>
+        private static bool ReadFileHeader(Stream stream, out ushort numRecords) {
+            const int RESERVED_LEN = 7;
+
+            numRecords = 0;
+            if (stream.Length < HEADER_LEN) {
+                return false;
+            }
+            byte[] buf = new byte[HEADER_LEN];
+            stream.ReadExactly(buf, 0, HEADER_LEN);
+
+            int offset = 0;
+            numRecords = RawData.ReadU16LE(buf, ref offset);
+            ushort fsID = RawData.ReadU16LE(buf, ref offset);
+            byte[] signature = new byte[SIGNATURE.Length];
+            Array.Copy(buf, offset, signature, 0, SIGNATURE.Length);
+            offset += SIGNATURE.Length;
+            byte acuVersion = buf[offset++];
+            ushort fileHdrLen = RawData.ReadU16LE(buf, ref offset);
+            byte[] reserved = new byte[RESERVED_LEN];
+            Array.Copy(buf, offset, reserved, 0, RESERVED_LEN);
+            offset += RESERVED_LEN;
+            byte magic = buf[offset++];
+            Debug.Assert(offset == HEADER_LEN);
+
+            // Does this look like ACU?
+            if (RawData.MemCmp(signature, SIGNATURE, SIGNATURE.Length) != 0) {
+                return false;       // wrong signature, definitely not ACU
+            }
+            if (acuVersion != 1 || fileHdrLen != AppleLink_FileEntry.Header.LENGTH) {
+                return false;       // weird length, could be updated version?
+            }
+            if (numRecords > MAX_RECORDS_EXPECTED) {
+                return false;       // unreasonable value, probably garbage
+            }
+            // could check magic==0xdd, but I don't know what that field actually means
+
+            return true;
+        }
+
+        /// <summary>
+        /// Scans the records out of the file, from the current stream position.
+        /// </summary>
+        /// <remarks>
+        /// This should not throw an exception on bad data.  Damage should be flagged instead.
+        /// </remarks>
+        /// <param name="expectedRecords">The expected number of records (from file header).</param>
+        private void ScanRecords(ushort expectedRecords) {
+            Debug.Assert(DataStream != null);
+            Debug.Assert(RecordList.Count == 0);
+
+            while (DataStream.Position < DataStream.Length) {
+                long startPosn = DataStream.Position;
+                AppleLink_FileEntry? newEntry = AppleLink_FileEntry.ReadNextRecord(this);
+                if (newEntry == null) {
+                    Notes.AddW("Found extra data at end of file (" +
+                        (DataStream.Length - startPosn) + " bytes)");
+                    break;
+                }
+                RecordList.Add(newEntry);
+            }
+
+            if (RecordList.Count != expectedRecords) {
+                Notes.AddW("Number of records found (" + RecordList.Count +
+                    ") does not match value from file header (" + expectedRecords + ")");
+                IsDubious = true;
+            }
         }
 
         // IArchive
@@ -170,9 +233,10 @@ namespace DiskArc.Arc {
         }
         protected virtual void Dispose(bool disposing) {
             if (disposing) {
+                // We're being disposed explicitly (not by the GC).  Dispose of all open entries,
+                // so that attempts to continue to use them will start failing immediately.
                 if (mOpenFiles.Count != 0) {
-                    AppHook.LogW("MacBinary disposed while " + mOpenFiles.Count +
-                        " files are open");
+                    AppHook.LogW("AppleLink disposed with " + mOpenFiles.Count + " files open");
                     // Walk through from end to start so we don't trip when entries are removed.
                     for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
                         // This will call back into our StreamClosing function, which will
@@ -181,11 +245,15 @@ namespace DiskArc.Arc {
                     }
                 }
             }
+            //if (mIsTransactionOpen) {
+            //    AppHook.LogW("Disposing of AppleLink while transaction open");
+            //    CancelTransaction();
+            //}
         }
 
         // IArchive
         public ArcReadStream OpenPart(IFileEntry ientry, FilePart part) {
-            MacBinary_FileEntry entry = (MacBinary_FileEntry)ientry;
+            AppleLink_FileEntry entry = (AppleLink_FileEntry)ientry;
             if (entry.Archive != this) {
                 throw new ArgumentException("Entry is not part of this archive");
             }
@@ -212,7 +280,7 @@ namespace DiskArc.Arc {
 
         // IArchive
         public void CommitTransaction(Stream? outputStream) {
-            throw new InvalidOperationException("Must start transaction first");
+            throw new InvalidOperationException("This archive format is read-only");
         }
 
         // IArchive
@@ -220,12 +288,12 @@ namespace DiskArc.Arc {
 
         // IArchive
         public IFileEntry CreateRecord() {
-            throw new NotSupportedException("Additional records cannot be created");
+            throw new InvalidOperationException("This archive format is read-only");
         }
 
         // IArchive
         public void DeleteRecord(IFileEntry entry) {
-            throw new NotSupportedException("The record cannot be deleted");
+            throw new InvalidOperationException("This archive format is read-only");
         }
 
         // IArchive

@@ -66,7 +66,7 @@ namespace cp2 {
                 case FileKind.MacBinary:
                     Console.Error.WriteLine("Cannot create single-record archive files");
                     return false;
-                case FileKind.ACU:
+                case FileKind.AppleLink:
                     Console.Error.WriteLine("Not currently supported");
                     return false;
                 case FileKind.Binary2:

@@ -125,7 +125,7 @@ namespace DiskArc {
             Zip,                        // .zip
             NuFX,                       // .shk, .sdk, .bxy, .sea, .bse
             Binary2,                    // .bny, bqy
-            ACU,                        // .acu
+            AppleLink,                  // .acu
             // ? StuffIt
 
             // Single-file wrappers.

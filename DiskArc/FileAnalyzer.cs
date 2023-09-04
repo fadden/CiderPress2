@@ -357,7 +357,7 @@ namespace DiskArc {
                     fileKind1 = FileKind.Binary2;
                     break;
                 case ".acu":
-                    fileKind1 = FileKind.ACU;
+                    fileKind1 = FileKind.AppleLink;
                     break;
                 case ".gz":
                     fileKind1 = FileKind.GZip;
@@ -476,7 +476,7 @@ namespace DiskArc {
             FileKind.GZip,
             FileKind.AppleSingle,
             FileKind.DiskCopy,
-            FileKind.ACU,
+            FileKind.AppleLink,
             FileKind.Binary2,           // test after NuFX (.BXY > .BNY)
             FileKind.MacBinary,         // very weak format detection
             // These are less definite, depending primarily on the size of the file.
@@ -498,8 +498,8 @@ namespace DiskArc {
                 case FileKind.AppleSingle:
                     return AppleSingle.TestKind(stream, appHook) ||
                         AppleSingle.TestDouble(stream, appHook);
-                case FileKind.ACU:
-                    return false;       // TODO
+                case FileKind.AppleLink:
+                    return AppleLink.TestKind(stream, appHook);
                 case FileKind.Binary2:
                     if (stream.Length == 0) {
                         // Empty Binary II archives are totally empty files.  The test code
@@ -896,6 +896,9 @@ namespace DiskArc {
             IArchive? archive = null;
             try {
                 switch (kind) {
+                    case FileKind.AppleLink:
+                        archive = AppleLink.OpenArchive(stream, appHook);
+                        break;
                     case FileKind.AppleSingle:
                         archive = AppleSingle.OpenArchive(stream, appHook);
                         break;

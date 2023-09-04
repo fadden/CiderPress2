@@ -30,7 +30,9 @@ namespace AppCommon {
         /// Returns a short (&lt;=11 char) string with an archive class name.
         /// </summary>
         public static string IArchive(IArchive arc) {
-            if (arc is AppleSingle) {
+            if (arc is AppleLink) {
+                return "AppleLink";
+            } else if (arc is AppleSingle) {
                 return "AppleSingle";
             } else if (arc is Binary2) {
                 return "Binary II";
@@ -246,8 +248,8 @@ namespace AppCommon {
                     return "NuFX (ShrinkIt)";
                 case Defs.FileKind.Binary2:
                     return "Binary II";
-                case Defs.FileKind.ACU:
-                    return "AppleLink Compression Utility";
+                case Defs.FileKind.AppleLink:
+                    return "AppleLink-PE Package (ACU)";
                 case Defs.FileKind.GZip:
                     return "gzip";
                 case Defs.FileKind.AppleSingle:

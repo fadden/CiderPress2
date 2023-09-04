@@ -60,7 +60,7 @@ namespace DiskArc.Arc {
             hasDiskImages: false,
             hasArchiveComment: true,
             hasRecordComments: true,
-            Zip_FileEntry.SEP_CHAR,
+            defaultDirSep: Zip_FileEntry.SEP_CHAR,
             fnSyntax: FILENAME_RULES,
             // If we supported higher-resolution timestamps, this range would be larger.
             tsStart: TimeStamp.MSDOS_MIN_TIMESTAMP,
@@ -243,6 +243,7 @@ namespace DiskArc.Arc {
         /// </summary>
         /// <param name="stream">Data stream if existing file, null if new archive.</param>
         /// <param name="appHook">Application hook reference.</param>
+        /// <param name="eocd">End of Central Directory object.</param>
         private Zip(Stream? stream, AppHook appHook, EndOfCentralDir eocd) {
             DataStream = stream;
             AppHook = appHook;

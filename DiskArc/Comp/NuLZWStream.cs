@@ -976,7 +976,7 @@ namespace DiskArc.Comp {
                 }
             } catch (IndexOutOfRangeException) {
                 // Whoops.
-                Debug.Assert(false, "Bad RLE data (caught)");
+                //Debug.Assert(false, "Bad RLE data (caught)");
                 return false;
             }
 
