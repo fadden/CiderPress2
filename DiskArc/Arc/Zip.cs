@@ -205,26 +205,9 @@ namespace DiskArc.Arc {
         private List<Zip_FileEntry> mEditList = new List<Zip_FileEntry>();
 
         /// <summary>
-        /// Open-file tracking.
+        /// Open stream tracker.
         /// </summary>
-        private class OpenFileRec {
-            public Zip_FileEntry Entry { get; private set; }
-            public ArcReadStream ReadStream { get; private set; }
-
-            public OpenFileRec(Zip_FileEntry entry, ArcReadStream stream) {
-                Entry = entry;
-                ReadStream = stream;
-            }
-
-            public override string ToString() {
-                return "[Zip open: '" + Entry.FullPathName + "]";
-            }
-        }
-
-        /// <summary>
-        /// List of open files.
-        /// </summary>
-        private List<OpenFileRec> mOpenFiles = new List<OpenFileRec>();
+        private OpenStreamTracker mStreamTracker = new OpenStreamTracker();
 
 
         /// <summary>
@@ -294,14 +277,10 @@ namespace DiskArc.Arc {
             if (disposing) {
                 // We're being disposed explicitly (not by the GC).  Dispose of all open entries,
                 // so that attempts to continue to use them will start failing immediately.
-                if (mOpenFiles.Count != 0) {
-                    AppHook.LogW("Zip disposed while " + mOpenFiles.Count + " files are open");
-                    // Walk through from end to start so we don't trip when entries are removed.
-                    for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
-                        // This will call back into our StreamClosing function, which will
-                        // remove it from the list.
-                        mOpenFiles[i].ReadStream.Close();
-                    }
+                if (mStreamTracker.Count != 0) {
+                    AppHook.LogW("Zip disposed while " + mStreamTracker.Count +
+                        " streams are open");
+                    mStreamTracker.CloseAll();
                 }
             }
             if (mIsTransactionOpen) {
@@ -454,19 +433,16 @@ namespace DiskArc.Arc {
                 throw new ArgumentException("Entry is not part of this archive");
             }
             ArcReadStream newStream = entry.CreateReadStream();
-            mOpenFiles.Add(new OpenFileRec(entry, newStream));
+            mStreamTracker.Add(entry, newStream);
             return newStream;
         }
 
         // IArchiveExt
         public void StreamClosing(ArcReadStream stream) {
-            for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
-                if (mOpenFiles[i].ReadStream == stream) {
-                    mOpenFiles.RemoveAt(i);
-                    return;
-                }
+            if (!mStreamTracker.RemoveDescriptor(stream)) {
+                Debug.Assert(false, "Got StreamClosing for unknown stream");
+                // continue on
             }
-            Debug.Assert(false, "Got StreamClosing for unknown stream");
         }
 
         // IArchive
@@ -474,7 +450,7 @@ namespace DiskArc.Arc {
             if (IsDubious) {
                 throw new InvalidOperationException("Cannot modify a dubious archive");
             }
-            if (mOpenFiles.Count != 0) {
+            if (mStreamTracker.Count != 0) {
                 throw new InvalidOperationException("One or more entries are open");
             }
             if (mIsTransactionOpen) {

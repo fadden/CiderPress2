@@ -89,24 +89,9 @@ namespace DiskArc.Arc {
             new List<AppleLink_FileEntry>();
 
         /// <summary>
-        /// Open-file tracking.
+        /// Open stream tracker.
         /// </summary>
-        private class OpenFileRec {
-            public ArcReadStream ReadStream { get; private set; }
-
-            public OpenFileRec(ArcReadStream stream) {
-                ReadStream = stream;
-            }
-
-            public override string ToString() {
-                return "[AppleLink open]";
-            }
-        }
-
-        /// <summary>
-        /// List of open files.
-        /// </summary>
-        private List<OpenFileRec> mOpenFiles = new List<OpenFileRec>();
+        private OpenStreamTracker mStreamTracker = new OpenStreamTracker();
 
         /// <summary>
         /// Tests a stream to see if it contains an AppleLink archive.
@@ -235,14 +220,10 @@ namespace DiskArc.Arc {
             if (disposing) {
                 // We're being disposed explicitly (not by the GC).  Dispose of all open entries,
                 // so that attempts to continue to use them will start failing immediately.
-                if (mOpenFiles.Count != 0) {
-                    AppHook.LogW("AppleLink disposed with " + mOpenFiles.Count + " files open");
-                    // Walk through from end to start so we don't trip when entries are removed.
-                    for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
-                        // This will call back into our StreamClosing function, which will
-                        // remove it from the list.
-                        mOpenFiles[i].ReadStream.Close();
-                    }
+                if (mStreamTracker.Count != 0) {
+                    AppHook.LogW("AppleLink disposed while " + mStreamTracker.Count +
+                        " streams are open");
+                    mStreamTracker.CloseAll();
                 }
             }
             //if (mIsTransactionOpen) {
@@ -258,19 +239,16 @@ namespace DiskArc.Arc {
                 throw new ArgumentException("Entry is not part of this archive");
             }
             ArcReadStream newStream = entry.CreateReadStream(part);
-            mOpenFiles.Add(new OpenFileRec(newStream));
+            mStreamTracker.Add(ientry, newStream);
             return newStream;
         }
 
         // IArchiveExt
         public void StreamClosing(ArcReadStream stream) {
-            for (int i = mOpenFiles.Count - 1; i >= 0; --i) {
-                if (mOpenFiles[i].ReadStream == stream) {
-                    mOpenFiles.RemoveAt(i);
-                    return;
-                }
+            if (!mStreamTracker.RemoveDescriptor(stream)) {
+                Debug.Assert(false, "Got StreamClosing for unknown stream");
+                // continue on
             }
-            Debug.Assert(false, "Got StreamClosing for unknown stream");
         }
 
         // IArchive

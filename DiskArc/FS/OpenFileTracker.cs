@@ -20,7 +20,7 @@ using static DiskArc.Defs;
 
 namespace DiskArc.FS {
     /// <summary>
-    /// Common class for keeping track of open files.
+    /// Common class for keeping track of open files in an IFileSystem instance.
     /// </summary>
     internal class OpenFileTracker {
         /// <summary>
@@ -56,6 +56,7 @@ namespace DiskArc.FS {
         /// Returns a count of the number of open files.
         /// </summary>
         public int Count => mOpenFiles.Count;
+
 
         public OpenFileTracker() { }
 
@@ -100,6 +101,9 @@ namespace DiskArc.FS {
         /// <summary>
         /// Adds a new entry to the list of open files.  Does not check for conflicts.
         /// </summary>
+        /// <param name="fs">Filesystem object.</param>
+        /// <param name="entry">Entry to add.</param>
+        /// <param name="fd">Open descriptor.</param>
         public void Add(IFileSystem fs, IFileEntry entry, DiskFileStream fd) {
             mOpenFiles.Add(new OpenFileRec(fs, entry, fd));
         }
