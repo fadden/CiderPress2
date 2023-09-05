@@ -1175,7 +1175,7 @@ namespace DiskArc.FS {
             // - ProDOS 1.1.1 uses $00
             // - ProDOS 2.0.3 uses $23
             // - GS/OS FST uses $05
-            // (The Cadius tool appears to get this wrong, storing filename LC flags here.)
+            // This does not hold filename LC flags.
             if (dirHeader.mMinVersion != 0) {
                 notes.AddI("Directory header has nonzero MIN_VERSION (" + dirHeader.mMinVersion +
                     "): " + dirEntry.FullPathName);
@@ -1340,7 +1340,7 @@ namespace DiskArc.FS {
             if (!FileSystem.IsBlockValid(mKeyPointer)) {
                 FileSystem.Notes.AddE("Invalid key block (" + mKeyPointer + "): " +
                     FullPathName);
-//                IsDamaged = true;
+                IsDamaged = true;
             }
 
             // Verify header pointer.

@@ -3,9 +3,10 @@
 This is a command-line tool for creating CiderPress II distributions.  It builds the various
 components for multiple platforms and packages them up.
 
-Usage: `MakeDist build [--debug|--release]`
-       `MakeDist set-exec <file.zip> <entry-in-archive...>`
-       `MakeDist clobber`
+Usage:
+ - `MakeDist build [--debug|--release]`
+ - `MakeDist set-exec <file.zip> <entry-in-archive...>`
+ - `MakeDist clobber`
 
 ## Build ##
 

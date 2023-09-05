@@ -30,7 +30,7 @@ The header is:
 ```
 +$00 / 4: magic file signature, a 4-char string "2IMG" ($32 $49 $4d $47)
 +$04 / 4: creator signature code, a 4-char string
-+$08 / 2: header length, in bytes
++$08 / 2: header length, in bytes; should be 64
 +$0a / 2: file format version (always 1)
 +$0c / 4: image data format (0=DOS order, 1=ProDOS order, 2=nibbles)
 +$10 / 4: flags and DOS 3.3 volume number
@@ -50,8 +50,10 @@ given the target platform limitations it's reasonable to treat the values as sig
 The meaning of the "header length" field is a little confusing: the magnet.ch document says,
 "the length of this header which equals 52 bytes as of this writing".  The header shown in that
 document is 48 bytes without the padding at the end, or 64 bytes with.  (Guess: the header length
-and file format fields were originally 4 bytes, but they were downsized and the padding was added,
-and the author neglected to update the documentation.)  In practice, the header length is 64.
+and file format fields were originally 4 bytes instead of 2, but they were downsized and the
+padding was added, and the author neglected to update the documentation.)  Most image creators
+output the size of the header with the padding (64), but some early ones output 52.  None seem to
+output 48.  When creating new archives, set the header length field to 64.
 
 For an image with format 1 (ProDOS), the data length will be equal to the number of 512-byte
 blocks * 512.  (The block count field seems redundant.  However, some images created by `WOOF`
@@ -116,6 +118,7 @@ Code   | Application
 `CTKG` | Catakig
 `CdrP` | CiderPress (original)
 `CPII` | CiderPress II
+`pdos` | ?
 `SHEP` | ?
 `ShIm` | Sheppy's ImageMaker
 `WOOF` | Sweet 16

@@ -1411,8 +1411,7 @@ Extensions not supported for file creation:
  - ".bin", ".macbin" - MacBinary files cannot be created
  - ".bxy", ".sea", ".bse" - ShrinkIt archive with a Binary II header,
    GSHK self-extracting header, or both (not needed)
- - ".acu" - Applelink Compression Utility archive (archive creation
-   not supported)
+ - ".acu" - AppleLink Conversion Utility archive creation is not supported
 
 Creating 2IMG nibble images is not allowed, mainly because they offer very
 little over .NIB, which is inferior to .WOZ.

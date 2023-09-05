@@ -292,6 +292,9 @@ namespace FileConv {
             if (mapLength > 1024 * 1024 * 16) {
                 Debug.WriteLine("Huge map: " + mapLength);
                 return false;
+            } else if (mapLength < 0x1c) {
+                Debug.WriteLine("Map too small: " + mapLength);
+                return false;
             }
 
             // Read the resource map into memory.
@@ -302,18 +305,20 @@ namespace FileConv {
             // Parse a few things out of the header.
             ushort mapToTypeList = RawData.GetU16BE(mapBytes, 0x18);
             ushort mapToNameList = RawData.GetU16BE(mapBytes, 0x1a);
-            if (mapToTypeList + 8 > mapBytes.Length || mapToNameList > mapBytes.Length) {
+            if (mapToTypeList > mapBytes.Length || mapToNameList > mapBytes.Length) {
                 Debug.WriteLine("Invalid Mac rsrc map: toType=" + mapToTypeList +
                     " toName=" + mapToNameList + " len=" + mapBytes.Length);
                 return false;
             }
 
-            // Type list offset points to a 16-bit type count.
+            // Type list offset points to a 16-bit type count, which is the number of entries
+            // in the list minus 1 (an empty list will be 0xffff).
             ushort typeCount = RawData.GetU16BE(mapBytes, mapToTypeList);
+            typeCount++;
             int offset = mapToTypeList + 2;
             const int TYPE_LIST_ENTRY_SIZE = 8;
             const int REF_LIST_ENTRY_SIZE = 12;
-            for (int i = 0; i <= typeCount; i++) {
+            for (int i = 0; i < typeCount; i++) {
                 if (offset + 8 > mapBytes.Length) {
                     Notes.AddW("Type list ended unexpectedly: i=" + i);
                     break;

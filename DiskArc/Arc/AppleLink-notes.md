@@ -17,7 +17,7 @@ forks and file attributes into a single file.  This appears to have been a Macin
 format.
 
 A separate format was designed for Apple II files on AppleLink Personal Edition.  These were
-created and unpacked with the AppleLink Compression Utility (ACU), written by Floyd Zink (who also
+created and unpacked with the AppleLink Conversion Utility (ACU), written by Floyd Zink (who also
 wrote BLU, the Binary II Library Utility).  The file format was assigned file type LBR/$8001, but
 no file type note was published.  Files typically end in ".ACU".
 

@@ -269,6 +269,7 @@ namespace DiskArc.Disk {
         /// </remarks>
         internal class Header {
             public const int LENGTH = 64;
+            public const int ALT_LENGTH = 52;
 
             public byte[] mMagic = new byte[4];
             public byte[] mCreator = new byte[4];
@@ -409,7 +410,11 @@ namespace DiskArc.Disk {
                 hdr.mDataLen = hdr.mNumBlocks * BLOCK_SIZE;
             }
 
-            if (hdr.mHeaderLen < Header.LENGTH) {
+            if (hdr.mHeaderLen == Header.ALT_LENGTH) {
+                // Some older archives generated this (but still put the data at +64).
+                notes?.AddI("Header length is declared to be " + hdr.mHeaderLen +
+                    " rather than " + Header.LENGTH);
+            } else if (hdr.mHeaderLen < Header.LENGTH) {
                 appHook.LogW("TwoIMG: rejecting image with short declared header length");
                 return false;
             }
