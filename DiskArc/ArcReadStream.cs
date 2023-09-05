@@ -208,7 +208,9 @@ namespace DiskArc {
                         ChkResult = CheckResult.Success;
                     } else {
                         ChkResult = CheckResult.Failure;
-                        throw new InvalidDataException("Corrupted data detected");
+                        throw new InvalidDataException("Bad data checksum detected (expected=0x" +
+                            mChecker.ExpectedValue.ToString("x8") +
+                            ", actual=0x" + mChecker.Value.ToString("x8") + ")");
                     }
                 }
             }

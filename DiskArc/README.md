@@ -161,7 +161,7 @@ reduce the stored size of the file, the input file will be closed and re-opened.
 ### Single-File vs. Multi-File Archives ###
 
 When people talk about file archives, they usually mean formats that hold multiple files.  ZIP,
-ShrinkIt, Stuffit, and tar are examples.
+ShrinkIt, StuffIt, and tar are examples.
 
 The DiskArc library also supports single-file archives, such as gzip and AppleSingle.  These
 are meant to hold a single file and its associated attributes.  The library uses the same classes

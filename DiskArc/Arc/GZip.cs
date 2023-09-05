@@ -194,6 +194,9 @@ namespace DiskArc.Arc {
             if (mIsTransactionOpen) {
                 throw new InvalidOperationException("Cannot open parts while transaction is open");
             }
+            if (ientry.IsDamaged) {
+                throw new IOException("Entry is too damaged to open");
+            }
             GZip_FileEntry entry = (GZip_FileEntry)ientry;
             if (entry.Archive != this) {
                 throw new ArgumentException("Entry is not part of this archive");

@@ -34,14 +34,14 @@ File archive support:
 
 Type                | Filename Extensions      | Status
 ------------------- | ------------------------ | ------
-AppleLink Comp Util | .acu                     | not yet
+AppleLink Conv Util | .acu                     | not yet
 AppleDouble         | ("._" prefix pair)       | read/add/extract
 AppleSingle         | .as                      | read/add/extract
 Binary ][           | .bny .bqy                | full support
 gzip                | .gz                      | full support
 MacBinary           | .bin .macbin             | read
 NuFX (ShrinkIt)     | .shk .sdk .bxy .sea .bse | full support
-Stuffit (vintage)   | .sit                     | not yet
+StuffIt (vintage)   | .sit                     | not yet
 ZIP                 | .zip                     | full support, including __MACOSX handling
 
 "Read" indicates the archives can be read, but not created or written.  "Full support" means the

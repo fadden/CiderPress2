@@ -161,8 +161,8 @@ namespace DiskArc.Arc {
                 mHeaderCRC = RawData.ReadU16LE(buf, ref offset);
                 Debug.Assert(offset - startOffset == LENGTH);
 
-                // this is the most common the Apple II world
-                mCalcCRC = CRC16.XMODEM_OnBuffer(0x0000, buf, startOffset, LENGTH);
+                // Compute the first part of the CRC.
+                mCalcCRC = CRC16.XMODEM_OnBuffer(0x0000, buf, startOffset, LENGTH - 2);
             }
 
             public bool ReadFileName(Stream stream) {
@@ -171,6 +171,8 @@ namespace DiskArc.Arc {
                 }
                 mRawFileName = new byte[mFileNameLen];
                 stream.ReadExactly(mRawFileName, 0, mFileNameLen);
+                // Finish computing the CRC.
+                mCalcCRC = CRC16.XMODEM_OnBuffer(mCalcCRC, mRawFileName, 0, mFileNameLen);
                 FileName = Encoding.ASCII.GetString(mRawFileName);
                 return true;
             }
@@ -258,6 +260,10 @@ namespace DiskArc.Arc {
 
             // Skip past file data.
             dataStream.Position += header.mRsrcCompLen + header.mDataCompLen;
+            if (dataStream.Position > dataStream.Length) {
+                archive.Notes.AddW("Entry truncated: '" + header.FileName + "'");
+                newEntry.IsDamaged = true;
+            }
             return newEntry;
         }
 
@@ -269,7 +275,8 @@ namespace DiskArc.Arc {
                     length = mHeader.mDataUncompLen;
                     storageSize = mHeader.mDataCompLen;
                     format = mHeader.mDataAlg;
-                    return HasDataFork || IsDirectory;
+                    // won't actually have a data fork for empty files or directories
+                    return true;
                 case FilePart.RsrcFork:
                     length = mHeader.mRsrcUncompLen;
                     storageSize = mHeader.mRsrcCompLen;
@@ -317,13 +324,17 @@ namespace DiskArc.Arc {
                     throw new FileNotFoundException("No part of type " + part);
             }
 
+            // The CRC only matches on files up to 256 bytes.  At 257 bytes the results diverge.
+            // We can't really use this.
+            Checker? checker = null; //new CheckXMODEM16(0x0000, expCRC);
             Archive.DataStream.Position = start;
+            Debug.Assert(Archive.DataStream.Length - Archive.DataStream.Position >= compLen);
             if (fmt == CompressionFormat.Uncompressed) {
-                return new ArcReadStream(Archive, compLen, null);
+                return new ArcReadStream(Archive, compLen, checker);
             } else if (fmt == CompressionFormat.Squeeze) {
                 Stream expander = new SqueezeStream(Archive.DataStream,
                     CompressionMode.Decompress, true, false, string.Empty);
-                return new ArcReadStream(Archive, uncompLen, null, expander);
+                return new ArcReadStream(Archive, uncompLen, checker, expander);
             } else {
                 throw new NotImplementedException("AppleLink compression format \"" +
                     fmt + "\" is not supported");

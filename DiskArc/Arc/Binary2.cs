@@ -319,6 +319,9 @@ namespace DiskArc.Arc {
             if (mIsTransactionOpen) {
                 throw new InvalidOperationException("Cannot open parts while transaction is open");
             }
+            if (ientry.IsDamaged) {
+                throw new IOException("Entry is too damaged to open");
+            }
             if (part != FilePart.DataFork) {
                 throw new FileNotFoundException("Only data forks here");
             }

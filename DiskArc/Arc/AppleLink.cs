@@ -234,6 +234,9 @@ namespace DiskArc.Arc {
 
         // IArchive
         public ArcReadStream OpenPart(IFileEntry ientry, FilePart part) {
+            if (ientry.IsDamaged) {
+                throw new IOException("Entry is too damaged to open");
+            }
             AppleLink_FileEntry entry = (AppleLink_FileEntry)ientry;
             if (entry.Archive != this) {
                 throw new ArgumentException("Entry is not part of this archive");

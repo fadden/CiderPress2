@@ -47,8 +47,8 @@ The header before each file is:
 ```
 +$00 / 1: resource fork compression method
 +$01 / 1: data fork compression method
-+$02 / 2: checksum of resource fork contents
-+$04 / 2: checksum of data fork contents
++$02 / 2: CRC of resource fork contents
++$04 / 2: CRC of data fork contents
 +$06 / 4: blocks required to store resource fork on ProDOS
 +$0a / 4: blocks required to store data fork on ProDOS
 +$0e / 4: length of resource fork in archive (compressed)
@@ -65,7 +65,7 @@ The header before each file is:
 +$2e / 2: modification date
 +$30 / 2: modification time
 +$32 / 2: filename length
-+$34 / 2: checksum of file header
++$34 / 2: CRC of file header
 +$36 /nn: filename
 ```
 The file header is immediately followed by the resource fork contents, and then the data fork
@@ -86,5 +86,12 @@ raw DOS 3.3 file type.  It's possible the reserved field at $1e was set aside fo
 The operating system ID comes from the GS/OS FST definition.  In practice it will usually be $01
 (ProDOS), though it could reasonably be $06 (HFS).
 
-The 16-bit checksums on the record headers and file data have an unknown format.  The values do
-not match any of the commonly-used CRC-16 calculations or a simple checksum.
+The 16-bit checksum on the record header is a standard CRC-16/XMODEM that covers the first $34
+bytes of the header, skips the CRC field, and continues through the variable-length filename
+field.  The checksum on the file data is the same algorithm, but with a twist: it only seems to
+match the calculated value for files up to 256 bytes long.  ACU will detect and report the damage
+on a short file, but not on a long file.  It's unclear how the CRC is being calculated or whether
+it has any value.
+
+Some archives have extra data at the end.  This may have happened because ACU doesn't truncate
+existing archives before overwriting them.

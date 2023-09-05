@@ -261,6 +261,9 @@ namespace DiskArc.Arc {
 
         // IArchive
         public ArcReadStream OpenPart(IFileEntry ientry, FilePart part) {
+            if (ientry.IsDamaged) {
+                throw new IOException("Entry is too damaged to open");
+            }
             if (mIsTransactionOpen) {
                 throw new InvalidOperationException("Cannot open parts while transaction is open");
             }

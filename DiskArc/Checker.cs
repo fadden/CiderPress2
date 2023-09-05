@@ -27,12 +27,17 @@ namespace DiskArc {
         /// <summary>
         /// Current value of CRC.
         /// </summary>
-        public uint Value { get { return mCRC; } }
+        public uint Value => mCRC;
+
+        /// <summary>
+        /// Expected final value of CRC.
+        /// </summary>
+        public uint ExpectedValue => mExpectedValue;
 
         /// <summary>
         /// True if the current value of the CRC matches the expected value (if applicable).
         /// </summary>
-        public bool IsMatch { get { return mCRC == mExpectedValue; } }
+        public bool IsMatch => (mCRC == mExpectedValue);
 
         /// <summary>
         /// Updates the CRC with the bytes in the buffer.

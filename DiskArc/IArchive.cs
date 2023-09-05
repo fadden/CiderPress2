@@ -150,6 +150,7 @@ namespace DiskArc {
         /// <param name="part">Which part of the entry to open.</param>
         /// <returns>Read-only, non-seekable data stream.</returns>
         /// <exception cref="FileNotFoundException">Part does not exist.</exception>
+        /// <exception cref="IOException">Entry is too damaged to open.</exception>
         /// <exception cref="InvalidOperationException">A transaction is in progress.</exception>
         /// <exception cref="NotImplementedException">Compression format not supported.</exception>
         ArcReadStream OpenPart(IFileEntry entry, Defs.FilePart part);
