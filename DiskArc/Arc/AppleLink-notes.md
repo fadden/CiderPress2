@@ -10,7 +10,8 @@
 [AppleLink](https://en.wikipedia.org/wiki/AppleLink) was an online service created by Apple
 Computer.  Initially only available to employees and dealers, it was eventually opened to
 software developers.  This was to be replaced by a system available to all users, called AppleLink
-Personal Edition, but for various reasons this was renamed to America Online.
+Personal Edition, but for various reasons the product evolved without Apple and was renamed to
+America Online.
 
 Files were stored in AppleLink Package Compression Format, which combined the data and resource
 forks and file attributes into a single file.  This appears to have been a Macintosh-specific
@@ -21,8 +22,11 @@ created and unpacked with the AppleLink Conversion Utility (ACU), written by Flo
 wrote BLU, the Binary II Library Utility).  The file format was assigned file type LBR/$8001, but
 no file type note was published.  Files typically end in ".ACU".
 
+ACU was a ProDOS 8 application, but included forward-looking support for features like resource
+forks and non-ProDOS operating systems.  In practice it was only used for plain ProDOS files.
+
 Files in ACU archives can be stored with or without compression.  The only supported algorithm
-is SQueeze, a combination of RLE and Huffman encoding.  The format is the same as is used by
+is SQueeze, a combination of RLE and Huffman encoding.  The format is the same as that used by
 Binary II, but without the filename header.
 
 ## File Structure ##
@@ -73,18 +77,18 @@ contents.  If there are additional records, the file header follows immediately.
 padding for alignment.
 
 The filename field holds a partial path.  For ProDOS, the components are separated by '/'.  It's
-unclear how other filesystems would be handled.  Directories are stored explicitly, though it's
-not known if storing them is mandatory.
+unclear how other filesystems would be handled.  Directories are stored explicitly, as zero-length
+files with storage type $0D, though it's not known if their presence them is mandatory.
 
 The compression method is $00 if the data is uncompressed, $03 for SQueeze.
 
 Dates and times are in ProDOS-8 format.
 
 The only Binary II field that doesn't appear here is "native file type", which could hold the
-raw DOS 3.3 file type.  It's possible the reserved field at $1e was set aside for that.
+raw DOS 3.3 file type.  It's possible the reserved field at +$1e was set aside for that.
 
-The operating system ID comes from the GS/OS FST definition.  In practice it will usually be $01
-(ProDOS), though it could reasonably be $06 (HFS).
+The operating system ID is based on the GS/OS FST definition.  It will always be $01 (ProDOS)
+unless some other application generated ACU files.
 
 The 16-bit checksum on the record header is a standard CRC-16/XMODEM that covers the first $34
 bytes of the header, skips the CRC field, and continues through the variable-length filename
@@ -93,5 +97,5 @@ match the calculated value for files up to 256 bytes long.  ACU will detect and 
 on a short file, but not on a long file.  It's unclear how the CRC is being calculated or whether
 it has any value.
 
-Some archives have extra data at the end.  This may have happened because ACU doesn't truncate
-existing archives before overwriting them.
+Some archives have extra data tacked onto the end.  This seems to happen when creating archives
+with entries that failed to compress.
