@@ -1345,8 +1345,8 @@ namespace DiskArc.FS {
             // Copy contents.
             Array.Copy(srcDirBuf, srcDirOffset, destDirBuf, destDirOffset, destDir.DirEntryLength);
 
-            // Mark old entry as deleted by setting the storage type to zero.
-            srcDirBuf[srcDirOffset] &= 0x0f;
+            // Mark old entry as deleted by setting the storage type / name length byte to zero.
+            srcDirBuf[srcDirOffset] = 0x00;
 
             // Update file entry with new name and directory values.  These make changes
             // internally and mark the entry as dirty, deferring the actual update until
@@ -1438,8 +1438,8 @@ namespace DiskArc.FS {
                     VolBitmap.MarkBlockUnused(entry.KeyBlock);
                 }
 
-                // Update the file's storage type in the directory entry.
-                entry.StorageType = StorageType.Deleted;
+                // Update the file's storage type / filename length byte in the directory entry.
+                entry.DeleteEntry();
                 // Update the directory entry before the bitmap.  If the directory entry
                 // change fails, the filesystem state will still be consistent.
                 entry.SaveChanges();

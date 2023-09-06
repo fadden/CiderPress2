@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using CommonUtil;
@@ -378,6 +379,21 @@ namespace DiskArc.FS {
             DirentBlockPtr = direntBlockPtr;
             DirentIndex = direntIndex;
             mHeaderPointer = newContainingDir.KeyBlock;
+            IsDirentDirty = true;
+        }
+
+        /// <summary>
+        /// Marks the file entry as deleted.
+        /// </summary>
+        internal void DeleteEntry() {
+            // ProDOS keeps the storage type and filename length in a single byte, which must
+            // be set to zero.  If we only zero out the storage type, ProDOS will start throwing
+            // error $51 (file count bad) because it thinks the file aren't deleted.  (Mr. Fixit
+            // identifies this as "incomplete deletion".)
+            mStorageType = 0;
+            mNameLength = 0;
+            // Leave the filenames alone, so when we write the directory entry the old name
+            // is still there for possible un-deletion.
             IsDirentDirty = true;
         }
 
@@ -927,8 +943,20 @@ namespace DiskArc.FS {
                 //
                 while (blockEntryCount > 0) {
                     int beforeOffset = offset;
-                    if ((dirData[offset + 0x00] & 0xf0) == 0) {
-                        // Storage type is zero, so this is a deleted or unused slot.  Ignore it.
+                    byte storageAndLen = dirData[offset + 0x00];
+                    if (storageAndLen == 0x00) {
+                        // Unused slot or deleted entry.  Ignore it.
+                    } else if ((storageAndLen & 0xf0) == 0) {
+                        // Storage type is zero, but the filename length is not.  This can cause
+                        // ProDOS some confusion, but shouldn't be an issue for us to work around.
+                        // Try to get a filename.
+                        StringBuilder tmpSb = new StringBuilder();
+                        int len = storageAndLen & 0x0f;
+                        for (int i = 0; i < len; i++) {
+                            tmpSb.Append(ASCIIUtil.MakePrintable((char)dirData[offset + 1 + i]));
+                        }
+                        notes.AddW("Found incomplete deletion in " + FullPathName + ": '" +
+                            tmpSb.ToString() + "'");
                     } else {
                         ProDOS_FileEntry newEntry = new ProDOS_FileEntry(FileSystem, this);
                         if (!newEntry.ExtractFileEntry(blockPtr, entryIndex, entryLength, dirData,

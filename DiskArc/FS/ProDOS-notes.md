@@ -142,6 +142,8 @@ Storage types (see TN.PDOS.025):
  $0e: subdirectory header entry
  $0f: volume directory header entry
 ```
+Setting the storage type to zero is insufficient when deleting a file.  The entire byte, which
+also includes the filename length, must be zeroed.
 
 ## Fields ##
 
