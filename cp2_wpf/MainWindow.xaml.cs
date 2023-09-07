@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +30,7 @@ using System.Windows.Media.Animation;
 
 using AppCommon;
 using CommonUtil;
+using cp2_wpf.Tools;
 using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Multi;
@@ -90,7 +92,10 @@ namespace cp2_wpf {
         }
 
         public double LeftPanelWidth {
-            get { return mainTriptychPanel.ColumnDefinitions[0].ActualWidth; }
+            // Returning Width.Value, rather than ActualWidth, seems more reliable here because
+            // ActualWidth doesn't get set until the control is rendered.  If we save settings
+            // before ever opening a file we would get the default width.
+            get { return mainTriptychPanel.ColumnDefinitions[0].Width.Value; }
             set { mainTriptychPanel.ColumnDefinitions[0].Width = new GridLength(value); }
         }
         public double WorkTreePanelHeightRatio {
@@ -1129,20 +1134,6 @@ namespace cp2_wpf {
             }
         }
 
-        private void FileListDataGrid_Drop(object sender, DragEventArgs e) {
-            IFileEntry dropTarget = IFileEntry.NO_ENTRY;
-            DataGrid grid = (DataGrid)sender;
-            if (grid.GetDropRowColItem(e, out int row, out int col, out object? item)) {
-                // Dropped on a specific item.  Do we want to do something with that fact?
-                FileListItem fli = (FileListItem)item;
-                dropTarget = fli.FileEntry;
-            }
-            if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                mMainCtrl.AddFileDrop(dropTarget, files);
-            }
-        }
-
         private void PartitionLayout_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
             DataGrid grid = (DataGrid)sender;
             if (!grid.GetClickRowColItem(e, out int row, out int col, out object? item)) {
@@ -1256,6 +1247,152 @@ namespace cp2_wpf {
         }
 
         #endregion Center Panel
+
+        #region Drag & drop
+
+        // True if we're in the middle of a drag operation that started in the file list.
+        private bool mIsDraggingFileList;
+        private Point mDragStartPosn;
+
+        // Hack to make multi-file drag easier for the user.
+        // https://stackoverflow.com/a/25123410/294248
+        private List<FileListItem> mPreSelection = new List<FileListItem>();
+
+        /// <summary>
+        /// Handles left mouse button in the file list, recording the position.
+        /// </summary>
+        private void FileListDataGrid_PreviewMouseLeftButtonDown(object sender,
+                MouseButtonEventArgs e) {
+            DataGrid grid = (DataGrid)sender;
+            mDragStartPosn = e.GetPosition(null);
+
+            // Identify the row that was clicked on.
+            DataGridRow? row = FindVisualParent<DataGridRow>(e.OriginalSource as FrameworkElement);
+            if (row != null && row.IsSelected) {
+                // The user clicked on an entry that is already selected.  Capture the selection
+                // before it gets cleared, in case they want to start a multi-entry drag.
+                FileListItem fli = (FileListItem)row.Item;
+                Debug.WriteLine("FL click on " + fli + " (already selected), capturing set");
+                mPreSelection.Clear();
+                mPreSelection.AddRange(grid.SelectedItems.Cast<FileListItem>());
+            }
+        }
+
+        private static T? FindVisualParent<T>(DependencyObject? obj) where T : DependencyObject {
+            while (obj != null) {
+                if (obj is T parent) {
+                    return parent;
+                }
+                obj = VisualTreeHelper.GetParent(obj);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Handles mouse movement in the file list, watching for the start of a drag.
+        /// </summary>
+        private void FileListDataGrid_PreviewMouseMove(object sender, MouseEventArgs e) {
+            if (e.LeftButton != MouseButtonState.Pressed || mIsDraggingFileList) {
+                // Mouse button isn't being held down, or we're already in a drag op.
+                return;
+            }
+            Point posn = e.GetPosition(null);
+            if (Math.Abs(mDragStartPosn.X - posn.X) >
+                        SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(mDragStartPosn.Y - posn.Y) >
+                        SystemParameters.MinimumVerticalDragDistance) {
+                StartFileListDrag();
+            }
+        }
+
+        /// <summary>
+        /// Initiates a drag operation from the file list.
+        /// </summary>
+        private void StartFileListDrag() {
+            mIsDraggingFileList = true;
+
+            Debug.WriteLine("FL drag start");
+            // Restore the selection.
+            foreach (FileListItem selItem in mPreSelection) {
+                if (!fileListDataGrid.SelectedItems.Contains(selItem)) {
+                    Debug.WriteLine("+ restoring " + selItem);
+                    fileListDataGrid.SelectedItems.Add(selItem);
+                }
+            }
+
+            DataObject data = new DataObject(DataFormats.Text, "this is a test");
+            DragDropEffects dde = DragDrop.DoDragDrop(fileListDataGrid, data,
+                DragDropEffects.Copy | DragDropEffects.Move);
+            Debug.WriteLine("FL drag complete, effect=" + dde);
+
+            mIsDraggingFileList = false;
+        }
+
+        /// <summary>
+        /// Handles a drop on the file list.
+        /// </summary>
+        private void FileListDataGrid_Drop(object sender, DragEventArgs e) {
+            IFileEntry dropTarget = IFileEntry.NO_ENTRY;
+            DataGrid grid = (DataGrid)sender;
+            if (grid.GetDropRowColItem(e, out int row, out int col, out object? item)) {
+                // Dropped on a specific item.  Do we want to do something with that fact?
+                FileListItem fli = (FileListItem)item;
+                dropTarget = fli.FileEntry;
+            }
+            if (dropTarget == IFileEntry.NO_ENTRY) {
+                Debug.WriteLine("FL drop on empty part of file list window");
+            } else {
+                Debug.WriteLine("FL drop on target=" + dropTarget);
+            }
+            if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                mMainCtrl.AddFileDrop(dropTarget, files);
+            }
+        }
+
+        /// <summary>
+        /// Handles a drop on the directory tree.
+        /// </summary>
+        private void DirectoryTree_Drop(object sender, DragEventArgs e) {
+            IFileEntry dropTarget = IFileEntry.NO_ENTRY;
+            TreeViewItem? tvi =
+                FindVisualParent<TreeViewItem>(e.OriginalSource as FrameworkElement);
+            if (tvi != null) {
+                DirectoryTreeItem? dti = tvi.DataContext as DirectoryTreeItem;
+                Debug.Assert(dti != null);
+                Debug.WriteLine("DT drop on item=" + dti);
+            } else {
+                Debug.WriteLine("DT drop outside tree, ignoring");
+            }
+        }
+
+        /// <summary>
+        /// Handles a DragOver event on the directory tree.  This determines what the mouse cursor
+        /// looks like.
+        /// </summary>
+        /// <remarks>
+        /// This fires continuously while the mouse is moving.  I tried just using DragEnter but
+        /// couldn't get it to work right.
+        /// </remarks>
+        private void DirectoryTree_DragOver(object sender, DragEventArgs e) {
+            // Generally, Ctrl+drag is copy, Shift+drag is move, Alt+drag is link.  For us the
+            // operation depends exclusively on the source.
+            IDataObject data = e.Data;
+            if (data.GetDataPresent(DataFormats.FileDrop)) {
+                // File drop from Windows Explorer.
+                e.Effects = DragDropEffects.Copy;
+            } else if (mIsDraggingFileList) {
+                // Moving files between directories.
+                e.Effects = DragDropEffects.Move;
+            } else {
+                e.Effects = DragDropEffects.None;
+
+            }
+            e.Handled = true;
+            //Debug.WriteLine("DT DragOver: effects=" + e.Effects);
+        }
+
+        #endregion Drag & drop
 
         #region Options Panel
 

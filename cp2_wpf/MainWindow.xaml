@@ -545,7 +545,10 @@ limitations under the License.
                                   VirtualizingStackPanel.IsVirtualizing="True"
                                   VirtualizingStackPanel.VirtualizationMode="Recycling"
                                   ScrollViewer.CanContentScroll="True"
-                                  SelectedItemChanged="DirectoryTree_SelectedItemChanged">
+                                  SelectedItemChanged="DirectoryTree_SelectedItemChanged"
+                                  AllowDrop="True"
+                                  Drop="DirectoryTree_Drop"
+                                  DragOver="DirectoryTree_DragOver">
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Items}">
                                     <TextBlock Text="{Binding Name}" Padding="4,0,4,0"/>
@@ -598,7 +601,10 @@ limitations under the License.
                               ContextMenuOpening="FileListContextMenu_ContextMenuOpening"
                               PreviewKeyDown="FileListDataGrid_PreviewKeyDown"
                               AllowDrop="True"
-                              Drop="FileListDataGrid_Drop">
+                              Drop="FileListDataGrid_Drop"
+                              PreviewMouseLeftButtonDown="FileListDataGrid_PreviewMouseLeftButtonDown"
+                              PreviewMouseMove="FileListDataGrid_PreviewMouseMove"
+>
                               <!--FontFamily="{StaticResource GeneralMonoFont}"-->
                               <!-- use RowBackground to set area to right of last cell -->
                         <DataGrid.Resources>
