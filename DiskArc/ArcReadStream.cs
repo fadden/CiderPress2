@@ -64,7 +64,7 @@ namespace DiskArc {
         public CheckResult ChkResult { get; private set; } = CheckResult.Unknown;
 
         // Stream interfaces.  Readable, but not writable or seekable.
-        public override bool CanRead => !mDisposed;
+        public override bool CanRead => mArchive != null;
         public override bool CanSeek => false;
         public override bool CanWrite => false;
         public override long Length => throw new NotSupportedException();
@@ -106,11 +106,6 @@ namespace DiskArc {
         /// </summary>
         private long mBytesWritten;
 
-        /// <summary>
-        /// Set when the object has been disposed.
-        /// </summary>
-        private bool mDisposed = false;
-
 
         /// <summary>
         /// Constructor for uncompressed data, read directly from the archive stream.  The
@@ -123,14 +118,18 @@ namespace DiskArc {
             if (length < 0) {
                 throw new ArgumentOutOfRangeException("Bad length (" + length + ")");
             }
+            Stream archiveStream = archiveExt.DataStream!;
+            Debug.Assert(archiveStream.CanRead && archiveStream.CanSeek);
+            if (archiveStream.Length - archiveStream.Position < length) {
+                throw new ArgumentException("Arc stream overruns source: streamPosn=" +
+                    archiveStream.Position + " streamLen=" + archiveStream.Length +
+                    " dataLen=" + length);
+            }
 
             mArchive = archiveExt;
             mLength = length;
             mChecker = checker;
 
-            Debug.Assert(archiveExt.DataStream != null);
-            Stream archiveStream = archiveExt.DataStream;
-            Debug.Assert(archiveStream.CanRead && archiveStream.CanSeek);
             mArcPosition = archiveStream.Position;
             mBytesWritten = 0;
         }
@@ -163,16 +162,23 @@ namespace DiskArc {
         }
         // IDisposable
         protected override void Dispose(bool disposing) {
-            Debug.Assert(!mDisposed, "ArcReadStream double dispose");
+            if (mArchive == null) {
+                Debug.Assert(false, "ArcReadStream double dispose (disposing=" + disposing + ")");
+                return;
+            }
 
-            // If not being GCed, notify the archive.  (If we are being GCed, the archive
-            // probably isn't there anymore.)
             if (disposing) {
+                // Notify the archive that we're closed.
                 mArchive.StreamClosing(this);
             } else {
-                Debug.Assert(false, "ArcReadStream disposed by GC");
+                // GC is disposing us; complain a little if we're open.
+                if (mArchive != null) {
+                    Debug.Assert(false, "ArcReadStream disposed by GC");
+                }
             }
-            mDisposed = true;
+#pragma warning disable CS8625
+            mArchive = null;
+#pragma warning restore CS8625
         }
 
         // Stream
@@ -214,6 +220,13 @@ namespace DiskArc {
                     }
                 }
             }
+            if (actual == 0 && mLength != -1 && mBytesWritten != mLength) {
+                // We've reached the end of the file, but haven't generated the correct amount
+                // of output.
+                throw new InvalidDataException("Failed to generate expected amount of " +
+                    "output (expected=" + mLength + ", actual=" + mBytesWritten + ")");
+            }
+
             return actual;
         }
 
