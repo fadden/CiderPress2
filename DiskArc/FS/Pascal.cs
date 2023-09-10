@@ -421,8 +421,13 @@ namespace DiskArc.FS {
             byte[] blockBuf = new byte[BLOCK_SIZE];
             ChunkAccess.ReadBlock(VOL_DIR_START_BLOCK, blockBuf, 0);
             mVolDirHeader.Load(blockBuf, 0);
-            if (!ValidateVolDirHeader(mVolDirHeader, ChunkAccess.FormattedLength / BLOCK_SIZE)) {
+            long chunkBlocks = ChunkAccess.FormattedLength / BLOCK_SIZE;
+            if (!ValidateVolDirHeader(mVolDirHeader, chunkBlocks)) {
                 throw new DAException("Invalid volume directory header");
+            }
+            if (mVolDirHeader.mVolBlockCount != chunkBlocks) {
+                Notes.AddI("Disk holds " + chunkBlocks + " blocks, but volume is only " +
+                    mVolDirHeader.mVolBlockCount + " blocks");
             }
 
             // Create volume usage map.  Assign "system" usage to the boot and directory blocks.

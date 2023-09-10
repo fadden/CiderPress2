@@ -488,7 +488,7 @@ namespace DiskArc.FS {
                     ushort next = RawData.GetU16LE(db.Data, 2);
                     if (prev != prevBlock) {
                         FileSystem.Notes.AddW("Incorrect prev pointer in directory (should be " +
-                            prevBlock + ", found " + ")");
+                            prevBlock + ", found " + prev + ")");
                         // keep going
                     }
                     // We don't try to validate any fields other than the pointers.

@@ -153,3 +153,8 @@ are deleted, the directory entry is zeroed out but not removed, and the file cou
 When next booted, the Pascal operating system removes the bogus entry and decrements the file
 count, resulting in an incorrect count.
 See https://groups.google.com/g/comp.sys.apple2.programmer/c/m6Ym3bMGlQg/m/BE4mHmGkKecJ
+
+### Miscellaneous ###
+
+Pascal Tech Note #16 describes a "Driver to Have Two Volumes on One 3.5" Disk", i.e. two 400KB
+volumes instead of one 800KB volume.  Such disks, if they exist, are not common.

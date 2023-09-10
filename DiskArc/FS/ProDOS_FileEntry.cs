@@ -891,7 +891,7 @@ namespace DiskArc.FS {
                 ushort next = RawData.GetU16LE(dirData, 2);
                 if (prev != prevBlock) {
                     FileSystem.Notes.AddW("Incorrect prev pointer in directory (expected " +
-                        prevBlock + ", found " + ")");
+                        prevBlock + ", found " + prev + ")");
                     // keep going
                 }
 
@@ -1190,7 +1190,8 @@ namespace DiskArc.FS {
             }
             byte first = dirHeader.mRawFileName[0];
             if (first < 'A' || first > 'Z') {
-                notes.AddE("First letter of file name must be a letter");
+                notes.AddW("First character of file name must be a letter (found $" +
+                    first.ToString("x2") + ")");
             }
 
             if (dirHeader.mReserved1 != 0x75 && dirHeader.mReserved1 != 0x76) {
