@@ -377,7 +377,9 @@ limitations under the License.
 
             <!-- Elements to show when no file is open ("launch" screen). -->
             <Grid Name="launchPanel"
-                  Visibility="{Binding Path=LaunchPanelVisibility}" d:IsHidden="True">
+                  Visibility="{Binding Path=LaunchPanelVisibility}" d:IsHidden="False"
+                  Background="Transparent"
+                  AllowDrop="True" Drop="LaunchPanel_Drop" DragOver="LaunchPanel_DragOver">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="4*"/>
@@ -454,7 +456,7 @@ limitations under the License.
             requires that the controller set the initial left/right sizes explicitly (probably
             when restoring the previous configuration from the settings file). -->
             <Grid Name="mainTriptychPanel"
-                  Visibility="{Binding Path=MainPanelVisibility}" d:IsHidden="False">
+                  Visibility="{Binding Path=MainPanelVisibility}" d:IsHidden="True">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" MinWidth="100"/>
                     <ColumnDefinition Width="Auto"/>

@@ -165,7 +165,7 @@ namespace AppCommon {
                 case FileAnalyzer.AnalysisResult.FileDamaged:
                     return "file is damaged";
                 case FileAnalyzer.AnalysisResult.UnknownExtension:
-                    return "file extension not known";
+                    return "file extension not a known disk or file archive";
                 case FileAnalyzer.AnalysisResult.ExtensionMismatch:
                     return "file contents do not match file extension";
                 case FileAnalyzer.AnalysisResult.NotImplemented:

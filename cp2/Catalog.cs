@@ -935,6 +935,9 @@ namespace cp2 {
             if (!parms.SkipSimple) {
                 nonStdOpts += " --no-skip-simple";
             }
+            if (parms.ShowNotes) {
+                nonStdOpts += " --show-notes";
+            }
             if (!string.IsNullOrEmpty(nonStdOpts)) {
                 Console.WriteLine("Extra options:" + nonStdOpts);
             }

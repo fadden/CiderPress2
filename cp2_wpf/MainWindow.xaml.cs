@@ -1250,6 +1250,32 @@ namespace cp2_wpf {
 
         #region Drag & drop
 
+        /// <summary>
+        /// Handles a drag event over the launch panel.
+        /// </summary>
+        private void LaunchPanel_DragOver(object sender, DragEventArgs e) {
+            e.Effects = DragDropEffects.None;
+            if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length == 1) {
+                    e.Effects = DragDropEffects.Move;
+                }
+            }
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Handles a drop event on the launch panel.
+        /// </summary>
+        private void LaunchPanel_Drop(object sender, DragEventArgs e) {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length == 1) {
+                    mMainCtrl.DropOpenWorkFile(files[0]);
+                }
+            }
+        }
+
         // True if we're in the middle of a drag operation that started in the file list.
         private bool mIsDraggingFileList;
         private Point mDragStartPosn;

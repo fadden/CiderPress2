@@ -446,6 +446,16 @@ namespace cp2_wpf {
             DoOpenWorkFile(pathName, false);
         }
 
+        /// <summary>
+        /// Handles file drop operation on launch panel.
+        /// </summary>
+        public void DropOpenWorkFile(string pathName) {
+            if (!CloseWorkFile()) {     // shouldn't be necessary; just being paranoid
+                return;
+            }
+            DoOpenWorkFile(pathName, false);
+        }
+
         private void DoOpenWorkFile(string pathName, bool asReadOnly) {
             Debug.Assert(mWorkTree == null);
             if (!File.Exists(pathName)) {
