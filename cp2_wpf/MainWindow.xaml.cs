@@ -1278,14 +1278,20 @@ namespace cp2_wpf {
 
         // True if we're in the middle of a drag operation that started in the file list.
         private bool mIsDraggingFileList;
+
+        // Screen position of drag start.
         private Point mDragStartPosn;
 
         // Hack to make multi-file drag easier for the user.
         // https://stackoverflow.com/a/25123410/294248
         private List<FileListItem> mPreSelection = new List<FileListItem>();
 
+        // List of file entries to move, if we're doing an in-file drop.
+        private List<IFileEntry> mDragMoveList = new List<IFileEntry>();
+
         /// <summary>
-        /// Handles left mouse button in the file list, recording the position.
+        /// Handles left mouse button click in the file list, recording the position as the
+        /// potential start of a drag operation.
         /// </summary>
         private void FileListDataGrid_PreviewMouseLeftButtonDown(object sender,
                 MouseButtonEventArgs e) {
@@ -1332,12 +1338,18 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Initiates a drag operation from the file list.
+        /// Performs a drag operation from the file list.
         /// </summary>
+        /// <remarks>
+        /// This method doesn't return until the drag is completed.
+        /// </remarks>
         private void StartFileListDrag() {
+            Debug.WriteLine("FL drag start");
+            Debug.Assert(mDragMoveList.Count == 0);
+            Debug.Assert(!mIsDraggingFileList);
+
             mIsDraggingFileList = true;
 
-            Debug.WriteLine("FL drag start");
             // Restore the selection.
             foreach (FileListItem selItem in mPreSelection) {
                 if (!fileListDataGrid.SelectedItems.Contains(selItem)) {
@@ -1345,13 +1357,19 @@ namespace cp2_wpf {
                     fileListDataGrid.SelectedItems.Add(selItem);
                 }
             }
+            // If selection wasn't made by a mouse click, items won't be in mPreSelection.
+            foreach (FileListItem selItem in fileListDataGrid.SelectedItems) {
+                mDragMoveList.Add(selItem.FileEntry);
+            }
 
+            // TODO: generate virtual streams, etc. for cross-process drags
             DataObject data = new DataObject(DataFormats.Text, "this is a test");
             DragDropEffects dde = DragDrop.DoDragDrop(fileListDataGrid, data,
                 DragDropEffects.Copy | DragDropEffects.Move);
             Debug.WriteLine("FL drag complete, effect=" + dde);
 
             mIsDraggingFileList = false;
+            mDragMoveList.Clear();
         }
 
         /// <summary>
@@ -1370,25 +1388,20 @@ namespace cp2_wpf {
             } else {
                 Debug.WriteLine("FL drop on target=" + dropTarget);
             }
-            if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
+            if (mIsDraggingFileList) {
+                // Internal file drop.  This is only allowed if the drop target is a directory.
+                if (dropTarget != IFileEntry.NO_ENTRY && dropTarget.IsDirectory) {
+                    mMainCtrl.MoveFiles(mDragMoveList, dropTarget);
+                } else {
+                    // Probably a mis-click.
+                    Debug.WriteLine("FL ignoring internal drop on non-directory");
+                }
+            } else if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
+                // File drop from Windows Explorer.
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 mMainCtrl.AddFileDrop(dropTarget, files);
-            }
-        }
-
-        /// <summary>
-        /// Handles a drop on the directory tree.
-        /// </summary>
-        private void DirectoryTree_Drop(object sender, DragEventArgs e) {
-            IFileEntry dropTarget = IFileEntry.NO_ENTRY;
-            TreeViewItem? tvi =
-                FindVisualParent<TreeViewItem>(e.OriginalSource as FrameworkElement);
-            if (tvi != null) {
-                DirectoryTreeItem? dti = tvi.DataContext as DirectoryTreeItem;
-                Debug.Assert(dti != null);
-                Debug.WriteLine("DT drop on item=" + dti);
             } else {
-                Debug.WriteLine("DT drop outside tree, ignoring");
+                Debug.WriteLine("FL no valid drop");
             }
         }
 
@@ -1404,7 +1417,9 @@ namespace cp2_wpf {
             // Generally, Ctrl+drag is copy, Shift+drag is move, Alt+drag is link.  For us the
             // operation depends exclusively on the source.
             IDataObject data = e.Data;
-            if (data.GetDataPresent(DataFormats.FileDrop)) {
+            if (!mMainCtrl.CanWrite) {
+                e.Effects = DragDropEffects.None;
+            } else if (data.GetDataPresent(DataFormats.FileDrop)) {
                 // File drop from Windows Explorer.
                 e.Effects = DragDropEffects.Copy;
             } else if (mIsDraggingFileList) {
@@ -1416,6 +1431,32 @@ namespace cp2_wpf {
             }
             e.Handled = true;
             //Debug.WriteLine("DT DragOver: effects=" + e.Effects);
+        }
+
+        /// <summary>
+        /// Handles a drop on the directory tree.
+        /// </summary>
+        private void DirectoryTree_Drop(object sender, DragEventArgs e) {
+            TreeViewItem? tvi =
+                FindVisualParent<TreeViewItem>(e.OriginalSource as FrameworkElement);
+            if (tvi == null) {
+                Debug.WriteLine("DT drop outside tree, ignoring");
+                return;
+            }
+            DirectoryTreeItem? dti = tvi.DataContext as DirectoryTreeItem;
+            Debug.Assert(dti != null);
+            IFileEntry dropTarget = dti.FileEntry;
+            Debug.WriteLine("DT drop on item=" + dropTarget);
+            if (mIsDraggingFileList) {
+                // Internal file drop.
+                mMainCtrl.MoveFiles(mDragMoveList, dropTarget);
+            } else if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
+                // File drop from Windows Explorer.
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                mMainCtrl.AddFileDrop(dropTarget, files);
+            } else {
+                Debug.WriteLine("FL no valid drop");
+            }
         }
 
         #endregion Drag & drop

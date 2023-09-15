@@ -709,7 +709,7 @@ namespace DiskArc.Arc {
         /// <summary>
         /// Creates an object for reading the contents of the entry out of the archive.
         /// </summary>
-        /// <exception cref="NotImplementedException">Compression format not supported.</exception>
+        /// <exception cref="NotSupportedException">Compression format not supported.</exception>
         internal ArcReadStream CreateReadStream() {
             Debug.Assert(Archive.DataStream != null);
             Archive.DataStream.Position = mCDFH.FileDataOffset;
@@ -722,7 +722,7 @@ namespace DiskArc.Arc {
                     true);
                 return new ArcReadStream(Archive, mCDFH.UncompSize, checker, expander);
             } else {
-                throw new NotImplementedException("ZIP compression format \"" +
+                throw new NotSupportedException("ZIP compression format \"" +
                     mCDFH.Format + "\" is not supported");
             }
         }

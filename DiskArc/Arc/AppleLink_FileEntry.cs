@@ -336,7 +336,7 @@ namespace DiskArc.Arc {
                     CompressionMode.Decompress, true, false, string.Empty);
                 return new ArcReadStream(Archive, uncompLen, checker, expander);
             } else {
-                throw new NotImplementedException("AppleLink compression format \"" +
+                throw new NotSupportedException("AppleLink compression format \"" +
                     fmt + "\" is not supported");
             }
         }

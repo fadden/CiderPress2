@@ -1311,7 +1311,8 @@ namespace DiskArc.FS {
                 }
             }
 
-            // If we're moving a directory, make sure we're not trying to move it into a child.
+            // If we're moving a directory, make sure we're not trying to move it into a child
+            // or itself.
             if (entry.IsDirectory) {
                 IFileEntry checkEnt = idestDir;
                 while (checkEnt != IFileEntry.NO_ENTRY) {

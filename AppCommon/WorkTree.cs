@@ -460,7 +460,7 @@ namespace AppCommon {
                     }
                 } catch (Exception ex) when
                         (ex is InvalidDataException ||
-                        ex is NotImplementedException) {
+                        ex is NotSupportedException) {
                     Debug.WriteLine("Failed to extract " + entry + ": " + ex.Message);
                 } catch (Exception ex) {
                     mAppHook.LogE("Unexpected exception: " + ex);

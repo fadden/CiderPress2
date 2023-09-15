@@ -152,7 +152,7 @@ namespace DiskArc {
         /// <exception cref="FileNotFoundException">Part does not exist.</exception>
         /// <exception cref="IOException">Entry is too damaged to open.</exception>
         /// <exception cref="InvalidOperationException">A transaction is in progress.</exception>
-        /// <exception cref="NotImplementedException">Compression format not supported.</exception>
+        /// <exception cref="NotSupportedException">Compression format not supported.</exception>
         ArcReadStream OpenPart(IFileEntry entry, Defs.FilePart part);
         // TODO(maybe): use part=RawData to allow direct access to compressed data.
 
@@ -167,8 +167,7 @@ namespace DiskArc {
         /// I don't think it makes a difference in terms of what you can do.)</para>
         /// </remarks>
         /// <exception cref="InvalidOperationException">A transaction has already been
-        ///   started, or there are open file parts.</exception>
-        /// <exception cref="NotImplementedException">The implementation of this archive format
+        ///   started, or there are open file parts, or the implementation of this archive format
         ///   does not support modification.</exception>
         void StartTransaction();
 

@@ -1212,7 +1212,7 @@ namespace DiskArc.Arc {
         /// to filename or comment threads, or arbitrary threads we don't recognize.</para>
         /// </remarks>
         /// <exception cref="FileNotFoundException">Part does not exist.</exception>
-        /// <exception cref="NotImplementedException">Compression format not supported.</exception>
+        /// <exception cref="NotSupportedException">Compression format not supported.</exception>
         internal ArcReadStream CreateReadStream(FilePart part) {
             ThreadHeader? thread;
 
@@ -1288,7 +1288,7 @@ namespace DiskArc.Arc {
                         true, true, threadEof);
                     break;
                 default:
-                    throw new NotImplementedException("Compression format not supported");
+                    throw new NotSupportedException("Compression format not supported");
             }
             return new ArcReadStream(Archive, threadEof, checker, expander);
         }

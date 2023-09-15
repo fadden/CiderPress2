@@ -459,7 +459,7 @@ namespace cp2 {
             } catch (Exception ex) when
                     (ex is IOException ||
                     ex is InvalidDataException ||
-                    ex is NotImplementedException) {
+                    ex is NotSupportedException) {
                 Console.WriteLine(indent + "Unable to investigate '" +
                     entry.FullPathName + "': " + ex.Message);
                 return false;
@@ -563,7 +563,7 @@ namespace cp2 {
             } catch (Exception ex) when
                     (ex is IOException ||
                     ex is InvalidDataException ||
-                    ex is NotImplementedException) {
+                    ex is NotSupportedException) {
                 Console.WriteLine(indent + "Unable to investigate '" +
                     entry.FullPathName + "': " + ex.Message);
                 return false;

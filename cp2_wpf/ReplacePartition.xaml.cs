@@ -98,7 +98,6 @@ namespace cp2_wpf {
         /// <param name="enableWriteFunc">Function to call to enable writes.</param>
         /// <param name="formatter">Text formatter.</param>
         /// <param name="appHook">Application hook reference.</param>
-        /// <exception cref="NotImplementedException"></exception>
         public ReplacePartition(Window owner, Partition dstPartition, IChunkAccess srcChunks,
                 EnableWriteFunc enableWriteFunc, Formatter formatter, AppHook appHook) {
             InitializeComponent();

@@ -1084,6 +1084,7 @@ namespace cp2_wpf {
         /// <param name="dropTarget">File entry onto which the files were dropped.</param>
         /// <param name="pathNames">List of pathnames to add.</param>
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
+            // TODO: pay attention to dropTarget; will be NO_ENTRY for IArchive
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
             ConvConfig.FileConvSpec? spec = null;       // TODO: import if configured
@@ -1626,6 +1627,69 @@ namespace cp2_wpf {
             }
             Debug.WriteLine("Export spec: " + spec);
             HandleAddImport(spec);
+        }
+
+        /// <summary>
+        /// Handles moving files between directories (via drag and drop).  This is only
+        /// useful for hierarchical filesystems.
+        /// </summary>
+        public void MoveFiles(List<IFileEntry> moveList, IFileEntry targetDir) {
+            if (CurrentWorkObject is not IFileSystem) {
+                Debug.WriteLine("Ignoring move request in " + CurrentWorkObject);
+                return;
+            }
+            if (targetDir == IFileEntry.NO_ENTRY) {
+                // Dragging files from an IArchive into the directory tree does this.
+                Debug.Assert(false, "Drag target is NO_FILE");
+                return;
+            }
+            if (!CanWrite) {
+                MessageBox.Show(mMainWin, "Drop target is not writable", "Not Writable",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (targetDir.IsDubious || targetDir.IsDamaged) {
+                MessageBox.Show(mMainWin, "Destination directory is not writable", "Not Writable",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (!targetDir.IsDirectory) {
+                Debug.Assert(false, "bad move request");
+                return;
+            }
+
+            // Screen out invalid and no-op requests.
+            for (int i = moveList.Count - 1; i >= 0; i--) {
+                IFileEntry entry = moveList[i];
+                if (entry.ContainingDir == targetDir) {
+                    Debug.WriteLine("- ignoring non-move " + entry + " -> " + targetDir);
+                    moveList.RemoveAt(i);
+                }
+                if (entry.IsDirectory) {
+                    // Make sure we're not trying to move a directory into itself or into a
+                    // descendant.
+                    IFileEntry checkEnt = targetDir;
+                    while (checkEnt != IFileEntry.NO_ENTRY) {
+                        if (checkEnt == entry) {
+                            MessageBox.Show(mMainWin,
+                                "Cannot move a directory into itself or a descendant", "Bad Move",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+                        checkEnt = checkEnt.ContainingDir;
+                    }
+                }
+            }
+            if (moveList.Count == 0) {
+                // Should we show a message to the user?
+                Debug.WriteLine("Nothing to move");
+                return;
+            }
+
+            Debug.WriteLine("Move files to " + targetDir + ":");
+            foreach (IFileEntry entry in moveList) {
+                Debug.WriteLine("  " + entry);
+            }
         }
 
         /// <summary>

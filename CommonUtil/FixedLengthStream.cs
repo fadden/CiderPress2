@@ -55,7 +55,7 @@ namespace CommonUtil {
         }
 
         public override void SetLength(long value) {
-            throw new NotImplementedException("can't set the length of this stream");
+            throw new NotSupportedException("can't set the length of this stream");
         }
 
         public override void Write(byte[] buffer, int offset, int count) {
