@@ -1397,7 +1397,7 @@ namespace cp2_wpf {
                     int index = mMainWin.FileList.IndexOf(fileItem);
                     Debug.Assert(index >= 0);
                     mMainWin.FileList[index] = newFli;
-                    // Set the selection.  This causes a refresh.
+                    // Set the selection.  This causes a refresh (via selection-changed event).
                     mMainWin.SelectedFileListItem = newFli;
 
                     ArchiveTreeItem? ati =
@@ -1690,6 +1690,53 @@ namespace cp2_wpf {
             foreach (IFileEntry entry in moveList) {
                 Debug.WriteLine("  " + entry);
             }
+
+            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
+                    out IFileEntry unused)) {
+                // shouldn't be possible
+                Debug.Assert(false);
+                return;
+            }
+            Debug.Assert(archiveOrFileSystem == CurrentWorkObject);
+
+            SettingsHolder settings = AppSettings.Global;
+            MoveProgress prog = new MoveProgress(CurrentWorkObject, daNode, moveList, targetDir,
+                    AppHook) {
+                DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
+            };
+
+            // Do the move on a background thread so we can show progress.
+            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
+            if (workDialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Move successful", true);
+            } else {
+                mMainWin.PostNotification("Cancelled", false);
+            }
+
+            // Clear selection, which won't be valid once we replace the file list items.
+            mMainWin.fileListDataGrid.SelectedItems.Clear();
+
+            // Generate new file list items for all moved entries.  This is necessary because
+            // the pathname fields have changed.  (Shouldn't be necessary in single-dir mode,
+            // because we don't currently show the pathname field in that configuration.)
+            foreach (IFileEntry entry in moveList) {
+                FileListItem? item = FileListItem.FindItemByEntry(mMainWin.FileList, entry,
+                        out int itemIndex);
+                if (item == null) {
+                    Debug.Assert(false, "unable to find entry: " + entry);
+                    continue;
+                }
+                FileListItem newItem = new FileListItem(entry, mFormatter);
+                mMainWin.FileList.RemoveAt(itemIndex);
+                mMainWin.FileList.Insert(itemIndex, newItem);
+
+                // Add the new item to the selection set.
+                // (this is currently being partially un-done by the refresh code)
+                mMainWin.fileListDataGrid.SelectedItems.Add(newItem);
+            }
+
+            // Refresh the directory and file lists.
+            RefreshDirAndFileList();
         }
 
         /// <summary>

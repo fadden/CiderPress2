@@ -94,7 +94,7 @@ namespace cp2 {
                         // transforming each individual entry pathname, removing parts of the name
                         // and prepending the new "directory name".  This need to work correctly
                         // when files are moved from multiple "source directories".
-                        Console.Error.WriteLine("Error: can only rename a single file " +
+                        Console.Error.WriteLine("Error: can only rename individual files " +
                             "in file archives");
                         return false;
                     }
@@ -128,9 +128,14 @@ namespace cp2 {
                         }
                         // If the previous check succeeded, there must be entries to move.
                         Debug.Assert(entries.Count > 0);
-                        success = MoveDiskEntries(fs, endDirEntry, entries, newPathName, parms);
+                        success = MoveDiskEntries(fs, endDirEntry, entries, newPathName, parms,
+                            out bool isCancelled);
+                        if (isCancelled) {
+                            Console.Error.WriteLine("Cancelled.");
+                            Debug.Assert(!success);
+                            // continue; some changes may have been made
+                        }
                     }
-
                     try {
                         leafNode.SaveUpdates(parms.Compress);
                     } catch (Exception ex) {
@@ -253,7 +258,8 @@ namespace cp2 {
         /// Renames or moves one or more entries in a disk filesystem.
         /// </summary>
         private static bool MoveDiskEntries(IFileSystem fs, IFileEntry baseDirEnt,
-                List<IFileEntry> entries, string newPathName, ParamsBag parms) {
+                List<IFileEntry> entries, string newPathName, ParamsBag parms,
+                out bool isCancelled) {
             // We need to locate the directory in which "newPathName" lives, i.e. if the target
             // is "foo/bar" then we need to locate "foo".  We start from the base directory
             // specified by the ext-archive, or from the volume dir.
@@ -264,8 +270,9 @@ namespace cp2 {
 
             if (string.IsNullOrEmpty(newPathName)) {
                 // Moving files into the root dir, though the root may not be the vol dir.
-                return MoveMultiple(fs, entries, curDirEnt, parms);
+                return MoveMultiple(fs, entries, curDirEnt, parms, out isCancelled);
             }
+            isCancelled = false;
 
             List<string> parts = PathName.SplitPartialPath(newPathName, Glob.STD_DIR_SEP_CHARS);
             for (int i = 0; i < parts.Count - 1; i++) {
@@ -294,7 +301,7 @@ namespace cp2 {
                     return false;
                 }
                 // Yes, move all entries into this directory.
-                if (!MoveMultiple(fs, entries, fileEnt, parms)) {
+                if (!MoveMultiple(fs, entries, fileEnt, parms, out isCancelled)) {
                     return false;
                 }
             } else {
@@ -332,36 +339,12 @@ namespace cp2 {
         /// Moves multiple files into a directory, retaining their current filenames.
         /// </summary>
         private static bool MoveMultiple(IFileSystem fs, List<IFileEntry> entries,
-                IFileEntry targetEnt, ParamsBag parms) {
-            int doneCount = 0;
-            foreach (IFileEntry entry in entries) {
-                CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Progress,
-                    entry.FullPathName, entry.DirectorySeparatorChar);
-                if (targetEnt.ContainingDir == IFileEntry.NO_ENTRY) {
-                    facts.NewPathName = entry.FileName;     // don't show vol dir name
-                } else {
-                    facts.NewPathName = targetEnt.FullPathName + fs.Characteristics.DirSep +
-                        entry.FileName;
-                }
-                facts.NewDirSep = fs.Characteristics.DirSep;
-                facts.ProgressPercent = (100 * doneCount) / entries.Count;
-                if (entry.ContainingDir == targetEnt) {
-                    facts.NewPathName = "(no change)";
-                }
-
-                Misc.HandleCallback(facts, "moving", parms);
-
-                try {
-                    // This will catch attempts to move a directory inside itself.
-                    fs.MoveFile(entry, targetEnt, entry.FileName);
-                } catch (IOException ex) {
-                    Console.Error.WriteLine("Error: " + ex.Message);
-                    return false;
-                }
-
-                doneCount++;
-            }
-            return true;
+                IFileEntry targetEnt, ParamsBag parms, out bool isCancelled) {
+            MoveFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                return Misc.HandleCallback(what, "moving", parms);
+            };
+            MoveFileWorker worker = new MoveFileWorker(cbFunc, parms.AppHook);
+            return worker.MoveDiskEntries(fs, entries, targetEnt, out isCancelled);
         }
     }
 }

@@ -246,11 +246,22 @@ namespace cp2_wpf {
         /// </summary>
         public static FileListItem? FindItemByEntry(ObservableCollection<FileListItem> tvRoot,
                 IFileEntry entry) {
-            foreach (FileListItem item in tvRoot) {
-                if (item.FileEntry == entry) {
-                    return item;
+            return FindItemByEntry(tvRoot, entry, out int unused);
+        }
+
+        /// <summary>
+        /// Finds an item in the file list, searching by IFileEntry.
+        /// </summary>
+        public static FileListItem? FindItemByEntry(ObservableCollection<FileListItem> tvRoot,
+                IFileEntry entry, out int index) {
+            // Currently a linear search.  Should be okay.
+            for (int i = 0; i < tvRoot.Count; i++) {
+                if (tvRoot[i].FileEntry == entry) {
+                    index = i;
+                    return tvRoot[i];
                 }
             }
+            index = -1;
             return null;
         }
 

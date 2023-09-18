@@ -830,6 +830,8 @@ namespace cp2_wpf {
                 return false;
             }
             foreach (IFileEntry entry in dirEntry) {
+                // See if the same IFileEntry object is in the same position.  This detects
+                // add/delete/reorder, but does not detect attribute changes.
                 if (index >= fileList.Count || fileList[index].FileEntry != entry) {
                     return false;
                 }

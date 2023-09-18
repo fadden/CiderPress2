@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Diagnostics;
 
 using AppCommon;
 using CommonUtil;
@@ -78,9 +79,13 @@ namespace cp2 {
                     }
                     try {
                         arc.StartTransaction();
-                        if (!worker.DeleteFromArchive(arc, entries, out bool wasCancelled)) {
+                        if (!worker.DeleteFromArchive(arc, entries, out bool isCancelled)) {
+                            if (isCancelled) {
+                                Console.Error.WriteLine("Cancelled.");
+                            }
                             return false;
                         }
+                        Debug.Assert(!isCancelled);
                         leafNode.SaveUpdates(parms.Compress);
                     } catch (Exception ex) {
                         Console.Error.WriteLine("Error: " + ex.Message);
@@ -109,7 +114,12 @@ namespace cp2 {
                         Console.Error.WriteLine("Weird: nothing found");
                         return false;
                     }
-                    bool success = worker.DeleteFromDisk(fs, entries, out bool wasCancelled);
+                    bool success = worker.DeleteFromDisk(fs, entries, out bool isCancelled);
+                    if (isCancelled) {
+                        Console.Error.WriteLine("Cancelled.");
+                        Debug.Assert(!success);
+                        // continue; some changes may have been made
+                    }
                     try {
                         // Save the deletions we managed to handle.
                         leafNode.SaveUpdates(parms.Compress);
