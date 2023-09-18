@@ -29,9 +29,11 @@ namespace FileConv.Gfx {
         public const string LABEL = "Host Image";
         public const string DESCRIPTION =
             "Converts a modern image format, such as GIF or JPEG, to a bitmap for viewing.";
+        public const string DISCRIMINATOR = "filename extension \".GIF\", \".JPG\", or \".JPEG\". ";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         private HostConv.FileKind mKind;
 

@@ -34,9 +34,11 @@ namespace FileConv.Generic {
             "The handling of non-ASCII characters is configurable, by specifying the host " +
             "file format and the destination file character encoding.  Files imported to DOS " +
             "disks will be stored as high ASCII.";
+        public const string DISCRIMINATOR = "any file; preferrably ending in \".TXT\".";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         public const string OPT_INCHAR = "inchar";
         public const string OPT_OUTCHAR = "outchar";

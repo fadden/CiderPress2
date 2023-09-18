@@ -48,6 +48,21 @@ namespace FileConv {
         public abstract string Description { get; }
 
         /// <summary>
+        /// Brief description of the characteristics that are used to identify a file as
+        /// being appropriate for this converter.
+        /// </summary>
+        /// <remarks>
+        /// <para>If applicable, the file type and auxtype values should appears first, followed
+        /// by length limitations and signature information.  For example:</para>
+        /// <example>
+        /// (SHR image) <c>ProDOS PIC/$0000, 32KB. May be BIN if it also has extension ".PIC" or ".SHR".</c>
+        /// (Applesoft) <c>ProDOS BAS, DOS A.</c>
+        /// <para>These do not need to be machine-readable.</para>
+        /// </example>
+        /// </remarks>
+        public abstract string Discriminator { get; }
+
+        /// <summary>
         /// Converter applicability ratings, from worst to best.
         /// </summary>
         public enum Applicability {

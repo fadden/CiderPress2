@@ -47,6 +47,7 @@ namespace FileConv {
             public string Tag { get; private set; }
             public string Label { get; private set; }
             public string Description { get; private set; }
+            public string Discriminator { get; private set; }
             public List<Converter.OptionDefinition> OptionDefs { get; private set; }
 
             // Converter subclass.
@@ -66,10 +67,12 @@ namespace FileConv {
                     throw new Exception("Unable to find nullary ctor in " + implClass.FullName);
                 }
                 object instance = nullCtor.Invoke(Array.Empty<object>());
-                Tag = ((Importer)instance).Tag;
-                Label = ((Importer)instance).Label;
-                Description = ((Importer)instance).Description;
-                OptionDefs = ((Importer)instance).OptionDefs;
+                Importer imp = (Importer)instance;
+                Tag = imp.Tag;
+                Label = imp.Label;
+                Description = imp.Description;
+                Discriminator = imp.Discriminator;
+                OptionDefs = imp.OptionDefs;
 
                 // Cache a reference to the constructor.
                 ConstructorInfo? ctor = implClass.GetConstructor(
@@ -127,7 +130,7 @@ namespace FileConv {
             ConverterEntry entry = sConverters[index];
             tag = entry.Tag;
             label = entry.Label;
-            description = entry.Description;
+            description = entry.Description + "\n\nApplies to: " + entry.Discriminator;
             optionDefs = entry.OptionDefs;
         }
 

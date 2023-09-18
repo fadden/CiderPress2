@@ -45,7 +45,7 @@ limitations under the License.
                       SelectionChanged="ConverterCombo_SelectionChanged"/>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" Height="80" Margin="0,8,0,0">
+        <ScrollViewer Grid.Row="1" Height="100" Margin="0,8,0,0">
             <TextBlock TextWrapping="Wrap"
                        Text="{Binding DescriptionText, FallbackValue=DESCRIPTION}"/>
         </ScrollViewer>

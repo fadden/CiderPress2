@@ -40,9 +40,11 @@ namespace FileConv.Doc {
             "by carriage returns) are output as columns within that row. The length option " +
             "may be set to a positive integer value, or left blank to use the file's " +
             "auxiliary type.";
+        public const string DISCRIMINATOR = "ProDOS TXT with nonzero auxtype, DOS T (raw mode).";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         public const string OPT_LEN = "len";
 

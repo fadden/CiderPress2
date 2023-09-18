@@ -46,6 +46,17 @@ namespace FileConv {
         public abstract string Description { get; }
 
         /// <summary>
+        /// Brief description of input file characteristics, such as distinguishing file
+        /// extensions.
+        /// </summary>
+        /// <remarks>
+        /// <example>
+        /// (Applesoft) <c>Files ending in ".BAS" or ".BAS.TXT".</c>
+        /// </example>
+        /// </remarks>
+        public abstract string Discriminator { get; }
+
+        /// <summary>
         /// True if the converted file will have a data fork.
         /// </summary>
         public bool HasDataFork { get; protected set; } = true;

@@ -27,9 +27,11 @@ namespace FileConv.Generic {
         public const string LABEL = "Hex Dump";
         public const string DESCRIPTION =
             "Generates a hex dump for file data.  The text conversion is configurable.";
+        public const string DISCRIMINATOR = "any file.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         public const string OPT_CHAR = "char";
 

@@ -32,9 +32,11 @@ namespace FileConv.Generic {
             "Plain text converter.  Converts end-of-line markers to the local convention, " +
             "and converts non-ASCII characters according to the current configuration options. " +
             "Control characters may be converted to printable form or output raw.";
+        public const string DISCRIMINATOR = "any file; preferred for ProDOS TXT and DOS T.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         public const string OPT_CHAR = "char";
         public const string OPT_PRINT = "print";

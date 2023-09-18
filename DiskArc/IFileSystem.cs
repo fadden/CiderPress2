@@ -50,14 +50,14 @@ namespace DiskArc {
     /// data without having to recreate the filesystem object.</para>
     ///
     /// <para>The full interface definition also includes a few static functions:</para>
-    /// <para><code>  static TestResult TestImage(IChunkAccess chunkAccess)</code>
+    /// <para><c>static TestResult TestImage(IChunkAccess chunkAccess)</c>:
     ///   Returns a "yes", "no", or "maybe" value depending on whether the disk image
     ///   appears to contain the filesystem.  If the test result is "yes", PrepareFileAccess()
     ///   will succeed.</para>
-    /// <para><code>  static bool IsSizeAllowed(long size)</code>
+    /// <para><c>static bool IsSizeAllowed(long size)</c>:
     ///   Returns true if a volume of the specified size (in bytes) can be created by
     ///   the Format() method.</para>
-    /// <para><code>  static string AdjustFileName(string fileName)</code>
+    /// <para><c>static string AdjustFileName(string fileName)</c>:
     ///   Returns a copy of the filename that has been adjusted to be accepted by the
     ///   filesystem (shortened, illegal chars removed, etc).</para>
     /// </remarks>

@@ -28,9 +28,12 @@ namespace FileConv.Gfx {
         public const string LABEL = "Super Hi-Res Screen Image";
         public const string DESCRIPTION =
             "Converts a standard Apple IIgs super hi-res image to a bitmap.";
+        public const string DISCRIMINATOR =
+            "ProDOS PIC/$0000, 32KB. May be BIN with extension \".PIC\" or \".SHR.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         public const int EXPECTED_LEN = 32768;
 

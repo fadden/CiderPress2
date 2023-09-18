@@ -28,9 +28,13 @@ namespace FileConv.Gfx {
         public const string LABEL = "Hi-Res Graphics";
         public const string DESCRIPTION =
             "Converts a standard hi-res screen to a bitmap.";
+        public const string DISCRIMINATOR =
+            "ProDOS FOT with auxtype < $4000, BIN, or DOS B. " +
+            "Length between $1ff8 and $2001, inclusive.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         public const string OPT_BW = "bw";
 

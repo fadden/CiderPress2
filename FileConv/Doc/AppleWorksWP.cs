@@ -24,9 +24,11 @@ namespace FileConv.Doc {
         public const string LABEL = "AppleWorks WP";
         public const string DESCRIPTION =
             "Converts an AppleWorks Word Processor document to formatted text.";
+        public const string DISCRIMINATOR = "ProDOS AWP.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
 
         private AppleWorksWP() { }

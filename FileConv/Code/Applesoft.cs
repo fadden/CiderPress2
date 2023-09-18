@@ -36,9 +36,11 @@ namespace FileConv.Code {
             "Converts Applesoft BASIC programs to a text listing, with optional syntax " +
             "highlighting.  The output is identical to the LIST command.  Control characters " +
             "can be converted to printable form.";
+        public const string DISCRIMINATOR = "ProDOS BAS, DOS A.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
+        public override string Discriminator => DISCRIMINATOR;
 
         private const string OPT_HI = "hi";
         private const string OPT_PRINT = "print";
