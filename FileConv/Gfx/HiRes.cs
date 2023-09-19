@@ -66,7 +66,7 @@ namespace FileConv.Gfx {
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN) {
                 return Applicability.Probably;
             } else if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FOT) {
-                if (FileAttrs.AuxType < 0x4000) {      // 0x0000-3fff is uncompressed hi-res
+                if (FileAttrs.AuxType < 0x4000) {      // 0x0000-3fff is uncompressed hgr/dhgr
                     return Applicability.Probably;
                 }
             }
@@ -116,7 +116,8 @@ namespace FileConv.Gfx {
         /// every pixel so that we can emulate the half-pixel shift effect.
         /// </summary>
         /// <param name="buf">Buffer of hi-res data.</param>
-        /// <param name="options">Options.</param>
+        /// <param name="palette">Color palette.</param>
+        /// <param name="doMonochrome">True if we want a B&W conversion, false for color.</param>
         /// <returns>Rendered bitmap.</returns>
         internal static Bitmap8 ConvertBuffer(byte[] buf, Palette8 palette, bool doMonochrome) {
             Bitmap8 output = new Bitmap8(OUTPUT_WIDTH, OUTPUT_HEIGHT);
@@ -220,7 +221,7 @@ namespace FileConv.Gfx {
         /// Computes the offset of the Nth row of a hi-res image.
         /// </summary>
         /// <param name="row">Row number (0-191).</param>
-        /// <returns>Buffer offset.</returns>
+        /// <returns>Buffer offset (0-8191).</returns>
         public static int RowToOffset(int row) {
             if (row < 0 || row > NUM_ROWS) {
                 throw new ArgumentOutOfRangeException(nameof(row));

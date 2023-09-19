@@ -45,6 +45,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Doc.RandomText)),
             new ConverterEntry(typeof(Doc.Teach)),
 
+            new ConverterEntry(typeof(Gfx.DoubleHiRes)),
             new ConverterEntry(typeof(Gfx.HiRes)),
             new ConverterEntry(typeof(Gfx.HostImage)),
             new ConverterEntry(typeof(Gfx.SuperHiRes)),

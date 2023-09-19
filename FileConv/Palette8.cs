@@ -117,6 +117,7 @@ namespace FileConv {
         }
 
         // Colors displayed on the IIgs RGB color monitor, for lo-res, hi-res, and double hi-res.
+        // Indexed by Apple2Colors enum value.
         private static readonly int[] Apple2RGB = {
             ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // $0 black
             ConvUtil.MakeRGB(0xdd, 0x00, 0x33),     // $1 deep red / magenta
@@ -137,7 +138,9 @@ namespace FileConv {
         };
 
         /// <summary>
-        /// Color palette for the 8 colors shown on the hi-res screen.
+        /// Color palette for the 8 colors shown on the hi-res screen.  These are indexed by
+        /// Applesoft color value (0-7), which matches the two-bit pattern plus 4 if the high
+        /// bit is set.
         /// </summary>
         public static Palette8 Palette_HiRes = new Palette8("Hi-Res (RGB)",
             new int[] {
@@ -152,8 +155,12 @@ namespace FileConv {
             });
 
         /// <summary>
-        /// Color palette for the 16 colors shown on the double hi-res screen.
+        /// Color palette for the 16 colors shown on the double hi-res screen.  These are indexed
+        /// by bit pattern.
         /// </summary>
+        /// <remarks>
+        /// Note the order for double-hi-res and lo-res are different.
+        /// </remarks>
         public static Palette8 Palette_DoubleHiRes = new Palette8("Double Hi-Res (RGB)",
             new int[] {
                 Apple2RGB[(int)Apple2Colors.Black],

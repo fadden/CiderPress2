@@ -392,7 +392,8 @@ namespace cp2_wpf {
                         for (int i = 0; i < optDef.MultiTags!.Length; i++) {
                             string rbTag = optDef.MultiTags[i];
                             string rbLabel = optDef.MultiDescrs![i];
-                            // Always set the first button to ensure we have something set.
+                            // Always set the first button to ensure we have something set.  If a
+                            // later value is better, the radio button mechanism will clear it.
                             string isSet = (i == 0 || rbTag == defaultVal).ToString();
                             rbg.ButtonItems[i].AssignControl(optDef.OptTag, rbLabel, isSet, rbTag);
                         }

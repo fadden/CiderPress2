@@ -202,8 +202,7 @@ namespace CommonUtil {
         /// <param name="name">Setting name.</param>
         /// <param name="defaultValue">Setting default value.</param>
         /// <returns>The value found, or the default value if no setting with the specified
-        ///   name exists, or the stored value is not a member of the specified enumerated
-        ///   type.</returns>
+        ///   name exists, or the stored value is not a member of the enumeration.</returns>
         public T GetEnum<T>(string name, T defaultValue) {
             if (!mSettings.TryGetValue(name, out string? valueStr)) {
                 return defaultValue;
