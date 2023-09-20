@@ -1,17 +1,9 @@
 ﻿# Notes on BASIC Disassemblers #
 
 This document has notes for:
- - [Integer BASIC](#integer-basic) for the Apple II
  - [Applesoft BASIC](#applesoft-basic) for the Apple II
+ - [Integer BASIC](#integer-basic) for the Apple II
  - [Business BASIC](#business-basic) for the Apple ///
-
-
-## Integer BASIC ##
-
-Primary references:
- - Integer BASIC disassembly, by Paul R. Santa-Maria.  https://6502disassembly.com/a2-rom/
-
-[ TODO ]
 
 
 ## Applesoft BASIC ##
@@ -67,6 +59,51 @@ memory immediately before the program ($0800) must be zero, or the program will 
 reason for this behavior is explained [here](https://retrocomputing.stackexchange.com/a/20180/56).
 
 
+## Integer BASIC ##
+
+Primary references:
+ - Integer BASIC disassembly, by Paul R. Santa-Maria.  https://6502disassembly.com/a2-rom/
+ - FID.C by Paul Schlyter
+
+Integer BASIC was the first BASIC programming language shipped in the Apple II ROM.  Written by
+Steve Wozniak, there is famously no source code, just a binder full of notes.
+
+Integer BASIC programs are stored in tokenized form.  Statements like "PRINT" are converted
+to a single byte, numbers are stored as 16-bit integers, and strings and variable names are
+stored as text.
+
+### File Structure ###
+
+A file is a series of lines.  Each line is:
+```
++$00 / 1: line length (including the length byte itself)
++$01 / 2: line number
++$03 /nn: series of variable-length bytecode values
++$xx    : $01 (end-of-line token)
+```
+Integers are stored in little-endian order.  There is no end-of-file marker.
+
+The bytecode stream values have the following meanings:
+```
+ $00   : invalid token in program
+ $01   : end of line
+ $02-11: invalid token in program
+ $12-7f: language token
+ $b0-b9: ('0'-'9') start of integer constant; followed by 16-bit value
+ $ba-c0: (invalid)
+ $c1-da: ('A'-'Z') start of a variable name; ends on value < $80 (i.e. a token)
+ $db-ff: (invalid)
+```
+All byte values are possible, e.g. in integer constants.  The "invalid token" values may be
+valid when typed directly on the command line, but not in the program itself.  For example,
+you're not allowed to use `DEL` or `RUN` within a program.
+
+In some cases, multiple tokens have the same name.  For example, there are separate tokens for
+`RUN` with and without a line number (run from start vs. run at line).
+
+
 ## Business BASIC ##
+
+Apple's Business BASIC ran on the Apple ///.
 
 [ TODO ]

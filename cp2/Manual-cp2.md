@@ -1465,26 +1465,40 @@ is used.  Unknown or invalid options are ignored.
 
 Default values for options may be stored in the cp2rc config file.
 
-The available converters are:
+Converters are available for code:
  - `bas`: Applesoft BASIC listing
    - `hi` (bool): false=plain text listing (default), true=add colorful
      syntax highlighting
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
- - `hex`: hex dump
-   - `char` (multi): select character set for character dump portion
- - `hgr`: Apple II hi-res screen
-   - `bw` (bool): false=color (default), true=black & white
+ - `int`: Integer BASIC listing
+   - `hi` (bool): false=plain text listing (default), true=add colorful
+     syntax highlighting
+   - `print` (bool): false=include raw control codes, true=make
+     printable (default)
+
+Text documents:
  - `rtext`: convert DOS/ProDOS random-access text to cell-grid
    - `len` (int): specify record length; default value from aux type if
      available (if zero, file is converted as sequential text)
+ - `teach`: Apple IIgs Teach Document
+
+Graphics:
+ - `dhgr`: Apple II double-hi-res screen
+   - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
+ - `hgr`: Apple II hi-res screen
+   - `bw` (bool): false=color (default), true=black & white
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
- - `teach`: Apple IIgs Teach Document
- - `text`: convert text, changing EOL to match the host system
+
+General:
+ - `hex`: hex dump
+   - `char` (multi): select character set for character dump portion
+ - `text`: convert to text, changing end-of-line char to match the host system
    - `char` (multi): specify source character set
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
+
 
 The `char` character set options are `hiascii` for low/high ASCII (default),
 `mor` for Mac OS Roman, and `latin` for ISO 8859-1.  Unprintable characters
@@ -1498,7 +1512,7 @@ The result of the conversion takes one of the following forms:
    a byte-order mark.
  - Formatted documents are output in Rich Text Format (.RTF).
  - Spreadsheets and other cell-grid formats are output as Comma-Separated
-   Value (.CSV).
+   Value (.CSV), UTF-8 encoding.
 
 Specifying the special value `best` as the converter tag will analyze the file
 and choose the conversion that seems most appropriate.  It's not possible to

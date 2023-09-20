@@ -147,7 +147,7 @@ limitations under the License.
             <TabItem Name="noteTabItem" Header="Notes" Style="{StaticResource boldHeaderText}"
                      IsEnabled="{Binding IsNoteTabEnabled}">
                 <TextBox Name="notesTextBox" IsReadOnly="True" BorderThickness="0"
-                         Text="{Binding NotePlainText}"/>
+                         Text="{Binding NotePlainText}" VerticalScrollBarVisibility="Auto"/>
             </TabItem>
         </TabControl>
 

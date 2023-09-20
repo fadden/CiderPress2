@@ -297,6 +297,13 @@ namespace cp2_wpf {
         private void ShowFile(bool fileChanged) {
             IsDOSRawEnabled = (mArchiveOrFileSystem is DOS);
 
+            // Reset scrolling.
+            dataForkTextBox.ScrollToHome();
+            dataRichTextBox.ScrollToHome();
+            rsrcForkTextBox.ScrollToHome();
+            notesTextBox.ScrollToHome();
+
+            // Close any open streams.
             CloseStreams();
 
             IFileEntry entry = mSelected[mCurIndex];

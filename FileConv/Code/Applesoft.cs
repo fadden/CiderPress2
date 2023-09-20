@@ -82,6 +82,8 @@ namespace FileConv.Code {
                 "LEFT$",  "RIGHT$", "MID$"
         };
 
+        private const byte TOK_REM = 0xb2;
+
         // Color selections for syntax highlighting.  These may be altered to match the
         // closest available color by the fancy text generator.
         private static readonly int COLOR_DEFAULT = ConvUtil.MakeRGB(0x40, 0x40, 0x40);
@@ -137,7 +139,7 @@ namespace FileConv.Code {
 
                 // Process start of line.
                 if (length - offset < 2) {
-                    output.Notes.AddW("File may be truncated (at addr)");
+                    output.Notes.AddW("File may be truncated (at addr bytes)");
                     break;
                 }
                 ushort nextAddr = RawData.ReadU16LE(dataBuf, ref offset);
@@ -186,7 +188,7 @@ namespace FileConv.Code {
                         }
                         output.Append(' ');
 
-                        if (bval == 0xb2) {
+                        if (bval == TOK_REM) {
                             // REM statement.  Do rest of line in green.
                             output.SetForeColor(COLOR_COMMENT);
                             inRem = true;
