@@ -86,12 +86,12 @@ namespace FileConv.Code {
 
         // Color selections for syntax highlighting.  These may be altered to match the
         // closest available color by the fancy text generator.
-        private static readonly int COLOR_DEFAULT = ConvUtil.MakeRGB(0x40, 0x40, 0x40);
-        private static readonly int COLOR_LINE_NUM = ConvUtil.MakeRGB(0x40, 0x40, 0x40);
-        private static readonly int COLOR_KEYWORD = ConvUtil.MakeRGB(0x00, 0x00, 0x00);
-        private static readonly int COLOR_COMMENT = ConvUtil.MakeRGB(0x00, 0x80, 0x00);
-        private static readonly int COLOR_STRING = ConvUtil.MakeRGB(0x00, 0x00, 0x80);
-        private static readonly int COLOR_COLON = ConvUtil.MakeRGB(0xff, 0x00, 0x00);
+        internal static readonly int COLOR_DEFAULT = ConvUtil.MakeRGB(0x40, 0x40, 0x40);
+        internal static readonly int COLOR_LINE_NUM = ConvUtil.MakeRGB(0x40, 0x40, 0x40);
+        internal static readonly int COLOR_KEYWORD = ConvUtil.MakeRGB(0x00, 0x00, 0x00);
+        internal static readonly int COLOR_COMMENT = ConvUtil.MakeRGB(0x00, 0x80, 0x00);
+        internal static readonly int COLOR_STRING = ConvUtil.MakeRGB(0x00, 0x00, 0x80);
+        internal static readonly int COLOR_COLON = ConvUtil.MakeRGB(0xff, 0x00, 0x00);
 
 
         private Applesoft() { }

@@ -38,6 +38,7 @@ namespace DiskArc {
         public const int FILE_TYPE_PDA = 0x05;
         public const int FILE_TYPE_BIN = 0x06;
         public const int FILE_TYPE_FOT = 0x08;
+        public const int FILE_TYPE_BA3 = 0x09;
         public const int FILE_TYPE_DIR = 0x0f;
         public const int FILE_TYPE_GWP = 0x50;
         public const int FILE_TYPE_S16 = 0xb3;

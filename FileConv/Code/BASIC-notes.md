@@ -8,6 +8,9 @@ This document has notes for:
 
 ## Applesoft BASIC ##
 
+File types:
+ - BAS ($fc) / any (aux type is often $0801)
+
 Primary references:
  - Applesoft disassembly, by Bob Sander-Cederlof.  https://6502disassembly.com/a2-rom/
 
@@ -61,6 +64,9 @@ reason for this behavior is explained [here](https://retrocomputing.stackexchang
 
 ## Integer BASIC ##
 
+File types:
+ - INT ($fa) / any
+
 Primary references:
  - Integer BASIC disassembly, by Paul R. Santa-Maria.  https://6502disassembly.com/a2-rom/
  - FID.C by Paul Schlyter
@@ -79,7 +85,7 @@ A file is a series of lines.  Each line is:
 +$00 / 1: line length (including the length byte itself)
 +$01 / 2: line number
 +$03 /nn: series of variable-length bytecode values
-+$xx    : $01 (end-of-line token)
++$xx / 1: end-of-line token ($01)
 ```
 Integers are stored in little-endian order.  There is no end-of-file marker.
 
@@ -104,6 +110,36 @@ In some cases, multiple tokens have the same name.  For example, there are separ
 
 ## Business BASIC ##
 
-Apple's Business BASIC ran on the Apple ///.
+File types:
+ - BA3 ($09) / any (aux type usually $0000 or $0200)
 
-[ TODO ]
+Primary references:
+ - Program lister, written by David Schmidt for original CiderPress.
+
+Apple's Business BASIC ran on the Apple ///.  It offered a number of improvements over Apple II
+BASIC.
+
+### File Structure ###
+
+All integers are stored in little-endian order.
+
+The file structure is:
+```
++$00 / 2: file length (does not include this length word)
++$02 /nn: zero or more lines
++$xx / 2: end-of-file marker ($0000)
+```
+
+Some files have a stored file length of zero, and may omit the end-of-file marker.
+
+Each line is:
+```
++$00 / 1: offset to next line
++$01 / 2: 16-bit line number
++$03 /nn: mix of tokens and literals
++$xx / 1: end-of-line token ($00)
+```
+
+Numbers are stored in character form, and are parsed during execution.
+
+The end of the program is indicated by a line with a zero value for the offset to the next line.

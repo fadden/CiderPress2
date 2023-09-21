@@ -103,12 +103,12 @@ namespace FileConv.Code {
 
         // Color selections for syntax highlighting.  These may be altered to match the
         // closest available color by the fancy text generator.
-        private static readonly int COLOR_DEFAULT = ConvUtil.MakeRGB(0x40, 0x40, 0x40);
-        private static readonly int COLOR_LINE_NUM = ConvUtil.MakeRGB(0x40, 0x40, 0x40);
-        private static readonly int COLOR_KEYWORD = ConvUtil.MakeRGB(0x00, 0x00, 0x00);
-        private static readonly int COLOR_COMMENT = ConvUtil.MakeRGB(0x00, 0x80, 0x00);
-        private static readonly int COLOR_STRING = ConvUtil.MakeRGB(0x00, 0x00, 0x80);
-        private static readonly int COLOR_COLON = ConvUtil.MakeRGB(0xff, 0x00, 0x00);
+        private static readonly int COLOR_DEFAULT = Applesoft.COLOR_DEFAULT;
+        private static readonly int COLOR_LINE_NUM = Applesoft.COLOR_LINE_NUM;
+        private static readonly int COLOR_KEYWORD = Applesoft.COLOR_KEYWORD;
+        private static readonly int COLOR_COMMENT = Applesoft.COLOR_COMMENT;
+        private static readonly int COLOR_STRING = Applesoft.COLOR_STRING;
+        private static readonly int COLOR_COLON = Applesoft.COLOR_COLON;
 
 
         private IntegerBASIC() { }
@@ -181,8 +181,8 @@ namespace FileConv.Code {
                 // Process the contents of the line.
                 bool trailingSpace = true;
                 while (dataBuf[offset] != TOK_EOL && offset < length) {
-                    byte token = dataBuf[offset++];
-                    if (token == TOK_OPEN_QUOTE) {
+                    byte curByte = dataBuf[offset++];
+                    if (curByte == TOK_OPEN_QUOTE) {
                         // Start of quoted text.  Open and close quote are separate tokens, and
                         // not equal to ASCII '"'.
                         output.SetForeColor(COLOR_STRING);
@@ -202,13 +202,13 @@ namespace FileConv.Code {
                         output.Append('"');
                         output.SetForeColor(COLOR_DEFAULT);
                         offset++;
-                    } else if (token == TOK_REM) {
+                    } else if (curByte == TOK_REM) {
                         // REM statement, consume everything to EOL.
                         output.SetForeColor(COLOR_COMMENT);
                         if (!trailingSpace) {
                             output.Append(' ');
                         }
-                        output.Append(sIntegerTokens[token]);   // output "REM "
+                        output.Append(sIntegerTokens[curByte]);   // output "REM "
                         while (dataBuf[offset] != TOK_EOL && offset < length) {
                             if (makePrintable) {
                                 output.AppendPrintable((char)(dataBuf[offset] & 0x7f));
@@ -222,7 +222,7 @@ namespace FileConv.Code {
                             break;
                         }
                         output.SetForeColor(COLOR_DEFAULT);
-                    } else if (token >= ('0' | 0x80) && token <= ('9' | 0x80)) {
+                    } else if (curByte >= ('0' | 0x80) && curByte <= ('9' | 0x80)) {
                         // Integer constant.  The token's value is not used.
                         if (length - offset < 2) {
                             output.Notes.AddE("File ended while in a numeric constant");
@@ -230,9 +230,9 @@ namespace FileConv.Code {
                         }
                         ushort val = RawData.ReadU16LE(dataBuf, ref offset);
                         output.Append(val.ToString("D"));
-                    } else if (token >= ('A' | 0x80) && token <= ('Z' | 0x80)) {
+                    } else if (curByte >= ('A' | 0x80) && curByte <= ('Z' | 0x80)) {
                         // Variable name.  "token" holds first letter.
-                        output.Append((char)(token & 0x7f));
+                        output.Append((char)(curByte & 0x7f));
                         while (offset < length) {
                             byte bval = dataBuf[offset++];
                             if ((bval >= ('A' | 0x80) && bval <= ('Z' | 0x80)) ||
@@ -243,15 +243,15 @@ namespace FileConv.Code {
                                 break;  // this is a token
                             }
                         }
-                    } else if (token < 0x80) {
+                    } else if (curByte < 0x80) {
                         // Found a token.
-                        if (token == TOK_COLON) {
+                        if (curByte == TOK_COLON) {
                             output.SetForeColor(COLOR_COLON);
                         } else {
                             output.SetForeColor(COLOR_KEYWORD);
                         }
-                        string tokStr = sIntegerTokens[token];
-                        if (tokStr[0] >= 0x21 && tokStr[0] <= 0x3f || token < 0x12) {
+                        string tokStr = sIntegerTokens[curByte];
+                        if (tokStr[0] >= 0x21 && tokStr[0] <= 0x3f || curByte < 0x12) {
                             // does not need a leading space
                         } else {
                             // Add a leading space if we didn't just have a trailing space.
@@ -267,7 +267,7 @@ namespace FileConv.Code {
                         }
                     } else {
                         // Bad value; either we're out of sync or this isn't a valid program.
-                        output.Notes.AddW("Unexpected value $" + token.ToString("x2") +
+                        output.Notes.AddW("Unexpected value $" + curByte.ToString("x2") +
                             " at offset +$" + offset.ToString("X4"));
                         // skip past it and keep trying; probably junk but maybe not?
                     }

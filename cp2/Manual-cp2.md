@@ -1466,6 +1466,11 @@ is used.  Unknown or invalid options are ignored.
 Default values for options may be stored in the cp2rc config file.
 
 Converters are available for code:
+ - `ba3`: Business BASIC listing
+   - `hi` (bool): false=plain text listing (default), true=add colorful
+     syntax highlighting
+   - `print` (bool): false=include raw control codes, true=make
+     printable (default)
  - `bas`: Applesoft BASIC listing
    - `hi` (bool): false=plain text listing (default), true=add colorful
      syntax highlighting
@@ -1498,7 +1503,6 @@ General:
    - `char` (multi): specify source character set
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
-
 
 The `char` character set options are `hiascii` for low/high ASCII (default),
 `mor` for Mac OS Roman, and `latin` for ISO 8859-1.  Unprintable characters
