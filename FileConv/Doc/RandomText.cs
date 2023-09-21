@@ -19,6 +19,7 @@ using System.Text;
 
 using CommonUtil;
 using DiskArc;
+using DiskArc.FS;
 using FileConv.Generic;
 
 namespace FileConv.Doc {
@@ -98,6 +99,7 @@ namespace FileConv.Doc {
                 output.Text.AppendLine();
                 PlainText.ConvertStream(DataStream, ConvUtil.ExportCharSrc.HighASCII,
                     true, output.Text);
+                AddDOSRawNote(DataStream, output);
                 return output;
             } else {
                 return ConvertStream(DataStream, len);
@@ -110,6 +112,8 @@ namespace FileConv.Doc {
             byte[] dataBuf = new byte[length];
             StringBuilder sb = new StringBuilder(length);
             string EOL = Environment.NewLine;
+
+            AddDOSRawNote(dataStream, output);
 
             int row = 0;
             int remain = (int)dataStream.Length;
@@ -149,6 +153,18 @@ namespace FileConv.Doc {
                 row++;
             }
             return output;
+        }
+
+        /// <summary>
+        /// Adds a note to the output if the input is a DOS file and we're not in "raw" mode.
+        /// </summary>
+        /// <param name="dataStream">Data fork input stream.</param>
+        /// <param name="output">Converter output object.</param>
+        private static void AddDOSRawNote(Stream dataStream, IConvOutput output) {
+            if (dataStream is DOS_FileDesc &&
+                    ((DOS_FileDesc)dataStream).Part != Defs.FilePart.RawData) {
+                output.Notes.AddI("DOS random-access text files should be opened in 'raw' mode.");
+            }
         }
     }
 }

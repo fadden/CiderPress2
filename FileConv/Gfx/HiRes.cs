@@ -67,7 +67,7 @@ namespace FileConv.Gfx {
                 return Applicability.Probably;
             } else if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FOT) {
                 if (FileAttrs.AuxType < 0x4000) {      // 0x0000-3fff is uncompressed hgr/dhgr
-                    return Applicability.Probably;
+                    return Applicability.Yes;
                 }
             }
             return Applicability.Not;
