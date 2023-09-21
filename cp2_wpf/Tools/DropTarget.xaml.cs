@@ -127,17 +127,12 @@ namespace cp2_wpf.Tools {
                         }
                     } else if (data is string) {
                         string str = (string)data;
-                        str = str.Replace("\r", "\\r");
-                        str = str.Replace("\n", "\\n");
-                        str = str.Replace("\t", "\\t");
-                        sb.Append("\r\n    \"");
-                        if (str.Length > 80) {
-                            sb.Append(str.Substring(0, 80));
-                            sb.Append(" [...]");
-                        } else {
-                            sb.Append(str);
-                        }
-                        sb.Append('"');
+                        str = str.Replace("\t", "\u2409");      // replace with Control Pictures
+                        str = str.Replace("\n", "\u240a");
+                        str = str.Replace("\r", "\u240d");
+                        sb.Append("\r\n    \u201c");
+                        AppendLimitedString(sb, str);
+                        sb.Append('\u201d');
                     }
                 } catch (Exception ex) {
                     sb.Append(" - GetData failed: ");
@@ -147,6 +142,17 @@ namespace cp2_wpf.Tools {
             }
 
             TextArea = sb.ToString();
+        }
+
+        private const int MAX_STRING = 80;
+        private static void AppendLimitedString(StringBuilder sb, string str) {
+            if (str.Length <= MAX_STRING) {
+                sb.Append(str);
+                return;
+            }
+            sb.Append(str.Substring(0, MAX_STRING / 2));
+            sb.Append(" [\u2026] ");
+            sb.Append(str.Substring(str.Length - MAX_STRING / 2));
         }
     }
 }

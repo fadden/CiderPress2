@@ -23,6 +23,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 
 using CommonUtil;
 using DiskArc;
@@ -90,6 +91,7 @@ namespace cp2_wpf {
         }
         private bool mIsOptionsBoxEnabled;
 
+        // This determines the control that is visible in the Data Fork tab.
         public Visibility SimpleTextVisibility { get; set; }
         public Visibility FancyTextVisibility { get; set; }
         public Visibility BitmapVisibility { get; set; }
@@ -121,6 +123,19 @@ namespace cp2_wpf {
             OnPropertyChanged("FancyTextVisibility");
             OnPropertyChanged("BitmapVisibility");
         }
+        private DisplayItemType DataDisplayType {
+            get {
+                if (SimpleTextVisibility == Visibility.Visible) {
+                    return DisplayItemType.SimpleText;
+                } else if (FancyTextVisibility == Visibility.Visible) {
+                    return DisplayItemType.FancyText;
+                } else if (FancyTextVisibility == Visibility.Visible) {
+                    return DisplayItemType.Bitmap;
+                } else {
+                    return DisplayItemType.Unknown;
+                }
+            }
+        }
 
         public string GraphicsZoomStr {
             get { return mGraphicsZoomStr; }
@@ -143,6 +158,12 @@ namespace cp2_wpf {
             set { mIsDOSRawEnabled = value; OnPropertyChanged(); }
         }
         private bool mIsDOSRawEnabled;
+
+        public bool IsFindEnabled {
+            get { return mIsFindEnabled; }
+            set { mIsFindEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsFindEnabled;
 
         public bool IsExportEnabled {
             get { return mIsExportEnabled; }
@@ -305,6 +326,7 @@ namespace cp2_wpf {
 
             // Close any open streams.
             CloseStreams();
+            IsExportEnabled = IsFindEnabled = false;
 
             IFileEntry entry = mSelected[mCurIndex];
             FileAttribs attrs = new FileAttribs(entry);
@@ -328,6 +350,11 @@ namespace cp2_wpf {
 
             convComboBox.Items.Clear();
             if (applics != null) {
+                if (applics.Count > 0) {
+                    mAppHook.LogD("Best converter is " + applics[0].Label + ", rating=" +
+                        applics[0].Applic);
+                }
+
                 int newIndex = 0;
                 for (int i = 0; i < applics.Count; i++) {
                     Converter conv = applics[i];
@@ -383,8 +410,6 @@ namespace cp2_wpf {
             }
 
             ConfigureControls(item.Converter);
-            IsExportEnabled = false;
-
             FormatFile();
         }
 
@@ -439,7 +464,10 @@ namespace cp2_wpf {
             dataForkTextBox.HorizontalContentAlignment = HorizontalAlignment.Left;
             dataForkTextBox.VerticalContentAlignment = VerticalAlignment.Top;
 
+            IsFindEnabled = IsExportEnabled = false;
             if (mCurDataOutput is ErrorText) {
+                // This is only used for converter failures.  Viewer failures, like damaged files,
+                // are just reported as regular text (but don't get to this method at all).
                 StringBuilder sb = ((SimpleText)mCurDataOutput).Text;
                 DataPlainText = ((SimpleText)mCurDataOutput).Text.ToString();
                 dataForkTextBox.HorizontalContentAlignment = HorizontalAlignment.Center;
@@ -461,7 +489,7 @@ namespace cp2_wpf {
                     dataRichTextBox.Document.ContentEnd);
                 range.Load(rtfStream, DataFormats.Rtf);
                 SetDisplayType(DisplayItemType.FancyText);
-                IsExportEnabled = true;
+                IsFindEnabled = IsExportEnabled = true;
 
                 //using (FileStream stream =
                 //        new FileStream(@"C:\src\ciderpress2\test.rtf", FileMode.Create)) {
@@ -479,7 +507,7 @@ namespace cp2_wpf {
                 }
                 DataPlainText = ((SimpleText)mCurDataOutput).Text.ToString();
                 SetDisplayType(DisplayItemType.SimpleText);
-                IsExportEnabled = true;
+                IsFindEnabled = IsExportEnabled = true;
             } else if (mCurDataOutput is CellGrid) {
                 StringBuilder sb = new StringBuilder();
                 CSVGenerator.GenerateString((CellGrid)mCurDataOutput, false, sb);
@@ -492,7 +520,7 @@ namespace cp2_wpf {
                 }
                 DataPlainText = sb.ToString();
                 SetDisplayType(DisplayItemType.SimpleText);
-                IsExportEnabled = true;
+                IsFindEnabled = IsExportEnabled = true;
             } else if (mCurDataOutput is IBitmap) {
                 IBitmap bitmap = (IBitmap)mCurDataOutput;
                 previewImage.Source = WinUtil.ConvertToBitmapSource(bitmap);
@@ -507,6 +535,7 @@ namespace cp2_wpf {
             } else if (mCurDataOutput is HostConv) {
                 DataPlainText = "TODO: host-convert " + ((HostConv)mCurDataOutput).Kind;
                 SetDisplayType(DisplayItemType.SimpleText);
+                // enable export?
             } else {
                 Debug.Assert(false, "unknown IConvOutput impl " + mCurDataOutput);
             }
@@ -580,6 +609,10 @@ namespace cp2_wpf {
                 convOut = mCurDataOutput;
                 prefix = "";
             }
+            if (convOut == null) {
+                Debug.Assert(false);
+                return;
+            }
 
             string filter, ext;
             if (convOut is FancyText && !((FancyText)convOut).PreferSimple) {
@@ -625,31 +658,118 @@ namespace cp2_wpf {
 
             try {
                 using (Stream outStream = new FileStream(pathName, FileMode.Create)) {
-                    if (convOut is FancyText && !((FancyText)convOut).PreferSimple) {
-                        StringBuilder sb = ((FancyText)convOut).Text;
-                        RTFGenerator.Generate((FancyText)convOut, outStream);
-                    } else if (convOut is SimpleText) {
-                        StringBuilder sb = ((SimpleText)convOut).Text;
-                        using (StreamWriter sw = new StreamWriter(outStream)) {
-                            sw.Write(sb);
-                        }
-                    } else if (convOut is CellGrid) {
-                        StringBuilder sb = new StringBuilder();
-                        CSVGenerator.GenerateString((CellGrid)convOut, false, sb);
-                        using (StreamWriter sw = new StreamWriter(outStream)) {
-                            sw.Write(sb);
-                        }
-                    } else if (convOut is IBitmap) {
-                        PNGGenerator.Generate((IBitmap)convOut, outStream);
-                    } else {
-                        Debug.Assert(false, "not handling " + convOut.GetType().Name);
-                        return;
-                    }
+                    CopyViewToStream(convOut, outStream);
                 }
             } catch (Exception ex) {
                 MessageBox.Show(this, "Export failed: " + ex.Message, "Export Failed",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                File.Delete(pathName);      // clean up file we just created
+                return;
             }
+        }
+
+        private bool CopyViewToStream(IConvOutput convOut, Stream outStream) {
+            if (convOut is FancyText && !((FancyText)convOut).PreferSimple) {
+                StringBuilder sb = ((FancyText)convOut).Text;
+                RTFGenerator.Generate((FancyText)convOut, outStream);
+            } else if (convOut is SimpleText) {
+                StringBuilder sb = ((SimpleText)convOut).Text;
+                using (StreamWriter sw = new StreamWriter(outStream)) {
+                    sw.Write(sb);
+                }
+            } else if (convOut is CellGrid) {
+                StringBuilder sb = new StringBuilder();
+                CSVGenerator.GenerateString((CellGrid)convOut, false, sb);
+                using (StreamWriter sw = new StreamWriter(outStream)) {
+                    sw.Write(sb);
+                }
+            } else if (convOut is IBitmap) {
+                PNGGenerator.Generate((IBitmap)convOut, outStream);
+            } else {
+                throw new NotImplementedException("Can't export " + convOut.GetType().Name);
+            }
+            return true;
+        }
+
+        // Handles the "copy to clipboard" feature.
+        private void CopyCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = IsExportEnabled;
+        }
+        private void CopyCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            // This fires when Ctrl+C is hit, unless the text box has been given focus, in
+            // which case the text control supersedes this (and copies the selection only).
+            DoCopy();
+        }
+        private void CopyButton_Click(object sender, RoutedEventArgs e) {
+            DoCopy();
+        }
+        private void DoCopy() {
+            if (tabControl.SelectedItem == noteTabItem) {
+                // Notes don't have an IConvOutput, so handle that tab separately.
+                Clipboard.SetText(NotePlainText, TextDataFormat.UnicodeText);
+                return;
+            }
+
+            IConvOutput? convOut;
+            if (mCurRsrcOutput != null && tabControl.SelectedItem == rsrcTabItem) {
+                convOut = mCurRsrcOutput;
+            } else {
+                convOut = mCurDataOutput;
+            }
+            if (convOut == null) {
+                Debug.Assert(false);        // not expected
+                return;
+            }
+
+            try {
+                if (convOut is FancyText && !((FancyText)convOut).PreferSimple) {
+                    // Generate RTF stream.
+                    StringBuilder sb = ((FancyText)convOut).Text;
+                    MemoryStream tmpStream = new MemoryStream();
+                    RTFGenerator.Generate((FancyText)convOut, tmpStream);
+                    // Add RTF and plain-text forms.
+                    DataObject clipObj = new DataObject();
+                    clipObj.SetData(DataFormats.UnicodeText, sb.ToString());
+                    clipObj.SetData(DataFormats.Rtf, tmpStream);
+                    Clipboard.SetDataObject(clipObj, true);
+                } else if (convOut is SimpleText) {
+                    // Simple Unicode text string.
+                    StringBuilder sb = ((SimpleText)convOut).Text;
+                    Clipboard.SetText(sb.ToString(), TextDataFormat.UnicodeText);
+                } else if (convOut is CellGrid) {
+                    StringBuilder sb = new StringBuilder();
+                    CSVGenerator.GenerateString((CellGrid)convOut, false, sb);
+                    // Add CSV and plain-text forms.
+                    DataObject clipObj = new DataObject();
+                    string stringForm = sb.ToString();
+                    clipObj.SetData(DataFormats.UnicodeText, stringForm);
+                    clipObj.SetData(DataFormats.CommaSeparatedValue, stringForm);
+                    Clipboard.SetDataObject(clipObj, true);
+                } else if (convOut is IBitmap) {
+                    // Pass a BitmapSource to the clipboard code.
+                    Clipboard.SetImage(WinUtil.ConvertToBitmapSource((IBitmap)convOut));
+                } else {
+                    throw new NotImplementedException("Can't export " + convOut.GetType().Name);
+                }
+            } catch (Exception ex) {
+                MessageBox.Show(this, "Copy failed: " + ex.Message, "Copy Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+        }
+
+        // Handles the "Find" feature.
+        private void FindCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = IsFindEnabled;
+        }
+        private void FindCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            DoFind();
+        }
+        private void FindButton_Click(object sender, RoutedEventArgs e) {
+            DoFind();
+        }
+        private void DoFind() {
+            Debug.WriteLine("Find!");       // TODO
         }
 
         /// <summary>
@@ -685,7 +805,6 @@ namespace cp2_wpf {
         }
 
         #region Configure
-
 
         private List<ControlMapItem> mCustomCtrls = new List<ControlMapItem>();
 

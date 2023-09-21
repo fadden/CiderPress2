@@ -206,6 +206,10 @@ namespace FileConv {
         /// Generates a list of converters that can be used with a file.  The list will be
         /// sorted from most-applicable to least.
         /// </summary>
+        /// <remarks>
+        /// This opens the streams in the IArchive or IFileSystem, handling MacZip automatically
+        /// if configured to do so.
+        /// </remarks>
         /// <param name="archiveOrFileSystem">IArchive or IFileSystem object.</param>
         /// <param name="fileEntry">File entry.</param>
         /// <param name="attrs">File attributes.</param>

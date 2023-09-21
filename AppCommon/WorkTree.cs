@@ -459,7 +459,8 @@ namespace AppCommon {
                         return newNode;
                     }
                 } catch (Exception ex) when
-                        (ex is InvalidDataException ||
+                        (ex is IOException ||
+                        ex is InvalidDataException ||
                         ex is NotSupportedException) {
                     Debug.WriteLine("Failed to extract " + entry + ": " + ex.Message);
                 } catch (Exception ex) {
