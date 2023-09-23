@@ -596,6 +596,41 @@ namespace cp2_wpf {
             }
         }
 
+
+        /// <summary>
+        /// Handles movement on the graphics zoom slider.
+        /// </summary>
+        private void MagnificationSlider_ValueChanged(object sender,
+                RoutedPropertyChangedEventArgs<double> e) {
+            ConfigureMagnification();
+        }
+
+        /// <summary>
+        /// Configures the magnification level of the bitmap display.
+        /// </summary>
+        private void ConfigureMagnification() {
+            int tick = (int)magnificationSlider.Value;
+            double mult;
+            if (tick == 0) {
+                mult = 0.5;
+            } else {
+                mult = tick;
+            }
+            GraphicsZoomStr = mult.ToString() + "X";
+
+            IBitmap? bitmap = mCurDataOutput as IBitmap;
+            if (bitmap == null) {
+                return;
+            }
+
+            previewImage.Width = Math.Floor(bitmap.Width * mult);
+            previewImage.Height = Math.Floor(bitmap.Height * mult);
+            Debug.WriteLine("Gfx zoom " + mult + " --> " +
+                previewImage.Width + "x" + previewImage.Height);
+        }
+
+        #region Export and Clip
+
         /// <summary>
         /// Handles the Export button.
         /// </summary>
@@ -691,7 +726,6 @@ namespace cp2_wpf {
             return true;
         }
 
-        // Handles the "copy to clipboard" feature.
         private void CopyCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = IsExportEnabled;
         }
@@ -758,51 +792,153 @@ namespace cp2_wpf {
             }
         }
 
-        // Handles the "Find" feature.
-        private void FindCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = IsFindEnabled;
-        }
-        private void FindCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            DoFind();
-        }
-        private void FindButton_Click(object sender, RoutedEventArgs e) {
-            DoFind();
-        }
-        private void DoFind() {
-            Debug.WriteLine("Find!");       // TODO
-        }
+        #endregion Export and Clip
 
-        /// <summary>
-        /// Handles movement on the graphics zoom slider.
-        /// </summary>
-        private void MagnificationSlider_ValueChanged(object sender,
-                RoutedPropertyChangedEventArgs<double> e) {
-            ConfigureMagnification();
+        #region Find
+
+        public string SearchString {
+            get { return mSearchString; }
+            set { mSearchString = value; OnPropertyChanged(); }
         }
+        private string mSearchString;
 
-        /// <summary>
-        /// Configures the magnification level of the bitmap display.
-        /// </summary>
-        private void ConfigureMagnification() {
-            int tick = (int)magnificationSlider.Value;
-            double mult;
-            if (tick == 0) {
-                mult = 0.5;
-            } else {
-                mult = tick;
-            }
-            GraphicsZoomStr = mult.ToString() + "X";
-
-            IBitmap? bitmap = mCurDataOutput as IBitmap;
-            if (bitmap == null) {
+        private void FindNextButton_Click(object sender, RoutedEventArgs e) {
+            DoFind(true);
+        }
+        private void FindPrevButton_Click(object sender, RoutedEventArgs e) {
+            DoFind(false);
+        }
+        private void DoFind(bool forward) {
+            if (SearchString.Length == 0) {
+                Debug.Assert(false);        // search buttons should be disabled when no string
                 return;
             }
-
-            previewImage.Width = Math.Floor(bitmap.Width * mult);
-            previewImage.Height = Math.Floor(bitmap.Height * mult);
-            Debug.WriteLine("Gfx zoom " + mult + " --> " +
-                previewImage.Width + "x" + previewImage.Height);
+            if (tabControl.SelectedItem == dataTabItem) {
+                switch (DataDisplayType) {
+                    case DisplayItemType.SimpleText:
+                        FindInTextBox(dataForkTextBox, forward);
+                        break;
+                    case DisplayItemType.FancyText:
+                        FindInRichTextBox(dataRichTextBox, forward);
+                        break;
+                    case DisplayItemType.Bitmap:
+                        // controls should have been disabled
+                        Debug.Assert(false);
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        break;
+                }
+            } else if (tabControl.SelectedItem == rsrcTabItem) {
+                FindInTextBox(rsrcForkTextBox, forward);
+            } else if (tabControl.SelectedItem == noteTabItem) {
+                FindInTextBox(notesTextBox, forward);
+            } else {
+                Debug.Assert(false);
+                return;
+            }
         }
+
+        private void FindInTextBox(TextBox tbox, bool forward) {
+            // TODO
+        }
+
+        private void FindInRichTextBox(RichTextBox rtbox, bool forward) {
+            // Helpful:
+            //   https://stackoverflow.com/a/38484844/294248
+            //   https://stackoverflow.com/a/22231574/294248
+            //   https://github.com/manasmodak/WpfSearchAndHighlightText
+            //   https://learn.microsoft.com/en-us/dotnet/api/system.windows.documents.textpointer?view=windowsdesktop-7.0
+            //   https://stackoverflow.com/a/6925405/294248
+            // One thing that makes this interesting is that the runs are affected by any
+            // modifications made to the text, such as the yellow highlighting applied by the
+            // various code demonstrations.  More significantly, the text selection appears to
+            // act as a run.  If you want to find multiple strings within a run, it's tricky to
+            // highlight them all because the act of doing so is modifying the document.  I'm
+            // not sure what effect selection and highlighting have on the validity of
+            // TextPointers, i.e. whether generating a list of them for later reference is viable.
+            //
+            // For now, we avoid the issues by only searching for the next thing.  We don't
+            // match on text that spans multiple runs.  The latter requires searching the plain
+            // text and then mapping the plain text offset to a TextPointer+offset, but it's
+            // unclear how to do the latter, especially when highlighting the match could alter
+            // the structure of the runs.
+
+            TextPointer docStart = rtbox.Document.ContentStart;
+            TextPointer docEnd = rtbox.Document.ContentEnd;
+            LogicalDirection ldir = forward ? LogicalDirection.Forward : LogicalDirection.Backward;
+
+            // Start just past the current selection.
+            TextPointer searchStart;
+            if (forward) {
+                searchStart = rtbox.Selection.End;
+            } else {
+                searchStart = rtbox.Selection.Start;
+            }
+            TextPointer searchPtr = searchStart;
+            bool looped = false;
+            while (true) {
+                if (searchPtr.GetPointerContext(ldir) == TextPointerContext.Text) {
+                    string textRun = searchPtr.GetTextInRun(ldir);
+                    //Debug.WriteLine("scanning " + textRun);
+
+                    int indexInRun;
+                    if (forward) {
+                        indexInRun = textRun.IndexOf(SearchString,
+                            StringComparison.InvariantCultureIgnoreCase);
+                    } else {
+                        indexInRun = textRun.LastIndexOf(SearchString,
+                            StringComparison.InvariantCultureIgnoreCase);
+                    }
+                    if (indexInRun >= 0) {
+                        // Found a match.
+                        if (!forward) {
+                            // I feel like the LogicalDirection argument on GetPositionAtOffset
+                            // should deal with this, but it seems to make no difference.
+                            indexInRun = indexInRun - textRun.Length;
+                        }
+                        //Debug.WriteLine(" match at " + indexInRun);
+                        TextPointer startPosn = searchPtr.GetPositionAtOffset(indexInRun);
+                        TextPointer endPosn =
+                            searchPtr.GetPositionAtOffset(indexInRun + SearchString.Length);
+                        rtbox.Selection.Select(startPosn, endPosn);
+                        //Debug.WriteLine("Set rtbox selection");
+                        // RichTextBox is reluctant to show selection when not in focus.  The
+                        // IsInactiveSelectionHighlightEnabled property helps, by showing a
+                        // dimmed-out selection rectangle when the control loses focus, but it
+                        // doesn't seem to accept the selection unless we also set focus here.
+                        rtbox.Focus();
+
+                        // Try to bring it into view.  Find the parent of the start of the
+                        // selection.
+                        FrameworkContentElement? e = startPosn.Parent as FrameworkContentElement;
+                        if (e != null) {
+                            e.BringIntoView();
+                        }
+                        return;
+                    }
+                }
+                searchPtr = searchPtr.GetNextContextPosition(ldir);
+                if (searchPtr == null) {
+                    if (looped) {
+                        // Already looped once.  Nothing to find.
+                        // (This is a crude way of detecting that we passed the place where we
+                        // started.  I'm not confident in accurately detecting a return to the
+                        // original position.)
+                        break;
+                    }
+                    if (forward) {
+                        searchPtr = docStart;
+                    } else {
+                        searchPtr = docEnd;
+                    }
+                    looped = true;
+                }
+            }
+            Debug.WriteLine("not found");
+        }
+
+        #endregion Find
 
         #region Configure
 

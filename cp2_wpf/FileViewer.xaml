@@ -75,7 +75,6 @@ limitations under the License.
 
     <Window.CommandBindings>
         <CommandBinding Command="Copy" CanExecute="CopyCmd_CanExecute" Executed="CopyCmd_Executed"/>
-        <CommandBinding Command="Find" CanExecute="FindCmd_CanExecute" Executed="FindCmd_Executed"/>
     </Window.CommandBindings>
 
     <Grid Margin="0,8">
@@ -113,7 +112,8 @@ limitations under the License.
                     <!-- RichTextBox for fancier stuff -->
                     <RichTextBox Name="dataRichTextBox" IsReadOnly="True" BorderThickness="0"
                                  Visibility="{Binding FancyTextVisibility}"
-                                 VerticalScrollBarVisibility="Auto">
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsInactiveSelectionHighlightEnabled="True">
                         <RichTextBox.Resources>
                             <!-- remove excess vertical space between paragraphs -->
                             <Style TargetType="{x:Type Paragraph}">
@@ -213,11 +213,28 @@ limitations under the License.
             <!-- right side: view controls -->
             <DockPanel Grid.Column="1" LastChildFill="False" Margin="8,0,0,0">
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                    <Button Width="90" Content="_Text" Click="SelectPlainText_Click"/>
+                    <Button Width="90" Content="_Text" Margin="8,0,0,0" Click="SelectPlainText_Click"/>
                     <Button Width="90" Content="_Hex Dump" Margin="8,0,0,0" Click="SelectHexDump_Click"/>
                     <Button Width="90" Content="_Best" Margin="8,0,0,0" Click="SelectBest_Click"/>
                 </StackPanel>
-                <DockPanel DockPanel.Dock="Top" Margin="0,4,0,0">
+
+                <Grid DockPanel.Dock="Top" Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Find:"/>
+                    <TextBox Grid.Column="1" Margin="4,0,0,0"
+                             Text="{Binding SearchString}" IsEnabled="{Binding IsFindEnabled}"/>
+                    <Button Grid.Column="2" Width="70" Margin="4,0,0,0"
+                            Content="Prev" IsEnabled="{Binding IsFindEnabled}" Click="FindPrevButton_Click"/>
+                    <Button Grid.Column="3" Width="70" Margin="4,0,0,0"
+                            Content="Next" IsEnabled="{Binding IsFindEnabled}" Click="FindNextButton_Click"/>
+                </Grid>
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,8,0,0">
                     <TextBlock DockPanel.Dock="Left" Text="Graphics zoom:" Margin="0,0,4,0"/>
                     <TextBox DockPanel.Dock="Right" Width="34" Margin="4,0,0,0"
                              HorizontalContentAlignment="Center" IsReadOnly="true"
@@ -227,7 +244,8 @@ limitations under the License.
                             IsSnapToTickEnabled="True" TickPlacement="BottomRight"
                             ValueChanged="MagnificationSlider_ValueChanged"/>
                 </DockPanel>
-                <CheckBox DockPanel.Dock="Top" Content="Open _raw (DOS 3.x only)"
+
+                <CheckBox DockPanel.Dock="Top" Margin="0,8,0,0" Content="Open _raw (DOS 3.x only)"
                           IsEnabled="{Binding IsDOSRawEnabled}" IsChecked="{Binding IsDOSRaw}"/>
 
                 <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" LastChildFill="False">
@@ -237,8 +255,6 @@ limitations under the License.
                             IsEnabled="{Binding IsExportEnabled}" Click="ExportButton_Click"/>
                     <Button DockPanel.Dock="Right" Content="Copy" Width="70" Margin="8,0,0,0"
                             IsEnabled="{Binding IsExportEnabled}" Click="CopyButton_Click"/>
-                    <Button DockPanel.Dock="Right" Content="Find..." Width="70" Margin="8,0,0,0"
-                            IsEnabled="{Binding IsFindEnabled}" Click="FindButton_Click"/>
                 </DockPanel>
             </DockPanel>
         </Grid>
