@@ -356,8 +356,8 @@ namespace DiskArc.Disk {
         /// bit synchronization of the data stream.
         /// </summary>
         /// <remarks>
-        /// A more rigorous test would confirm that all bytes are valid 6&2 values (with $d5/$aa
-        /// included).
+        /// A more rigorous test would confirm that all bytes are valid 6&amp;2 values (with
+        /// $d5/$aa included).
         /// </remarks>
         internal static void FixBytes(byte[] buffer, int numTracks, int trackLength, Notes notes) {
             bool zeroesLogged = false;

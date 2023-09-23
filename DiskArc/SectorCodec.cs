@@ -589,7 +589,7 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Writes the sector data framing for a 5&3 sector.  Updates the sector data pointer
+        /// Writes the sector data framing for a 5&amp;3 sector.  Updates the sector data pointer
         /// with the new locations.
         /// </summary>
         /// <param name="trkData">Nibble data.</param>
@@ -651,7 +651,7 @@ namespace DiskArc {
         private const int THREE_SIZE = (CHUNK_SIZE_53) * 3 + 1;     // same as 410 - 256
 
         /// <summary>
-        /// Encodes 256 bytes as 411 bytes of 5&3-encoded data.
+        /// Encodes 256 bytes as 411 bytes of 5&amp;3-encoded data.
         /// </summary>
         /// <param name="trkData">Nibble track data.</param>
         /// <param name="dataFieldBitOffset">Offset of start of data.</param>
@@ -722,7 +722,7 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Decodes 256 bytes of 5&3-encoded sector data.
+        /// Decodes 256 bytes of 5&amp;3-encoded sector data.
         /// </summary>
         /// <param name="trkData">Nibble track data.</param>
         /// <param name="dataFieldBitOffset">Offset of start of data.</param>
@@ -777,7 +777,7 @@ namespace DiskArc {
                 return false;
             }
 
-            // Convert the 5-byte values to 255 8-bit values.
+            // Convert the scattered bits to 255 8-bit values, working 5 bytes at a time.
             int initialOffset = offset;
             for (int i = CHUNK_SIZE_53 - 1; i >= 0; i--) {
                 byte three1, three2, three3, three4, three5;
@@ -805,7 +805,7 @@ namespace DiskArc {
         private const int CHUNK_SIZE_62_256 = 86;                       // 0x56
 
         /// <summary>
-        /// Encodes 256 bytes as 343 bytes of 6&2-encoded data.
+        /// Encodes 256 bytes as 343 bytes of 6&amp;2-encoded data.
         /// </summary>
         /// <param name="trkData">Nibble track data.</param>
         /// <param name="dataFieldBitOffset">Offset of start of data.</param>
@@ -858,7 +858,7 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Decodes 256 bytes of 6&2-encoded sector data.
+        /// Decodes 256 bytes of 6&amp;2-encoded sector data.
         /// </summary>
         /// <param name="trkData">Nibble track data.</param>
         /// <param name="dataFieldBitOffset">Offset of start of data.</param>
@@ -919,7 +919,7 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Writes the sector address header on a 5.25" disk track.
+        /// Writes the sector address header on a 3.5" disk track.
         /// </summary>
         /// <param name="trkData">Nibble data.  Must be positioned at the place where the address
         ///   prolog will begin.</param>
@@ -954,7 +954,7 @@ namespace DiskArc {
         private const int CHUNK_SIZE_62_524 = 175;      // ceil(524 / 3)
 
         /// <summary>
-        /// Encodes 524 bytes as 703 bytes of 6&2-encoded data.
+        /// Encodes 524 bytes as 703 bytes of 6&amp;2-encoded data.
         /// </summary>
         /// <param name="trkData">Nibble track data.</param>
         /// <param name="dataFieldBitOffset">Offset of start of data.</param>
@@ -1041,7 +1041,7 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Decodes 524 bytes of 6&2-encoded sector data.
+        /// Decodes 524 bytes of 6&amp;2-encoded sector data.
         /// </summary>
         /// <param name="trkData">Nibble track data.</param>
         /// <param name="dataFieldBitOffset">Offset of start of data.</param>
@@ -1163,7 +1163,7 @@ namespace DiskArc {
 
         /// <summary>
         /// Latches the next two bytes from the track, and converts them to a single byte value
-        /// using the 4&4 decoder.
+        /// using the 4&amp;4 decoder.
         /// </summary>
         /// <param name="track">Buffer of track data.</param>
         /// <returns>Decoded value.</returns>
@@ -1174,7 +1174,7 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Converts a pair of 4&4-encoded bytes back to a single byte.
+        /// Converts a pair of 4&amp;4-encoded bytes back to a single byte.
         /// </summary>
         /// <param name="val1">First byte.</param>
         /// <param name="val2">Second byte.</param>
@@ -1184,21 +1184,21 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Converts a byte value to the low part of a 4&4-encoded byte pair.
+        /// Converts a byte value to the low part of a 4&amp;4-encoded byte pair.
         /// </summary>
         public static byte To44Lo(byte val) {
             return (byte)((val >> 1) | 0xaa);
         }
 
         /// <summary>
-        /// Converts a byte value to the high part of a 4&4-encoded byte pair.
+        /// Converts a byte value to the high part of a 4&amp;4-encoded byte pair.
         /// </summary>
         public static byte To44Hi(byte val) {
             return (byte)(val | 0xaa);
         }
 
         /// <summary>
-        /// Converts a value in the range [0,63] to a 6&2 disk nibble.
+        /// Converts a value in the range [0,63] to a 6&amp;2 disk nibble.
         /// </summary>
         public static byte To62(byte val) {
             if (val > 0x3f) {
@@ -1209,7 +1209,8 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Latches the next byte from the track, and converts it to [0,63] with the 6&2 decoder.
+        /// Latches the next byte from the track, and converts it to [0,63] with the
+        /// 6&amp;2 decoder.
         /// </summary>
         /// <param name="track">Buffer of track data.</param>
         /// <returns>Decoded value.</returns>
@@ -1262,7 +1263,8 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Maps a block number to cylinder/head/sector values for a SSDD/DSDD GCR 3.5" floppy.
+        /// Maps a block number to cylinder/head/sector values for an SS/DD or DS/DD GCR
+        /// 3.5" floppy.
         /// </summary>
         /// <param name="block">Block number to map (0-1599).</param>
         /// <param name="numSides">Number of sides the disk has (1 or 2).</param>

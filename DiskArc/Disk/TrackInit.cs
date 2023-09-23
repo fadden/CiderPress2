@@ -164,7 +164,7 @@ namespace DiskArc.Disk {
         /// <param name="codec">Sector data codec.</param>
         /// <param name="isByteAligned">True if the underlying storage is byte-aligned.</param>
         /// <param name="track">Track number to generate.</param>
-        /// <param name="side">Disk side (1 or 2).</param>
+        /// <param name="side">Disk side (0 or 1).</param>
         /// <param name="format">Format byte; low nibble indicates interleave (2:1 or 4:1).</param>
         /// <param name="bitCount">Result: length, in bits, of formatted data.</param>
         /// <returns>Initialized track data array.</returns>
