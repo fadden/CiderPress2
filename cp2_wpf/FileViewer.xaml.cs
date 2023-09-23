@@ -796,18 +796,42 @@ namespace cp2_wpf {
 
         #region Find
 
+        public bool IsFindButtonsEnabled {
+            get { return mIsFindButtonsEnabled; }
+            set { mIsFindButtonsEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsFindButtonsEnabled;
+
         public string SearchString {
             get { return mSearchString; }
-            set { mSearchString = value; OnPropertyChanged(); }
+            set { mSearchString = value; OnPropertyChanged(); UpdateFindControls(); }
         }
-        private string mSearchString;
+        private string mSearchString = string.Empty;
 
-        private void FindNextButton_Click(object sender, RoutedEventArgs e) {
-            DoFind(true);
+        private void UpdateFindControls() {
+            IsFindButtonsEnabled = IsFindEnabled && !string.IsNullOrEmpty(mSearchString);
         }
-        private void FindPrevButton_Click(object sender, RoutedEventArgs e) {
+
+        private void FindCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = IsFindEnabled;
+        }
+        private void FindCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            searchStringTextBox.Focus();
+            searchStringTextBox.SelectAll();
+        }
+        private void FindPrevCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = IsFindButtonsEnabled;
+        }
+        private void FindPrevCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             DoFind(false);
         }
+        private void FindNextCmd_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = IsFindButtonsEnabled;
+        }
+        private void FindNextCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            DoFind(true);
+        }
+
         private void DoFind(bool forward) {
             if (SearchString.Length == 0) {
                 Debug.Assert(false);        // search buttons should be disabled when no string
@@ -816,10 +840,10 @@ namespace cp2_wpf {
             if (tabControl.SelectedItem == dataTabItem) {
                 switch (DataDisplayType) {
                     case DisplayItemType.SimpleText:
-                        FindInTextBox(dataForkTextBox, forward);
+                        FindInTextBox(dataForkTextBox, SearchString, forward);
                         break;
                     case DisplayItemType.FancyText:
-                        FindInRichTextBox(dataRichTextBox, forward);
+                        FindInRichTextBox(dataRichTextBox, SearchString, forward);
                         break;
                     case DisplayItemType.Bitmap:
                         // controls should have been disabled
@@ -830,20 +854,74 @@ namespace cp2_wpf {
                         break;
                 }
             } else if (tabControl.SelectedItem == rsrcTabItem) {
-                FindInTextBox(rsrcForkTextBox, forward);
+                FindInTextBox(rsrcForkTextBox, SearchString, forward);
             } else if (tabControl.SelectedItem == noteTabItem) {
-                FindInTextBox(notesTextBox, forward);
+                FindInTextBox(notesTextBox, SearchString, forward);
             } else {
                 Debug.Assert(false);
                 return;
             }
         }
 
-        private void FindInTextBox(TextBox tbox, bool forward) {
-            // TODO
+        /// <summary>
+        /// Finds a string in a text box.
+        /// </summary>
+        /// <param name="tbox">TextBox with text to search.</param>
+        /// <param name="searchString">String to search for.  Must not be empty.</param>
+        /// <param name="forward">True if we're searching forward.</param>
+        private static void FindInTextBox(TextBox tbox, string searchString, bool forward) {
+            Debug.Assert(!string.IsNullOrEmpty(searchString));
+            int startPosn;
+            if (forward) {
+                startPosn = tbox.SelectionStart + tbox.SelectionLength;
+            } else {
+                startPosn = tbox.SelectionStart;
+            }
+            string searchText = tbox.Text;
+
+            int index;
+            if (forward) {
+                // Search from the current position to the end of the file.
+                index = searchText.IndexOf(searchString, startPosn,
+                    StringComparison.InvariantCultureIgnoreCase);
+                if (index < 0 && startPosn != 0) {
+                    // Failed; search the whole thing.
+                    index = searchText.IndexOf(searchString,
+                        StringComparison.InvariantCultureIgnoreCase);
+                }
+            } else {
+                // Search from the current position back to the start of the file.
+                if (startPosn == 0) {
+                    startPosn = searchText.Length;
+                }
+                index = searchText.LastIndexOf(searchString, startPosn - 1,
+                    StringComparison.InvariantCultureIgnoreCase);
+                if (index < 0) {
+                    // Failed; search the whole thing.
+                    index = searchText.LastIndexOf(searchString,
+                        StringComparison.InvariantCultureIgnoreCase);
+                }
+            }
+            if (index < 0) {
+                Debug.WriteLine("no match");
+                return;
+            }
+
+            // Found a match, set the selection.
+            Debug.WriteLine("Match at " + index);
+            tbox.SelectionStart = index;
+            tbox.SelectionLength = searchString.Length;
+            tbox.Focus();
         }
 
-        private void FindInRichTextBox(RichTextBox rtbox, bool forward) {
+        /// <summary>
+        /// Finds a string in a rich text box.
+        /// </summary>
+        /// <param name="rtbox">RichTextBox object to search.</param>
+        /// <param name="searchString">String to search for.  Must not be empty.</param>
+        /// <param name="forward">True if we're searching forward.</param>
+        private static void FindInRichTextBox(RichTextBox rtbox, string searchString,
+                bool forward) {
             // Helpful:
             //   https://stackoverflow.com/a/38484844/294248
             //   https://stackoverflow.com/a/22231574/294248
@@ -863,6 +941,7 @@ namespace cp2_wpf {
             // text and then mapping the plain text offset to a TextPointer+offset, but it's
             // unclear how to do the latter, especially when highlighting the match could alter
             // the structure of the runs.
+            Debug.Assert(!string.IsNullOrEmpty(searchString));
 
             TextPointer docStart = rtbox.Document.ContentStart;
             TextPointer docEnd = rtbox.Document.ContentEnd;
@@ -884,10 +963,10 @@ namespace cp2_wpf {
 
                     int indexInRun;
                     if (forward) {
-                        indexInRun = textRun.IndexOf(SearchString,
+                        indexInRun = textRun.IndexOf(searchString,
                             StringComparison.InvariantCultureIgnoreCase);
                     } else {
-                        indexInRun = textRun.LastIndexOf(SearchString,
+                        indexInRun = textRun.LastIndexOf(searchString,
                             StringComparison.InvariantCultureIgnoreCase);
                     }
                     if (indexInRun >= 0) {
@@ -900,7 +979,7 @@ namespace cp2_wpf {
                         //Debug.WriteLine(" match at " + indexInRun);
                         TextPointer startPosn = searchPtr.GetPositionAtOffset(indexInRun);
                         TextPointer endPosn =
-                            searchPtr.GetPositionAtOffset(indexInRun + SearchString.Length);
+                            searchPtr.GetPositionAtOffset(indexInRun + searchString.Length);
                         rtbox.Selection.Select(startPosn, endPosn);
                         //Debug.WriteLine("Set rtbox selection");
                         // RichTextBox is reluctant to show selection when not in focus.  The

@@ -71,10 +71,24 @@ limitations under the License.
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <RoutedUICommand x:Key="FindPrev" Text="Find Prev">
+            <RoutedUICommand.InputGestures>
+                <KeyGesture>Shift+F3</KeyGesture>
+            </RoutedUICommand.InputGestures>
+        </RoutedUICommand>
+        <RoutedUICommand x:Key="FindNext" Text="Find Next">
+            <RoutedUICommand.InputGestures>
+                <KeyGesture>F3</KeyGesture>
+            </RoutedUICommand.InputGestures>
+        </RoutedUICommand>
     </Window.Resources>
 
     <Window.CommandBindings>
         <CommandBinding Command="Copy" CanExecute="CopyCmd_CanExecute" Executed="CopyCmd_Executed"/>
+        <CommandBinding Command="Find" CanExecute="FindCmd_CanExecute" Executed="FindCmd_Executed"/>
+        <CommandBinding Command="{StaticResource FindPrev}" CanExecute="FindPrevCmd_CanExecute" Executed="FindPrevCmd_Executed"/>
+        <CommandBinding Command="{StaticResource FindNext}" CanExecute="FindNextCmd_CanExecute" Executed="FindNextCmd_Executed"/>
     </Window.CommandBindings>
 
     <Grid Margin="0,8">
@@ -226,12 +240,19 @@ limitations under the License.
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="Find:"/>
-                    <TextBox Grid.Column="1" Margin="4,0,0,0"
-                             Text="{Binding SearchString}" IsEnabled="{Binding IsFindEnabled}"/>
+                    <TextBox Grid.Column="1" Margin="4,0,0,0" Name="searchStringTextBox"
+                             Text="{Binding SearchString, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding IsFindEnabled}">
+                        <!-- -->
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Return" Command="{StaticResource FindNext}"/>
+                            <KeyBinding Key="Enter" Command="{StaticResource FindNext}"/>
+                        </TextBox.InputBindings>
+                    </TextBox>
                     <Button Grid.Column="2" Width="70" Margin="4,0,0,0"
-                            Content="Prev" IsEnabled="{Binding IsFindEnabled}" Click="FindPrevButton_Click"/>
+                            Content="Prev" Command="{StaticResource FindPrev}"/>
                     <Button Grid.Column="3" Width="70" Margin="4,0,0,0"
-                            Content="Next" IsEnabled="{Binding IsFindEnabled}" Click="FindNextButton_Click"/>
+                            Content="Next" Command="{StaticResource FindNext}"/>
                 </Grid>
 
                 <DockPanel DockPanel.Dock="Top" Margin="0,8,0,0">
