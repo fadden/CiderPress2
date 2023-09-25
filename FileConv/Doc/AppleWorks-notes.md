@@ -1,4 +1,4 @@
-# AppleWorks Documents #
+# AppleWorks "Classic" Documents #
 
 File types:
  - ADB ($19) / any : AppleWorks Data Base
@@ -33,9 +33,20 @@ AppleWorks was developed by Beagle Bros, on contract from Claris.
 Claris eventually lost interest in Apple II products, and licensed AppleWorks to Quality Computers,
 which released v4 and v5 in the early 1990s.
 
-AppleWorks GS shares little but the name with AppleWorks (sometimes called "AppleWorks Classic"
-to differentiate it from AWGS and the Mac/Windows ClarisWorks products that were eventually
-renamed to AppleWorks).  AWGS started out as GS Works, developed by StyleWare.
+AppleWorks GS shares little but the name with AppleWorks.  AWGS started out as GS Works, developed
+by StyleWare, and was renamed after being purchased by Claris.
+
+Claris developed integrated office suites for the Macintosh and Windows, called ClarisWorks.  After
+Claris was absorbed back into Apple, the programs were renamed to "AppleWorks".  The original
+AppleWorks is sometimes called "AppleWorks Classic" to differentiate it from the Mac/Windows
+products and AWGS.
+
+## File Details ##
+
+The three types of files have very different structures, but they all end with $ff $ff.  The
+file type notes describe the file contents of v3.0 files in detail.
+
+All multi-byte integers are stored in little-endian order.
 
 ### ProDOS Auxiliary Type ###
 
@@ -47,12 +58,12 @@ This is independent of the ProDOS filesystem convention, which was introduced wi
 
 ### Tags ###
 
-All AppleWorks files end with $ff $ff.  Version 3.0 formalized a tagged data extension, allowing
-arbitrary data to be appended to the file.  Tags have the form:
+Version 3.0 formalized a tagged data extension, allowing arbitrary data to be appended to the
+file.  Tags have the form:
 ```
 +$00 / 1: must be $ff
 +$01 / 1: tag ID, assigned by Beagle Bros
-+$02 / 2: data length in bytes, up to 2048 (little-endian)
++$02 / 2: data length in bytes, up to 2048
 +$04 /nn: data
 ```
 The start of the next tag immediately follows the data from the previous tag.
@@ -65,7 +76,7 @@ It's unclear which programs used this feature, or what the assigned IDs are.
 ### Post-v3 Changes ###
 
 v5 introduced support for inverse and MouseText characters.  These just use previously-unused
-byte ranges.  The definition for character values is now:
+byte ranges.  The definition for character encoding becomes:
 ```
  $00-1f: special
  $20-7f: plain ASCII
@@ -74,9 +85,10 @@ byte ranges.  The definition for character values is now:
  $c0-df: MouseText
  $e0-ff: inverse lower case (map to $60-7f)
 ```
-MouseText is available for use in Word Processor and Data Base files.
+MouseText and inverse text available for use in Word Processor and Data Base files.
 
-## Data Base ##
+
+## Data Base Files ##
 
 The basic file structure is:
 
@@ -91,7 +103,7 @@ The basic file structure is:
 Each data record is a series of control bytes, which may be followed by data.  The structure
 generally has one entry per category:
 ```
-+$00 / 2: number of bytes in remainder of record (little-endian)
++$00 / 2: number of bytes in remainder of record
 +$02 / 1: category #0 control byte
 +$03 /nn: category #0 data
 +$xx / 1: category #1 control byte
@@ -106,11 +118,10 @@ The control byte may be:
 ```
 In the simplest case, the category data is a string, with the control byte providing the length.
 
-There are special categories for dates and times.  The first byte of the category data will be
-$c0 for a date (high-ASCII '@'), and $d4 (high-ASCII 'T') for time.  The special encoding allows
-dates and times to be sorted correctly.  (It's unclear how this interacts with MouseText
-encoding, which is available to database entries.  The AW5 manual shows 4-digit years, so it's
-possible the date/time encoding system was revamped entirely.)
+There are special categories for dates and times, to allow them to be sorted correctly.  The first
+byte of the category data will be $c0 for a date (high-ASCII '@'), and $d4 (high-ASCII 'T') for
+time.  (It's unclear how this interacts with inverse/MouseText encoding in v5.  The AW5 delta
+manual shows 4-digit years, so it's possible the date/time encoding system was revamped post-v3.0.)
 
 Dates are stored in a 6-byte field, as `XYYMDD`, where X is $c0, Y and D are ASCII digits '0'-'9',
 and M is a month code.  Month codes are 'A' for January, 'B' for February, and so on.  These are
@@ -120,14 +131,14 @@ and the date should be displayed as "5 Jan" or "Jan 70".  This means that the ye
 represented directly.
 
 Times are stored in a 4-byte field, as `XHMM`, where X is $d4, H is an hour code, and M are ASCII
-digits '0'-'9'.  The hour code is 'A' for midnight, 'B' for 01:00, and so on through 'X' at 23:00.
-AppleWorks displays times as 12-hour AM/PM.
+digits '0'-'9' for the minutes.  The hour code is 'A' for midnight, 'B' for 01:00, and so on
+through 'X' at 23:00.  AppleWorks displays times as 12-hour AM/PM.
 
 The category-skip values are used to skip over entries that don't have data.  The control byte is
 not followed by additional data for that category.  A skip value of 1 only skips the current
 category.
 
-## Word Processor ##
+## Word Processor Files ##
 
 The basic file structure is:
 
@@ -136,7 +147,7 @@ The basic file structure is:
  - End marker ($ff $ff).
  - Tag data.
 
-## Spreadsheet ##
+## Spreadsheet Files ##
 
 The basic file structure is:
 
@@ -144,3 +155,19 @@ The basic file structure is:
  - Zero or more variable-length row records, each of which holds a sparse collection of cells.
  - End marker ($ff $ff).
  - Tag data.
+
+Each row record is:
+```
++$00 / 2: number of bytes in remainder of record
++$02 / 2: row number, starting with 1
++$04 /nn: variable-length data, containing a series of cell entries
+```
+Each cell record is variable-length, and starts with a byte full of bit flags that provide
+information about the contents and presentation.  The contents of the rest of the cell entry
+vary based on the type.
+
+Column references are output as a letter, starting with "A" for column 0, "AA" for column 26, up
+to "DW" for column 127.
+
+Numeric values are stored as 64-bit floating point values, using the Standard Apple Numerics
+Environment (SANE).  These are equivalent to IEEE754 values.

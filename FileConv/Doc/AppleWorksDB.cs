@@ -108,7 +108,7 @@ namespace FileConv.Doc {
                     output.Notes.AddE("Invalid category name length: " + nameLen);
                     name = "#INVALID#";
                 } else {
-                    name = ScanString(fileBuf, nameOffset + 1, nameLen);
+                    name = GetString(fileBuf, nameOffset + 1, nameLen);
                 }
                 output.SetCellValue(i, 0, name);
                 nameOffset += CAT_HEADER_LEN;
@@ -128,7 +128,7 @@ namespace FileConv.Doc {
             // The "standard values" entry is not counted in numRecs, so start count at -1.
             for (int rec = -1; rec < numRecs; rec++) {
                 ushort recordRem = RawData.GetU16LE(fileBuf, recOffset);
-                if (recOffset + recordRem > DataStream.Length) {
+                if (recOffset + 2 + recordRem > DataStream.Length) {
                     output.Notes.AddE("File truncated in record");
                     return output;
                 }
@@ -162,10 +162,10 @@ namespace FileConv.Doc {
                 ushort recordLen, CellGrid output) {
             int startOffset = offset;
 
-            int catNum = 0;
             offset += 2;        // skip "record remaining bytes" value
             try {
                 // Walk through the variable-length data, populating each category for this record.
+                int catNum = 0;
                 while (offset - startOffset < recordLen) {
                     byte ctrl = recordBuf[offset++];
                     if (ctrl == 0xff) {
@@ -286,12 +286,18 @@ namespace FileConv.Doc {
         /// <returns>String with converted data.</returns>
         public static string ParseString(byte[] buf, ref int offset) {
             byte strLen = buf[offset++];
-            string str = ScanString(buf, offset, strLen);
+            string str = GetString(buf, offset, strLen);
             offset += strLen;
             return str;
         }
 
-        public static string ScanString(byte[] buf, int offset, int strLen) {
+        #region Common
+
+        public static char GetChar(byte[] buf, int offset) {
+            return (char)(buf[offset]);
+        }
+
+        public static string GetString(byte[] buf, int offset, int strLen) {
             // TODO: handle inverse and MouseText
             return Encoding.ASCII.GetString(buf, offset, strLen);
         }
@@ -305,5 +311,7 @@ namespace FileConv.Doc {
             // I have yet to find a file that actually has tags, so I'm not doing anything
             // with this yet.
         }
+
+        #endregion Common
     }
 }
