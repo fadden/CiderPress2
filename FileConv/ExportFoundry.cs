@@ -43,6 +43,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Code.BusinessBASIC)),
             new ConverterEntry(typeof(Code.IntegerBASIC)),
 
+            new ConverterEntry(typeof(Doc.AppleWorksDB)),
             new ConverterEntry(typeof(Doc.AppleWorksWP)),
             new ConverterEntry(typeof(Doc.RandomText)),
             new ConverterEntry(typeof(Doc.Teach)),

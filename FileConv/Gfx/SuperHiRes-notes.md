@@ -1,12 +1,12 @@
 # Apple II Super Hi-Res Graphics #
 
 File types:
- - PIC ($c1) / $0000: uncompressed super hi-res image
- - PIC ($c1) / $0002: uncompressed 3200-color super hi-res image
  - PNT ($c0) / $0000: PaintWorks packed image
  - PNT ($c0) / $0001: compressed super hi-res image (PackBytes)
- - PNT ($c0) / $0002: Apple Preferred Picture (APF) format
+ - PNT ($c0) / $0002: structured picture file (Apple Preferred Format, or APF)
  - PNT ($c0) / $8005: DreamGrafix compressed image
+ - PIC ($c1) / $0000: uncompressed super hi-res image
+ - PIC ($c1) / $0002: uncompressed 3200-color super hi-res image
 
 Primary references:
  - _Apple IIgs Hardware Reference_, chapter 4
@@ -25,14 +25,14 @@ exactly 32KB of RAM.
 The super hi-res graphics screen lives in the auxiliary 64K bank of the "slow" RAM, bank $e1,
 from $2000-9fff.  The memory layout is:
 ```
-$2000-9cff: pixel data (32000 bytes)
-$9d00-9dc7: scan-line control bytes (SCB) (200 bytes)
-$9dc8-9dff: reserved (56 bytes)
-$9e00-9fff: color palettes (512 bytes)
+ $2000-9cff: pixel data (32000 bytes)
+ $9d00-9dc7: scan-line control bytes (SCB) (200 bytes)
+ $9dc8-9dff: reserved (56 bytes)
+ $9e00-9fff: color palettes (512 bytes)
 ```
 
 Each of the 200 rows has an SCB entry that determines how the pixel data is interpreted for
-that tow.  Each entry is a single byte:
+that row.  Each entry is a single byte, with bits defined:
 ```
  7  : horizontal resolution; 0=320, 1=640
  6  : interrupt enable for this scan line; 0=disabled, 1=enabled
@@ -82,9 +82,9 @@ repeat whatever the last color drawn was, providing a way to fill large areas of
 with color quickly.  This was used in a handful of games and demos, but not usually in static
 images.  If the leftmost pixel in a scanline is zero, the results are undefined.
 
-It is possible, with careful coding, to edit the palette data as the screen is being drawn.
-This allows every scanline to have a unique set of 16 colors.  Such images are called "3200 color".
-They are always 320 mode.
+It is possible, with careful coding, to edit the palette data as the screen is being drawn.  This
+allows every scanline to have a unique set of 16 colors.  Such images are called "3200 color",
+because 200*16=3200.  Such images are always 320 mode.
 
 ## Image Formats ##
 

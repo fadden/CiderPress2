@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Diagnostics;
 
 using CommonUtil;
 using DiskArc;
@@ -30,6 +31,10 @@ namespace FileConv.Doc {
         public override string Description => DESCRIPTION;
         public override string Discriminator => DISCRIMINATOR;
 
+        private const int HEADER_LEN = 300;
+        private const int MIN_LEN = HEADER_LEN + 2;
+        private const int MAX_LEN = 256 * 1024;     // arbitrary
+
 
         private AppleWorksWP() { }
 
@@ -40,6 +45,12 @@ namespace FileConv.Doc {
         }
 
         protected override Applicability TestApplicability() {
+            if (DataStream == null || DataStream.Length < MIN_LEN || DataStream.Length > MAX_LEN) {
+                return Applicability.Not;
+            }
+            if (FileAttrs.FileType == FileAttribs.FILE_TYPE_AWP) {
+                return Applicability.Yes;
+            }
             return Applicability.Not;
         }
 

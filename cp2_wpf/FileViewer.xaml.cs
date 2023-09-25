@@ -371,6 +371,7 @@ namespace cp2_wpf {
             }
 
             Title = entry.FileName + " - File Viewer";
+            UpdateFindControls();
         }
 
         /// <summary>
@@ -907,10 +908,11 @@ namespace cp2_wpf {
                 return;
             }
 
-            // Found a match, set the selection.
+            // Found a match, set the selection and scroll to it.
             Debug.WriteLine("Match at " + index);
             tbox.SelectionStart = index;
             tbox.SelectionLength = searchString.Length;
+            tbox.ScrollToLine(tbox.GetLineIndexFromCharacterIndex(tbox.SelectionStart));
             tbox.Focus();
         }
 
@@ -988,7 +990,7 @@ namespace cp2_wpf {
                         // doesn't seem to accept the selection unless we also set focus here.
                         rtbox.Focus();
 
-                        // Try to bring it into view.  Find the parent of the start of the
+                        // Try to scroll it into view.  Find the parent of the start of the
                         // selection.
                         FrameworkContentElement? e = startPosn.Parent as FrameworkContentElement;
                         if (e != null) {
