@@ -1102,8 +1102,9 @@ namespace cp2_wpf {
 
             // Enable the button if the config string doesn't match what's in the app settings.
             // We don't actually update the settings here.
-            IsSaveDefaultsEnabled =
-                (AppSettings.Global.GetString(settingKey, string.Empty) != optStr);
+            // Use a case-insensitive comparison because of e.g. "true" vs. "True".
+            IsSaveDefaultsEnabled = !AppSettings.Global.GetString(settingKey, string.Empty)
+                .Equals(optStr, StringComparison.InvariantCultureIgnoreCase);
             //Debug.WriteLine("CMP '" + AppSettings.Global.GetString(settingKey, string.Empty) +
             //    "' vs '" + optStr + "'");
 

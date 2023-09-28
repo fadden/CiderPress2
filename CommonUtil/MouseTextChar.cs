@@ -23,6 +23,35 @@ namespace CommonUtil {
     /// </summary>
     public static class MouseTextChar {
         /// <summary>
+        /// Converts a MouseText character to Unicode.
+        /// </summary>
+        /// <param name="mtChar">MouseText character index (0-31).</param>
+        /// <returns>Unicode equivalent.  UTF-16 string encoding may require a surrogate
+        ///   pair.</returns>
+        public static string MouseTextToUnicode(byte mtChar) {
+            if (mtChar < sMouseToUnicode.Length) {
+                return sMouseToUnicode[mtChar];
+            } else {
+                Debug.Assert(false);
+                return "\u00bf";        // INVERTED QUESTION MARK
+            }
+        }
+
+        /// <summary>
+        /// Converts a MouseText character to ASCII.
+        /// </summary>
+        /// <param name="mtChar">MouseText character index (0-31).</param>
+        /// <returns>ASCII equivalent.</returns>
+        public static char MouseTextToASCII(byte mtChar) {
+            if (mtChar < sMouseToAlt.Length) {
+                return sMouseToAlt[mtChar];
+            } else {
+                Debug.Assert(false);
+                return '\u00bf';        // INVERTED QUESTION MARK
+            }
+        }
+
+        /// <summary>
         /// Unicode conversion.  For some characters, the best match is outside the BMP, so we
         /// need strings with surrogate pairs.
         /// </summary>

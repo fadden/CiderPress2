@@ -81,27 +81,31 @@ namespace FileConv.Doc {
 
             int rowIndex = 0;
             while (recOffset < fileBuf.Length) {
-                ushort rowRemain = RawData.GetU16LE(fileBuf, recOffset);
+                if (fileBuf.Length - recOffset < 2) {
+                    output.Notes.AddE("File truncated");
+                    return output;
+                }
+                ushort rowRemain = RawData.ReadU16LE(fileBuf, ref recOffset);
                 if (rowRemain == 0xffff) {
                     // Found the end-of-file marker.
                     break;
                 }
-                if (recOffset + 2 + rowRemain > fileBuf.Length) {
+                if (recOffset + rowRemain > fileBuf.Length) {
                     output.Notes.AddE("File truncated in row index " + rowIndex);
-                    break;
+                    return output;
                 }
-                if (fileBuf[recOffset + 2 + rowRemain - 1] != 0xff) {
+                if (fileBuf[recOffset + rowRemain - 1] != 0xff) {
                     output.Notes.AddW("Row index " + rowIndex + " does not have $ff at end");
                 }
 
                 // Process the row record.
                 ProcessRowRecord(fileBuf, recOffset, rowRemain, output);
 
-                recOffset += rowRemain + 2;
+                recOffset += rowRemain;
                 rowIndex++;
             }
 
-            AppleWorksDB.DumpTags(fileBuf, recOffset, output);
+            AppleWorksWP.DumpTags(fileBuf, recOffset, output);
 
             return output;
         }
@@ -110,7 +114,6 @@ namespace FileConv.Doc {
                 CellGrid output) {
             int startOffset = offset;
 
-            offset += 2;        // skip record length bytes
             ushort rowNum = RawData.ReadU16LE(rowBuf, ref offset);
             if (rowNum == 0) {
                 output.Notes.AddW("Found row zero (expected to start at 1)");
@@ -158,7 +161,7 @@ namespace FileConv.Doc {
                 byte flag1 = rowBuf[offset++];
 
                 if ((flag0 & 0x20) != 0) {
-                    // Bit 5 set, this is a "value constant".  The field holds a 64-bit IEEE754
+                    // Bit 5 set, this is a "value constant".  The field holds a 64-bit IEEE 754
                     // floating-point value, which happily is the same format C# uses.
                     double val = GetSANEDouble(rowBuf, offset);
                     output.SetCellValue(colNum, rowNum - 1, val.ToString());
@@ -186,7 +189,7 @@ namespace FileConv.Doc {
                 if ((flag0 & 0x20) != 0) {
                     // Bit 5 set, this is a "propagated label" (e.g. a row of hyphens).  The
                     // specified character is repeated 8x.
-                    char ch = AppleWorksDB.GetChar(rowBuf, offset++);
+                    char ch = AppleWorksWP.GetChar(rowBuf, offset++);
                     StringBuilder sb = new StringBuilder(8);
                     for (int i = 0; i < PROP_LABEL_COUNT; i++) {
                         sb.Append(ch);
@@ -198,7 +201,7 @@ namespace FileConv.Doc {
                     // rather than a length byte.
                     int labelLen = cellLen - 1;
                     output.SetCellValue(colNum, rowNum - 1,
-                        AppleWorksDB.GetString(rowBuf, offset, labelLen));
+                        AppleWorksWP.GetString(rowBuf, offset, labelLen));
                 }
             }
         }

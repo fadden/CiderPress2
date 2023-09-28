@@ -26,8 +26,19 @@ namespace FileConv {
     /// <remarks>
     /// <para>The format is intended to be easy to convert to RTF, which is still supported as
     /// an import format by various document editors.</para>
+    /// <para>Initial values:</para>
+    /// <list type="bullet">
+    ///   <item>Font is monospace sans-serif (Consolas).</item>
+    ///   <item>Font size is 10 points.</item>
+    ///   <item>Paragraphs are left justified.</item>
+    ///   <item>Left/right margins set to zero.</item>
+    ///   <item>Foreground color is black, background color is white.</item>
+    /// </list>
+    /// <para>Tab stops are not well defined at present.</para>
     /// </remarks>
     public class FancyText : SimpleText, IEnumerable<FancyText.Annotation> {
+        public const char NO_BREAK_SPACE = '\u00a0';    // NO-BREAK SPACE (NBSP) or "sticky space"
+
         public FancyText() : base() { }
         public FancyText(int lengthGuess) : base(lengthGuess) { }
 
@@ -37,7 +48,12 @@ namespace FileConv {
         public enum AnnoType {
             Unknown = 0,
             NewParagraph,
+            NewPage,
             Tab,
+
+            Justification,
+            LeftMargin,
+            RightMargin,
 
             FontFamily,
             FontSize,
@@ -86,6 +102,11 @@ namespace FileConv {
         }
 
         /// <summary>
+        /// Paragraph justification.
+        /// </summary>
+        public enum Justification { Unknown = 0, Left, Right, Center, Full }
+
+        /// <summary>
         /// Font family information.
         /// </summary>
         /// <remarks>
@@ -118,12 +139,18 @@ namespace FileConv {
                     " isMono=" + IsMono + " isSerif=" + IsSerif + "]";
             }
         }
-        private static FontFamily DEFAULT_FONT = new FontFamily("Courier", true, true);
+        internal static FontFamily DEFAULT_FONT = new FontFamily("Consolas", true, false);
 
         //
         // Current values.  We track these so we only output an annotation if something changes.
         //
 
+        // Paragraph formatting.
+        private float mLeftMargin = 0.0f;       // inches
+        private float mRightMargin = 0.0f;      // inches
+        private Justification mJustification = Justification.Left;
+
+        // Character styling.
         private FontFamily mFontFamily = DEFAULT_FONT;
         private int mFontBasePointSize = 10;
         private float mFontSizeMult = 1.0f;
@@ -136,8 +163,10 @@ namespace FileConv {
         private bool mSuperscriptEnabled = false;
         private bool mSubscriptEnabled = false;
 
+        // Color.
         private int mForeColor = ConvUtil.MakeRGB(0x00, 0x00, 0x00);    // default = black
         private int mBackColor = ConvUtil.MakeRGB(0xff, 0xff, 0xff);    // default = white
+
 
         /// <summary>
         /// Adds an annotation to the list.
@@ -160,10 +189,52 @@ namespace FileConv {
         }
 
         /// <summary>
+        /// Inserts a page break.  No effect on plain text output.
+        /// </summary>
+        public void NewPage() {
+            AddAnnotation(AnnoType.NewPage, null);
+        }
+
+        /// <summary>
         /// Emit a tab.
         /// </summary>
         public void Tab() {
-            AddAnnotation(AnnoType.Tab, null);
+            // Add a tab annotation, and a tab character that will only appear in plain text.
+            AddAnnotation(AnnoType.Tab, null, 1);
+            Text.Append("\t");
+        }
+
+        /// <summary>
+        /// Sets the text justification.
+        /// </summary>
+        /// <param name="just">Justification mode.</param>
+        public void SetJustification(Justification just) {
+            if (just != mJustification) {
+                AddAnnotation(AnnoType.Justification, just);
+                mJustification = just;
+            }
+        }
+
+        /// <summary>
+        /// Sets the left margin.
+        /// </summary>
+        /// <param name="margin">Margin, in inches.</param>
+        public void SetLeftMargin(float margin) {
+            if (!FloatEquals(margin, mLeftMargin)) {
+                AddAnnotation(AnnoType.LeftMargin, margin);
+                mLeftMargin = margin;
+            }
+        }
+
+        /// <summary>
+        /// Sets the right margin.
+        /// </summary>
+        /// <param name="margin">Margin, in inches.</param>
+        public void SetRightMargin(float margin) {
+            if (!FloatEquals(margin, mRightMargin)) {
+                AddAnnotation(AnnoType.RightMargin, margin);
+                mRightMargin = margin;
+            }
         }
 
         /// <summary>
@@ -308,6 +379,27 @@ namespace FileConv {
             if (color != mBackColor) {
                 AddAnnotation(AnnoType.BackColor, color);
                 mBackColor = color;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether two floating-point values are equal.  This is difficult to do
+        /// perfectly because of the way floats are represented, but for our purposes we don't
+        /// need perfection.
+        /// </summary>
+        /// <remarks>
+        /// See also <see href="https://stackoverflow.com/q/3874627/294248"/>.
+        /// </remarks>
+        /// <param name="a">First number.</param>
+        /// <param name="b">Second number.</param>
+        /// <returns>True if the numbers are equal.</returns>
+        private static bool FloatEquals(float a, float b) {
+            const float DIFF = 0.0001f;
+            if (a == b) {
+                // Handle infinities and trivial case.
+                return true;
+            } else {
+                return Math.Abs(a - b) <= DIFF;
             }
         }
     }

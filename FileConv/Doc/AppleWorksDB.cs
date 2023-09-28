@@ -99,6 +99,13 @@ namespace FileConv.Doc {
             // Offset +38: number of reports in file (0-8, or 0-20 for v3.0).
             byte numReports = fileBuf[38];
 
+            // Offset +218: DBMinVers.  Should be $00, unless there are more than 8 report
+            // formats, in which case it should be 30.
+            byte minVers = fileBuf[218];
+            if (minVers != 0 && minVers != 30) {
+                output.Notes.AddW("DBMinVers is " + minVers);
+            }
+
             // Output the category names as the first record.
             int nameOffset = FIRST_CAT_OFFSET;
             for (int i = 0; i < numCats; i++) {
@@ -108,7 +115,7 @@ namespace FileConv.Doc {
                     output.Notes.AddE("Invalid category name length: " + nameLen);
                     name = "#INVALID#";
                 } else {
-                    name = GetString(fileBuf, nameOffset + 1, nameLen);
+                    name = AppleWorksWP.GetString(fileBuf, nameOffset + 1, nameLen);
                 }
                 output.SetCellValue(i, 0, name);
                 nameOffset += CAT_HEADER_LEN;
@@ -127,12 +134,22 @@ namespace FileConv.Doc {
 
             // The "standard values" entry is not counted in numRecs, so start count at -1.
             for (int rec = -1; rec < numRecs; rec++) {
-                ushort recordRem = RawData.GetU16LE(fileBuf, recOffset);
-                if (recOffset + 2 + recordRem > DataStream.Length) {
+                if (fileBuf.Length - recOffset < 2) {
+                    output.Notes.AddE("File truncated");
+                    return output;
+                }
+                ushort recordRem = RawData.ReadU16LE(fileBuf, ref recOffset);
+                if (recordRem == 0) {
+                    // All records must be at least 1 byte, to have the $ff at the end.  This
+                    // is almost certainly garbage data, so there's no point in continuing.
+                    output.Notes.AddE("Found zero-length record");
+                    return output;
+                }
+                if (recOffset + recordRem > DataStream.Length) {
                     output.Notes.AddE("File truncated in record");
                     return output;
                 }
-                if (fileBuf[recOffset + 2 + recordRem - 1] != 0xff) {
+                if (fileBuf[recOffset + recordRem - 1] != 0xff) {
                     output.Notes.AddW("Record " + rec + " does not have $ff at end");
                 }
 
@@ -141,16 +158,20 @@ namespace FileConv.Doc {
                     ProcessRecord(rec, fileBuf, recOffset, recordRem, output);
                 }
 
-                recOffset += recordRem + 2;
+                recOffset += recordRem;
             }
 
             // Confirm the presence of the end marker.
-            ushort endMarker = RawData.GetU16LE(fileBuf, recOffset);
+            if (fileBuf.Length - recOffset < 2) {
+                output.Notes.AddE("File truncated at end");
+                return output;
+            }
+            ushort endMarker = RawData.ReadU16LE(fileBuf, ref recOffset);
             if (endMarker != 0xffff) {
                 output.Notes.AddW("Did not find end marker at expected location");
+            } else {
+                AppleWorksWP.DumpTags(fileBuf, recOffset, output);
             }
-
-            DumpTags(fileBuf, recOffset + 2, output);
 
             return output;
         }
@@ -162,7 +183,6 @@ namespace FileConv.Doc {
                 ushort recordLen, CellGrid output) {
             int startOffset = offset;
 
-            offset += 2;        // skip "record remaining bytes" value
             try {
                 // Walk through the variable-length data, populating each category for this record.
                 int catNum = 0;
@@ -286,32 +306,9 @@ namespace FileConv.Doc {
         /// <returns>String with converted data.</returns>
         public static string ParseString(byte[] buf, ref int offset) {
             byte strLen = buf[offset++];
-            string str = GetString(buf, offset, strLen);
+            string str = AppleWorksWP.GetString(buf, offset, strLen);
             offset += strLen;
             return str;
         }
-
-        #region Common
-
-        public static char GetChar(byte[] buf, int offset) {
-            return (char)(buf[offset]);
-        }
-
-        public static string GetString(byte[] buf, int offset, int strLen) {
-            // TODO: handle inverse and MouseText
-            return Encoding.ASCII.GetString(buf, offset, strLen);
-        }
-
-        public static void DumpTags(byte[] fileBuf, int offset, IConvOutput output) {
-            if (offset + 4 >= fileBuf.Length) {
-                // No tags.
-                return;
-            }
-            output.Notes.AddI("Found tags (" + (fileBuf.Length - offset) + " bytes)");
-            // I have yet to find a file that actually has tags, so I'm not doing anything
-            // with this yet.
-        }
-
-        #endregion Common
     }
 }

@@ -1483,6 +1483,12 @@ Converters are available for code:
      printable (default)
 
 Text documents:
+ - `adb`: AppleWorks "Classic" Data Base
+ - `asp`: AppleWorks "Classic" Spreadsheet
+ - `awp`: AppleWorks "Classic" Word Processor
+   - `mtext` (bool): true=display MouseText as Unicode near-equivalents
+     (default), false=display MouseText as ASCII approximations
+   - `embed` (bool): true=display embedded codes (default)
  - `rtext`: convert DOS/ProDOS random-access text to cell-grid
    - `len` (int): specify record length; default value from aux type if
      available (if zero, file is converted as sequential text)
@@ -1516,7 +1522,7 @@ The result of the conversion takes one of the following forms:
    a byte-order mark.
  - Formatted documents are output in Rich Text Format (.RTF).
  - Spreadsheets and other cell-grid formats are output as Comma-Separated
-   Value (.CSV), UTF-8 encoding.
+   Value (.CSV) files, UTF-8 encoded.
 
 Specifying the special value `best` as the converter tag will analyze the file
 and choose the conversion that seems most appropriate.  It's not possible to
@@ -1525,7 +1531,8 @@ the config file sample for a description of the syntax.
 
 Formats that involve the resource fork will make use of it.  If the format
 doesn't require the resource fork, e.g. a hex dump, the resource fork will be
-ignored.  (If you want to get a hex dump of the resource fork, extract it.)
+ignored.  (If you want to get a hex dump of the resource fork, extract it and
+use a tool like `xxd`.)
 
 
 Import specifications work the same as export specifications, though there is

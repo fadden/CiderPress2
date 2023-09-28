@@ -1296,10 +1296,16 @@ namespace cp2_wpf {
         private void FileListDataGrid_PreviewMouseLeftButtonDown(object sender,
                 MouseButtonEventArgs e) {
             DataGrid grid = (DataGrid)sender;
-            mDragStartPosn = e.GetPosition(null);
+            mDragStartPosn = new Point(-1, -1);
 
             // Identify the row that was clicked on.
             DataGridRow? row = FindVisualParent<DataGridRow>(e.OriginalSource as FrameworkElement);
+            if (row == null) {
+                // If they didn't click on a row in the grid, ignore it.  Among other benefits,
+                // this allows the scroll bar to work.
+                return;
+            }
+            mDragStartPosn = e.GetPosition(null);
             if (row != null && row.IsSelected) {
                 // The user clicked on an entry that is already selected.  Capture the selection
                 // before it gets cleared, in case they want to start a multi-entry drag.
@@ -1326,6 +1332,10 @@ namespace cp2_wpf {
         private void FileListDataGrid_PreviewMouseMove(object sender, MouseEventArgs e) {
             if (e.LeftButton != MouseButtonState.Pressed || mIsDraggingFileList) {
                 // Mouse button isn't being held down, or we're already in a drag op.
+                return;
+            }
+            if (mDragStartPosn.X < 0) {
+                // Initial click wasn't on an item in the file list.
                 return;
             }
             Point posn = e.GetPosition(null);

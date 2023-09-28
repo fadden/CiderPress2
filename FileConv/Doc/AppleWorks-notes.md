@@ -13,7 +13,8 @@ Primary references:
 The file type notes have detailed information on all three formats, as defined by AppleWorks v3.0.
 
 The AppleWorks v4 and v5 manuals have some useful information on updated features, but do not
-document changes to the file formats.
+document changes to the file formats.  Documents created with these versions of the application
+may not be backward compatible to v3.0.
 
 ## General ##
 
@@ -138,6 +139,10 @@ The category-skip values are used to skip over entries that don't have data.  Th
 not followed by additional data for that category.  A skip value of 1 only skips the current
 category.
 
+These files can be represented as a spreadsheet-style cell grid, where each category is stored
+as a column, and the top row holds the category names.
+
+
 ## Word Processor Files ##
 
 The basic file structure is:
@@ -146,6 +151,21 @@ The basic file structure is:
  - Zero or more variable-sized line records.
  - End marker ($ff $ff).
  - Tag data.
+
+There are three kinds of line records:
+ 1. Carriage return.  Records the horizontal screen position of the line ending.
+ 2. Command line.  These are special commands that are displayed as a full line on screen,
+	e.g. changes to margins, justification, and spacing.
+ 3. Text record.  This is primarily text typed by the user, but can contain mid-line formatting
+	commands as well, e.g. bold and underline.
+
+The type of each record is determined by the first two bytes.
+
+Many of the features can be converted directly to Rich Text Format (RTF), which allows the
+document to be imported into a variety of word processors.  A subset of RTF can be displayed
+directly in a Windows RichTextBox control.  If the goal is simply to display the contents, rather
+than convert for future editing, then converting the document to HTML might make more sense.
+
 
 ## Spreadsheet Files ##
 
@@ -164,10 +184,20 @@ Each row record is:
 ```
 Each cell record is variable-length, and starts with a byte full of bit flags that provide
 information about the contents and presentation.  The contents of the rest of the cell entry
-vary based on the type.
+vary based on the type.  Some cells hold labels, others hold formulas.  Formulas are tokenized,
+using a single byte for math operators and spreadsheet functions.
 
 Column references are output as a letter, starting with "A" for column 0, "AA" for column 26, up
 to "DW" for column 127.
 
 Numeric values are stored as 64-bit floating point values, using the Standard Apple Numerics
-Environment (SANE).  These are equivalent to IEEE754 values.
+Environment (SANE).  These are equivalent to IEEE 754 values.
+
+Performing small translations on the output can make it easier for modern applications to import
+the generated output.  For example, cell ranges in AppleWorks are defined with a three-dot
+ellipsis, e.g. `@SUM(A12...A18)`, but modern spreadsheets expect two dots ("..") instead.  Some
+of the functions are commonly known by other names, e.g. `@AVG` is more commonly provided as
+`@AVERAGE`.  A slightly more complicated issue involves making formulas more easily recognizable,
+e.g. AppleWorks will use `(A12+A13)` as a formula, but a modern spreadsheet might expect that to
+begin with `+` or `=`.  File format converters need to define the extent to which the original
+content will be modified for the sake of modern usability.

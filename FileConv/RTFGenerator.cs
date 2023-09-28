@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
@@ -107,6 +106,8 @@ namespace FileConv {
             0x404040,       // 17=DarkGray (Colors.DarkGray is #a9a9a9 -- much lighter)
             0xff9900,       // 18=Orange (Colors.Orange is #ffa500)
         };
+        private const int COLOR_INDEX_BLACK = 1;
+        private const int COLOR_INDEX_WHITE = 8;
 
         /// <summary>
         /// Optional color table.
@@ -147,6 +148,13 @@ namespace FileConv {
                 txtOut.Write(HDR_START);
                 txtOut.Write(HDR_COLOR_TAB);    // TODO: omit if there are no color changes
                 txtOut.Write(HDR_END);
+
+                // See if our default font matches the FancyText default font.  Fix it if not.
+                int fontIndex = ClosestFontFamily(FancyText.DEFAULT_FONT);
+                if (fontIndex != 0) {
+                    Debug.Assert(false, "default font mismatch");
+                    txtOut.Write(@"\f" + fontIndex + " ");
+                }
 
                 StringBuilder sb = src.Text;
                 IEnumerator<Annotation> iter = src.GetEnumerator();
@@ -195,8 +203,40 @@ namespace FileConv {
                 case AnnoType.NewParagraph:
                     txtOut.Write(@"\par" + CRLF);
                     break;
+                case AnnoType.NewPage:
+                    // Doesn't seem to be supported by RichTextBox, but is handled by MS Word.
+                    txtOut.Write(@"\page ");
+                    break;
                 case AnnoType.Tab:
                     txtOut.Write(@"\tab ");
+                    break;
+                case AnnoType.Justification:
+                    Justification justMode = (Justification)anno.Data!;
+                    switch (justMode) {
+                        case Justification.Left:
+                            txtOut.Write(@"\ql ");
+                            break;
+                        case Justification.Right:
+                            txtOut.Write(@"\qr ");
+                            break;
+                        case Justification.Center:
+                            txtOut.Write(@"\qc ");
+                            break;
+                        case Justification.Full:
+                            txtOut.Write(@"\qj ");
+                            break;
+                        default:
+                            Debug.Assert(false, "Unhandled justification mode: " + justMode);
+                            break;
+                    }
+                    break;
+                case AnnoType.LeftMargin:
+                    float leftMargin = (float)anno.Data!;
+                    txtOut.Write(@"\li" + (int)Math.Round(TWIPS_PER_INCH * leftMargin) + " ");
+                    break;
+                case AnnoType.RightMargin:
+                    float rightMargin = (float)anno.Data!;
+                    txtOut.Write(@"\ri" + (int)Math.Round(TWIPS_PER_INCH * rightMargin) + " ");
                     break;
                 case AnnoType.FontFamily:
                     int familyIndex = ClosestFontFamily((FontFamily)anno.Data!);
@@ -247,6 +287,7 @@ namespace FileConv {
                         txtOut.Write(@"\super ");
                     } else {
                         txtOut.Write(@"\nosupersub ");
+                        // TODO: if subscript is enabled, re-enable it
                     }
                     break;
                 case AnnoType.Subscript:
@@ -254,17 +295,37 @@ namespace FileConv {
                         txtOut.Write(@"\sub ");
                     } else {
                         txtOut.Write(@"\nosupersub ");
+                        // TODO: if superscript is enabled, re-enable it
                     }
                     break;
 
                 case AnnoType.ForeColor:
-                    txtOut.Write(@"\cf" + (ClosestColorIndex((int)anno.Data!) + 1) + " ");
+                    // Set foreground color, with color index.
+                    int foreIndex = ClosestColorIndex((int)anno.Data!) + 1;
+                    if (foreIndex == COLOR_INDEX_BLACK) {
+                        // Black foreground; just reset to default.
+                        txtOut.Write(@"\cf0 ");
+                    } else {
+                        txtOut.Write(@"\cf" + foreIndex + " ");
+                    }
                     break;
                 case AnnoType.BackColor:
-                    // Ignore.
+                    // 2007 RTF spec says "Windows versions of Word have never supported" \cbN
+                    // for background color.  Word uses \chcbpatN.  The only option for RichTextBox
+                    // seems to be \highlightN, which appears to use a value from a fixed color
+                    // table in the v1.5 spec, but we're using the same colors so it's fine
+                    // whether it's fixed or based on our index.
+                    int backIndex = ClosestColorIndex((int)anno.Data!) + 1;
+                    //txtOut.Write(@"\chcbpat" + backIndex + " ");
+                    if (backIndex == COLOR_INDEX_WHITE) {
+                        // White background.  Special-case this to disable highlighting.
+                        txtOut.Write(@"\highlight0 ");
+                    } else {
+                        txtOut.Write(@"\highlight" + backIndex + " ");
+                    }
                     break;
                 default:
-                    Debug.Assert(false, "Unhandled annotation type " + anno.Type);
+                    Debug.Assert(false, "Unhandled annotation type: " + anno.Type);
                     break;
             }
         }
