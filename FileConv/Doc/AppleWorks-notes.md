@@ -10,7 +10,8 @@ Primary references:
  - Apple II File Type Note $1A, "AppleWorks Word Processor File"
  - Apple II File Type Note $1B, "AppleWorks Spreadsheet File"
 
-The file type notes have detailed information on all three formats, as defined by AppleWorks v3.0.
+The file type notes have detailed information on all three formats, as implemented by
+AppleWorks v3.0.
 
 The AppleWorks v4 and v5 manuals have some useful information on updated features, but do not
 document changes to the file formats.  Documents created with these versions of the application
@@ -55,12 +56,12 @@ The 16-bit aux type is used to hold lower-case flags for the 15-character filena
 indicates lower-case.  This has no effect for numbers, but a lower-case period ('.') is displayed
 as a space (' ').
 
-This is independent of the ProDOS filesystem convention, which was introduced with GS/OS.
+This is independent of the ProDOS filesystem lower-case convention, which was introduced with GS/OS.
 
 ### Tags ###
 
 Version 3.0 formalized a tagged data extension, allowing arbitrary data to be appended to the
-file.  Tags have the form:
+file.  Tags start after the file end marker ($ff $ff), and have the form:
 ```
 +$00 / 1: must be $ff
 +$01 / 1: tag ID, assigned by Beagle Bros
@@ -76,6 +77,9 @@ It's unclear which programs used this feature, or what the assigned IDs are.
 
 ### Post-v3 Changes ###
 
+v4 and v5 made numerous improvements, some of which require changes to the way data is stored.
+Some newer files may not load correctly with v3.
+
 v5 introduced support for inverse and MouseText characters.  These just use previously-unused
 byte ranges.  The definition for character encoding becomes:
 ```
@@ -86,7 +90,7 @@ byte ranges.  The definition for character encoding becomes:
  $c0-df: MouseText
  $e0-ff: inverse lower case (map to $60-7f)
 ```
-MouseText and inverse text available for use in Word Processor and Data Base files.
+MouseText and inverse characters are available in Word Processor and Data Base files.
 
 
 ## Data Base Files ##
@@ -121,8 +125,8 @@ In the simplest case, the category data is a string, with the control byte provi
 
 There are special categories for dates and times, to allow them to be sorted correctly.  The first
 byte of the category data will be $c0 for a date (high-ASCII '@'), and $d4 (high-ASCII 'T') for
-time.  (It's unclear how this interacts with inverse/MouseText encoding in v5.  The AW5 delta
-manual shows 4-digit years, so it's possible the date/time encoding system was revamped post-v3.0.)
+time.  (It's unclear how this interacts with inverse/MouseText encoding in v5.  AW5 supports
+four-digit years, so it's likely the date/time encoding system was revamped post-v3.0.)
 
 Dates are stored in a 6-byte field, as `XYYMDD`, where X is $c0, Y and D are ASCII digits '0'-'9',
 and M is a month code.  Month codes are 'A' for January, 'B' for February, and so on.  These are

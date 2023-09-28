@@ -21,6 +21,9 @@ using CommonUtil;
 using DiskArc;
 
 namespace FileConv.Doc {
+    /// <summary>
+    /// AppleWorks "classic" word processor document.
+    /// </summary>
     public class AppleWorksWP : Converter {
         public const string TAG = "awp";
         public const string LABEL = "AppleWorks WP";
@@ -113,7 +116,6 @@ namespace FileConv.Doc {
 
         private bool mShowEmbeds;
         private bool mShowMouseText;
-        private bool mDidParaBreak;
         private bool mIsInverse;
 
 
@@ -166,9 +168,6 @@ namespace FileConv.Doc {
             output.SetLeftMargin(1.0f);
             output.SetRightMargin(1.0f);
 
-            // No need to start a new paragraph if the first thing in the file is a line command.
-            mDidParaBreak = true;
-
             // TODO(someday): process tab stops in ruler
 
             // Read the line records.
@@ -207,14 +206,9 @@ namespace FileConv.Doc {
             if (lineRecCode == LINE_CODE_CR) {
                 // Ignoring horizontal offset.
                 output.NewParagraph();
-                mDidParaBreak = true;
             } else if (lineRecCode == LINE_CODE_TEXT) {
                 ProcessTextRecord(buf, ref offset, lineRecData, output);
             } else if (lineRecCode >= LINE_CODE_CMD_MIN) {
-                if (!mDidParaBreak) {
-                    output.NewParagraph();
-                    mDidParaBreak = true;
-                }
                 ProcessCommandLineRecord(lineRecData, lineRecCode, output);
             } else {
                 output.Notes.AddW("Found bad line record command code $" +
@@ -268,6 +262,9 @@ namespace FileConv.Doc {
                 FancyText output) {
             CmdCode code = (CmdCode)lineRecCode;
             switch (code) {
+                // Justification and margin changes may affect the current paragraph, regardless
+                // of whether they come first or last, so be careful where the paragraph
+                // breaks are put.
                 case CmdCode.Unjustify:
                     output.SetJustification(FancyText.Justification.Left);
                     break;
@@ -287,23 +284,20 @@ namespace FileConv.Doc {
                     output.SetRightMargin(lineRecData / 10.0f);
                     break;
 
-                case CmdCode.PageNumber:
-                    ShowEmbed("<set-page-number " + lineRecData + ">", output);
-                    break;
                 case CmdCode.PageHeader:
-                    ShowEmbed("<page-header>", output);
+                    ShowEmbed("<page-header>", true, output);
                     break;
                 case CmdCode.PageHeaderEnd:
-                    ShowEmbed("</page-header>", output);
+                    ShowEmbed("</page-header>", true, output);
                     break;
                 case CmdCode.PageFooter:
-                    ShowEmbed("<page-footer>", output);
+                    ShowEmbed("<page-footer>", true, output);
                     break;
                 case CmdCode.PageFooterEnd:
-                    ShowEmbed("</page-footer>", output);
+                    ShowEmbed("</page-footer>", true, output);
                     break;
                 case CmdCode.PageBreak:
-                    ShowEmbed("<page-break>", output);
+                    ShowEmbed("<page-break>", false, output);
                     output.NewPage();
                     break;
 
@@ -321,8 +315,8 @@ namespace FileConv.Doc {
                 // SkipLines seems straightforward?
 
                 default:
-                    Debug.WriteLine("Ignoring AWP command $" + lineRecCode.ToString("x2") +
-                        " data=$" + lineRecData.ToString("x2"));
+                    // Show the enumerated value name.
+                    ShowEmbed("<" + code + " " + lineRecData + ">", true, output);
                     break;
             }
         }
@@ -406,32 +400,32 @@ namespace FileConv.Doc {
                             output.SetUnderline(false);
                             break;
                         case CharCode.EnterKeyboard:
-                            ShowEmbed("<kbd-entry>", output);
+                            ShowEmbed("<kbd-entry>", false, output);
                             break;
                         case CharCode.PrintPageNumber:
-                            ShowEmbed("<page#>", output);
+                            ShowEmbed("<page#>", false, output);
                             break;
                         case CharCode.StickySpace:
                             output.Append(FancyText.NO_BREAK_SPACE);
                             break;
                         case CharCode.BeginMailMerge:
-                            ShowEmbed("<mail-merge>", output);
+                            ShowEmbed("<mail-merge>", false, output);
                             break;
                         case CharCode.PrintDate:
-                            ShowEmbed("<date>", output);
+                            ShowEmbed("<date>", false, output);
                             break;
                         case CharCode.PrintTime:
-                            ShowEmbed("<time>", output);
+                            ShowEmbed("<time>", false, output);
                             break;
                         case CharCode.Tab:
                             output.Tab();
                             break;
                         case CharCode.TabFill:
-                            // Tab fill character.  Not visible in document?
+                            // Tab fill character.
                             output.Append(' ');
                             break;
                         default:
-                            ShowEmbed("^", output);
+                            ShowEmbed("^", false, output);
                             output.Notes.AddI("Unhandled special text character $" +
                                 ch.ToString("x2"));
                             break;
@@ -473,9 +467,6 @@ namespace FileConv.Doc {
             // Handle carriage return at end of line.  Ignore horizontal position.
             if ((remCountCrFlag & 0x80) != 0) {
                 output.NewParagraph();
-                mDidParaBreak = true;
-            } else {
-                mDidParaBreak = false;
             }
         }
 
@@ -484,7 +475,7 @@ namespace FileConv.Doc {
         /// </summary>
         /// <param name="text">String to display.</param>
         /// <param name="output">Output object.</param>
-        private void ShowEmbed(string text, FancyText output) {
+        private void ShowEmbed(string text, bool newPara, FancyText output) {
             if (mShowEmbeds) {
                 output.SetForeColor(EMBED_FG_COLOR);
                 output.Append(text);
@@ -492,6 +483,9 @@ namespace FileConv.Doc {
                     output.SetForeColor(INVERSE_FG_COLOR);
                 } else {
                     output.SetForeColor(DEFAULT_FG_COLOR);
+                }
+                if (newPara) {
+                    output.NewParagraph();
                 }
             }
         }
