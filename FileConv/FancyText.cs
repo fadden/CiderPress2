@@ -15,6 +15,7 @@
  */
 using System;
 using System.Collections;
+using System.Diagnostics;
 
 namespace FileConv {
     /// <summary>
@@ -139,7 +140,7 @@ namespace FileConv {
                     " isMono=" + IsMono + " isSerif=" + IsSerif + "]";
             }
         }
-        internal static FontFamily DEFAULT_FONT = new FontFamily("Consolas", true, false);
+        public static readonly FontFamily DEFAULT_FONT = new FontFamily("Consolas", true, false);
 
         //
         // Current values.  We track these so we only output an annotation if something changes.
@@ -347,6 +348,9 @@ namespace FileConv {
         /// <summary>
         /// Helper function that accepts an Apple IIgs font style byte.
         /// </summary>
+        /// <remarks>
+        /// Allows the QuickDraw II styles, plus the AWGS additions.
+        /// </remarks>
         /// <param name="style">Style bit flags.</param>
         public void SetGSFontStyle(byte style) {
             SetBold((style & (int)Doc.GSDocCommon.FontStyleBits.Bold) != 0);

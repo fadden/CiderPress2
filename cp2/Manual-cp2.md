@@ -1488,7 +1488,9 @@ Text documents:
  - `awp`: AppleWorks "Classic" Word Processor
    - `mtext` (bool): true=display MouseText as Unicode near-equivalents
      (default), false=display MouseText as ASCII approximations
-   - `embed` (bool): true=display embedded codes (default)
+   - `embed` (bool): true=display embedded formatting codes (default)
+ - `awgswp`: AppleWorks GS Word Processor
+   - `embed` (bool): true=display embedded formatting codes (default)
  - `rtext`: convert DOS/ProDOS random-access text to cell-grid
    - `len` (int): specify record length; default value from aux type if
      available (if zero, file is converted as sequential text)

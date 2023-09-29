@@ -143,7 +143,7 @@ namespace FileConv {
         /// <param name="src">Document source.</param>
         /// <param name="outStream">Output stream.  The stream will be left open.</param>
         public static void Generate(FancyText src, Stream outStream) {
-            // Use Encoding.Latin1, which is roughly equivalent to CP1252.
+            // Use Encoding.Latin1, which is similar to CP1252.
             using (StreamWriter txtOut = new StreamWriter(outStream, Encoding.Latin1, -1, true)) {
                 txtOut.Write(HDR_START);
                 txtOut.Write(HDR_COLOR_TAB);    // TODO: omit if there are no color changes
@@ -156,6 +156,7 @@ namespace FileConv {
                     txtOut.Write(@"\f" + fontIndex + " ");
                 }
 
+                // Walk through the text and annotations in parallel.
                 StringBuilder sb = src.Text;
                 IEnumerator<Annotation> iter = src.GetEnumerator();
                 bool hasAnno = iter.MoveNext();

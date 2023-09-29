@@ -114,6 +114,7 @@ namespace FileConv.Doc {
             }
         }
 
+        // Internal state.
         private bool mShowEmbeds;
         private bool mShowMouseText;
         private bool mIsInverse;

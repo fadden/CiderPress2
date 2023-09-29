@@ -94,6 +94,12 @@ namespace FileConv.Doc {
             return output;
         }
 
+        /// <summary>
+        /// Formats a Teach document.
+        /// </summary>
+        /// <param name="dataStream">Data fork stream.</param>
+        /// <param name="teFormat">TextEdit formatting instructions.</param>
+        /// <param name="output">FancyText object.</param>
         private static void FormatTeach(Stream dataStream, TEFormat teFormat, FancyText output) {
             dataStream.Position = 0;
 
@@ -162,6 +168,8 @@ namespace FileConv.Doc {
             output.SetBackColor(GSDocCommon.GetStdColor(style.BackColor, true));
         }
     }
+
+    #region TextEdit structures
 
     /// <summary>
     /// Apple IIgs TextEdit TEFormat structure.  May be found in rStyleBlock resources.
@@ -356,4 +364,6 @@ namespace FileConv.Doc {
             TabData = (short)RawData.ReadU16LE(buf, ref offset);
         }
     }
+
+    #endregion TextEdit structures
 }

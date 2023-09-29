@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+
 using static FileConv.FancyText;
 
 namespace FileConv.Doc {
@@ -163,6 +164,9 @@ namespace FileConv.Doc {
         /// the distance from the top of a 'T' to the bottom of a 'j' was 39 pixels in 24-point
         /// Courier, but 59 pixels in 24-point Venice.  The differences are also felt in the
         /// widths, which affect line length / word wrap.</para>
+        /// <para>Reducing the point size excessively is unwise.  An 8-point font is fairly
+        /// readable on the IIgs screen, but gets a bit tiny in RTF.  (We may want to apply
+        /// a broad up-scaling.)</para>
         /// </remarks>
         /// <param name="familyNum">Font family number.</param>
         /// <returns>Size multiplier.  Will be 1.0 for unknown fonts.</returns>
@@ -173,7 +177,7 @@ namespace FileConv.Doc {
                 case FontFamilyNum.Genoa:
                 case FontFamilyNum.Monaco:
                 case FontFamilyNum.Western:
-                    return 0.8f;
+                    return 0.85f;           // 0.8 makes some things too small
                 case FontFamilyNum.Times:
                     return 0.9f;
                 case FontFamilyNum.Chicago:
