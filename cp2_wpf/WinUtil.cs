@@ -88,21 +88,21 @@ namespace cp2_wpf {
                 }
                 BitmapPalette palette = new BitmapPalette(colors);
 
-                // indexed-color; see https://stackoverflow.com/a/15272528/294248 for direct color
+                // Convert 8-bit indexed color.
                 BitmapSource image = BitmapSource.Create(
                     bitmap.Width,
                     bitmap.Height,
-                    96.0,
+                    96.0,                   // magical DPI value
                     96.0,
                     PixelFormats.Indexed8,
                     palette,
                     bitmap.GetPixels(),
-                    bitmap.Width);
+                    bitmap.Width);          // stride = width
                 image.Freeze();
 
                 return image;
             } else {
-                // Direct color.
+                // Direct color (https://stackoverflow.com/a/15272528/294248).
                 PixelFormat pixelFormat = PixelFormats.Bgra32;
                 int stride = (bitmap.Width * pixelFormat.BitsPerPixel + 7) / 8;
                 BitmapSource image = BitmapSource.Create(

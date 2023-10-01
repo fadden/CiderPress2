@@ -1501,6 +1501,8 @@ Graphics:
    - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
  - `hgr`: Apple II hi-res screen
    - `bw` (bool): false=color (default), true=black & white
+ - `psclip`: Print Shop clip art, monochrome and color
+   - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
 

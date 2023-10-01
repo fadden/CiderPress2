@@ -223,7 +223,7 @@ namespace FileConv.Gfx {
         /// <param name="row">Row number (0-191).</param>
         /// <returns>Buffer offset (0-8191).</returns>
         public static int RowToOffset(int row) {
-            if (row < 0 || row > NUM_ROWS) {
+            if (row < 0 || row >= NUM_ROWS) {
                 throw new ArgumentOutOfRangeException(nameof(row));
             }
             // If row is ABCDEFGH, we want pppFGHCD EABAB000 (where p would be $20/$40).

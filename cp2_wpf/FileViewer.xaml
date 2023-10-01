@@ -147,6 +147,9 @@ limitations under the License.
                                 <!-- set previewImage width/height to multiple of image size -->
                                 <Image Name="previewImage" Source="/Res/RedX.png"
                                     RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                <!-- NearestNeighbor does weirdly on tiny checkerboard patterns
+                                     like Print Shop BARNS; HighQuality makes everything a little
+                                     fuzzy at the edges and slightly darker -->
                             </Grid>
                         </Border>
                     </ScrollViewer>

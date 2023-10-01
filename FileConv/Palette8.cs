@@ -142,7 +142,7 @@ namespace FileConv {
         /// Applesoft color value (0-7), which matches the two-bit pattern plus 4 if the high
         /// bit is set.
         /// </summary>
-        public static Palette8 Palette_HiRes = new Palette8("Hi-Res (RGB)",
+        public static readonly Palette8 Palette_HiRes = new Palette8("Hi-Res (RGB)",
             new int[] {
                 Apple2RGB[(int)Apple2Colors.Black],
                 Apple2RGB[(int)Apple2Colors.LightGreen],
@@ -161,7 +161,7 @@ namespace FileConv {
         /// <remarks>
         /// Note the order for double-hi-res and lo-res are different.
         /// </remarks>
-        public static Palette8 Palette_DoubleHiRes = new Palette8("Double Hi-Res (RGB)",
+        public static readonly Palette8 Palette_DoubleHiRes = new Palette8("Double Hi-Res (RGB)",
             new int[] {
                 Apple2RGB[(int)Apple2Colors.Black],
                 Apple2RGB[(int)Apple2Colors.DeepRed],
@@ -179,6 +179,15 @@ namespace FileConv {
                 Apple2RGB[(int)Apple2Colors.LightBlue],
                 Apple2RGB[(int)Apple2Colors.Aquamarine],
                 Apple2RGB[(int)Apple2Colors.White],
+            });
+
+        /// <summary>
+        /// Monochrome black & white palette.
+        /// </summary>
+        public static readonly Palette8 Palette_MonoBW = new Palette8("B&W",
+            new int[] {
+                ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 0=black
+                ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 1=white
             });
 
         #endregion Apple II Colors

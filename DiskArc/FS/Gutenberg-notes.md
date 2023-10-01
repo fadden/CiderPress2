@@ -26,10 +26,10 @@ programs, and use file type 'P', or sometimes 'M'.  Documents use file type ' ' 
 they have been locked.
 
 Disks have a volume name that can be up to nine characters long.  Filenames can be up to 12
-characters, and may be any high-ASCII value other than slashes, spaces, and control characters.
-When a file is deleted the entire entry is cleared to high-ASCII spaces, so deleted files can
-be identified by checking the first byte of the filename.  (Having slashes in the *volume* name
-is apparently allowed, since the program disks themselves do this.)
+characters, and may be any high-ASCII value other than slashes ('/'), spaces (' '), and control
+characters.  When a file is deleted the entire entry is cleared to high-ASCII spaces, so empty
+slots can be identified by checking the first byte of the filename.  (Having slashes in the
+*volume* name is apparently allowed, since the program disks do this themselves.)
 
 The program doesn't appear to allow lower-case characters to be used in filenames.
 
@@ -111,7 +111,8 @@ The following byte appears to hold flags.  This is then followed by 6502 code, o
 name between '/' characters and then the code.
 
 Graphics and font files have a different structure.  Files of type 'M' seem to be rare; the only
-instance is the file `FONTD.B` on the Gutenberg, Jr. boot disk.
+instance is the file `FONTD.B` on the Gutenberg, Jr. boot disk.  (It's possible this is actually
+disk corruption, and there is no type 'M'.)
 
 The filesystem does not impose a maximum file length, though exceeding (((35 - 3) * 16) - 2) = 510
 sectors is impossible on a 140KB floppy disk (unless the file dips into the boot tracks).

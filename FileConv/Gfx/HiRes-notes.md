@@ -1,7 +1,7 @@
 # Apple II Hi-Res Graphics #
 
 File types:
- - BIN ($06) / any (often $2000 or $4000): uncompressed hi-res image (~8KB file)
+ - BIN ($06) / any (often $2000 or $4000), length 8184-8192: uncompressed hi-res image (~8KB file)
  - FOT ($08) / $0000-3fff: uncompressed hi-res image (8KB file)
  - FOT ($08) / $4000: compressed hi-res image (PackBytes)
  - FOT ($08) / $8066: compressed hi-res image (LZ4FH)
