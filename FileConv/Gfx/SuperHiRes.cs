@@ -65,7 +65,8 @@ namespace FileConv.Gfx {
             // Sometimes the file type is totally wrong, but they try to make up for it with a
             // filename extension.
             string ext = Path.GetExtension(FileAttrs.FileNameOnly).ToLowerInvariant();
-            if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN && (ext == ".pic" || ext == ".shr")) {
+            if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN &&
+                    (ext == ".pic" || ext == ".shr")) {
                 return Applicability.Probably;
             }
             return Applicability.Not;

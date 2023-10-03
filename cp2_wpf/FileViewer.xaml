@@ -183,7 +183,7 @@ limitations under the License.
             <StackPanel Grid.Column="0">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Conversion:" Margin="0,2,4,0"/>
-                    <ComboBox Name="convComboBox" Width="200" HorizontalAlignment="Left"
+                    <ComboBox Name="convComboBox" Width="240" HorizontalAlignment="Left"
                               SelectionChanged="ConvComboBox_SelectionChanged"/>
                 </StackPanel>
                 <GroupBox Header="Options" MinHeight="120" IsEnabled="{Binding IsOptionsBoxEnabled}">

@@ -55,7 +55,7 @@ namespace CommonUtil {
             public override string ToString() {
                 StringBuilder sb = new StringBuilder(Text.Length + 2);
                 sb.Append(TypeChar);
-                sb.Append(' ');
+                sb.Append(") ");
                 sb.Append(Text);
                 return sb.ToString();
             }

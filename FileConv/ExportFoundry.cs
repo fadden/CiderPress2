@@ -55,6 +55,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Gfx.HostImage)),
             new ConverterEntry(typeof(Gfx.SuperHiRes)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Brooks)),
+            new ConverterEntry(typeof(Gfx.SuperHiRes_Packed)),
             new ConverterEntry(typeof(Gfx.PrintShopClip)),
         };
 

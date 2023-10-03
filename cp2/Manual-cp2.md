@@ -1505,6 +1505,7 @@ Graphics:
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
+ - `shrpk`: Apple IIgs packed super hi-res screen ($C0/0001)
 
 General:
  - `hex`: hex dump

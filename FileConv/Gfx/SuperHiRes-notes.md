@@ -4,9 +4,12 @@ File types:
  - PNT ($c0) / $0000: PaintWorks packed image
  - PNT ($c0) / $0001: compressed super hi-res image (PackBytes)
  - PNT ($c0) / $0002: structured picture file (Apple Preferred Format, or APF)
- - PNT ($c0) / $8005: DreamGrafix compressed image
+ - PNT ($c0) / $0003: packed QuickDraw II Picture File
+ - PNT ($c0) / $8005: DreamGrafix packed image
  - PIC ($c1) / $0000: uncompressed super hi-res image
+ - PIC ($c1) / $0001: QuickDraw PICT file
  - PIC ($c1) / $0002: uncompressed 3200-color super hi-res image
+ - PIC ($c1) / $8003: DreamGrafix unpacked image
 
 Primary references:
  - _Apple IIgs Hardware Reference_, chapter 4
@@ -14,7 +17,9 @@ Primary references:
  - Apple II File Type Note $c0/0001, "Packed Apple IIGS Super Hi-Res Image File"
  - Apple II File Type Note $c0/0002, "Apple IIgs Super Hi-Res Picture File"
  - Apple II File Type Note $c1/0000, "Apple IIGS Super Hi-Res Graphic Screen Image"
+ - Apple II File Type Note $c1/0001, "Apple IIGS QuickDraw II Picture File"
  - Apple II File Type Note $c1/0002, "Super Hi-Res 3200 color screen image"
+ - IIgs TN #46, "DrawPicture Data Format"
 
 The Super Hi-Resolution graphics mode was introduced on the Apple IIgs.  It allowed 320x200 or
 640x200 images from a palette of 4096 colors.  The pixel and color data require a total of
@@ -42,12 +47,12 @@ that row.  Each entry is a single byte, with bits defined:
 ```
 
 There are 16 color palettes, with 16 colors in each, for a total of 256 entries.  Each color
-entry is two consecutive bytes, holding an RGB444 value:
+entry is two consecutive bytes, holding an RGB444 value as `$0RGB`:
 ```
- even byte:
+ even (low) byte:
    7-4: green intensity
    3-0: blue intensity
- odd byte:
+ odd (high) byte:
    7-4: reserved, must be zero
    3-0: red intensity
 ```
@@ -82,12 +87,73 @@ repeat whatever the last color drawn was, providing a way to fill large areas of
 with color quickly.  This was used in a handful of games and demos, but not usually in static
 images.  If the leftmost pixel in a scanline is zero, the results are undefined.
 
-It is possible, with careful coding, to edit the palette data as the screen is being drawn.  This
+An 320-mode image that uses a single color palette is limited to 16 different colors, where
+each color can be one of 4096 different values.  With 16 palettes of 16 colors, it's possible to
+have up to 256 colors in a single image, but only 16 on any given line.
+
+With careful coding, it's possible to update the palette data as the screen is being drawn.  This
 allows every scanline to have a unique set of 16 colors.  Such images are called "3200 color",
-because 200*16=3200.  Such images are always 320 mode.
+because 200*16=3200.  These images always use 320 mode.
 
 ## Image Formats ##
 
-The basic image formats are simply a RAM dump, with or without compression.
+The QuickDraw II PICT formats are meant to be drawn with the IIgs toolbox functions.  Rendering
+them is non-trivial.
 
-Apple Preferred Format supports images in varying sizes.
+### PIC/$0000: Uncompressed Image ###
+
+This is just a dump of RAM: pixel data, SCBs, reserved, palettes, 32KB total.
+
+Sometimes these have file type BIN.  If we see a 32KB file that ends with ".PIC" or ".SHR", it's
+probably an uncompressed SHR image.
+
+### PIC/$0002: Uncompressed 3200-Color Image ###
+
+This is commonly known as "Brooks format", after the designer, John Brooks.  The file has
+32,000 bytes of pixel data (200 lines, 160 bytes per line) followed by 200 sets of 32-byte
+palette entries (one per line).  The color table is stored in reverse order, i.e. the color
+value for color 15 is stored first.
+
+No SCB data is stored, because lines are always 320 mode, and each line has its own palette.
+
+### PNT/$0000: PaintWorks Packed ###
+
+The PaintWorks format is briefly described in the file type note:
+```
++$000 / 32: color palette (16 entries, two bytes each)
++$020 /  2: background color
++$022 /512: 16 QuickDraw II patterns, each 32 bytes long
++$222 /nnn: packed graphics data
+```
+The file type note says, "the unpacked data could be longer than one Super Hi-Res screen".  The
+height and length are not explicitly stored, so you're expected to just unpack data until there's
+nothing left to unpack.
+
+There's a bit of strangeness around certain files that have 9 bytes left over at the end.
+
+[ TODO ]
+
+### PNT/$0001: Simple Compressed Image ###
+
+This is a simple 32KB SHR image that has been compressed with Apple's PackBytes algorithm.
+
+### PNT/$0002: Apple Preferred Format ###
+
+The file format uses a "chunk" layout, where each chunk is:
+```
++$00 / 4: length of block (including the length word)
++$04 /nn: block name string, preceded by a length byte
++$xx /yy: variable amount of block-specific data
+```
+The type string is case-sensitive ASCII; the use of uppercase characters is recommended.
+
+[ TODO ]
+
+### PNT/$8005: DreamGrafix Compressed Image ###
+
+DreamGrafix was an Apple IIgs application that allowed editing of images in 256-color mode and
+3200-color mode.  The latter required overcoming some technical hurdles.
+
+File data was compressed with LZW.
+
+[ TODO ]
