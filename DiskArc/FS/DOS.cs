@@ -22,7 +22,6 @@ using static DiskArc.Defs;
 using static DiskArc.FileAnalyzer.DiskLayoutEntry;
 using static DiskArc.IFileSystem;
 
-
 namespace DiskArc.FS {
     /// <summary>
     /// DOS filesystem implementation, for DOS 3.3 and 3.2.
@@ -36,14 +35,15 @@ namespace DiskArc.FS {
     /// If you want to write a BASIC or binary data file (types I/A/B) in non-raw mode, you
     /// must change the file's type before opening it.  Changing the file type will cause the
     /// file's length to be re-evaluated, which may require scanning the entire file.</para>
-    /// <para>DOS text files are encoded in high ASCII, with CR indicating end-of-line.</para>
+    /// <para>DOS text files are encoded in high ASCII, with CR indicating end-of-line.  Sequential
+    /// text files end when the first $00 byte is encountered.</para>
     /// </remarks>
     public class DOS : IFileSystem {
         public const int MAX_TRACKS = 50;               // VTOC limitation
         public const int MAX_SECTORS = 32;              // VTOC limitation
         public const int DEFAULT_VOL_NUM = 254;
-        public const int VTOC_TRACK = 17;
-        public const int VTOC_SECTOR = 0;
+        public const int DEFAULT_VTOC_TRACK = 17;
+        public const int DEFAULT_VTOC_SECTOR = 0;
         public const int FIRST_TS_OFFSET = 0x0c;        // first T/S entry in T/S list starts here
         public const int MAX_TS_PER_TSLIST = 122;       // total T/S pairs in a T/S list sector
         public const int MAX_VOL_SIZE = MAX_TRACKS * MAX_SECTORS * SECTOR_SIZE; // 400KB
@@ -60,7 +60,8 @@ namespace DiskArc.FS {
         public const int MAX_IAB_FILE_LEN = 65535;   // max length of cooked I/A/B file
 
         internal const int MIN_SECT_PER_TRACK = 13;
-        internal const int MIN_VOL_SIZE = (VTOC_TRACK + 1) * MIN_SECT_PER_TRACK * SECTOR_SIZE;
+        internal const int MIN_VOL_SIZE =
+            (DEFAULT_VTOC_TRACK + 1) * MIN_SECT_PER_TRACK * SECTOR_SIZE;
         internal const int MAX_CATALOG_SECTORS = 31;    // two tracks, or one 32-sector track
         internal const int MAX_TS_CHAIN = 540;          // 16-bit TS sector offset would roll over
 
@@ -206,15 +207,28 @@ namespace DiskArc.FS {
             return false;
         }
 
+        /// <summary>
+        /// Gets the track/sector to use for the VTOC.  Normally this will be the default T17 S0,
+        /// but we want to allow the possibility of overriding that.
+        /// </summary>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <param name="trk">Result: VTOC track number.</param>
+        /// <param name="sct">Result: VTOC sector number.</param>
+        private static void GetVTOCLocation(AppHook appHook, out byte trk, out byte sct) {
+            trk = (byte)appHook.GetOptionInt(DAAppHook.DOS_VTOC_TRACK, DEFAULT_VTOC_TRACK);
+            sct = (byte)appHook.GetOptionInt(DAAppHook.DOS_VTOC_SECTOR, DEFAULT_VTOC_SECTOR);
+        }
+
 
         // Delegate: test image to see if it's ours.
         public static TestResult TestImage(IChunkAccess chunkSource, AppHook appHook) {
             if (!chunkSource.HasSectors) {
                 return TestResult.No;
             }
+            GetVTOCLocation(appHook, out byte vtocTrack, out byte vtocSector);
 
             byte[] dataBuf = new byte[SECTOR_SIZE];
-            chunkSource.ReadSector(VTOC_TRACK, VTOC_SECTOR, dataBuf, 0);
+            chunkSource.ReadSector(vtocTrack, vtocSector, dataBuf, 0);
             if (!DOS_VTOC.ValidateVTOC(chunkSource, dataBuf)) {
                 return TestResult.No;
             }
@@ -232,7 +246,7 @@ namespace DiskArc.FS {
             int goodCount = 0;
             int iterCount = 0;
             while (catTrk != 0 && iterCount < MAX_CATALOG_SECTORS) {
-                if (catTrk == VTOC_TRACK && catSct == VTOC_SECTOR) {
+                if (catTrk == vtocTrack && catSct == vtocSector) {
                     // Weird -- catalog sector points back at VTOC?
                     break;
                 }
@@ -527,16 +541,18 @@ namespace DiskArc.FS {
         /// <exception cref="IOException">Disk access failure.</exception>
         /// <exception cref="DAException">Invalid filesystem.</exception>
         private void ScanVolume(bool doScan) {
+            GetVTOCLocation(AppHook, out byte vtocTrack, out byte vtocSector);
+
             // Re-validate the VTOC, in case it has been edited since we initially checked
             // the volume.
             byte[] vtocBuf = new byte[SECTOR_SIZE];
-            ChunkAccess.ReadSector(VTOC_TRACK, VTOC_SECTOR, vtocBuf, 0);
+            ChunkAccess.ReadSector(vtocTrack, vtocSector, vtocBuf, 0);
             if (!DOS_VTOC.ValidateVTOC(ChunkAccess, vtocBuf)) {
                 throw new DAException("VTOC not valid");
             }
 
             // Looks good, allocate a VTOC object.
-            VTOC = new DOS_VTOC(ChunkAccess, VTOC_TRACK, VTOC_SECTOR, vtocBuf);
+            VTOC = new DOS_VTOC(ChunkAccess, vtocTrack, vtocSector, vtocBuf);
 
             // Scan the full catalog, creating a very shallow tree.
             mVolDirEntry = DOS_FileEntry.ScanCatalog(this, VTOC, doScan);
@@ -643,14 +659,15 @@ namespace DiskArc.FS {
             }
 
             // Create a VTOC.
+            GetVTOCLocation(AppHook, out byte vtocTrack, out byte vtocSector);
             byte[] vtoc = new byte[SECTOR_SIZE];
             vtoc[0x00] = (TotalScts == 13) ? (byte)2 : (byte)4;
-            vtoc[0x01] = VTOC_TRACK;                // track 17
+            vtoc[0x01] = vtocTrack;                 // track 17
             vtoc[0x02] = (byte)(TotalScts - 1);     // sector 12 or 15
             vtoc[0x03] = (TotalScts == 13) ? (byte)2 : (byte)3;
             vtoc[0x06] = (byte)volumeNum;
             vtoc[0x27] = MAX_TS_PER_TSLIST;         // 122
-            vtoc[0x30] = VTOC_TRACK - 1;
+            vtoc[0x30] = (byte)(vtocTrack - 1);
             vtoc[0x31] = 0xff;
             vtoc[0x34] = (byte)TotalTrks;
             vtoc[0x35] = (byte)TotalScts;
@@ -669,20 +686,20 @@ namespace DiskArc.FS {
                 DOS_VTOC.MarkTrack(vtoc, 1, true, TotalTrks, TotalScts);
                 DOS_VTOC.MarkTrack(vtoc, 2, true, TotalTrks, TotalScts);
             }
-            DOS_VTOC.MarkTrack(vtoc, VTOC_TRACK, true, TotalTrks, TotalScts);
+            DOS_VTOC.MarkTrack(vtoc, vtocTrack, true, TotalTrks, TotalScts);
             // Write the VTOC to disk.
-            ChunkAccess.WriteSector(VTOC_TRACK, VTOC_SECTOR, vtoc, 0);
+            ChunkAccess.WriteSector(vtocTrack, vtocSector, vtoc, 0);
 
             // Create catalog sectors.
             byte[] catData = new byte[SECTOR_SIZE];
-            catData[0x01] = VTOC_TRACK;
+            catData[0x01] = vtocTrack;
             for (byte sct = (byte)(TotalScts - 1); sct > 0; sct--) {
                 if (sct == 1) {
                     // Sector 1 is the end of the catalog.
                     catData[0x01] = 0;
                 }
                 catData[0x02] = (byte)(sct - 1);
-                ChunkAccess.WriteSector(VTOC_TRACK, sct, catData, 0);
+                ChunkAccess.WriteSector(vtocTrack, sct, catData, 0);
             }
 
             // Write everything to disk and reset state.

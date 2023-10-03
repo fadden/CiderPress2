@@ -502,7 +502,7 @@ namespace DiskArc.FS {
             bool doSkipRemaining = false;
             int iterCount = 0;
             while (catTrk != 0 && ++iterCount <= DOS.MAX_CATALOG_SECTORS) {
-                if ((catTrk == DOS.VTOC_TRACK && catSct == DOS.VTOC_SECTOR) ||
+                if ((catTrk == fileSystem.VTOC!.VTOCTrk && catSct == fileSystem.VTOC!.VTOCSct) ||
                         catTrk >= vtoc.NumTrks || catSct >= vtoc.NumScts) {
                     // Reference back to VTOC, or other invalid values.
                     fileSystem.Notes.AddW("Found bad catalog link, to T" + catTrk + " S " + catSct);

@@ -120,7 +120,7 @@ namespace DiskArc.FS {
             // in-use by system.  (We currently always do a full DOS scan, so this should always
             // pass unless the DOS implementation changes.)
             VolumeUsage vu = vtoc.VolUsage;
-            if (vu.GetUsage(mFileSystem.TSToChunk(DOS.VTOC_TRACK, DOS.VTOC_SECTOR))
+            if (vu.GetUsage(mFileSystem.TSToChunk(vtoc.VTOCTrk, vtoc.VTOCSct))
                     != IFileEntry.NO_ENTRY) {
                 Debug.Assert(false);        // shouldn't be here without full VU data
                 return false;
@@ -223,7 +223,7 @@ namespace DiskArc.FS {
                     IsDubious = true;
                 } else {
                     // Make sure DOS isn't using anything in the Pascal area.
-                    for (int i = 0; i < DOS.VTOC_TRACK; i++) {
+                    for (int i = 0; i < mFileSystem.VTOC!.VTOCTrk; i++) {
                         if (dosUse[i]) {
                             Notes.AddW("Track " + i +
                                 " used by DOS (should be reserved for Pascal)");

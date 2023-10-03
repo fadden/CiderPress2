@@ -91,9 +91,11 @@ namespace DiskArc {
         /// Can we write with this codec?
         /// </summary>
         /// <remarks>
-        /// <para>Should be true for we're ignoring checksums, since that means we don't know
+        /// <para>Should be true for we're ignoring data checksums, since that means we don't know
         /// how to write them.</para>
         /// </remarks>
+        // TODO: there should be "can write" and "can format" properties.  The inability to
+        //   write the address field doesn't impact whether or not we can update a the sector.
         public bool ReadOnly { get; protected set; }
 
         /// <summary>

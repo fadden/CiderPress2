@@ -35,8 +35,8 @@ namespace DiskArcTests {
 
                 // Nuke the VTOC.
                 byte[] sectorBuf = new byte[SECTOR_SIZE];
-                fs.RawAccess.WriteSector(DiskArc.FS.DOS.VTOC_TRACK, DiskArc.FS.DOS.VTOC_SECTOR,
-                    sectorBuf, 0);
+                fs.RawAccess.WriteSector(DiskArc.FS.DOS.DEFAULT_VTOC_TRACK,
+                    DiskArc.FS.DOS.DEFAULT_VTOC_SECTOR, sectorBuf, 0);
 
                 try {
                     fs.PrepareFileAccess(true);
@@ -113,13 +113,13 @@ namespace DiskArcTests {
                 fs.PrepareRawAccess();
 
                 byte[] sectorBuf = new byte[SECTOR_SIZE];
-                fs.RawAccess.ReadSector(DiskArc.FS.DOS.VTOC_TRACK, DiskArc.FS.DOS.VTOC_SECTOR,
-                    sectorBuf, 0);
+                fs.RawAccess.ReadSector(DiskArc.FS.DOS.DEFAULT_VTOC_TRACK,
+                    DiskArc.FS.DOS.DEFAULT_VTOC_SECTOR, sectorBuf, 0);
                 // Set the first catalog sector to track 17, sector 0 (self-referential).  An
                 // invalid track/sector would cause the entire volume to be rejected.
                 sectorBuf[0x02] = 0x00;
-                fs.RawAccess.WriteSector(DiskArc.FS.DOS.VTOC_TRACK, DiskArc.FS.DOS.VTOC_SECTOR,
-                    sectorBuf, 0);
+                fs.RawAccess.WriteSector(DiskArc.FS.DOS.DEFAULT_VTOC_TRACK,
+                    DiskArc.FS.DOS.DEFAULT_VTOC_SECTOR, sectorBuf, 0);
                 fs.PrepareFileAccess(true);
                 if (!fs.IsDubious) {
                     throw new Exception("Volume not reported as damaged");

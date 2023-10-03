@@ -25,6 +25,8 @@ namespace DiskArc.Disk {
         public enum CodecIndex525 {
             Std_525_16,
             Std_525_13,
+            Patched_525_16,
+            Patched_525_13,
             RDOS33_525_16,
             RDOS32_525_13,
             Muse_525_13,
@@ -74,6 +76,15 @@ namespace DiskArc.Disk {
                 case CodecIndex525.Std_525_16:
                     codec.Name = "Std 16-sector";
                     break;
+                case CodecIndex525.Patched_525_16:
+                    // "Patched" to handle minor copy protection.  We still verify the data
+                    // checksum, but we ignore altered epilog bytes and some address fields.
+                    codec.Name = "Patched 16-sector";
+                    codec.AddrEpilogReadCount = 0;
+                    codec.DoTestAddrChecksum = false;
+                    codec.DoTestAddrTrack = false;
+                    codec.DataEpilogReadCount = 0;
+                    break;
                 case CodecIndex525.RDOS33_525_16:
                     codec.Name = "RDOS 16-sector";
                     codec.AddrEpilogReadCount = 0;
@@ -81,6 +92,14 @@ namespace DiskArc.Disk {
                     break;
                 case CodecIndex525.Std_525_13:
                     codec.Name = "Std 13-sector";
+                    codec.Set13();
+                    break;
+                case CodecIndex525.Patched_525_13:
+                    codec.Name = "Std 13-sector";
+                    codec.AddrEpilogReadCount = 0;
+                    codec.DoTestAddrChecksum = false;
+                    codec.DoTestAddrTrack = false;
+                    codec.DataEpilogReadCount = 0;
                     codec.Set13();
                     break;
                 case CodecIndex525.RDOS32_525_13:

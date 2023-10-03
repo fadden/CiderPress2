@@ -36,9 +36,8 @@ The system doesn't define an explicit maximum file length.  Untyped files are ac
 blocks, by block number, which is a signed 16-bit integer.  This yields a maximum size of 16MB.
 
 Pascal volumes can be stored on 140KB 5.25" disks, 800KB 3.5" disks, and in special regions of
-ProDOS volumes.  The exact specifications of the latter are unknown, but it was managed by
-Apple's "Pascal ProFile Manager", for use with the Apple ProFile hard drive.  According to the
-manual, the region was fixed in size and occupied a contiguous region of the ProDOS volume.
+ProDOS volumes.  The latter was managed by Apple's "Pascal ProFile Manager", for use with the
+Apple ProFile hard drive (see [PPM](../multi/PPM-notes.md)).
 
 Volume names are limited to 7 ASCII characters, and may not contain equals ('='), dollar ('$'),
 question ('?'), or comma (',').  Filenames are limited to 15 characters, and in theory all

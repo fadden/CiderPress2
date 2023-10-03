@@ -661,7 +661,7 @@ namespace DiskArc.FS {
                 case ProDOS.StorageType.Extended:
                 // Only one fork is open, so this makes no sense.
                 case ProDOS.StorageType.PascalVolume:
-                // I've never seen one of these.
+                // File storage method is undefined.
                 case ProDOS.StorageType.SubdirHeader:
                 case ProDOS.StorageType.VolDirHeader:
                 // Should not be associated with an open file.

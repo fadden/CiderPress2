@@ -63,9 +63,9 @@ namespace cp2.Tests {
                     IChunkAccess chunks = fs.RawAccess;
                     byte[] sectorBuf = new byte[SECTOR_SIZE];
                     // Read the first catalog sector, damage the T/S value for the 2nd entry.
-                    chunks.ReadSector(DOS.VTOC_TRACK, 15, sectorBuf, 0);
+                    chunks.ReadSector(DOS.DEFAULT_VTOC_TRACK, 15, sectorBuf, 0);
                     sectorBuf[0x2e] = 0xee;
-                    chunks.WriteSector(DOS.VTOC_TRACK, 15, sectorBuf, 0);
+                    chunks.WriteSector(DOS.DEFAULT_VTOC_TRACK, 15, sectorBuf, 0);
                 }
             }
 

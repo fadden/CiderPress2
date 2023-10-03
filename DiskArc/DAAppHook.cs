@@ -26,8 +26,13 @@ namespace DiskArc {
         // message.  This is primarily for the benefit of the DiskArc test suite.
         public const string WARN_MARKED_BUT_UNUSED = "warn-marked-but-unused";
 
-        // When scanning a DOS catalog, stop at the first unused entry.
+        // When scanning a DOS catalog, stop at the first unused entry.  (This should always be
+        // true unless the catalog is weird.)
         public const string DOS_STOP_FIRST_UNUSED = "dos-stop-first-unused";
+
+        // Override the standard T17 S0 location of the DOS VTOC.
+        public const string DOS_VTOC_TRACK = "dos-vtoc-track";
+        public const string DOS_VTOC_SECTOR = "dos-vtoc-sector";
 
         // Root directory when running library tests.  This is where "TestData" can be found.
         public const string LIB_TEST_ROOT = "lib-test-root";

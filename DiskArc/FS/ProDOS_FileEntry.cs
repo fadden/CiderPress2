@@ -1333,10 +1333,13 @@ namespace DiskArc.FS {
                 case ProDOS.StorageType.Seedling:
                 case ProDOS.StorageType.Sapling:
                 case ProDOS.StorageType.Tree:
-                case ProDOS.StorageType.PascalVolume:
                 case ProDOS.StorageType.Extended:
                 case ProDOS.StorageType.Directory:
                     // all good
+                    break;
+                case ProDOS.StorageType.PascalVolume:
+                    FileSystem.Notes.AddW("Found Pascal ProFile Manager file (not supported)");
+                    IsDamaged = true;
                     break;
                 case ProDOS.StorageType.SubdirHeader:
                 case ProDOS.StorageType.VolDirHeader:

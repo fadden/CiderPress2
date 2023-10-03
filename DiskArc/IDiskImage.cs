@@ -159,6 +159,9 @@ namespace DiskArc {
         ///   true if the chunk access object was created; otherwise it only returns true if
         ///   the filesystem or partition layout was recognized.</returns>
         bool AnalyzeDisk(SectorCodec? codec, SectorOrder orderHint, AnalysisDepth depth);
+        // TODO(maybe): take an optional SettingsHolder with a collection of filesystem-specific
+        //   options.  This would provide a way to override FS defaults, such as the DOS VTOC
+        //   location.
 
         /// <summary>
         /// Closes the IFileSystem or IMultiPart object referenced by <see cref="Contents"/>.
