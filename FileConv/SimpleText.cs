@@ -28,6 +28,8 @@ namespace FileConv {
     /// images that fit comfortably in RAM on a modern system.  Still, some applications may
     /// need to limit the maximum size that they will try to convert.  We could avoid this by
     /// streaming the output to a temporary file, but that's much slower and less convenient.</para>
+    /// <para>End-of-line markers use the platform-specific convention.  Add one by calling
+    /// <see cref="AppendLine"/> or by appending <see cref="Environment.NewLine"/>.</para>
     /// </remarks>
     public class SimpleText : IConvOutput {
         /// <summary>
@@ -107,6 +109,10 @@ namespace FileConv {
         }
         public SimpleText Append(int val) {
             Text.Append(val);
+            return this;
+        }
+        public SimpleText Append(StringBuilder sb) {
+            Text.Append(sb);
             return this;
         }
         public SimpleText AppendLine(string text) {

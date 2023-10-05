@@ -2,10 +2,10 @@
 
 ## Primary References ##
 
- - _Apple II Pascal 1.3_, https://archive.org/details/apple-ii-pascal-1.3/mode/2up
+ - _Apple II Pascal 1.3_, https://archive.org/details/apple-ii-pascal-1.3
    (directory format on page IV-15)
  - _Apple Pascal Operating System Reference Manual_,
-   https://archive.org/details/Apple_Pascal_Operating_System_Reference_Manual/mode/1up
+   https://archive.org/details/Apple_Pascal_Operating_System_Reference_Manual
    (disk format starts p.25, file format descriptions p.265)
 
 ## General ##

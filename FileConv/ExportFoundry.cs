@@ -42,6 +42,8 @@ namespace FileConv {
             new ConverterEntry(typeof(Code.Applesoft)),
             new ConverterEntry(typeof(Code.BusinessBASIC)),
             new ConverterEntry(typeof(Code.IntegerBASIC)),
+            new ConverterEntry(typeof(Code.ApplePascal_Code)),
+            new ConverterEntry(typeof(Code.ApplePascal_Text)),
 
             new ConverterEntry(typeof(Doc.AppleWorksDB)),
             new ConverterEntry(typeof(Doc.AppleWorksSS)),

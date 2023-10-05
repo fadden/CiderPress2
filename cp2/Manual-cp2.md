@@ -1488,6 +1488,8 @@ Converters are available for code:
      syntax highlighting
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
+ - `pcd` - Apple Pascal codefile
+ - `ptx` - Apple Pascal textfile
 
 Text documents:
  - `adb`: AppleWorks "Classic" Data Base
