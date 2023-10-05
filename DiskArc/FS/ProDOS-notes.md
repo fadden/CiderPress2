@@ -266,7 +266,7 @@ geometry.
 
 Disk volumes from UCSD Pascal can be embedded in a ProDOS disk, using storage
 type $04.  This was implemented by Apple's *Pascal ProFile Manager* for use
-with ProFile hard drives, and is referred to as [PPM](../multi/PPM-notes.md).
+with ProFile hard drives, and is referred to as [PPM](../Multi/PPM-notes.md).
 
 Multiple DOS 3.3 volumes can be embedded in a ProDOS disk using Glen Bredon's
 DOS MASTER.  See the notes on [hybrid disks](Hybrid-notes.md) for more details.

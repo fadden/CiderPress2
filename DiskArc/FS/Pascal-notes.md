@@ -37,7 +37,7 @@ blocks, by block number, which is a signed 16-bit integer.  This yields a maximu
 
 Pascal volumes can be stored on 140KB 5.25" disks, 800KB 3.5" disks, and in special regions of
 ProDOS volumes.  The latter was managed by Apple's "Pascal ProFile Manager", for use with the
-Apple ProFile hard drive (see [PPM](../multi/PPM-notes.md)).
+Apple ProFile hard drive (see [PPM](../Multi/PPM-notes.md)).
 
 Volume names are limited to 7 ASCII characters, and may not contain equals ('='), dollar ('$'),
 question ('?'), or comma (',').  Filenames are limited to 15 characters, and in theory all

@@ -1,20 +1,22 @@
-# ProFile Pascal Manager (PPM) Partition #
+# Pascal ProFile Manager (PPM) Partition #
 
 ## Primary Sources ##
 
  - ProDOS 8 TN #25 "Non-Standard Storage Types"
+ - _Pascal ProFile Manager Manual_, https://archive.org/details/a2ppfmm/
 
 ## General ##
 
-Apple published the "Pascal Profile Manager" software to allow UCSD Pascal volumes to be stored
-on a ProDOS disk.  This was intended for use with Apple ProFile hard drives.
+Apple published the "Pascal ProFile Manager" software to allow UCSD Pascal volumes to be stored
+on a ProDOS disk.  This was intended for use with Apple ProFile(tm) hard drives.  It required
+Apple Pascal v1.2 or later.
 
-This does not seem to have been widely used.  Only a couple of examples exist in the wild.
+Images of hard drives that use this system are rare.
 
 ## Layout ##
 
 The PPM area is stored in the ProDOS filesystem with a storage type of $4, a file type of
-$EF (PAS), and the name "PASCAL.AREA".  No other file uses storage type 4.  The ProDOS
+PAS ($EF), and the name "PASCAL.AREA".  No other type of file uses storage type 4.  The ProDOS
 "key pointer" is set to the first block of the PPM area, and the "blocks used" value is set to
 the region size.
 
