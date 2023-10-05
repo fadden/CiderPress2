@@ -211,6 +211,9 @@ namespace DiskArc.FS {
         /// Gets the track/sector to use for the VTOC.  Normally this will be the default T17 S0,
         /// but we want to allow the possibility of overriding that.
         /// </summary>
+        /// <remarks>
+        /// This doesn't range-check the values.  The code later on will need to do that anyway.
+        /// </remarks>
         /// <param name="appHook">Application hook reference.</param>
         /// <param name="trk">Result: VTOC track number.</param>
         /// <param name="sct">Result: VTOC sector number.</param>

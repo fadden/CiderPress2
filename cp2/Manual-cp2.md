@@ -1310,6 +1310,13 @@ remove the directory entry".
 Specifies number of sectors per track, default 16.  Used when creating
 disk images.
 
+#### `--set-int=name:value`
+
+This is a way to pass certain configuration options to lower-level code.
+For example, `--set-int=dos-vtoc-track:0x15` would direct the DOS filesystem
+code to look for the catalog on track 0x15 instead of 0x11.  You generally
+won't need to use this.
+
 #### `--show-log`, `--no-show-log` (default)
 
 If enabled, a log of information useful for debugging will be shown after

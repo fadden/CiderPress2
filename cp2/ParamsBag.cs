@@ -16,6 +16,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using AppCommon;
 using CommonUtil;
@@ -45,7 +46,7 @@ namespace cp2 {
         /// Option type.  Most options are boolean flags, but a few are name=value.
         /// </summary>
         private enum OptionType {
-            Unknown = 0, Bool, Depth, Sectors, Preserve
+            Unknown = 0, Bool, Depth, Sectors, Preserve, ConfigInt
         }
 
         /// <summary>
@@ -98,6 +99,7 @@ namespace cp2 {
         private static Option OptRaw = new Option("raw", OptionType.Bool, false);
         private static Option OptRecurse = new Option("recurse", OptionType.Bool, true);
         private static Option OptSectors = new Option("sectors", OptionType.Sectors, 16);
+        private static Option OptSetInt = new Option("set-int", OptionType.ConfigInt, "");
         private static Option OptShowLog = new Option("show-log", OptionType.Bool, false);
         private static Option OptShowNotes = new Option("show-notes", OptionType.Bool, false);
         private static Option OptSkipSimple = new Option("skip-simple", OptionType.Bool, true);
@@ -134,6 +136,7 @@ namespace cp2 {
                 { OptRaw.Name, OptRaw },
                 { OptRecurse.Name, OptRecurse },
                 { OptSectors.Name, OptSectors },
+                { OptSetInt.Name, OptSetInt },
                 { OptShowLog.Name, OptShowLog },
                 { OptShowNotes.Name, OptShowNotes },
                 { OptSkipSimple.Name, OptSkipSimple },
@@ -373,7 +376,7 @@ namespace cp2 {
                             default:
                                 Console.Error.WriteLine("Unknown scan depth '" + optArg +
                                     "', keeping default (" + opt.CurValue + ")");
-                                // keep going
+                                // keep going, with default value
                                 break;
                         }
                         break;
@@ -417,6 +420,13 @@ namespace cp2 {
                                     "', keeping default");
                                 // keep going, with default value
                                 break;
+                        }
+                        break;
+                    case OptionType.ConfigInt:
+                        if (!ProcessConfigInt(optArg)) {
+                            // This is a parsing error, not a reference to an unknown thing,
+                            // so we want to fail now.
+                            return false;
                         }
                         break;
                     default:
@@ -475,6 +485,36 @@ namespace cp2 {
             return true;
         }
 
+
+        // General pattern for configuration options.
+        private static readonly Regex sConfigLineRegex = new Regex(CONFIG_PATTERN);
+        private const string CONFIG_PATTERN = @"^([a-zA-Z0-9-]+):(\S+)$";
+
+        /// <summary>
+        /// Processes a configuration option set command, "name:value".
+        /// </summary>
+        /// <param name="optStr">Option string.</param>
+        /// <returns>True on success, false if parsing failed.</returns>
+        private bool ProcessConfigInt(string optStr) {
+            MatchCollection matches = sConfigLineRegex.Matches(optStr);
+            if (matches.Count != 1) {
+                Console.Error.WriteLine("Invalid configuration option string '" + optStr + "'");
+                return false;
+            }
+
+            string name = matches[0].Groups[1].Value;
+            string value = matches[0].Groups[2].Value;
+
+            // Convert the value to an integer.
+            if (!StringToValue.TryParseInt(value, out int intVal, out int intBase)) {
+                Console.Error.WriteLine("Value '" + value + "' must be an integer");
+                return false;
+            }
+
+            AppHook.SetOptionInt(name, intVal);
+            return true;
+        }
+
         /// <summary>
         /// Generates a list of option descriptions for display by the "help" command.
         /// </summary>
@@ -513,6 +553,12 @@ namespace cp2 {
                         sb.Append(opt.Name);
                         sb.Append("=");
                         sb.Append("{13,16,32}");
+                        break;
+                    case OptionType.ConfigInt:
+                        sb.Append("--");
+                        sb.Append(opt.Name);
+                        sb.Append("=");
+                        sb.Append("name:value");
                         break;
                     default:
                         System.Diagnostics.Debug.Assert(false);
