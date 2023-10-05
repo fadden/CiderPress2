@@ -970,6 +970,10 @@ namespace DiskArc.FS {
                             // directory itself is damaged, but since the dir header parsed
                             // correctly maybe we just assume this single entry is corrupt.
                             //IsDamaged = true;
+                            if (doFullScan &&
+                                    newEntry.StorageType == ProDOS.StorageType.PascalVolume) {
+                                SetPascalVolumeUsage(newEntry);
+                            }
                         } else if (doFullScan && !newEntry.IsDirectory) {
                             // Do a "deep scan", opening files and examining their structure.
                             // The volume usage code will call back into us to report conflicts.
@@ -1107,6 +1111,18 @@ namespace DiskArc.FS {
                         entry.FullPathName);
                     entry.ExtInfo.FixRsrcBlocksUsed((ushort)rsrcBlocksUsed);
                 }
+            }
+        }
+
+        private void SetPascalVolumeUsage(ProDOS_FileEntry entry) {
+            Debug.Assert(entry.StorageType == ProDOS.StorageType.PascalVolume);
+            Debug.Assert(FileSystem.VolBitmap != null);
+
+            VolumeUsage vu = FileSystem.VolBitmap.VolUsage;
+            uint start = entry.KeyBlock;
+            uint count = entry.BlocksUsed;
+            for (uint i = 0; i < count; i++) {
+                vu.SetUsage(start + i, entry);
             }
         }
 
@@ -1338,7 +1354,9 @@ namespace DiskArc.FS {
                     // all good
                     break;
                 case ProDOS.StorageType.PascalVolume:
-                    FileSystem.Notes.AddW("Found Pascal ProFile Manager file (not supported)");
+                    FileSystem.Notes.AddI("Found Pascal ProFile Manager file: start=$" +
+                        mKeyPointer.ToString("x4") + ", size=" + mBlocksUsed + " blocks");
+                    // Mark as damaged so nothing tries to open it.
                     IsDamaged = true;
                     break;
                 case ProDOS.StorageType.SubdirHeader:

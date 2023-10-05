@@ -782,6 +782,10 @@ namespace AppCommon {
             string label = "#" + index;
             if (part is APM_Partition) {
                 label += ": " + ((APM_Partition)part).PartitionName;
+            } else if (part is FocusDrive_Partition) {
+                label += ": " + ((FocusDrive_Partition)part).PartitionName;
+            } else if (part is PPM_Partition) {
+                label += ": " + ((PPM_Partition)part).PartitionName;
             }
             Node partNode = new Node(part, parentNode) {
                 Label = label,

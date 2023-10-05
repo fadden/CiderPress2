@@ -66,3 +66,7 @@ of tracks reserved for DOS can be adjusted, and the catalog track length is cut 
 half the blocks being available to ProDOS (which is tricky due to the software sector skewing).
 https://www.applefritter.com/appleii-box/APPLE2/ProDOSandDOS33DoubleBoot/DoubleBoot.pdf has a
 listing that can be typed in.
+
+## Pascal ProFile Manager (PPM) ##
+
+See [PPM](../Multi/PPM-notes.md).

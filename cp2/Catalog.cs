@@ -651,6 +651,10 @@ namespace cp2 {
                 if (part is APM_Partition) {
                     name = ((APM_Partition)part).PartitionName;
                     type = ((APM_Partition)part).PartitionType;
+                } else if (part is FocusDrive_Partition) {
+                    name = ((FocusDrive_Partition)part).PartitionName;
+                } else if (part is PPM_Partition) {
+                    name = ((PPM_Partition)part).PartitionName;
                 }
                 string outStr = string.Format(MULTI_FMT, index, part.StartOffset / BLOCK_SIZE,
                     part.Length / BLOCK_SIZE, name, type);

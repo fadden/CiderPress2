@@ -136,7 +136,7 @@ namespace DiskArc.Multi {
                 return TestResult.No;
             }
             if (chunkAccess is ChunkSubset) {
-                // Don't look for APM inside other partitions.
+                // Don't look for FocusDrive inside other partitions.
                 return TestResult.No;
             }
 

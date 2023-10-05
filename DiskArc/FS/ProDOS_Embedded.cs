@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Text;
 
 using CommonUtil;
 using DiskArc.Multi;
@@ -24,7 +25,7 @@ using static DiskArc.Defs;
 namespace DiskArc.FS {
     /// <summary>
     /// Code for finding and enumerating filesystem partitions embedded in a ProDOS filesystem,
-    /// notably DOS MASTER volumes.
+    /// notably DOS MASTER and PPM volumes.
     /// </summary>
     /// <remarks>
     /// <para>Re-analyzing the filesystem is okay, since the DOS partitions don't overlap with
@@ -57,6 +58,7 @@ namespace DiskArc.FS {
         // Innards.
         //
 
+        private ProDOS mFileSystem;
         private IChunkAccess mBaseChunks;
         private AppHook mAppHook;
 
@@ -66,12 +68,14 @@ namespace DiskArc.FS {
         /// <summary>
         /// Private constructor.
         /// </summary>
-        /// <param name="chunkAccess">Chunk access object for ProDOS filesystem.</param>
+        /// <param name="fs">ProDOS filesystem reference.</param>
         /// <param name="appHook">Application hook reference.</param>
-        private ProDOS_Embedded(IChunkAccess chunkAccess, AppHook appHook) {
+        private ProDOS_Embedded(ProDOS fs, AppHook appHook) {
+            IChunkAccess chunkAccess = fs.ChunkAccess;
             Debug.Assert(chunkAccess is not GatedChunkAccess);
             Debug.Assert(chunkAccess.HasBlocks);
 
+            mFileSystem = fs;
             mBaseChunks = chunkAccess;
             mAppHook = appHook;
             RawAccess = new GatedChunkAccess(chunkAccess);
@@ -80,15 +84,17 @@ namespace DiskArc.FS {
         /// <summary>
         /// Looks for filesystems embedded in a ProDOS filesystem.
         /// </summary>
-        /// <param name="chunkAccess">Chunk access object for ProDOS filesystem.</param>
-        /// <param name="vu">Volume usage for ProDOS filesystem.</param>
+        /// <param name="fs">ProDOS filesystem reference.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>List of embedded volumes as an IMultiPart instance, or null if no embedded
         ///   volumes were found.</returns>
-        internal static IMultiPart? FindEmbeddedVolumes(IChunkAccess chunkAccess, VolumeUsage vu,
-                AppHook appHook) {
-            ProDOS_Embedded embeds = new ProDOS_Embedded(chunkAccess, appHook);
-            if (!embeds.FindVolumes(vu)) {
+        internal static IMultiPart? FindEmbeddedVolumes(ProDOS fs, AppHook appHook) {
+            ProDOS_Embedded embeds = new ProDOS_Embedded(fs, appHook);
+
+            bool foundDOS = embeds.FindDOSVolumes();
+            Debug.Assert(foundDOS ^ embeds.mPartitions.Count == 0);
+            embeds.FindPPMVolumes();
+            if (embeds.mPartitions.Count == 0) {
                 return null;
             } else {
                 return embeds;
@@ -112,10 +118,11 @@ namespace DiskArc.FS {
         private static readonly uint[] sBlockCounts = new uint[] { 280, 320, 400, 800 };
 
         /// <summary>
-        /// Searches for DOS volumes.
+        /// Searches for DOS volumes.  If a set is found, they're added to the partition list.
         /// </summary>
-        private bool FindVolumes(VolumeUsage vu) {
+        private bool FindDOSVolumes() {
             // Quick check on VolumeUsage.  Block 0 should be marked as in-use by the system.
+            VolumeUsage vu = mFileSystem.VolBitmap!.VolUsage;
             if (vu.GetUsage(0) != IFileEntry.NO_ENTRY) {
                 Debug.Assert(false);        // shouldn't be here without full VU data
                 return false;
@@ -181,6 +188,7 @@ namespace DiskArc.FS {
                     return true;
                 }
             }
+            Debug.Assert(mPartitions.Count == 0);
             return false;
         }
 
@@ -251,5 +259,123 @@ namespace DiskArc.FS {
                 " blocks");
             return true;
         }
+
+        #region PPM
+
+        //
+        // Two basic approaches for PPM: treat it as a series of loosely-related embedded
+        // volumes (like DOS master), or treat it as a disk image file that can be opened
+        // to expose the multi-part layout within.
+        //
+        // We're using the embedded approach.  Treating it as a readable file:
+        // - Requires adding file-handling code to ProDOS_FileDesc for storage type 4.  This is a
+        //   little weirder than it sounds because the PASCAL.AREA file can exceed the 16MB
+        //   maximum length of a ProDOS file, so exceptions to length checks have to be added.
+        // - Requires updating the disk image code in the application to recognize the file's
+        //   special characteristics.  Testing the filename may be enough, checking the ProDOS
+        //   storage type is preferred.
+        // - Allows the PPM area to be extracted, which is a problem: PPM uses absolute
+        //   ProDOS filesystem offsets rather than partition-relative offsets, so you can't
+        //   locate the partitions without knowing where the PPM area sat within the filesystem.
+        //
+        // It's simpler to handle it through the embedded partition mechanism.
+        //
+
+        private const string PPM_AREA_NAME = "PASCAL.AREA";
+        private const int PPM_MAX_VOLUME = 31;
+        private const int PPM_INFO_SIZE = 8;
+        private const int PPM_DESC_SIZE = 16;
+        private const int PPM_DESC_OFFSET = 0x100;
+        private const int PPM_SIGNATURE = 0x4D505003;   // "PPM" with preceding length byte
+
+        /// <summary>
+        /// Looks for a Pascal ProFile Manager area.  If found, identifies the partitions.
+        /// </summary>
+        private void FindPPMVolumes() {
+            // Look for a file with the appropriate characteristics in the root dir.
+            IFileEntry rootDir = mFileSystem.GetVolDirEntry();
+            if (!mFileSystem.TryFindFileEntry(rootDir, PPM_AREA_NAME, out IFileEntry ientry)) {
+                return;
+            }
+            ProDOS_FileEntry pasEntry = (ProDOS_FileEntry)ientry;
+            if (pasEntry.StorageType != ProDOS.StorageType.PascalVolume) {
+                mAppHook.LogW("PPM: ignoring " + pasEntry.FileName + " with wrong storage type");
+                return;
+            }
+
+            uint startBlock = pasEntry.KeyBlock;
+            uint blockCount = pasEntry.BlocksUsed;
+            if (startBlock == 0 || blockCount < 2 ||
+                    startBlock + blockCount > mFileSystem.TotalBlocks) {
+                mAppHook.LogW("PPM: invalid: start=" + startBlock + " count=" + blockCount +
+                    " totalBlocks=" + mFileSystem.TotalBlocks);
+                return;
+            }
+
+            // Read the PPM info blocks.
+            byte[] ppmInfo = new byte[BLOCK_SIZE * 2];
+            try {
+                mBaseChunks.ReadBlock(startBlock, ppmInfo, 0);
+                mBaseChunks.ReadBlock(startBlock + 1, ppmInfo, BLOCK_SIZE);
+            } catch (Exception ex) {
+                mAppHook.LogW("PPM: unable to read info blocks: " + ex.Message);
+                return;
+            }
+
+            // Do a quick check on the info.
+            int offset = 0;
+            ushort mapBlockCount = RawData.ReadU16LE(ppmInfo, ref offset);
+            ushort volCount = RawData.ReadU16LE(ppmInfo, ref offset);
+            uint signature = RawData.ReadU32LE(ppmInfo, ref offset);
+            if (signature != PPM_SIGNATURE) {
+                mAppHook.LogW("PPM: did not find signature (got " + signature.ToString("x8") + ")");
+                return;
+            }
+            if (mapBlockCount != blockCount) {
+                mAppHook.LogW("PPM: stored block count is " + mapBlockCount + ", dir count is " +
+                    blockCount);
+                // keep going?
+            }
+            if (volCount == 0 || volCount > PPM_MAX_VOLUME) {
+                mAppHook.LogW("PPM: invalid volume count: " + volCount);
+                return;
+            }
+
+            // Generate partition list.  Partition slot #0 is essentially the PPM map itself,
+            // so skip over that.
+            int prevEnd = 0;
+            for (int i = 1; i < volCount + 1; i++) {
+                int infoOffset = i * PPM_INFO_SIZE;
+                ushort partStart = RawData.GetU16LE(ppmInfo, infoOffset + 0);
+                ushort partCount = RawData.GetU16LE(ppmInfo, infoOffset + 2);
+                if (partStart + partCount > mFileSystem.TotalBlocks) {
+                    mAppHook.LogW("PPM: invalid partition " + i + ": start=" + partStart +
+                        ", count=" + partCount);
+                    continue;
+                }
+
+                int descOffset = PPM_DESC_OFFSET + i * PPM_DESC_SIZE;
+                byte strLen = ppmInfo[descOffset];
+                if (strLen >= PPM_DESC_SIZE) {
+                    mAppHook.LogW("PPM: invalid description string " + i + ": len=" + strLen);
+                    continue;
+                }
+                string desc = Encoding.ASCII.GetString(ppmInfo, descOffset + 1, strLen);
+
+                if (partStart < prevEnd) {
+                    mAppHook.LogW("PPM: partition " + i + " overlaps with previous");
+                    // We have no way to mark these as damaged/dubious, so just omit it entirely.
+                    continue;
+                }
+
+                PPM_Partition newPart = new PPM_Partition(mBaseChunks,
+                    (long)partStart * BLOCK_SIZE, (long)partCount * BLOCK_SIZE, desc, mAppHook);
+                mPartitions.Add(newPart);
+
+                prevEnd = partStart + partCount;
+            }
+        }
+
+        #endregion PPM
     }
 }

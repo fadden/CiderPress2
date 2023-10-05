@@ -141,11 +141,13 @@ namespace AppCommon {
         /// <summary>
         /// Returns a short string with a partition subclass name.
         /// </summary>
-        public static string Partition(Partition fs) {
-            if (fs is APM_Partition) {
+        public static string Partition(Partition part) {
+            if (part is APM_Partition) {
                 return "APM partition";
-            } else if (fs is FocusDrive_Partition) {
+            } else if (part is FocusDrive_Partition) {
                 return "Focus partition";
+            } else if (part is PPM_Partition) {
+                return "PPM partition";
             } else {
                 return "Partition";
             }

@@ -710,7 +710,7 @@ namespace DiskArc.FS {
                 AppHook.LogE("FindEmbeddedVolumes: did not perform full scan in PrepareFileAccess");
                 return null;
             }
-            mEmbeds = ProDOS_Embedded.FindEmbeddedVolumes(ChunkAccess, VolBitmap.VolUsage, AppHook);
+            mEmbeds = ProDOS_Embedded.FindEmbeddedVolumes(this, AppHook);
             Debug.Assert(mEmbeds == null || mEmbeds.Count > 0);
             return mEmbeds;
         }

@@ -20,9 +20,9 @@ using static DiskArc.Defs;
 
 namespace DiskArc.Multi {
     /// <summary>
-    /// One partition in a FocusDrive.
+    /// One partition in an PPM area.
     /// </summary>
-    public class FocusDrive_Partition : Partition {
+    public class PPM_Partition : Partition {
         /// <summary>
         /// Partition name string.
         /// </summary>
@@ -36,14 +36,14 @@ namespace DiskArc.Multi {
         /// <param name="length">Partition length, in bytes.</param>
         /// <param name="name">Partition name, from partition map entry.</param>
         /// <param name="appHook">Application hook reference.</param>
-        public FocusDrive_Partition(IChunkAccess chunkAccess, long startOffset, long length,
+        public PPM_Partition(IChunkAccess chunkAccess, long startOffset, long length,
                 string name, AppHook appHook)
                 : base(chunkAccess, startOffset, length, appHook) {
             PartitionName = name;
         }
 
         public override string ToString() {
-            return "[FocusPart: name='" + PartitionName +
+            return "[PPM: name='" + PartitionName +
                 "' start=" + (StartOffset / BLOCK_SIZE) + " length=" + (Length / BLOCK_SIZE) +
                 " (" + (Length / (1024 * 1024.0)).ToString("F2") + " MiB)]";
         }
