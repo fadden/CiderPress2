@@ -340,7 +340,7 @@ Jan 1, 1904, in local time.  The timestamp will roll over on Feb 6, 2040.
 
 The structure and field names were originally published in Apple header files and documentation,
 notably _Inside Macintosh: Files_.  The `hfs_format.h` header file has revised versions, in which
-some fields were deprecated or repurposed.  Many fields were renamed.
+some fields were deprecated or repurposed.  Many fields were renamed.  Both forms are listed here.
 
 MDB / HFSMasterDirectoryBlock (162 bytes)
 ```
@@ -505,4 +505,4 @@ crashes immediately (using hfsprogs 332.25-11build1 amd64), but the i386 version
 The command will fix minor problems without asking unless the "-n" flag is given.
 
 The GS/OS System 6.0.1 FST has a serious bug that can cause file corruption.  A software patch is
-available in the test file collection, as [`TestData/nufx/PatchHFS.shk`](TestData/nufx).
+available in the test file collection, in [`TestData/nufx/PatchHFS.shk`](../../TestData/nufx).

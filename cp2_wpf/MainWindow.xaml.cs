@@ -21,6 +21,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -32,6 +34,7 @@ using AppCommon;
 using CommonUtil;
 using cp2_wpf.Tools;
 using cp2_wpf.WPFCommon;
+using Delay;
 using DiskArc;
 using DiskArc.Multi;
 using FileConv;
@@ -1369,16 +1372,51 @@ namespace cp2_wpf {
                     fileListDataGrid.SelectedItems.Add(selItem);
                 }
             }
-            // If selection wasn't made by a mouse click, items won't be in mPreSelection.
-            foreach (FileListItem selItem in fileListDataGrid.SelectedItems) {
+
+            VirtualFileDataObject vfdo = new VirtualFileDataObject();
+            VirtualFileDataObject.FileDescriptor[] vfds =
+                new VirtualFileDataObject.FileDescriptor[fileListDataGrid.SelectedItems.Count];
+
+            // Prepare two lists of selected items:
+            // (1) mDragMoveList, for in-app drag/drop (to move files)
+            // (2) virtual file descriptor array, for dragging files out of the app
+            //
+            // If selection wasn't made by a mouse click, items won't be in mPreSelection.  Use
+            // the full selected items list from the data grid.
+            for (int i = 0; i < fileListDataGrid.SelectedItems.Count; i++) {
+                FileListItem selItem = (FileListItem)fileListDataGrid.SelectedItems[i]!;
                 mDragMoveList.Add(selItem.FileEntry);
+                vfds[i] = new VirtualFileDataObject.FileDescriptor() {
+                    Name = selItem.FileEntry.FileName,
+                    Length = selItem.FileEntry.DataLength,
+                    ChangeTimeUtc = selItem.FileEntry.ModWhen,
+                    StreamContents = stream => {
+                        // TODO
+                        Debug.WriteLine("STREAM " + selItem.FileEntry.FileName);
+                        var contents = Enumerable.Range('a', 26).Select(i => (byte)i).ToArray();
+                        stream.Write(contents, 0, contents.Length);
+                    }
+                };
             }
 
-            // TODO: generate virtual streams, etc. for cross-process drags
-            DataObject data = new DataObject(DataFormats.Text, "this is a test");
-            DragDropEffects dde = DragDrop.DoDragDrop(fileListDataGrid, data,
-                DragDropEffects.Copy | DragDropEffects.Move);
-            Debug.WriteLine("FL drag complete, effect=" + dde);
+            // TODO: make this real
+
+            try {
+                //DataObject data = new DataObject(DataFormats.Text, "this is a test");
+                //DragDropEffects dde = DragDrop.DoDragDrop(fileListDataGrid, data,
+                //    DragDropEffects.Copy | DragDropEffects.Move);
+                //Debug.WriteLine("FL drag complete, effect=" + dde);
+
+                vfdo.SetData(vfds);
+                vfdo.SetData(DataFormats.UnicodeText,
+                    "This is a test (" + fileListDataGrid.SelectedItems.Count + ")");
+                vfdo.SetData(DataFormats.Text,
+                    "This is plain text (" + fileListDataGrid.SelectedItems.Count + ")");
+                VirtualFileDataObject.DoDragDrop(fileListDataGrid, vfdo,
+                    DragDropEffects.Copy | DragDropEffects.Move);
+            } catch (COMException ex) {
+                Debug.WriteLine("COM exception: " + ex.Message);
+            }
 
             mIsDraggingFileList = false;
             mDragMoveList.Clear();

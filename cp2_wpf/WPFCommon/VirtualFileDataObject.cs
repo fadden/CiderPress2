@@ -3,6 +3,13 @@
 /// by David Anson.  According to the site, the code uses the
 /// <see href="https://opensource.org/licenses/MIT">MIT License</see>.
 ///
+/// Minor edits have been made:
+///  - silence the nullability checker
+///  - add a SetData(string, string) call
+///
+/// See also:
+///  - https://learn.microsoft.com/en-us/windows/win32/shell/clipboard
+///
 
 using System;
 using System.Collections.Generic;
@@ -11,6 +18,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Text;
 using System.Windows;
 
 namespace Delay
@@ -64,12 +72,12 @@ namespace Delay
         /// <summary>
         /// Stores the user-specified start action.
         /// </summary>
-        private Action<VirtualFileDataObject> _startAction;
+        private Action<VirtualFileDataObject>? _startAction;
 
         /// <summary>
         /// Stores the user-specified end action.
         /// </summary>
-        private Action<VirtualFileDataObject> _endAction;
+        private Action<VirtualFileDataObject>? _endAction;
 
         /// <summary>
         /// Initializes a new instance of the VirtualFileDataObject class.
@@ -207,7 +215,7 @@ namespace Delay
 
                     // Populate the STGMEDIUM
                     medium.tymed = dataObject.FORMATETC.tymed;
-                    var result = dataObject.GetData(); // Possible call to user code
+                    var result = dataObject.GetData!(); // Possible call to user code
                     hr = result.Item2;
                     if (NativeMethods.SUCCEEDED(hr))
                     {
@@ -395,6 +403,26 @@ namespace Delay
         }
 
         /// <summary>
+        /// Sets the data for the specified format.  This is similar to the
+        /// <see cref="System.Windows.DataObject.SetData(string, object)"/> call, and is just
+        /// provided as a convenience.
+        /// </summary>
+        /// <param name="formatStr"></param>
+        /// <param name="data"></param>
+        public void SetData(string formatStr, object data) {
+            short id = (short)DataFormats.GetDataFormat(formatStr).Id;
+            if (formatStr == DataFormats.UnicodeText) {
+                // This appears to be UTF-16 LE.
+                SetData(id, Encoding.Unicode.GetBytes((string)data + '\0'));
+            } else if (formatStr == DataFormats.Text) {
+                // This appears to be UTF-8.
+                SetData(id, Encoding.Default.GetBytes((string)data + '\0'));
+            } else {
+                throw new NotImplementedException("Not handled: '" + formatStr + "'");
+            }
+        }
+
+        /// <summary>
         /// Provides data for the specified data format (FILEGROUPDESCRIPTOR/FILEDESCRIPTOR)
         /// </summary>
         /// <param name="fileDescriptors">Collection of virtual files.</param>
@@ -442,7 +470,7 @@ namespace Delay
             var index = 0;
             foreach (var fileDescriptor in fileDescriptors)
             {
-                SetData(FILECONTENTS, index, fileDescriptor.StreamContents);
+                SetData(FILECONTENTS, index, fileDescriptor.StreamContents!);
                 index++;
             }
         }
@@ -453,7 +481,7 @@ namespace Delay
         public DragDropEffects? PasteSucceeded
         {
             get { return GetDropEffect(PASTESUCCEEDED); }
-            set { SetData(PASTESUCCEEDED, BitConverter.GetBytes((UInt32)value)); }
+            set { SetData(PASTESUCCEEDED, BitConverter.GetBytes((UInt32)value!)); }
         }
 
         /// <summary>
@@ -462,7 +490,7 @@ namespace Delay
         public DragDropEffects? PerformedDropEffect
         {
             get { return GetDropEffect(PERFORMEDDROPEFFECT); }
-            set { SetData(PERFORMEDDROPEFFECT, BitConverter.GetBytes((UInt32)value)); }
+            set { SetData(PERFORMEDDROPEFFECT, BitConverter.GetBytes((UInt32)value!)); }
         }
 
         /// <summary>
@@ -471,7 +499,7 @@ namespace Delay
         public DragDropEffects? PreferredDropEffect
         {
             get { return GetDropEffect(PREFERREDDROPEFFECT); }
-            set { SetData(PREFERREDDROPEFFECT, BitConverter.GetBytes((UInt32)value)); }
+            set { SetData(PREFERREDDROPEFFECT, BitConverter.GetBytes((UInt32)value!)); }
         }
 
         /// <summary>
@@ -492,7 +520,7 @@ namespace Delay
             if (null != dataObject)
             {
                 // Read the value and return it
-                var result = dataObject.GetData();
+                var result = dataObject.GetData!();
                 if (NativeMethods.SUCCEEDED(result.Item2))
                 {
                     var ptr = NativeMethods.GlobalLock(result.Item1);
@@ -612,7 +640,7 @@ namespace Delay
             /// <summary>
             /// Gets or sets the name of the file.
             /// </summary>
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
             /// <summary>
             /// Gets or sets the (optional) length of the file.
@@ -627,7 +655,7 @@ namespace Delay
             /// <summary>
             /// Gets or sets an Action that returns the contents of the file.
             /// </summary>
-            public Action<Stream> StreamContents { get; set; }
+            public Action<Stream>? StreamContents { get; set; }
         }
 
         /// <summary>
@@ -643,7 +671,7 @@ namespace Delay
             /// <summary>
             /// Func returning the data as an IntPtr and an HRESULT success code.
             /// </summary>
-            public Func<Tuple<IntPtr, int>> GetData { get; set; }
+            public Func<Tuple<IntPtr, int>>? GetData { get; set; }
         }
 
         /// <summary>

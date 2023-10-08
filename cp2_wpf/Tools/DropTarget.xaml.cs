@@ -26,6 +26,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 using CommonUtil;
+using cp2_wpf.WPFCommon;
 
 namespace cp2_wpf.Tools {
     /// <summary>
@@ -88,6 +89,9 @@ namespace cp2_wpf.Tools {
             e.Handled = true;
         }
 
+        /// <summary>
+        /// Dumps the contents of a data object.
+        /// </summary>
         private void ShowDataObject(IDataObject dataObj) {
             StringBuilder sb = new StringBuilder();
 
@@ -97,6 +101,17 @@ namespace cp2_wpf.Tools {
             foreach (string format in formats) {
                 sb.Append("\u2022 ");
                 sb.Append(format);
+                if (format == ClipHelper.DESC_ARRAY_FORMAT) {
+                    sb.Append(":\r\n");
+                    DumpDescriptors(dataObj, sb);
+                    continue;
+                } else if (format == ClipHelper.FILE_CONTENTS_FORMAT) {
+                    // Should have been accompanied by descriptor array, and dumped with that.
+                    // The data cannot be obtained from GetData(), since it's an array of streams.
+                    sb.Append(": (see descriptor section)\r\n");
+                    continue;
+                }
+
                 try {
                     object? data = dataObj.GetData(format);
                     if (data != null) {
@@ -142,6 +157,35 @@ namespace cp2_wpf.Tools {
             }
 
             TextArea = sb.ToString();
+        }
+
+        private void DumpDescriptors(IDataObject dataObj, StringBuilder sb) {
+            MemoryStream descStream = (MemoryStream)dataObj.GetData(ClipHelper.DESC_ARRAY_FORMAT);
+            IEnumerable<ClipHelper.FileDescriptor> descriptors =
+                ClipHelper.FileDescriptorReader.Read(descStream);
+            int fileIndex = 0;
+            foreach (ClipHelper.FileDescriptor desc in descriptors) {
+                string fileName = desc.FileName;
+                sb.AppendFormat("    {0}: '{1}': ", fileIndex, fileName);
+                if ((desc.FileAttributes & FileAttributes.Directory) != 0) {
+                    // Handle directory.
+                    sb.Append("is directory");
+                } else {
+                    Stream? contents = ClipHelper.GetFileContents(dataObj, fileIndex);
+                    if (contents == null) {
+                        sb.Append("contents are null");
+                    } else {
+                        contents.Position = 0;
+                        long fileLen = 0;
+                        while (contents.ReadByte() >= 0) {
+                            fileLen++;
+                        }
+                        sb.Append("read " + fileLen + " bytes");
+                    }
+                }
+                fileIndex++;
+                sb.Append("\r\n");
+            }
         }
 
         private const int MAX_STRING = 80;

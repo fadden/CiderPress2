@@ -200,6 +200,7 @@ namespace cp2_wpf {
             // WPF won't exit until all windows are closed, so any unowned windows need
             // to be cleaned up here.
             mDebugLogViewer?.Close();
+            mDebugDropTarget?.Close();
 
             return true;
         }

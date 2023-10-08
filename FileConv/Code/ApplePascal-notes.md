@@ -52,4 +52,7 @@ There may be empty slots; it's possible for slot 0 to be empty, even for an exec
 (see SYSTEM.FILER).  Empty slots can be identified by testing for CODEADDR and CODELENG both
 equal to zero.  (It's normal for DATASEG segments to have address 0.)
 
-The different types of segments can be broken down further.
+All multi-byte integers are stored in little-endian order.
+
+Some of the segment types have a documented structure.  See the Apple Pascal references for
+details.
