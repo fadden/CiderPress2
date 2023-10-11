@@ -81,7 +81,7 @@ limitations under the License.
             </RoutedUICommand>
             <RoutedUICommand x:Key="CreateDirectoryCmd" Text="Create Directory..."/>
             <RoutedUICommand x:Key="DefragmentCmd" Text="Defragment Filesystem"/>
-            <!-- DataGrids eat Delete, TreeViews don't; see PreviewKeyDown handler -->
+            <!-- DataGrids eat Delete, TreeViews don't -->
             <RoutedUICommand x:Key="DeleteFilesCmd" Text="_Delete Files">
                 <RoutedUICommand.InputGestures>
                     <KeyGesture>Delete</KeyGesture>
@@ -153,14 +153,16 @@ limitations under the License.
                         CanExecute="IsFileOpen" Executed="CloseCmd_Executed"/>
         <CommandBinding Command="{StaticResource CloseSubTreeCmd}"
                         CanExecute="IsSubTreeSelected" Executed="CloseSubTreeCmd_Executed"/>
+        <!-- Copy is cloned in file list DataGrid declaration -->
         <CommandBinding Command="Copy"
-                        CanExecute="IsFileOpen" Executed="CopyCmd_Executed"/>
+                        CanExecute="AreFileEntriesSelected" Executed="CopyCmd_Executed"/>
         <CommandBinding Command="{StaticResource CreateDirectoryCmd}"
                         CanExecute="CanCreateDirectory" Executed="CreateDirectoryCmd_Executed"/>
-        <CommandBinding Command="Cut"
-                        CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>
+        <!--<CommandBinding Command="Cut"
+                        CanExecute="IsFileOpen" Executed="CutCmd_Executed"/>-->
         <CommandBinding Command="{StaticResource DefragmentCmd}"
                         CanExecute="CanDefragment" Executed="DefragmentCmd_Executed"/>
+        <!-- DeleteFilesCmd is cloned in file list DataGrid declaration -->
         <CommandBinding Command="{StaticResource DeleteFilesCmd}"
                         CanExecute="CanDeleteFiles" Executed="DeleteFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
@@ -253,7 +255,7 @@ limitations under the License.
                 <MenuItem Command="{StaticResource ExitCmd}" InputGestureText="Alt+F4"/>
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Command="Cut" Header="Cu_t"/>
+                <!--<MenuItem Command="Cut" Header="Cu_t"/>-->
                 <MenuItem Command="Copy" Header="_Copy"/>
                 <MenuItem Command="Paste" Header="_Paste"/>
                 <Separator/>
@@ -601,7 +603,6 @@ limitations under the License.
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
                               MouseDoubleClick="FileList_MouseDoubleClick"
                               ContextMenuOpening="FileListContextMenu_ContextMenuOpening"
-                              PreviewKeyDown="FileListDataGrid_PreviewKeyDown"
                               AllowDrop="True"
                               Drop="FileListDataGrid_Drop"
                               PreviewMouseLeftButtonDown="FileListDataGrid_PreviewMouseLeftButtonDown"
@@ -616,6 +617,13 @@ limitations under the License.
                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
                                              Color="{x:Static SystemColors.HighlightTextColor}"/>-->
                         </DataGrid.Resources>
+                        <DataGrid.CommandBindings>
+                            <!-- DataGrid provides its own behavior for Ctrl+C and Del; override -->
+                            <CommandBinding Command="Copy"
+                                            CanExecute="AreFileEntriesSelected" Executed="CopyCmd_Executed"/>
+                            <CommandBinding Command="{StaticResource DeleteFilesCmd}"
+                                            CanExecute="CanDeleteFiles" Executed="DeleteFilesCmd_Executed"/>
+                        </DataGrid.CommandBindings>
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Header="?" Width="SizeToCells">
                                 <DataGridTemplateColumn.CellTemplate>

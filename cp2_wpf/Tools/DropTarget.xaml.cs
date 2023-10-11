@@ -171,17 +171,21 @@ namespace cp2_wpf.Tools {
                     // Handle directory.
                     sb.Append("is directory");
                 } else {
-                    Stream? contents = ClipHelper.GetFileContents(dataObj, fileIndex);
-                    if (contents == null) {
-                        sb.Append("contents are null");
-                    } else {
-                        contents.Position = 0;
-                        long fileLen = 0;
-                        while (contents.ReadByte() >= 0) {
-                            fileLen++;
+                    Debug.WriteLine("+ stream get contents " + fileIndex);
+                    using (Stream? contents = ClipHelper.GetFileContents(dataObj, fileIndex)) {
+                        if (contents == null) {
+                            sb.Append("contents are null");
+                        } else {
+                            contents.Position = 0;
+                            long fileLen = 0;
+                            Debug.WriteLine("+ starting read");
+                            while (contents.ReadByte() >= 0) {
+                                fileLen++;
+                            }
+                            sb.Append("read " + fileLen + " bytes");
                         }
-                        sb.Append("read " + fileLen + " bytes");
                     }
+                    Debug.WriteLine("+ stream closed");
                 }
                 fileIndex++;
                 sb.Append("\r\n");

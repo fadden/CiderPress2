@@ -33,6 +33,7 @@ using CommonUtil;
 using cp2_wpf.Actions;
 using cp2_wpf.Tools;
 using cp2_wpf.WPFCommon;
+using Delay;
 using DiskArc;
 using DiskArc.Arc;
 using DiskArc.FS;
@@ -1059,6 +1060,14 @@ namespace cp2_wpf {
             HandleAddImport(null);
         }
 
+        public void PasteFromClipboard() {
+            // TODO:
+            // - confirm that the clipboard contents are from us (this test should be applied
+            //   at "can execute" time)
+            // - add/import to currently-selected directory
+            Debug.WriteLine("Paste from clipboard (TODO)");
+        }
+
         private void HandleAddImport(ConvConfig.FileConvSpec? spec) {
             //OpenFileDialog fileDlg = new OpenFileDialog() {
             //    Filter = WinUtil.FILE_FILTER_ALL,
@@ -1248,7 +1257,7 @@ namespace cp2_wpf {
             }
 
             if (!GetFileSelection(omitDir:false, omitOpenArc:false, closeOpenArc:true,
-                    oneMeansAll:false, out archiveOrFileSystem, out IFileEntry selectionDir,
+                    oneMeansAll:false, out archiveOrFileSystem, out IFileEntry unusedDir,
                     out List<IFileEntry>? selected, out int unused1)) {
                 return;
             }
@@ -1548,6 +1557,58 @@ namespace cp2_wpf {
             HandleExtractExport(null);
         }
 
+        /// <summary>
+        /// Creates a clipboard data object with the contents of the selected files.
+        /// </summary>
+        public void CopyToClipboard() {
+            if (mMainWin.fileListDataGrid.SelectedItems.Count == 0) {
+                Debug.Assert(false);
+                return;
+            }
+            VirtualFileDataObject vfdo = GenerateVFDO();
+            Clipboard.SetDataObject(vfdo);
+            Debug.WriteLine("Copied to clipboard");
+        }
+
+        /// <summary>
+        /// Generates a list of "virtual" files for drag+drop and the clipboard.  The list is
+        /// from the current file list selection.
+        /// </summary>
+        internal VirtualFileDataObject GenerateVFDO() {
+            DataGrid dataGrid = mMainWin.fileListDataGrid;
+            if (dataGrid.SelectedItems.Count == 0) {
+                Debug.Assert(false);        // not expected; continue anyway
+            }
+            VirtualFileDataObject vfdo = new VirtualFileDataObject();
+            VirtualFileDataObject.FileDescriptor[] vfds =
+                new VirtualFileDataObject.FileDescriptor[dataGrid.SelectedItems.Count];
+
+            for (int i = 0; i < dataGrid.SelectedItems.Count; i++) {
+                FileListItem selItem = (FileListItem)dataGrid.SelectedItems[i]!;
+                vfds[i] = new VirtualFileDataObject.FileDescriptor() {
+                    Name = selItem.FileEntry.FileName,
+                    Length = selItem.FileEntry.DataLength,
+                    ChangeTimeUtc = selItem.FileEntry.ModWhen,
+                    StreamContents = stream => {
+                        // TODO
+                        Debug.WriteLine("* generate stream " + selItem.FileEntry.FileName);
+                        for (int i = 0; i < 32; i++) {
+                            stream.WriteByte(0x2a);
+                        }
+                        Debug.WriteLine("* generate complete");
+                    }
+                };
+            }
+
+            vfdo.SetData(vfds);
+            vfdo.SetData(DataFormats.UnicodeText,
+                "This is a test (" + dataGrid.SelectedItems.Count + ")");
+            vfdo.SetData(DataFormats.Text,
+                "This is plain text (" + dataGrid.SelectedItems.Count + ")");
+
+            return vfdo;
+        }
+
         private void HandleExtractExport(ConvConfig.FileConvSpec? exportSpec) {
             if (!GetFileSelection(omitDir: false, omitOpenArc: false, closeOpenArc: true,
                     oneMeansAll: false, out object? archiveOrFileSystem,
@@ -1558,6 +1619,11 @@ namespace cp2_wpf {
                 MessageBox.Show(mMainWin, "No files selected.", "Empty", MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
+            }
+
+            // If we're in full list mode, don't use the directory selection to trim the paths.
+            if (archiveOrFileSystem is IFileSystem && !mMainWin.ShowSingleDirFileList) {
+                selectionDir = ((IFileSystem)archiveOrFileSystem).GetVolDirEntry();
             }
 
             string initialDir = AppSettings.Global.GetString(AppSettings.LAST_EXTRACT_DIR,

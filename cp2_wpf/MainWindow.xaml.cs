@@ -494,7 +494,7 @@ namespace cp2_wpf {
             mMainCtrl.CloseSubTree();
         }
         private void CopyCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            Debug.WriteLine("Copy!");
+            mMainCtrl.CopyToClipboard();
         }
         private void CreateDirectoryCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.CreateDirectory();
@@ -564,7 +564,7 @@ namespace cp2_wpf {
             mMainCtrl.ReplacePartition();
         }
         private void PasteCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            Debug.WriteLine("Paste!");
+            mMainCtrl.PasteFromClipboard();
         }
         private void RecentFileCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             int recentIndex;
@@ -1126,19 +1126,6 @@ namespace cp2_wpf {
             mMainCtrl.HandleFileListDoubleClick(fli, row, col, arcTreeSel, dirTreeSel);
         }
 
-        // This is necessary because DataGrid eats the Delete key.  Usually.
-        private void FileListDataGrid_PreviewKeyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Delete) {
-                Debug.WriteLine("Caught Delete in the center datagrid");
-                // This event comes from the center DataGrid, so we can safely assume that a file
-                // is open and the file list is visible.
-                if (mMainCtrl.AreFileEntriesSelected) {
-                    mMainCtrl.DeleteFiles();
-                }
-                e.Handled = true;       // consume
-            }
-        }
-
         private void PartitionLayout_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
             DataGrid grid = (DataGrid)sender;
             if (!grid.GetClickRowColItem(e, out int row, out int col, out object? item)) {
@@ -1373,33 +1360,16 @@ namespace cp2_wpf {
                 }
             }
 
-            VirtualFileDataObject vfdo = new VirtualFileDataObject();
-            VirtualFileDataObject.FileDescriptor[] vfds =
-                new VirtualFileDataObject.FileDescriptor[fileListDataGrid.SelectedItems.Count];
+            VirtualFileDataObject vfdo = mMainCtrl.GenerateVFDO();
 
-            // Prepare two lists of selected items:
-            // (1) mDragMoveList, for in-app drag/drop (to move files)
-            // (2) virtual file descriptor array, for dragging files out of the app
+            // Generate mDragMoveList, for in-app drag/drop (to move files between directories).
             //
             // If selection wasn't made by a mouse click, items won't be in mPreSelection.  Use
             // the full selected items list from the data grid.
             for (int i = 0; i < fileListDataGrid.SelectedItems.Count; i++) {
                 FileListItem selItem = (FileListItem)fileListDataGrid.SelectedItems[i]!;
                 mDragMoveList.Add(selItem.FileEntry);
-                vfds[i] = new VirtualFileDataObject.FileDescriptor() {
-                    Name = selItem.FileEntry.FileName,
-                    Length = selItem.FileEntry.DataLength,
-                    ChangeTimeUtc = selItem.FileEntry.ModWhen,
-                    StreamContents = stream => {
-                        // TODO
-                        Debug.WriteLine("STREAM " + selItem.FileEntry.FileName);
-                        var contents = Enumerable.Range('a', 26).Select(i => (byte)i).ToArray();
-                        stream.Write(contents, 0, contents.Length);
-                    }
-                };
             }
-
-            // TODO: make this real
 
             try {
                 //DataObject data = new DataObject(DataFormats.Text, "this is a test");
@@ -1407,11 +1377,6 @@ namespace cp2_wpf {
                 //    DragDropEffects.Copy | DragDropEffects.Move);
                 //Debug.WriteLine("FL drag complete, effect=" + dde);
 
-                vfdo.SetData(vfds);
-                vfdo.SetData(DataFormats.UnicodeText,
-                    "This is a test (" + fileListDataGrid.SelectedItems.Count + ")");
-                vfdo.SetData(DataFormats.Text,
-                    "This is plain text (" + fileListDataGrid.SelectedItems.Count + ")");
                 VirtualFileDataObject.DoDragDrop(fileListDataGrid, vfdo,
                     DragDropEffects.Copy | DragDropEffects.Move);
             } catch (COMException ex) {
@@ -1454,6 +1419,7 @@ namespace cp2_wpf {
                 Debug.WriteLine("FL no valid drop");
             }
         }
+
 
         /// <summary>
         /// Handles a DragOver event on the directory tree.  This determines what the mouse cursor

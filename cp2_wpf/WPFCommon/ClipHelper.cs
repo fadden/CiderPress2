@@ -70,8 +70,10 @@ namespace cp2_wpf.WPFCommon {
                 return null;
             }
 
+            // TYpe of MEDium - https://learn.microsoft.com/en-us/windows/win32/api/objidl/ne-objidl-tymed
             switch (medium.tymed) {
                 case TYMED.TYMED_ISTREAM:
+                    //Debug.WriteLine("Got IStream, punk=" + medium.pUnkForRelease);
                     return GetIStream(medium);
                 default:
                     throw new NotSupportedException();
@@ -104,32 +106,44 @@ namespace cp2_wpf.WPFCommon {
         }
 
         /// <summary>
-        /// Specifies which fields are valid in a FileDescriptor instance.
+        /// Managed representation of a FileDescriptor structure.
+        /// <see href="https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-filedescriptorw"/>
         /// </summary>
-        [Flags]
-        internal enum FileDescriptorFlags : uint {
-            ClsId = 0x00000001,
-            SizePoint = 0x00000002,
-            Attributes = 0x00000004,
-            CreateTime = 0x00000008,
-            AccessTime = 0x00000010,
-            WritesTime = 0x00000020,
-            FileSize = 0x00000040,
-            ProgressUI = 0x00004000,
-            LinkUI = 0x00008000,
-            Unicode = 0x80000000,
-        }
-
         internal sealed class FileDescriptor {
+            /// <summary>
+            /// Specifies which fields are valid.
+            /// </summary>
+            [Flags]
+            internal enum FileDescriptorFlags : uint {
+                ClsId = 0x00000001,
+                SizePoint = 0x00000002,
+                Attributes = 0x00000004,
+                CreateTime = 0x00000008,
+                AccessTime = 0x00000010,
+                WritesTime = 0x00000020,
+                FileSize = 0x00000040,
+                ProgressUI = 0x00004000,
+                LinkUI = 0x00008000,
+                Unicode = 0x80000000,
+            }
+
+            // Bit flags, indicating which fields are valid.
             public FileDescriptorFlags Flags { get; set; }
+            // File type identifier.
             public Guid ClassId { get; set; }
+            // Width and height of file icon.
             public Size Size { get; set; }
+            // Screen coordinates of file object.
             public Point Point { get; set; }
+            // File attribute flags (https://learn.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants).
             public FileAttributes FileAttributes { get; set; }
+            // FILETIME date value (https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-filetime).
             public DateTime CreationTime { get; set; } = DateTime.MinValue;
             public DateTime LastAccessTime { get; set; } = DateTime.MinValue;
             public DateTime LastWriteTime { get; set; } = DateTime.MinValue;
-            public Int64 FileSize { get; set; }
+            // File size, stored as two 32-bit words, with the high part first.
+            public Int64 FileSize { get; set; } = -1;
+            // Null-terminated UCS-2 filename string.
             public string FileName { get; set; }
 
             public FileDescriptor(BinaryReader reader) {
@@ -138,54 +152,72 @@ namespace cp2_wpf.WPFCommon {
                 // constructors throw exceptions if the values are out of whack.  (Try
                 // copying files and directories from a Zip archive opened in Windows Explorer.)
 
-                //Flags
                 Flags = (FileDescriptorFlags)reader.ReadUInt32();
-                //ClassID
-                ClassId = new Guid(reader.ReadBytes(16));
-                //Size
-                int sizeValue = reader.ReadInt32();
-                try {
-                    Size = new Size(reader.ReadInt32(), sizeValue);
-                } catch (ArgumentException) {
-                    Debug.WriteLine("Unable to set size, value=" + sizeValue);
-                }
-                //Point
-                Point = new Point(reader.ReadInt32(), reader.ReadInt32());
-                //FileAttributes
-                FileAttributes = (FileAttributes)reader.ReadUInt32();
-                //CreationTime
+                byte[] guid = reader.ReadBytes(16);
+                int sizeWidth = reader.ReadInt32();
+                int sizeHeight = reader.ReadInt32();
+                int pointWidth = reader.ReadInt32();
+                int pointHeight = reader.ReadInt32();
+                uint fileAttr = reader.ReadUInt32();
                 long creationTicks = reader.ReadInt64();
-                try {
-                    CreationTime = new DateTime(1601, 1, 1).AddTicks(creationTicks);
-                } catch (ArgumentOutOfRangeException) {
-                    Debug.WriteLine("Unable to set creation time, ticks=" + creationTicks);
-                }
-                //LastAccessTime
                 long lastAccessTicks = reader.ReadInt64();
-                try {
-                    LastAccessTime = new DateTime(1601, 1, 1).AddTicks(lastAccessTicks);
-                } catch (ArgumentOutOfRangeException) {
-                    Debug.WriteLine("Unable to set last access time, ticks=" + lastAccessTicks);
-                }
-                //LastWriteTime
                 long lastWriteTicks = reader.ReadInt64();
-                try {
-                    LastWriteTime = new DateTime(1601, 1, 1).AddTicks(lastWriteTicks);
-                } catch (ArgumentOutOfRangeException) {
-                    Debug.WriteLine("Unable to set last write time, ticks=" + lastWriteTicks);
-                }
-                //FileSize
-                FileSize = reader.ReadInt64();
-                //FileName
+                long fileSize = reader.ReadInt64();
                 byte[] nameBytes = reader.ReadBytes(520);
-                int i = 0;
-                while (i < nameBytes.Length) {
-                    if (nameBytes[i] == 0 && nameBytes[i + 1] == 0)
-                        break;
-                    i++;
-                    i++;
+
+                if ((Flags & FileDescriptorFlags.ClsId) != 0) {
+                    ClassId = new Guid(guid);
                 }
-                FileName = UnicodeEncoding.Unicode.GetString(nameBytes, 0, i);
+                if ((Flags & FileDescriptorFlags.SizePoint) != 0) {
+                    try {
+                        // Size throws an exception on negative values.
+                        Size = new Size(sizeWidth, sizeHeight);
+                        Point = new Point(pointWidth, pointHeight);
+                    } catch (ArgumentException) {
+                        Debug.WriteLine("Unable to set size/point");
+                    }
+                }
+                if ((Flags & FileDescriptorFlags.Attributes) != 0) {
+                    FileAttributes = (FileAttributes)fileAttr;
+                }
+                if ((Flags & FileDescriptorFlags.CreateTime) != 0) {
+                    try {
+                        CreationTime = new DateTime(1601, 1, 1).AddTicks(creationTicks);
+                    } catch (ArgumentOutOfRangeException) {
+                        Debug.WriteLine("Unable to set creation time, ticks=" + creationTicks);
+                    }
+                }
+                if ((Flags & FileDescriptorFlags.AccessTime) != 0) {
+                    try {
+                        LastAccessTime = new DateTime(1601, 1, 1).AddTicks(lastAccessTicks);
+                    } catch (ArgumentOutOfRangeException) {
+                        Debug.WriteLine("Unable to set last access time, ticks=" + lastAccessTicks);
+                    }
+                }
+                if ((Flags & FileDescriptorFlags.WritesTime) != 0) {
+                    try {
+                        LastWriteTime = new DateTime(1601, 1, 1).AddTicks(lastWriteTicks);
+                    } catch (ArgumentOutOfRangeException) {
+                        Debug.WriteLine("Unable to set last write time, ticks=" + lastWriteTicks);
+                    }
+                }
+                if ((Flags & FileDescriptorFlags.FileSize) != 0) {
+                    FileSize = fileSize;
+                }
+                if ((Flags & FileDescriptorFlags.Unicode) != 0) {
+                    // This flag doesn't seem to be set by Windows Explorer's Zip handling,
+                    // though the filename is UTF-16.  We know that this structure was passed
+                    // via "FileGroupDescriptorW", not "...A", so we can probably just
+                    // ignore the flag.
+                }
+
+                // Extract null-terminated UTF-16 filename.
+                int idx;
+                for (idx = 0; idx < nameBytes.Length; idx += 2) {
+                    if (nameBytes[idx] == 0 && nameBytes[idx + 1] == 0)
+                        break;
+                }
+                FileName = UnicodeEncoding.Unicode.GetString(nameBytes, 0, idx);
             }
         }
 

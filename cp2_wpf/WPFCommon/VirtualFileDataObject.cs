@@ -1,15 +1,37 @@
-﻿///
-/// This comes from a series of <see href="https://dlaa.me/blog/post/9913083">blog posts</see>
-/// by David Anson.  According to the site, the code uses the
-/// <see href="https://opensource.org/licenses/MIT">MIT License</see>.
-///
-/// Minor edits have been made:
-///  - silence the nullability checker
-///  - add a SetData(string, string) call
-///
-/// See also:
-///  - https://learn.microsoft.com/en-us/windows/win32/shell/clipboard
-///
+﻿//
+// This comes from a series of <see href="https://dlaa.me/blog/post/9913083">blog posts</see>
+// by David Anson.  According to the site, the code uses the
+// <see href="https://opensource.org/licenses/MIT">MIT License</see>.
+//
+// This code is necessary because .NET doesn't provide a "managed code" interface to the
+// necessary functions.
+//
+// This works for drag-and-drop (must call the DoDragDrop() method defined here, rather than
+// the one in DragDrop) and clipboard (just call Clipboard.SetDataObject() with the vfdo).
+//
+// How this works:
+// - The DataObject will have an array of FILEDESCRIPTORW structs, which specify the file
+//   characteristics, and an array of "file contents", which are STGMEDIUM structs that indicate
+//   that the data is an ISTREAM (rather than static data in an HGLOBAL).  This is provided to
+//   the remote side.
+// - When the remote side requests access to a specific "file contents" element, a "get data"
+//   call fires locally.  The code here creates a write-only IStream instance, and passes it
+//   to the application-provided StreamContents callback.
+// - The application writes the full contents of the stream.  This will be made available to
+//   the remote side.
+// Things I'm unclear on:
+// - Shouldn't this have a callback that handles the remote Read() calls?  Writing all of the
+//   data is okay for us but seems like an odd approach.  It looks like Windows can work that
+//   way when the implementation is native rather than managed.  I don't know if "write everything"
+//   is an implementation choice or a limitation of the framework.
+//
+// Minor edits have been made:
+//  - silence the nullability checker
+//  - add a SetData(string, string) call for convenience
+//
+// See also:
+//  - https://learn.microsoft.com/en-us/windows/win32/shell/clipboard
+//
 
 using System;
 using System.Collections.Generic;
@@ -186,7 +208,8 @@ namespace Delay
         /// <param name="format">A pointer to a FORMATETC structure that defines the format, medium, and target device to use when passing the data.</param>
         /// <param name="medium">When this method returns, contains a pointer to the STGMEDIUM structure that indicates the storage medium containing the returned data through its tymed member, and the responsibility for releasing the medium through the value of its pUnkForRelease member.</param>
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Method doesn't decrease security.")]
-        void System.Runtime.InteropServices.ComTypes.IDataObject.GetData(ref FORMATETC format, out STGMEDIUM medium)
+        void System.Runtime.InteropServices.ComTypes.IDataObject.GetData(ref FORMATETC format,
+            out STGMEDIUM medium)
         {
             medium = new STGMEDIUM();
             var hr = ((System.Runtime.InteropServices.ComTypes.IDataObject)this).QueryGetData(ref format);
@@ -277,7 +300,8 @@ namespace Delay
         /// <param name="medium">A STGMEDIUM structure that defines the storage medium in which the data is being passed.</param>
         /// <param name="release">true to specify that the data object called, which implements SetData, owns the storage medium after the call returns.</param>
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Method doesn't decrease security.")]
-        void System.Runtime.InteropServices.ComTypes.IDataObject.SetData(ref FORMATETC formatIn, ref STGMEDIUM medium, bool release)
+        void System.Runtime.InteropServices.ComTypes.IDataObject.SetData(ref FORMATETC formatIn,
+            ref STGMEDIUM medium, bool release)
         {
             var handled = false;
             if ((formatIn.dwAspect == DVASPECT.DVASPECT_CONTENT) &&
@@ -838,7 +862,8 @@ namespace Delay
         /// Call this method instead of System.Windows.DragDrop.DoDragDrop because this method handles IDataObject better.
         /// </remarks>
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "dragSource", Justification = "Parameter is present so the signature matches that of System.Windows.DragDrop.DoDragDrop.")]
-        public static DragDropEffects DoDragDrop(DependencyObject dragSource, System.Runtime.InteropServices.ComTypes.IDataObject dataObject, DragDropEffects allowedEffects)
+        public static DragDropEffects DoDragDrop(DependencyObject dragSource,
+            System.Runtime.InteropServices.ComTypes.IDataObject dataObject, DragDropEffects allowedEffects)
         {
             int[] finalEffect = new int[1];
             try

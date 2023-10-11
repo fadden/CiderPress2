@@ -620,7 +620,7 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// Tracks to examine when trying to determine the disk format.
+        /// Tracks to examine when trying to determine the disk format of a 5.25" disk.
         /// </summary>
         /// <remarks>
         /// <para>Track 0 can be a little funky because it needs to be at least partly
@@ -628,7 +628,8 @@ namespace DiskArc {
         /// have a DOS image or file data.  Track 17 is a natural for DOS, but sometimes we
         /// get a false positive if the copy protector decided to have a visible catalog
         /// track just for fun.  16 will be the first track with DOS data.  22 is mostly
-        /// arbitrary; it's an even-numbered track past the catalog track.</para>
+        /// arbitrary; it's an even-numbered track past the catalog track (some protection
+        /// schemes used different values for odd/even tracks).</para>
         /// </remarks>
         private static readonly uint[] sTracksToCheck = new uint[] { 1, 16, 17, 22 };
 
@@ -672,7 +673,8 @@ namespace DiskArc {
                         } else if (secPtr.IsAddrDamaged || secPtr.IsDataDamaged) {
                             score += DMG_SCORE;
                         } else if (secPtr.DataFieldBitOffset == -1) {
-                            // Undamaged but no data field, this is probably newly-formatted DOS 3.2.
+                            // Undamaged but no data field, so this is probably newly-formatted
+                            // DOS 3.2.
                             score += PARTIAL_SCORE;
                         } else {
                             score += FULL_SCORE;
