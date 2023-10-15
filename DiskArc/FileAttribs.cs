@@ -26,7 +26,8 @@ namespace DiskArc {
     /// file types stored in HFS type fields are transferred to the ProDOS fields.</para>
     /// <para>Also has a collection of useful constants.</para>
     /// </summary>
-    public class FileAttribs {
+    [Serializable]
+    public sealed class FileAttribs {
         #region Constants
 
         // Some common ProDOS file type constants, for use by application or test code.
@@ -61,8 +62,8 @@ namespace DiskArc {
 
         // Some HFS file and creator types.
         public const uint CREATOR_CPII = 0x43504949;        // 'CPII' (CiderPress II)
-        public const uint CREATOR_PDOS = 0x70646f73;        // 'pdos'
-        public const uint CREATOR_DCPY = 0x64437079;        // 'dCpy'
+        public const uint CREATOR_PDOS = 0x70646f73;        // 'pdos' (ProDOS)
+        public const uint CREATOR_DCPY = 0x64437079;        // 'dCpy' (DiskCopy)
         public const uint TYPE_AIFC = 0x41494643;           // 'AIFC'
         public const uint TYPE_AIFF = 0x41494646;           // 'AIFF'
         public const uint TYPE_BINA = 0x42494e41;           // 'BINA'
@@ -285,7 +286,7 @@ namespace DiskArc {
         // Not mentioned in the FST documentation: DiskCopy files are stored as dCpy/dImg, which
         // converts to $e0/0005.
         //
-        // (This was initially in AppCommon, but the FileConv library wants it too.)
+        // (This method was initially in AppCommon, but the FileConv library wants it too.)
 
         /// <summary>
         /// Converts HFS creator/filetype to ProDOS type/auxtype.

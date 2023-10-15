@@ -21,7 +21,6 @@ using System.Text.RegularExpressions;
 using CommonUtil;
 using DiskArc;
 using DiskArc.Arc;
-using FileConv;
 
 // Regarding pathname components...
 //
@@ -211,7 +210,7 @@ namespace AppCommon {
         /// <exception cref="FileNotFoundException">A file listed in the pathname list does
         ///   not exist.</exception>
         public AddFileSet(string basePath, string[] pathNames, AddOpts options,
-                ConvConfig.FileConvSpec? importSpec, AppHook appHook) {
+                FileConv.ConvConfig.FileConvSpec? importSpec, AppHook appHook) {
             mAddOpts = options;
             mAppHook = appHook;
 

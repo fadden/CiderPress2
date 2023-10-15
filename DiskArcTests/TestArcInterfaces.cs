@@ -103,6 +103,13 @@ namespace DiskArcTests {
 
             // cancel with nothing in progress is allowed
             archive.CancelTransaction();
+
+            // Confirm we can't use an archive after it has been disposed.
+            archive.Dispose();
+            try {
+                archive.StartTransaction();
+                throw new Exception("Transaction started twice");
+            } catch (InvalidOperationException) { /*expected*/ }
         }
 
         private static void TestSingleFile(IArchive archive, AppHook appHook) {

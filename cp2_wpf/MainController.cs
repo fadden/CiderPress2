@@ -1577,30 +1577,48 @@ namespace cp2_wpf {
         internal VirtualFileDataObject GenerateVFDO() {
             DataGrid dataGrid = mMainWin.fileListDataGrid;
             if (dataGrid.SelectedItems.Count == 0) {
-                Debug.Assert(false);        // not expected; continue anyway
+                Debug.Assert(false);        // not expected; continue anyway to create empty obj
             }
+
+            List<IFileEntry> entries = new List<IFileEntry>();
+            foreach (FileListItem item in dataGrid.SelectedItems) {
+                entries.Add(item.FileEntry);
+            }
+            IFileEntry baseDir;
+            if (CurrentWorkObject is IFileSystem) {
+                baseDir = ((IFileSystem)CurrentWorkObject).GetVolDirEntry();
+            } else {
+                baseDir = IFileEntry.NO_ENTRY;
+            }
+            // TODO: handle preservation mode, raw-data flag
+            ClipFileSet clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
+                ExtractFileWorker.PreserveMode.NAPS, useRawData: false, null, AppHook);
+
+            // Configure the virtual file descriptors that transmit the file contents.
             VirtualFileDataObject vfdo = new VirtualFileDataObject();
             VirtualFileDataObject.FileDescriptor[] vfds =
-                new VirtualFileDataObject.FileDescriptor[dataGrid.SelectedItems.Count];
+                new VirtualFileDataObject.FileDescriptor[clipSet.Count];
 
-            for (int i = 0; i < dataGrid.SelectedItems.Count; i++) {
-                FileListItem selItem = (FileListItem)dataGrid.SelectedItems[i]!;
+            for (int i = 0; i < clipSet.Count; i++) {
+                ClipFileEntry clipEntry = clipSet[i];
                 vfds[i] = new VirtualFileDataObject.FileDescriptor() {
-                    Name = selItem.FileEntry.FileName,
-                    Length = selItem.FileEntry.DataLength,
-                    ChangeTimeUtc = selItem.FileEntry.ModWhen,
+                    Name = clipEntry.Attribs.FileNameOnly,
+                    Length = clipEntry.Attribs.DataLength,
+                    ChangeTimeUtc = clipEntry.Attribs.ModWhen,
                     StreamContents = stream => {
-                        // TODO
-                        Debug.WriteLine("* generate stream " + selItem.FileEntry.FileName);
-                        for (int i = 0; i < 32; i++) {
-                            stream.WriteByte(0x2a);
-                        }
-                        Debug.WriteLine("* generate complete");
+                        clipEntry.mStreamGen.OutputToStream(stream);
                     }
                 };
             }
-
             vfdo.SetData(vfds);
+
+            // Serialize extended attributes.
+            ClipInfo clipInfo = new ClipInfo(clipSet, GlobalAppVersion.AppVersion);
+            string cereal = JsonSerializer.Serialize(clipInfo,
+                new JsonSerializerOptions() { WriteIndented = true });
+            vfdo.SetData((short)ClipInfo.CLIPBOARD_FORMAT,
+                Encoding.UTF8.GetBytes(cereal));
+
             vfdo.SetData(DataFormats.UnicodeText,
                 "This is a test (" + dataGrid.SelectedItems.Count + ")");
             vfdo.SetData(DataFormats.Text,

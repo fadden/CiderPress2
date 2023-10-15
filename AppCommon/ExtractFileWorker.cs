@@ -604,8 +604,6 @@ namespace AppCommon {
             Stream? dataCopy = null;
             Stream? rsrcCopy = null;
 
-            bool doCancel = false;
-
             try {
                 if (dataStream != null && !dataStream.CanSeek) {
                     dataCopy = TempFile.CopyToTemp(dataStream, attrs.DataLength);
@@ -648,7 +646,7 @@ namespace AppCommon {
                     return false;
                 } else if (convOutput is FancyText && !((FancyText)convOutput).PreferSimple) {
                     string rtfPath = extractPath + ".rtf";
-                    if (!PrepareOutputFile(rtfPath, out doCancel)) {
+                    if (!PrepareOutputFile(rtfPath, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = rtfPath;
@@ -658,7 +656,7 @@ namespace AppCommon {
                     }
                 } else if (convOutput is SimpleText) {
                     string txtPath = extractPath + ".txt";
-                    if (!PrepareOutputFile(txtPath, out doCancel)) {
+                    if (!PrepareOutputFile(txtPath, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = txtPath;
@@ -668,7 +666,7 @@ namespace AppCommon {
                     }
                 } else if (convOutput is CellGrid) {
                     string csvPath = extractPath + ".csv";
-                    if (!PrepareOutputFile(csvPath, out doCancel)) {
+                    if (!PrepareOutputFile(csvPath, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = csvPath;
@@ -678,7 +676,7 @@ namespace AppCommon {
                     }
                 } else if (convOutput is IBitmap) {
                     string pngPath = extractPath + ".png";
-                    if (!PrepareOutputFile(pngPath, out doCancel)) {
+                    if (!PrepareOutputFile(pngPath, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = pngPath;

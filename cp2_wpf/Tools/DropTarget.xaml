@@ -33,7 +33,8 @@ limitations under the License.
 
         <TextBox Grid.Row="0" Grid.ColumnSpan="2"
                  Text="{Binding TextArea, FallbackValue=TEXT_HERE}" IsReadOnly="True"
-                 AllowDrop="True" Drop="TextArea_Drop" PreviewDragOver="TextBox_PreviewDragOver"/>
+                 AllowDrop="True" Drop="TextArea_Drop" PreviewDragOver="TextBox_PreviewDragOver"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
 
         <Grid Grid.Row="1" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>

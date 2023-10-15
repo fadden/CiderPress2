@@ -76,6 +76,7 @@ namespace DiskArc.Arc {
 
         public Stream? DataStream { get; internal set; }
 
+        public bool IsValid { get; private set; } = true;
         public bool IsReadOnly => IsDubious;
         public bool IsDubious { get; internal set; }
 
@@ -287,6 +288,7 @@ namespace DiskArc.Arc {
                 AppHook.LogW("Disposing of Zip while transaction open");
                 CancelTransaction();
             }
+            IsValid = false;
         }
 
         /// <summary>
@@ -422,6 +424,9 @@ namespace DiskArc.Arc {
 
         // IArchive
         public ArcReadStream OpenPart(IFileEntry ientry, FilePart part) {
+            if (!IsValid) {
+                throw new InvalidOperationException("Archive object is invalid");
+            }
             if (mIsTransactionOpen) {
                 throw new InvalidOperationException("Cannot open parts while transaction is open");
             }
@@ -450,6 +455,9 @@ namespace DiskArc.Arc {
 
         // IArchive
         public void StartTransaction() {
+            if (!IsValid) {
+                throw new InvalidOperationException("Archive object is invalid");
+            }
             if (IsDubious) {
                 throw new InvalidOperationException("Cannot modify a dubious archive");
             }

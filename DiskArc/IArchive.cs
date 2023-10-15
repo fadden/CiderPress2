@@ -64,6 +64,11 @@ namespace DiskArc {
         Arc.ArcCharacteristics Characteristics { get; }
 
         /// <summary>
+        /// True if this object is valid.  This becomes false when the object is disposed.
+        /// </summary>
+        bool IsValid { get; }
+
+        /// <summary>
         /// True if this archive may not be written to.
         /// </summary>
         /// <remarks>

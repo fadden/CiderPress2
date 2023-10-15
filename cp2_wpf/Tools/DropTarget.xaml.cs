@@ -108,7 +108,16 @@ namespace cp2_wpf.Tools {
                 } else if (format == ClipHelper.FILE_CONTENTS_FORMAT) {
                     // Should have been accompanied by descriptor array, and dumped with that.
                     // The data cannot be obtained from GetData(), since it's an array of streams.
-                    sb.Append(": (see descriptor section)\r\n");
+                    sb.Append(": (shown in descriptor section)\r\n");
+                    continue;
+                } else if (format == ClipInfo.CLIPBOARD_FORMAT_NAME) {
+                    sb.Append(":\r\n");
+                    // Dump the full text of the JSON stream for debugging.
+                    MemoryStream cerealStream = (MemoryStream)dataObj.GetData(format);
+                    using (StreamReader sr = new StreamReader(cerealStream, Encoding.UTF8)) {
+                        string cereal = sr.ReadToEnd();
+                        sb.AppendLine(cereal);
+                    }
                     continue;
                 }
 

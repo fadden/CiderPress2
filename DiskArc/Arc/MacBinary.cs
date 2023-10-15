@@ -54,6 +54,7 @@ namespace DiskArc.Arc {
 
         public Stream? DataStream { get; internal set; }
 
+        public bool IsValid { get; private set; } = true;
         public bool IsReadOnly => true;
         public bool IsDubious { get; internal set; }
 
@@ -162,10 +163,14 @@ namespace DiskArc.Arc {
                     mStreamTracker.CloseAll();
                 }
             }
+            IsValid = false;
         }
 
         // IArchive
         public ArcReadStream OpenPart(IFileEntry ientry, FilePart part) {
+            if (!IsValid) {
+                throw new InvalidOperationException("Archive object is invalid");
+            }
             if (ientry.IsDamaged) {
                 throw new IOException("Entry is too damaged to open");
             }

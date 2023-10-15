@@ -7,7 +7,7 @@
 // necessary functions.
 //
 // This works for drag-and-drop (must call the DoDragDrop() method defined here, rather than
-// the one in DragDrop) and clipboard (just call Clipboard.SetDataObject() with the vfdo).
+// the one in DragDrop) and clipboard copy (just call Clipboard.SetDataObject() with the vfdo).
 //
 // How this works:
 // - The DataObject will have an array of FILEDESCRIPTORW structs, which specify the file
@@ -17,13 +17,13 @@
 // - When the remote side requests access to a specific "file contents" element, a "get data"
 //   call fires locally.  The code here creates a write-only IStream instance, and passes it
 //   to the application-provided StreamContents callback.
-// - The application writes the full contents of the stream.  This will be made available to
-//   the remote side.
+// - The application writes the full contents of the stream.  After completion, the output is
+//   made available to the remote side.  (The local side does *not* react to individual read
+//   calls from the remote.)
 // Things I'm unclear on:
-// - Shouldn't this have a callback that handles the remote Read() calls?  Writing all of the
-//   data is okay for us but seems like an odd approach.  It looks like Windows can work that
-//   way when the implementation is native rather than managed.  I don't know if "write everything"
-//   is an implementation choice or a limitation of the framework.
+// - It looks like Windows can allow the local side to have a Read() callback when the
+//   implementation is in native code.  I don't know if the "write everything up front" approach
+//   used here is an implementation choice or a limitation imposed by .NET.
 //
 // Minor edits have been made:
 //  - silence the nullability checker
