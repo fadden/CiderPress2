@@ -177,7 +177,7 @@ namespace cp2_wpf.Tools {
                 string fileName = desc.FileName;
                 sb.AppendFormat("    {0}: '{1}': ", fileIndex, fileName);
                 if ((desc.FileAttributes & FileAttributes.Directory) != 0) {
-                    // Handle directory.
+                    // Directories don't have contents.
                     sb.Append("is directory");
                 } else {
                     Debug.WriteLine("+ stream get contents " + fileIndex);
@@ -189,6 +189,7 @@ namespace cp2_wpf.Tools {
                             long fileLen = 0;
                             Debug.WriteLine("+ starting read");
                             while (contents.ReadByte() >= 0) {
+                                // read contents...slowly
                                 fileLen++;
                             }
                             sb.Append("read " + fileLen + " bytes");

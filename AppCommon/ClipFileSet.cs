@@ -30,6 +30,7 @@ namespace AppCommon {
     /// <para>This holds a set of file entry information that can be serialized and placed on the
     /// system clipboard.</para>
     /// </summary>
+    [Serializable]
     public class ClipFileSet {
         public int Count => Entries.Count;
 
@@ -40,7 +41,12 @@ namespace AppCommon {
         /// <summary>
         /// List of entries for the clipboard.  This can be serialized.
         /// </summary>
-        public List<ClipFileEntry> Entries { get; private set; } = new List<ClipFileEntry>();
+        public List<ClipFileEntry> Entries { get; set; } = new List<ClipFileEntry>();
+
+        /// <summary>
+        /// Nullary constructor, for the deserializer.
+        /// </summary>
+        public ClipFileSet() { }
 
         /// <summary>
         /// Constructs a set of ClipFileEntries that contains the entries provided.  Additional
@@ -89,9 +95,10 @@ namespace AppCommon {
             // TODO
             // - recursively ensure ContainingDir is in set ahead of entry
             // - if entry is directory, see if it's already in set so we don't add twice
+            // - need to add separate entries for data/rsrc fork
 
             foreach (IFileEntry entry in entries) {
-                Entries.Add(new ClipFileEntry(fs, entry));
+                Entries.Add(new ClipFileEntry(fs, entry, FilePart.DataFork));
             }
         }
     }

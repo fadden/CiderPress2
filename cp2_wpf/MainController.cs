@@ -1066,6 +1066,43 @@ namespace cp2_wpf {
             //   at "can execute" time)
             // - add/import to currently-selected directory
             Debug.WriteLine("Paste from clipboard (TODO)");
+
+            IDataObject clipData = Clipboard.GetDataObject();
+            object? data = clipData.GetData(ClipInfo.CLIPBOARD_FORMAT_NAME);
+            if (data is null) {
+                // TODO: could be a paste from Windows Explorer ZIP folder; check for
+                //  ClipHelper.DESC_ARRAY_FORMAT + ClipHelper.FILE_CONTENTS_FORMAT
+                //  (also need to do that on drag-in, this should be common code)
+                Debug.WriteLine("Didn't find " + ClipInfo.CLIPBOARD_FORMAT_NAME);
+                return;
+            }
+            if (data is not MemoryStream) {
+                Debug.WriteLine("Found " + ClipInfo.CLIPBOARD_FORMAT_NAME + " w/o MemoryStream");
+                return;
+            }
+            ClipInfo clipInfo;
+            try {
+                object? parsed = JsonSerializer.Deserialize((MemoryStream)data, typeof(ClipInfo));
+                if (parsed == null) {
+                    return;
+                }
+                clipInfo = (ClipInfo)parsed;
+                if (clipInfo.ClipSet == null) {
+                    Debug.WriteLine("ClipInfo arrived without a ClipFileSet");
+                    return;
+                }
+            } catch (JsonException ex) {
+                Debug.WriteLine("Clipboard deserialization failed: " + ex.Message);
+                return;
+            }
+
+            Debug.WriteLine("Paste from v" +
+                new CommonUtil.Version(clipInfo.AppVersionMajor, clipInfo.AppVersionMinor,
+                    clipInfo.AppVersionPatch) +
+                " count=" + clipInfo.ClipSet.Count);
+            foreach (ClipFileEntry entry in clipInfo.ClipSet.Entries) {
+                Debug.WriteLine(" - " + entry);
+            }
         }
 
         private void HandleAddImport(ConvConfig.FileConvSpec? spec) {
@@ -1602,13 +1639,16 @@ namespace cp2_wpf {
             for (int i = 0; i < clipSet.Count; i++) {
                 ClipFileEntry clipEntry = clipSet[i];
                 vfds[i] = new VirtualFileDataObject.FileDescriptor() {
-                    Name = clipEntry.Attribs.FileNameOnly,
+                    Name = clipEntry.Attribs.FullPathName.Replace(':', '\\'),   // TODO
+                    IsDirectory = clipEntry.Attribs.IsDirectory,
                     Length = clipEntry.Attribs.DataLength,
                     ChangeTimeUtc = clipEntry.Attribs.ModWhen,
-                    StreamContents = stream => {
-                        clipEntry.mStreamGen.OutputToStream(stream);
-                    }
                 };
+                if (!clipEntry.Attribs.IsDirectory) {
+                    vfds[i].StreamContents = stream => {
+                        clipEntry.mStreamGen!.OutputToStream(stream);
+                    };
+               }
             }
             vfdo.SetData(vfds);
 

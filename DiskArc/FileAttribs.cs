@@ -105,6 +105,7 @@ namespace DiskArc {
         public string FullPathName { get; set; } = string.Empty;
         public char FullPathSep { get; set; } = IFileEntry.NO_DIR_SEP;
         public string FileNameOnly { get; set; } = string.Empty;
+        public bool IsDirectory { get; set; }
         public byte FileType { get; set; }
         public ushort AuxType { get; set; }
         public uint HFSFileType { get; set; }
@@ -138,6 +139,7 @@ namespace DiskArc {
             FullPathName = src.FullPathName;
             FullPathSep = src.FullPathSep;
             FileNameOnly = src.FileNameOnly;
+            IsDirectory = src.IsDirectory;
             FileType = src.FileType;
             AuxType = src.AuxType;
             HFSFileType = src.HFSFileType;
@@ -159,6 +161,7 @@ namespace DiskArc {
             // Want just the filename, not the partial path.  Trim if necessary.
             FullPathSep = entry.DirectorySeparatorChar;
             FileNameOnly = entry.FileName;
+            IsDirectory = entry.IsDirectory;
             DataLength = entry.DataLength;
             RsrcLength = entry.RsrcLength;
             if (FullPathSep != IFileEntry.NO_DIR_SEP) {

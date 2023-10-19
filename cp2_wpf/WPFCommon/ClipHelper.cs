@@ -24,12 +24,14 @@ using System.Windows;
 
 namespace cp2_wpf.WPFCommon {
     /// <summary>
-    /// Classes that provide access to file streams dropped or pasted into the app.
+    /// Classes that provide access to file streams dropped or pasted into a Windows app.
     /// </summary>
     /// <remarks>
-    /// Substantially from <see href="https://stackoverflow.com/a/31972769/294248"/>.
+    /// Substantially from <see href="https://stackoverflow.com/a/31972769/294248"/>.  This is
+    /// the "receiving" side; see <see cref="Delay.VirtualFileDataObject"/> for the "sending" side.
     /// </remarks>
     public static class ClipHelper {
+        // Names of formats found in clipboard data object.
         public const string DESC_ARRAY_FORMAT = "FileGroupDescriptorW";
         public const string FILE_CONTENTS_FORMAT = "FileContents";
 
@@ -41,11 +43,11 @@ namespace cp2_wpf.WPFCommon {
         /// <param name="index">Index of file.</param>
         /// <returns>Stream with file contents.</returns>
         internal static Stream? GetFileContents(System.Windows.IDataObject dataObject, int index) {
-            //cast the default IDataObject to a com IDataObject
+            // cast the default IDataObject to a COM IDataObject
             System.Runtime.InteropServices.ComTypes.IDataObject comDataObject;
             comDataObject = (System.Runtime.InteropServices.ComTypes.IDataObject)dataObject;
 
-            System.Windows.DataFormat Format = System.Windows.DataFormats.GetDataFormat("FileContents");
+            DataFormat Format = DataFormats.GetDataFormat("FileContents");
             if (Format == null) {
                 return null;
             }
@@ -56,10 +58,8 @@ namespace cp2_wpf.WPFCommon {
             formatetc.lindex = index;
             formatetc.tymed = TYMED.TYMED_ISTREAM | TYMED.TYMED_HGLOBAL;
 
-            //create STGMEDIUM to output request results into
-            STGMEDIUM medium = new STGMEDIUM();
-
-            //using the com IDataObject interface get the data using the defined FORMATETC
+            // using the COM IDataObject interface get the data using the defined FORMATETC
+            STGMEDIUM medium;
             try {
                 comDataObject.GetData(ref formatetc, out medium);
             } catch (COMException ex) {
@@ -88,20 +88,20 @@ namespace cp2_wpf.WPFCommon {
         /// be bad for larger files.
         /// </remarks>
         private static MemoryStream GetIStream(STGMEDIUM medium) {
-            //marshal the returned pointer to a IStream object
+            // marshal the returned pointer to a IStream object
             IStream iStream = (IStream)Marshal.GetObjectForIUnknown(medium.unionmember);
             Marshal.Release(medium.unionmember);
 
-            //get the STATSTG of the IStream to determine how many bytes are in it
-            var iStreamStat = new System.Runtime.InteropServices.ComTypes.STATSTG();
+            // get the STATSTG of the IStream to determine how many bytes are in it
+            System.Runtime.InteropServices.ComTypes.STATSTG iStreamStat;
             iStream.Stat(out iStreamStat, 0);
             int iStreamSize = (int)iStreamStat.cbSize;
 
-            //read the data from the IStream into a managed byte array
+            // read the data from the IStream into a managed byte array
             byte[] iStreamContent = new byte[iStreamSize];
             iStream.Read(iStreamContent, iStreamContent.Length, IntPtr.Zero);
 
-            //wrapped the managed byte array into a memory stream
+            // wrap the managed byte array into a memory stream
             return new MemoryStream(iStreamContent);
         }
 
@@ -127,7 +127,7 @@ namespace cp2_wpf.WPFCommon {
                 Unicode = 0x80000000,
             }
 
-            // Bit flags, indicating which fields are valid.
+            // Bit flags, indicating which of the other fields are valid.
             public FileDescriptorFlags Flags { get; set; }
             // File type identifier.
             public Guid ClassId { get; set; }
@@ -143,7 +143,7 @@ namespace cp2_wpf.WPFCommon {
             public DateTime LastWriteTime { get; set; } = DateTime.MinValue;
             // File size, stored as two 32-bit words, with the high part first.
             public Int64 FileSize { get; set; } = -1;
-            // Null-terminated UCS-2 filename string.
+            // Null-terminated UCS-2 filename string.  There's no "valid" flag for this field.
             public string FileName { get; set; }
 
             public FileDescriptor(BinaryReader reader) {
@@ -206,9 +206,9 @@ namespace cp2_wpf.WPFCommon {
                 }
                 if ((Flags & FileDescriptorFlags.Unicode) != 0) {
                     // This flag doesn't seem to be set by Windows Explorer's Zip handling,
-                    // though the filename is UTF-16.  We know that this structure was passed
-                    // via "FileGroupDescriptorW", not "...A", so we can probably just
-                    // ignore the flag.
+                    // though the filename is UTF-16.  We know from the format name that this
+                    // structure was passed via "FileGroupDescriptorW", not "...A", so we can
+                    // probably just ignore the flag.
                 }
 
                 // Extract null-terminated UTF-16 filename.

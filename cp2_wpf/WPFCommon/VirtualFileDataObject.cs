@@ -3,8 +3,9 @@
 // by David Anson.  According to the site, the code uses the
 // <see href="https://opensource.org/licenses/MIT">MIT License</see>.
 //
-// This code is necessary because .NET doesn't provide a "managed code" interface to the
-// necessary functions.
+// This code is Windows-specific.  It's necessary because .NET doesn't provide a "managed code"
+// interface to the necessary functions.  This implements the "sending" side; see the ClipHelper
+// class for code that handles the "receiving" side.
 //
 // This works for drag-and-drop (must call the DoDragDrop() method defined here, rather than
 // the one in DragDrop) and clipboard copy (just call Clipboard.SetDataObject() with the vfdo).
@@ -26,6 +27,7 @@
 //   used here is an implementation choice or a limitation imposed by .NET.
 //
 // Minor edits have been made:
+//  - expanded set of supported file attributes
 //  - silence the nullability checker
 //  - add a SetData(string, string) call for convenience
 //
@@ -464,6 +466,11 @@ namespace Delay
                 {
                     cFileName = fileDescriptor.Name,
                 };
+                // If this is a directory, set the attribute flag.
+                if (fileDescriptor.IsDirectory) {
+                    FILEDESCRIPTOR.dwFlags |= NativeMethods.FD_ATTRIBUTES;
+                    FILEDESCRIPTOR.dwFileAttributes = (uint)FileAttributes.Directory;
+                }
                 // Set optional timestamp
                 if (fileDescriptor.ChangeTimeUtc.HasValue)
                 {
@@ -662,22 +669,28 @@ namespace Delay
         public class FileDescriptor
         {
             /// <summary>
-            /// Gets or sets the name of the file.
+            /// Name of file (partial path).
             /// </summary>
             public string Name { get; set; } = string.Empty;
 
             /// <summary>
-            /// Gets or sets the (optional) length of the file.
+            /// True if this is a directory, which doesn't have file contents.
+            /// </summary>
+            public bool IsDirectory { get; set; }
+
+            /// <summary>
+            /// Length of file; set to null if output length is not known (because of conversion
+            /// or compression).
             /// </summary>
             public Int64? Length { get; set; }
 
             /// <summary>
-            /// Gets or sets the (optional) change time of the file.
+            /// Change time of file.  Set to null if not known.
             /// </summary>
             public DateTime? ChangeTimeUtc { get; set; }
 
             /// <summary>
-            /// Gets or sets an Action that returns the contents of the file.
+            /// Action that returns the contents of the file.
             /// </summary>
             public Action<Stream>? StreamContents { get; set; }
         }
@@ -935,6 +948,7 @@ namespace Delay
             public const int DV_E_FORMATETC = -2147221404;
             public const int DV_E_TYMED = -2147221399;
             public const int E_FAIL = -2147467259;
+            public const uint FD_ATTRIBUTES = 0x00000004;
             public const uint FD_CREATETIME = 0x00000008;
             public const uint FD_WRITESTIME = 0x00000020;
             public const uint FD_FILESIZE = 0x00000040;

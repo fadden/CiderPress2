@@ -1375,10 +1375,10 @@ namespace cp2_wpf {
                 //DataObject data = new DataObject(DataFormats.Text, "this is a test");
                 //DragDropEffects dde = DragDrop.DoDragDrop(fileListDataGrid, data,
                 //    DragDropEffects.Copy | DragDropEffects.Move);
-                //Debug.WriteLine("FL drag complete, effect=" + dde);
 
-                VirtualFileDataObject.DoDragDrop(fileListDataGrid, vfdo,
+                DragDropEffects dde = VirtualFileDataObject.DoDragDrop(fileListDataGrid, vfdo,
                     DragDropEffects.Copy | DragDropEffects.Move);
+                Debug.WriteLine("FL drag complete, effect=" + dde);
             } catch (COMException ex) {
                 Debug.WriteLine("COM exception: " + ex.Message);
             }
@@ -1416,6 +1416,7 @@ namespace cp2_wpf {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 mMainCtrl.AddFileDrop(dropTarget, files);
             } else {
+                // TODO: handle WinExp ZIP folder - share Paste code
                 Debug.WriteLine("FL no valid drop");
             }
         }

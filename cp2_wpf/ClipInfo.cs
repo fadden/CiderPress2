@@ -33,11 +33,20 @@ namespace cp2_wpf {
 
         public ClipFileSet? ClipSet { get; set; } = null;
 
+        // Fields split out of a CommonUtil.Version object.
         public int AppVersionMajor { get; set; }
         public int AppVersionMinor { get; set; }
         public int AppVersionPatch { get; set; }
 
+        /// <summary>
+        /// Nullary constructor, for the deserializer.
+        /// </summary>
         public ClipInfo() { }
+
+        /// <summary>
+        /// Constructor.  Most of the goodies are in the ClipFileSet, but we want to add some
+        /// application-level stuff like the version number.
+        /// </summary>
         public ClipInfo(ClipFileSet clipSet, CommonUtil.Version appVersion) {
             ClipSet = clipSet;
             AppVersionMajor = appVersion.Major;
