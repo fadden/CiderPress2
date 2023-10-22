@@ -1627,9 +1627,16 @@ namespace cp2_wpf {
             } else {
                 baseDir = IFileEntry.NO_ENTRY;
             }
-            // TODO: handle preservation mode, raw-data flag
+
+            // Prepare the file set according to the current options.
+            // TODO: get extract/export flag from GUI, get export spec if needed
+            SettingsHolder settings = AppSettings.Global;
+            ExtractFileWorker.PreserveMode preserve =
+                settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
+                    ExtractFileWorker.PreserveMode.None);
+            bool rawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false);
             ClipFileSet clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
-                ExtractFileWorker.PreserveMode.NAPS, useRawData: false, null, AppHook);
+                preserve, rawMode, exportSpec: null, AppHook);
 
             // Configure the virtual file descriptors that transmit the file contents.
             VirtualFileDataObject vfdo = new VirtualFileDataObject();

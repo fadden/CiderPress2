@@ -96,6 +96,12 @@ namespace AppCommon {
         //public string OutputPath { get; set; } = string.Empty;
 
         /// <summary>
+        /// Filesystem on which the file lives.  Will be Unknown for file archives.  Useful for
+        /// certain special cases, such as transferring text files from DOS.
+        /// </summary>
+        public FileSystemType FSType { get; set; } = FileSystemType.Unknown;
+
+        /// <summary>
         /// Which fork of the file this is.  Also indicates "raw" file access.
         /// </summary>
         public FilePart Part { get; set; } = FilePart.Unknown;
@@ -115,13 +121,18 @@ namespace AppCommon {
         /// </summary>
         public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, FilePart part) {
             mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, part);
+
+            IFileSystem? fs = entry.GetFileSystem();
+            if (fs != null) {
+                FSType = fs.GetFileSystemType();
+            }
             Part = part;
 
             Attribs = new FileAttribs(entry);
         }
 
         public override string ToString() {
-            return "[ClipFileEntry " + Attribs.FullPathName + "]";
+            return "[ClipFileEntry " + Attribs.FullPathName + " - " + Part + "]";
         }
     }
 }

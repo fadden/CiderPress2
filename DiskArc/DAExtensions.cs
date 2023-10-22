@@ -163,7 +163,6 @@ namespace DiskArc {
         /// <para>The chunks will be zeroed out before the new filesystem is written.</para>
         /// <para>This does not work with custom sector codecs.</para>
         /// </remarks>
-        /// <param name="diskImage">Disk image object.</param>
         /// <param name="fsType">Filesystem to format the disk with.</param>
         /// <param name="volumeName">IFileSystem.Format() argument.</param>
         /// <param name="volumeNum">IFileSystem.Format() argument.</param>
@@ -337,7 +336,11 @@ namespace DiskArc {
         /// Returns the FileSystemType value for a filesystem.
         /// </summary>
         /// <remarks>
-        /// Use <see cref="FileAnalyzer.CreateFileSystem"/> to create an instance from the type.
+        /// <para>We could just make this an IFileSystem property, perhaps in the
+        /// FSCharacteristics, but it doesn't need to be part of the API, and we shouldn't be
+        /// doing this very often.</para>
+        /// <para>Use <see cref="FileAnalyzer.CreateFileSystem"/> to create an instance from the
+        /// type.</para>
         /// </remarks>
         /// <returns>FileSystemType enumerated value, or Unknown if not known.</returns>
         public static Defs.FileSystemType GetFileSystemType(this IFileSystem fs) {
@@ -499,7 +502,6 @@ namespace DiskArc {
         /// Finds a file entry that matches the specified pathname.  The pathname should be
         /// a correctly-formed partial pathname that starts in the root directory.
         /// </summary>
-        /// <param name="fs">Filesystem object.</param>
         /// <param name="path">Partial path from root directory.  An empty string returns
         ///   the root directory instead.</param>
         /// <param name="fssep">Filename separator character.</param>
@@ -599,12 +601,12 @@ namespace DiskArc {
         /// Obtains the filesystem the file entry is a part of.
         /// </summary>
         /// <remarks>
-        /// <para>File entry objects are associated with both filesystems and file archives, so
-        /// we need to break this down by class.</para>
         /// <para>Invalidated file entry objects will null their FileSystem reference, so this
         /// should only return non-null for valid entries.</para>
+        /// <para>File entry objects are associated with both filesystems and file archives, but
+        /// don't have separate subclasses for each case, so we can't trivially eliminate IArchive
+        /// entries.</para>
         /// </remarks>
-        /// <param name="entry">File entry.</param>
         /// <returns>Filesystem reference, or null if entry is not part of a filesystem.</returns>
         public static IFileSystem? GetFileSystem(this IFileEntry entry) {
             if (entry is CPM_FileEntry) {
@@ -624,6 +626,8 @@ namespace DiskArc {
             } else if (entry is RDOS_FileEntry) {
                 return ((RDOS_FileEntry)entry).FileSystem;
             } else {
+                // Entry is invalid, part of an IArchive, or we have an un-handled IFileSystem.
+                Debug.Assert(!entry.IsValid || GetArchive(entry) != null);
                 return null;
             }
         }
@@ -632,25 +636,31 @@ namespace DiskArc {
         /// Obtains the archive the file entry is a part of.
         /// </summary>
         /// <remarks>
-        /// <para>File entry objects are associated with both filesystems and file archives, so
-        /// we need to break this down by class.</para>
         /// <para>Invalidated file entry objects will null their Archive reference, so this
         /// should only return non-null for valid entries.</para>
+        /// <para>File entry objects are associated with both filesystems and file archives, but
+        /// don't have separate subclasses for each case, so we can't trivially eliminate IArchive
+        /// entries.</para>
         /// </remarks>
-        /// <param name="entry">File entry.</param>
-        /// <returns>Filesystem reference, or null if entry is not part of a filesystem.</returns>
+        /// <returns>Archive reference, or null if entry is not part of a file archive.</returns>
         public static IArchive? GetArchive(this IFileEntry entry) {
-            if (entry is AppleSingle_FileEntry) {
+            if (entry is AppleLink_FileEntry) {
+                return ((AppleLink_FileEntry)entry).Archive;
+            } else if (entry is AppleSingle_FileEntry) {
                 return ((AppleSingle_FileEntry)entry).Archive;
             } else if (entry is Binary2_FileEntry) {
                 return ((Binary2_FileEntry)entry).Archive;
             } else if (entry is GZip_FileEntry) {
                 return ((GZip_FileEntry)entry).Archive;
+            } else if (entry is MacBinary_FileEntry) {
+                return ((MacBinary_FileEntry)entry).Archive;
             } else if (entry is NuFX_FileEntry) {
                 return ((NuFX_FileEntry)entry).Archive;
             } else if (entry is Zip_FileEntry) {
                 return ((Zip_FileEntry)entry).Archive;
             } else {
+                // Entry is invalid, part of an IFileSystem, or we have an un-handled IArchive.
+                Debug.Assert(!entry.IsValid || GetFileSystem(entry) != null);
                 return null;
             }
         }

@@ -485,6 +485,7 @@ namespace Delay
                     FILEDESCRIPTOR.ftCreationTime = changeTimeFileTime;
                 }
                 // Set optional length
+                // (passing unknown size: https://stackoverflow.com/a/39608168/294248 )
                 if (fileDescriptor.Length.HasValue)
                 {
                     FILEDESCRIPTOR.dwFlags |= NativeMethods.FD_FILESIZE;

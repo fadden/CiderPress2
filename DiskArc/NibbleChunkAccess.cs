@@ -26,7 +26,7 @@ namespace DiskArc {
     /// Used for images of 5.25" and 3.5" floppy disks.
     /// </summary>
     internal class NibbleChunkAccess : IChunkAccess {
-        private const int TAG_BYTE_COUNT = 12;
+        protected const int TAG_BYTE_COUNT = 12;
 
         //
         // IChunkAccess properties.
@@ -35,26 +35,27 @@ namespace DiskArc {
         public bool IsReadOnly {
             get {
                 // If we don't know how to calculate the checksums, we definitely shouldn't
-                // be writing to the disk.
+                // be writing to the disk.  (Strictly speaking, we only need to calculate the
+                // data checksums unless we're formatting the disk.)
                 return !NibbleCodec.DoTestAddrChecksum || !NibbleCodec.DoTestDataChecksum ||
                     mNibbleAccess.IsReadOnly;
             }
         }
 
         public bool IsModified { get; set; }
-        public long ReadCount { get; private set; }
-        public long WriteCount { get; private set; }
+        public long ReadCount { get; protected set; }
+        public long WriteCount { get; protected set; }
 
-        public long FormattedLength { get; private set; }
+        public long FormattedLength { get; protected set; }
 
-        public uint NumTracks { get; private set; }
-        public uint NumSectorsPerTrack { get; private set; }
-        public bool HasSectors { get; private set; }
-        public bool HasBlocks { get; private set; }
+        public uint NumTracks { get; protected set; }
+        public uint NumSectorsPerTrack { get; protected set; }
+        public bool HasSectors { get; protected set; }
+        public bool HasBlocks { get; protected set; }
 
         public SectorOrder FileOrder { get { return SectorOrder.Physical; } set { } }
 
-        public SectorCodec NibbleCodec { get; private set; }
+        public SectorCodec NibbleCodec { get; protected set; }
 
         //
         // Innards.
@@ -63,27 +64,27 @@ namespace DiskArc {
         /// <summary>
         /// Nibble data provider.
         /// </summary>
-        private INibbleDataAccess mNibbleAccess;
+        protected INibbleDataAccess mNibbleAccess;
 
         /// <summary>
         /// Number of disk sides (for 3.5" disks).
         /// </summary>
-        private int mNumSides;
+        protected int mNumSides;
 
         /// <summary>
         /// Temporary storage for a disk access unit.  Holds at least 524 bytes.
         /// </summary>
-        private byte[] mTmpBuf524 = RawData.EMPTY_BYTE_ARRAY;
+        protected byte[] mTmpBuf524 = RawData.EMPTY_BYTE_ARRAY;
 
         /// <summary>
         /// 40 tracks * 4 half/quarter for 5.25", 80 tracks * 2 sides for 3.5"
         /// </summary>
-        private const int MAX_TRACK_ENTRIES = 160;
+        protected const int MAX_TRACK_ENTRIES = 160;
 
         /// <summary>
         /// Cached track/sector data.
         /// </summary>
-        private class TrackEntry {
+        protected class TrackEntry {
             public CircularBitBuffer mCirc;
             public List<SectorPtr> mSectors;
 
@@ -115,7 +116,7 @@ namespace DiskArc {
                 return sctPtr;
             }
         }
-        private TrackEntry?[] mTrackEntries = new TrackEntry[MAX_TRACK_ENTRIES];
+        protected TrackEntry?[] mTrackEntries = new TrackEntry[MAX_TRACK_ENTRIES];
 
         /// <summary>
         /// Constructor.
@@ -123,7 +124,7 @@ namespace DiskArc {
         /// <param name="nibbles">Nibble data provider.</param>
         /// <param name="codec">Sector encoder/decoder.</param>
         public NibbleChunkAccess(INibbleDataAccess nibbles, SectorCodec codec) {
-            // TODO: add an 80-track mode that remaps track numbers to use the half-tracks.
+            // TODO: add a 5.25" 80-track mode that remaps track numbers to use the half-tracks.
             mNibbleAccess = nibbles;
             NibbleCodec = codec;
 
@@ -169,9 +170,9 @@ namespace DiskArc {
                 FormattedLength = NumTracks * NumSectorsPerTrack * SECTOR_SIZE;
                 mNumSides = 1;
             } else {
-                // 3.5" disks have a fixed number of tracks, but they don't have a fixed number
+                // GCR 3.5" disks have a fixed number of tracks, but they don't have a fixed number
                 // of sectors per track, so there's no value in filling out those geometry values.
-                // HasSectors=false, NumTracks=0, NumSectorsPerTrack=0
+                // To the calling code, the disk is strictly block-addressable.
 
                 if (nibbles.DiskKind == MediaKind.GCR_SSDD35) {
                     FormattedLength = 400 * 1024;
@@ -187,7 +188,7 @@ namespace DiskArc {
             }
         }
 
-        private void CheckSectorArgs(uint trk, uint sct, bool isWrite) {
+        protected void CheckSectorArgs(uint trk, uint sct, bool isWrite) {
             if (!HasSectors) {
                 throw new InvalidOperationException("No sectors");
             }
@@ -204,7 +205,7 @@ namespace DiskArc {
             }
         }
 
-        private void CheckBlockArgs(uint block, bool isWrite) {
+        protected void CheckBlockArgs(uint block, bool isWrite) {
             if (!HasBlocks) {
                 throw new InvalidOperationException("No blocks");
             }
@@ -220,12 +221,12 @@ namespace DiskArc {
         /// Returns the track entry for the specified track, or null if the track isn't available.
         /// Finds the sectors on first use.
         /// </summary>
-        private TrackEntry? GetTrackEntry(uint trackNum, uint trackFraction) {
+        protected TrackEntry? GetTrackEntry(uint trackNum, uint trackFraction) {
             uint index;
             if (mNibbleAccess.DiskKind == MediaKind.GCR_525) {
-                index = trackNum * 4 + trackFraction;
+                index = trackNum * 4 + trackFraction;       // quarter tracks
             } else {
-                index = trackNum * 2 + trackFraction;
+                index = trackNum * 2 + trackFraction;       // two sides
             }
             if (mTrackEntries[index] != null) {
                 return mTrackEntries[index];
@@ -265,7 +266,7 @@ namespace DiskArc {
         /// <param name="trkEnt">Result: TrackEntry for this track.</param>
         /// <returns>Physical sector number.</returns>
         /// <exception cref="IOException">No data exists for this track.</exception>
-        private uint SectorSetup(uint trk, uint sct, SectorOrder requestOrder,
+        protected uint SectorSetup(uint trk, uint sct, SectorOrder requestOrder,
                 out TrackEntry trkEnt) {
             uint physSector = sct;
             if (NumSectorsPerTrack == 16) {
@@ -287,7 +288,7 @@ namespace DiskArc {
         /// <summary>
         /// Finds the sector and issues the codec read call.
         /// </summary>
-        private void DoReadSector(uint trk, uint physSct, TrackEntry trkEnt,
+        protected void DoReadSector(uint trk, uint physSct, TrackEntry trkEnt,
                 byte[] data, int offset) {
             SectorPtr? sctPtr = trkEnt.GetUndamagedSector(physSct, true, out string msg);
             if (sctPtr == null) {
@@ -310,7 +311,7 @@ namespace DiskArc {
             DoReadBlock(block, data, offset,  skewMap);
         }
 
-        private void DoReadBlock(uint block, byte[] data, int offset, uint[] skewMap) {
+        protected void DoReadBlock(uint block, byte[] data, int offset, uint[] skewMap) {
             CheckBlockArgs(block, false);
             if (HasSectors) {
                 // Read the block as a pair of sectors, using the requested skewing.
@@ -370,7 +371,7 @@ namespace DiskArc {
         /// <summary>
         /// Finds the sector and issues the codec write call.
         /// </summary>
-        private void DoWriteSector(uint trk, uint physSct, TrackEntry trkEnt,
+        protected void DoWriteSector(uint trk, uint physSct, TrackEntry trkEnt,
                 byte[] data, int offset) {
             // Don't check DataFieldBitOffset here; let the codec decide if it needs it.
             SectorPtr? sctPtr = trkEnt.GetUndamagedSector(physSct, true, out string msg);
@@ -393,7 +394,7 @@ namespace DiskArc {
             DoWriteBlock(block, data, offset, skewMap);
         }
 
-        private void DoWriteBlock(uint block, byte[] data, int offset, uint[] skewMap) {
+        protected void DoWriteBlock(uint block, byte[] data, int offset, uint[] skewMap) {
             CheckBlockArgs(block, true);
             IsModified = true;
             if (HasSectors) {
@@ -424,10 +425,16 @@ namespace DiskArc {
                 if (sctPtr == null) {
                     throw new BadBlockException(msg, cyl, head, sct, false);
                 }
-                // Zero out the 12 tag bytes.
                 Debug.Assert(NibbleCodec.DecodedSectorSize == 524);
-                for (int i = 0; i < TAG_BYTE_COUNT; i++) {
-                    mTmpBuf524[i] = 0x00;
+                //for (int i = 0; i < TAG_BYTE_COUNT; i++) {
+                //    mTmpBuf524[i] = 0x00;
+                //}
+                // Read the current block, to preserve the tag bytes.  This slows us down (vs.
+                // just zeroing them out), but if we're not operating on physical media then it
+                // shouldn't be noticeable.
+                if (!NibbleCodec.ReadSector(trkEnt.mCirc, sctPtr, mTmpBuf524, 0)) {
+                    throw new BadBlockException("Unable to read block before write",
+                        cyl, head, sct, false);
                 }
                 Array.Copy(data, offset, mTmpBuf524, TAG_BYTE_COUNT, BLOCK_SIZE);
                 if (!NibbleCodec.WriteSector(trkEnt.mCirc, sctPtr, mTmpBuf524, 0)) {
