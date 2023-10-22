@@ -1621,11 +1621,14 @@ namespace cp2_wpf {
             foreach (FileListItem item in dataGrid.SelectedItems) {
                 entries.Add(item.FileEntry);
             }
-            IFileEntry baseDir;
-            if (CurrentWorkObject is IFileSystem) {
-                baseDir = ((IFileSystem)CurrentWorkObject).GetVolDirEntry();
-            } else {
-                baseDir = IFileEntry.NO_ENTRY;
+            IFileEntry baseDir = IFileEntry.NO_ENTRY;       // equivalent to volume dir
+            if (CurrentWorkObject is IFileSystem && mMainWin.ShowSingleDirFileList) {
+                DirectoryTreeItem? dirItem = mMainWin.SelectedDirectoryTreeItem;
+                if (dirItem != null) {
+                    // We're in single-directory view mode, so make the output filenames relative
+                    // to the currently selected directory.
+                    baseDir = dirItem.FileEntry;
+                }
             }
 
             // Prepare the file set according to the current options.
@@ -1635,8 +1638,9 @@ namespace cp2_wpf {
                 settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
                     ExtractFileWorker.PreserveMode.None);
             bool rawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false);
+            bool doStrip = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false);
             ClipFileSet clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
-                preserve, rawMode, exportSpec: null, AppHook);
+                preserve, useRawData: rawMode, stripPaths: doStrip, exportSpec: null, AppHook);
 
             // Configure the virtual file descriptors that transmit the file contents.
             VirtualFileDataObject vfdo = new VirtualFileDataObject();
@@ -1645,13 +1649,24 @@ namespace cp2_wpf {
 
             for (int i = 0; i < clipSet.Count; i++) {
                 ClipFileEntry clipEntry = clipSet[i];
-                vfds[i] = new VirtualFileDataObject.FileDescriptor() {
-                    Name = clipEntry.Attribs.FullPathName.Replace(':', '\\'),   // TODO
-                    IsDirectory = clipEntry.Attribs.IsDirectory,
-                    Length = clipEntry.Attribs.DataLength,
-                    ChangeTimeUtc = clipEntry.Attribs.ModWhen,
-                };
-                if (!clipEntry.Attribs.IsDirectory) {
+                // Set the values that go into the Windows FILEDESCRIPTOR struct.  This won't be
+                // used if the receiver is a second copy of us.
+                vfds[i] = new VirtualFileDataObject.FileDescriptor();
+                //vfds[i].Name = PathName.AdjustPathName(clipEntry.Attribs.FullPathName,
+                //        clipEntry.Attribs.FullPathSep, Path.DirectorySeparatorChar);
+                vfds[i].Name = clipEntry.ExtractPath;
+                if (clipEntry.Attribs.DataLength >= 0) {
+                    vfds[i].Length = clipEntry.Attribs.DataLength;
+                }
+                if (TimeStamp.IsValidDate(clipEntry.Attribs.CreateWhen)) {
+                    vfds[i].CreateTimeUtc = clipEntry.Attribs.CreateWhen;
+                }
+                if (TimeStamp.IsValidDate(clipEntry.Attribs.ModWhen)) {
+                    vfds[i].ChangeTimeUtc = clipEntry.Attribs.ModWhen;
+                }
+                if (clipEntry.Attribs.IsDirectory) {
+                    vfds[i].IsDirectory = true;
+                } else {
                     vfds[i].StreamContents = stream => {
                         clipEntry.mStreamGen!.OutputToStream(stream);
                     };
@@ -1666,10 +1681,10 @@ namespace cp2_wpf {
             vfdo.SetData((short)ClipInfo.CLIPBOARD_FORMAT,
                 Encoding.UTF8.GetBytes(cereal));
 
-            vfdo.SetData(DataFormats.UnicodeText,
-                "This is a test (" + dataGrid.SelectedItems.Count + ")");
-            vfdo.SetData(DataFormats.Text,
-                "This is plain text (" + dataGrid.SelectedItems.Count + ")");
+            //vfdo.SetData(DataFormats.UnicodeText,
+            //    "This is a test (" + dataGrid.SelectedItems.Count + ")");
+            //vfdo.SetData(DataFormats.Text,
+            //    "This is plain text (" + dataGrid.SelectedItems.Count + ")");
 
             return vfdo;
         }

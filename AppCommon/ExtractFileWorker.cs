@@ -153,6 +153,11 @@ namespace AppCommon {
                 try {
                     if (entry.HasDataFork) {
                         dataStream = archive.OpenPart(entry, FilePart.DataFork);
+                    } else if (entry.IsDiskImage) {
+                        // This allows the user to extract a disk image from a NuFX .SDK archive
+                        // as a file, rather than as a disk image.  Because we don't add the 'i'
+                        // suffix to extracted NAPS images, this is not very useful.
+                        dataStream = archive.OpenPart(entry, FilePart.DiskImage);
                     }
 
                     if (adfEntry != IFileEntry.NO_ENTRY) {
@@ -240,6 +245,13 @@ namespace AppCommon {
             }
             int doneCount = 0;
 
+            IFileEntry aboveRootEntry;
+            if (startDirEntry == IFileEntry.NO_ENTRY) {
+                aboveRootEntry = IFileEntry.NO_ENTRY;       // same as start==volDir
+            } else {
+                aboveRootEntry = startDirEntry.ContainingDir;
+            }
+
             foreach (IFileEntry entry in entries) {
                 if (IsCancelPending()) {
                     wasCancelled = true;
@@ -247,12 +259,6 @@ namespace AppCommon {
                 }
                 if (StripPaths && entry.IsDirectory) {
                     continue;
-                }
-                IFileEntry aboveRootEntry;
-                if (startDirEntry == IFileEntry.NO_ENTRY) {
-                    aboveRootEntry = IFileEntry.NO_ENTRY;       // same as start==volDir
-                } else {
-                    aboveRootEntry = startDirEntry.ContainingDir;
                 }
                 string extractPath;
                 if (Preserve == PreserveMode.NAPS && !entry.IsDirectory) {
@@ -287,10 +293,7 @@ namespace AppCommon {
                 try {
                     if (entry.HasDataFork) {
                         // Handle "raw mode" for DOS 3.x.
-                        FilePart part = FilePart.DataFork;
-                        if (RawMode) {
-                            part = FilePart.RawData;
-                        }
+                        FilePart part = RawMode ? FilePart.RawData : FilePart.DataFork;
                         dataStream = fs.OpenFile(entry, FileAccessMode.ReadOnly, part);
                     }
 
@@ -334,7 +337,8 @@ namespace AppCommon {
         /// Extracts data and/or resource fork streams to the host filesystem, using the
         /// requested attribute preservation mode.
         /// </summary>
-        /// <param name="extractPath">Host path to extract the file to.</param>
+        /// <param name="extractPath">Host path to extract the file to.  This will be modified
+        ///   as needed for file attribute preservation.</param>
         /// <param name="attrs">Attributes.</param>
         /// <param name="dataStream">Data fork stream, doesn't have to be seekable.</param>
         /// <param name="rsrcStream">Resource fork stream, doesn't have to be seekable.</param>
@@ -484,7 +488,7 @@ namespace AppCommon {
 
                     case PreserveMode.Host:
                         // Create named file, extract data fork if it exists.  Extract resource
-                        // to {name}/..namedfork/rsrc.
+                        // to {name}/..namedfork/rsrc (we assume Mac OS filesystem behavior).
                         // Set dates and access.
                         if (!PrepareOutputFile(extractPath, out doCancel)) {
                             return !doCancel;
@@ -514,6 +518,7 @@ namespace AppCommon {
                     case PreserveMode.NAPS:
                         // Extract data to file with extended name, extract rsrc to file +"r".
                         // Set dates and access on BOTH files.
+                        // We don't currently try to handle NuFX disk images, which would get +"i".
                         string napsExt;
                         if (attrs.FileType == 0 && attrs.AuxType == 0 &&
                                 (attrs.HFSFileType != 0 || attrs.HFSCreator != 0)) {
@@ -894,9 +899,9 @@ namespace AppCommon {
         ///   the volume directory, this should be NO_ENTRY.</param>
         /// <param name="dirSep">Path separator character to place between entries.</param>
         public static string GetAdjPathName(IFileEntry entry, IFileEntry aboveRootEntry,
-                char pathSep) {
+                char dirSep) {
             StringBuilder sb = new StringBuilder();
-            GetAdjPathName(entry, aboveRootEntry, pathSep, sb);
+            GetAdjPathName(entry, aboveRootEntry, dirSep, sb);
             return sb.ToString();
         }
 

@@ -471,18 +471,24 @@ namespace Delay
                     FILEDESCRIPTOR.dwFlags |= NativeMethods.FD_ATTRIBUTES;
                     FILEDESCRIPTOR.dwFileAttributes = (uint)FileAttributes.Directory;
                 }
-                // Set optional timestamp
-                if (fileDescriptor.ChangeTimeUtc.HasValue)
-                {
-                    FILEDESCRIPTOR.dwFlags |= NativeMethods.FD_CREATETIME | NativeMethods.FD_WRITESTIME;
+                // Set optional timestamps (ignore ftLastAccessTime).
+                if (fileDescriptor.CreateTimeUtc.HasValue) {
+                    FILEDESCRIPTOR.dwFlags |= NativeMethods.FD_CREATETIME;
+                    var createTime = fileDescriptor.CreateTimeUtc.Value.ToLocalTime().ToFileTime();
+                    var createTimeFileTime = new System.Runtime.InteropServices.ComTypes.FILETIME {
+                        dwLowDateTime = (int)(createTime & 0xffffffff),
+                        dwHighDateTime = (int)(createTime >> 32),
+                    };
+                    FILEDESCRIPTOR.ftCreationTime = createTimeFileTime;
+                }
+                if (fileDescriptor.ChangeTimeUtc.HasValue) {
+                    FILEDESCRIPTOR.dwFlags |= NativeMethods.FD_WRITESTIME;
                     var changeTime = fileDescriptor.ChangeTimeUtc.Value.ToLocalTime().ToFileTime();
-                    var changeTimeFileTime = new System.Runtime.InteropServices.ComTypes.FILETIME
-                    {
+                    var changeTimeFileTime = new System.Runtime.InteropServices.ComTypes.FILETIME {
                         dwLowDateTime = (int)(changeTime & 0xffffffff),
                         dwHighDateTime = (int)(changeTime >> 32),
                     };
                     FILEDESCRIPTOR.ftLastWriteTime = changeTimeFileTime;
-                    FILEDESCRIPTOR.ftCreationTime = changeTimeFileTime;
                 }
                 // Set optional length
                 // (passing unknown size: https://stackoverflow.com/a/39608168/294248 )
@@ -684,6 +690,11 @@ namespace Delay
             /// or compression).
             /// </summary>
             public Int64? Length { get; set; }
+
+            /// <summary>
+            /// Create time of file.  Set to null if not known.
+            /// </summary>
+            public DateTime? CreateTimeUtc { get; set; }
 
             /// <summary>
             /// Change time of file.  Set to null if not known.

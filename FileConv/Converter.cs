@@ -256,7 +256,8 @@ namespace FileConv {
         /// <para>The data streams are passed in for the benefit of archive formats, for which the
         /// data must be uncompressed to a temporary file.  It's also useful for MacZip, which
         /// has the data and resource forks in separate entries.</para>
-        /// <para>The streams must be seeked to the start by the converter.</para>
+        /// <para>The streams will be seeked to the start by the converter implementation.
+        /// It's okay to call this method multiple times.</para>
         /// </remarks>
         /// <param name="options">Configuration options.</param>
         /// <returns>Object with converted data.</returns>

@@ -39,10 +39,16 @@ namespace AppCommon {
         /// Object that "generates" a stream of data for one part of a file.  It's actually
         /// opening the archive or filesystem entry and just copying data out.
         /// </summary>
+        /// <remarks>
+        /// <para>This class is NOT serializable.  It only exists on the local side, and is
+        /// invoked when the remote side requests file contents.</para>
+        /// </remarks>
         public class StreamGenerator {
             private object mArchiveOrFileSystem;
             private IFileEntry mEntry;
             private FilePart mPart;
+            private ExtractFileWorker.PreserveMode mPreserve;
+            private Converter? mConv;
 
             /// <summary>
             /// Constructor.
@@ -50,11 +56,15 @@ namespace AppCommon {
             /// <param name="archiveOrFileSystem">IArchive or IFileSystem instance.</param>
             /// <param name="entry">Entry to access.</param>
             /// <param name="part">File part.  This can also specify whether the fork should
-            ///   be opened in "raw" mode.</param>
-            public StreamGenerator(object archiveOrFileSystem, IFileEntry entry, FilePart part) {
+            ///   be opened in "raw" mode.  This may be ignored for "export" mode.</param>
+            /// <param name="conv">File converter to use, for "export" mode.</param>
+            public StreamGenerator(object archiveOrFileSystem, IFileEntry entry, FilePart part,
+                    ExtractFileWorker.PreserveMode preserveMode, Converter? conv) {
                 mArchiveOrFileSystem = archiveOrFileSystem;
                 mEntry = entry;
                 mPart = part;
+                mPreserve = preserveMode;
+                mConv = conv;
             }
 
             /// <summary>
@@ -64,18 +74,25 @@ namespace AppCommon {
             /// <exception cref="IOException">Error while reading data.</exception>
             /// <exception cref="InvalidDataException">Corrupted data found.</exception>
             public void OutputToStream(Stream outStream) {
-                if (mArchiveOrFileSystem is IArchive) {
-                    IArchive arc = (IArchive)mArchiveOrFileSystem;
-                    using (Stream inStream = arc.OpenPart(mEntry, mPart)) {
-                        inStream.CopyTo(outStream);
-                    }
-                } else if (mArchiveOrFileSystem is IFileSystem) {
-                    IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                    using (Stream inStream = fs.OpenFile(mEntry, FileAccessMode.ReadOnly, mPart)) {
-                        inStream.CopyTo(outStream);
-                    }
+                if (mConv != null) {
+                    // TODO: do export instead of extract
+                    throw new NotImplementedException();
                 } else {
-                    throw new NotImplementedException("Unexpected: " + mArchiveOrFileSystem);
+                    // TODO: modify contents according to mPart+mPreserve
+                    if (mArchiveOrFileSystem is IArchive) {
+                        IArchive arc = (IArchive)mArchiveOrFileSystem;
+                        using (Stream inStream = arc.OpenPart(mEntry, mPart)) {
+                            inStream.CopyTo(outStream);
+                        }
+                    } else if (mArchiveOrFileSystem is IFileSystem) {
+                        IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
+                        using (Stream inStream = fs.OpenFile(mEntry, FileAccessMode.ReadOnly,
+                                mPart)) {
+                            inStream.CopyTo(outStream);
+                        }
+                    } else {
+                        throw new NotImplementedException("Unexpected: " + mArchiveOrFileSystem);
+                    }
                 }
             }
         }
@@ -112,6 +129,22 @@ namespace AppCommon {
         public FileAttribs Attribs { get; set; } = new FileAttribs();
 
         /// <summary>
+        /// Platform-specific partial path.  This is the same as Attribs.FullPathName, but
+        /// adjusted for the host filesystem and possibly escaped for NAPS.
+        /// </summary>
+        public string ExtractPath { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Preservation mode.  The remote side needs this to tell it how to interpret the
+        /// contents of the incoming file stream.
+        /// </summary>
+        public ExtractFileWorker.PreserveMode Preserve { get; set; } =
+            ExtractFileWorker.PreserveMode.Unknown;
+
+        // TODO? sparse map to preserve DOS file structure
+
+
+        /// <summary>
         /// Nullary constructor, for the deserializer.
         /// </summary>
         public ClipFileEntry() { }
@@ -119,20 +152,23 @@ namespace AppCommon {
         /// <summary>
         /// Standard constructor.
         /// </summary>
-        public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, FilePart part) {
-            mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, part);
+        public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, FilePart part,
+                FileAttribs attribs, string extractPath,
+                ExtractFileWorker.PreserveMode preserveMode, Converter? conv) {
+            mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, part, preserveMode, conv);
 
             IFileSystem? fs = entry.GetFileSystem();
             if (fs != null) {
                 FSType = fs.GetFileSystemType();
             }
             Part = part;
-
-            Attribs = new FileAttribs(entry);
+            Attribs = attribs;
+            ExtractPath = extractPath;
+            Preserve = preserveMode;
         }
 
         public override string ToString() {
-            return "[ClipFileEntry " + Attribs.FullPathName + " - " + Part + "]";
+            return "[ClipFileEntry " + ExtractPath + " - " + Part + "]";
         }
     }
 }
