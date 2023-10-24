@@ -248,6 +248,20 @@ namespace DiskArc {
             entry.Comment = Comment;
         }
 
+        /// <summary>
+        /// Generates the NuLib2 Attribute Preservation String filename suffix.  This does not
+        /// include the file part identifier (e.g. 'r' for resource forks).
+        /// </summary>
+        public string GenerateNAPSExt() {
+            if (FileType == 0 && AuxType == 0 && (HFSFileType != 0 || HFSCreator != 0)) {
+                // Encode HFS types.
+                return string.Format("#{0:x8}{1:x8}", HFSFileType, HFSCreator);
+            } else {
+                // Encode ProDOS types.
+                return string.Format("#{0:x2}{1:x4}", FileType, AuxType);
+            }
+        }
+
 
         //
         // The definitive document for ProDOS/HFS file type interaction appears to be "GS/OS

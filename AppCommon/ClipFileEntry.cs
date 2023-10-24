@@ -15,7 +15,6 @@
  */
 using System;
 using System.Diagnostics;
-using System.Text;
 
 using CommonUtil;
 using DiskArc;
@@ -47,8 +46,10 @@ namespace AppCommon {
             private object mArchiveOrFileSystem;
             private IFileEntry mEntry;
             private FilePart mPart;
+            private FileAttribs mAttribs;
             private ExtractFileWorker.PreserveMode mPreserve;
             private Converter? mConv;
+            private AppHook mAppHook;
 
             /// <summary>
             /// Constructor.
@@ -57,42 +58,205 @@ namespace AppCommon {
             /// <param name="entry">Entry to access.</param>
             /// <param name="part">File part.  This can also specify whether the fork should
             ///   be opened in "raw" mode.  This may be ignored for "export" mode.</param>
+            /// <param name="attribs">File attributes.</param>
+            /// <param name="preserveMode">Preservation mode used for source data.</param>
             /// <param name="conv">File converter to use, for "export" mode.</param>
+            /// <param name="appHook">Application hook reference.</param>
             public StreamGenerator(object archiveOrFileSystem, IFileEntry entry, FilePart part,
-                    ExtractFileWorker.PreserveMode preserveMode, Converter? conv) {
+                    FileAttribs attribs, ExtractFileWorker.PreserveMode preserveMode,
+                    Converter? conv, AppHook appHook) {
                 mArchiveOrFileSystem = archiveOrFileSystem;
                 mEntry = entry;
                 mPart = part;
+                mAttribs = attribs;
                 mPreserve = preserveMode;
                 mConv = conv;
+                mAppHook = appHook;
             }
 
             /// <summary>
             /// Copies the file entry contents to a stream.
             /// </summary>
-            /// <param name="outStream">Output stream.</param>
+            /// <remarks>
+            /// <para>The common use case is a Windows clipboard paste or drop operation.  In
+            /// the current implementation, the output stream is not seekable.</para>
+            /// </remarks>
+            /// <param name="outStream">Output stream.  Must be writable, but does not need to
+            ///   be readable or seekable.</param>
             /// <exception cref="IOException">Error while reading data.</exception>
             /// <exception cref="InvalidDataException">Corrupted data found.</exception>
             public void OutputToStream(Stream outStream) {
+                Debug.Assert(outStream.CanWrite);
+
                 if (mConv != null) {
                     // TODO: do export instead of extract
                     throw new NotImplementedException();
                 } else {
-                    // TODO: modify contents according to mPart+mPreserve
-                    if (mArchiveOrFileSystem is IArchive) {
-                        IArchive arc = (IArchive)mArchiveOrFileSystem;
-                        using (Stream inStream = arc.OpenPart(mEntry, mPart)) {
-                            inStream.CopyTo(outStream);
-                        }
-                    } else if (mArchiveOrFileSystem is IFileSystem) {
-                        IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
-                        using (Stream inStream = fs.OpenFile(mEntry, FileAccessMode.ReadOnly,
-                                mPart)) {
-                            inStream.CopyTo(outStream);
-                        }
-                    } else {
-                        throw new NotImplementedException("Unexpected: " + mArchiveOrFileSystem);
+                    switch (mPreserve) {
+                        case ExtractFileWorker.PreserveMode.None:
+                        case ExtractFileWorker.PreserveMode.Host:
+                        case ExtractFileWorker.PreserveMode.NAPS:
+                            // Just copy the data from the appropriate fork to the output file.
+                            using (Stream inStream = OpenPart()) {
+                                inStream.CopyTo(outStream);
+                            }
+                            break;
+                        case ExtractFileWorker.PreserveMode.ADF:
+                            if (mPart != FilePart.RsrcFork) {
+                                // The data fork is simply copied out.
+                                using (Stream inStream = OpenPart()) {
+                                    inStream.CopyTo(outStream);
+                                }
+                            } else {
+                                // This is the "header" file, which holds the (optiona) resource
+                                // fork and type info.
+                                GenerateADFHeader(outStream);
+                            }
+                            break;
+                        case ExtractFileWorker.PreserveMode.AS:
+                            // Generate an AppleSingle archive with both forks and the type info.
+                            GenerateAS(outStream);
+                            break;
+                        case ExtractFileWorker.PreserveMode.Unknown:
+                        default:
+                            Debug.Assert(false);
+                            return;
                     }
+                }
+            }
+
+            /// <summary>
+            /// Opens one fork of a file entry, in a disk image or file archive.
+            /// </summary>
+            /// <returns>Opened stream.</returns>
+            private Stream OpenPart(FilePart part = FilePart.Unknown) {
+                if (part == FilePart.Unknown) {
+                    part = mPart;
+                }
+                if (mArchiveOrFileSystem is IArchive) {
+                    IArchive arc = (IArchive)mArchiveOrFileSystem;
+                    return arc.OpenPart(mEntry, part);
+                } else if (mArchiveOrFileSystem is IFileSystem) {
+                    IFileSystem fs = (IFileSystem)mArchiveOrFileSystem;
+                    return fs.OpenFile(mEntry, FileAccessMode.ReadOnly, part);
+                } else {
+                    throw new NotImplementedException("Unexpected: " + mArchiveOrFileSystem);
+                }
+            }
+
+            /// <summary>
+            /// Generates an ADF "header" file, for files with a resource fork or that have
+            /// nonzero file types.
+            /// </summary>
+            /// <param name="outStream">Output stream; need not be seekable.</param>
+            private void GenerateADFHeader(Stream outStream) {
+                bool hasRsrcFork = mEntry.HasRsrcFork &&
+                    (mEntry is ProDOS_FileEntry || mEntry.RsrcLength > 0);
+
+                Stream? rsrcStream = null;
+                Stream? rsrcCopy = null;
+                try {
+                    using (Stream tmpOut = TempFile.CreateTempFile()) {
+                        if (hasRsrcFork) {
+                            // Make copy of stream, if necessary.
+                            Debug.Assert(mPart == FilePart.RsrcFork);
+                            rsrcStream = OpenPart();
+                            if (rsrcStream.CanSeek) {
+                                rsrcCopy = rsrcStream;
+                            } else {
+                                rsrcCopy = TempFile.CopyToTemp(rsrcStream);
+                            }
+                        }
+
+                        using (AppleSingle adfArchive = AppleSingle.CreateDouble(2, mAppHook)) {
+                            adfArchive.StartTransaction();
+                            IFileEntry adfEntry = adfArchive.GetFirstEntry();
+                            // Create sources for rsrc fork, if any.  We want to manage the
+                            // stream lifetime, so we set the leaveOpen flag.
+                            if (rsrcCopy != null) {
+                                SimplePartSource rsrcSource = new SimplePartSource(rsrcCopy, true);
+                                adfArchive.AddPart(adfEntry, FilePart.RsrcFork, rsrcSource,
+                                    CompressionFormat.Default);
+                            }
+                            mAttribs.CopyAttrsTo(adfEntry, true);
+                            adfArchive.CommitTransaction(tmpOut);
+                        }
+
+                        // Copy the archive stream to the output.
+                        tmpOut.Position = 0;
+                        tmpOut.CopyTo(outStream);
+                    }
+                } finally {
+                    rsrcStream?.Dispose();
+                    rsrcCopy?.Dispose();
+                }
+            }
+
+            /// <summary>
+            /// Generates an AppleSingle archive, which contains all file forks and file type
+            /// information.
+            /// </summary>
+            /// <param name="outStream">Output stream; need not be seekable.</param>
+            private void GenerateAS(Stream outStream) {
+                bool hasRsrcFork = mEntry.HasRsrcFork &&
+                    (mEntry is ProDOS_FileEntry || mEntry.RsrcLength > 0);
+
+                Stream? dataStream = null;
+                Stream? dataCopy = null;
+                Stream? rsrcStream = null;
+                Stream? rsrcCopy = null;
+                try {
+                    using (Stream tmpOut = TempFile.CreateTempFile()) {
+                        if (mEntry.HasDataFork) {
+                            // Make copy of stream, if necessary.
+                            // Open part specified for entry; should be data fork, could be
+                            // raw data (or potentially even disk image).
+                            Debug.Assert(mPart != FilePart.RsrcFork);
+                            dataStream = OpenPart();
+                            if (dataStream.CanSeek) {
+                                dataCopy = dataStream;
+                            } else {
+                                dataCopy = TempFile.CopyToTemp(dataStream);
+                            }
+                        }
+                        if (hasRsrcFork) {
+                            // Make copy of stream, if necessary.
+                            rsrcStream = OpenPart(FilePart.RsrcFork);
+                            if (rsrcStream.CanSeek) {
+                                rsrcCopy = rsrcStream;
+                            } else {
+                                rsrcCopy = TempFile.CopyToTemp(rsrcStream);
+                            }
+                        }
+
+                        using (AppleSingle asArchive = AppleSingle.CreateArchive(2, mAppHook)) {
+                            asArchive.StartTransaction();
+                            IFileEntry asEntry = asArchive.GetFirstEntry();
+                            // Create sources for data/rsrc forks.  We want to manage the
+                            // stream lifetime, so we set the leaveOpen flag.
+                            if (dataCopy != null) {
+                                SimplePartSource dataSource = new SimplePartSource(dataCopy, true);
+                                asArchive.AddPart(asEntry, FilePart.DataFork, dataSource,
+                                    CompressionFormat.Default);
+                            }
+                            if (rsrcCopy != null) {
+                                SimplePartSource rsrcSource = new SimplePartSource(rsrcCopy, true);
+                                asArchive.AddPart(asEntry, FilePart.RsrcFork, rsrcSource,
+                                    CompressionFormat.Default);
+                            }
+                            mAttribs.CopyAttrsTo(asEntry, true);
+                            asArchive.CommitTransaction(tmpOut);
+                        }
+
+                        // Copy the archive stream to the output.
+                        tmpOut.Position = 0;
+                        tmpOut.CopyTo(outStream);
+                    }
+                } finally {
+                    dataStream?.Dispose();
+                    dataCopy?.Dispose();
+                    rsrcStream?.Dispose();
+                    rsrcCopy?.Dispose();
                 }
             }
         }
@@ -154,8 +318,9 @@ namespace AppCommon {
         /// </summary>
         public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, FilePart part,
                 FileAttribs attribs, string extractPath,
-                ExtractFileWorker.PreserveMode preserveMode, Converter? conv) {
-            mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, part, preserveMode, conv);
+                ExtractFileWorker.PreserveMode preserveMode, Converter? conv, AppHook appHook) {
+            mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, part, attribs,
+                preserveMode, conv, appHook);
 
             IFileSystem? fs = entry.GetFileSystem();
             if (fs != null) {

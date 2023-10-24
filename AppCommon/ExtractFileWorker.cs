@@ -337,6 +337,9 @@ namespace AppCommon {
         /// Extracts data and/or resource fork streams to the host filesystem, using the
         /// requested attribute preservation mode.
         /// </summary>
+        /// <remarks>
+        /// <para>The streams passed in may or may not be closed.</para>
+        /// </remarks>
         /// <param name="extractPath">Host path to extract the file to.  This will be modified
         ///   as needed for file attribute preservation.</param>
         /// <param name="attrs">Attributes.</param>
@@ -519,17 +522,7 @@ namespace AppCommon {
                         // Extract data to file with extended name, extract rsrc to file +"r".
                         // Set dates and access on BOTH files.
                         // We don't currently try to handle NuFX disk images, which would get +"i".
-                        string napsExt;
-                        if (attrs.FileType == 0 && attrs.AuxType == 0 &&
-                                (attrs.HFSFileType != 0 || attrs.HFSCreator != 0)) {
-                            // Encode HFS types.
-                            napsExt = string.Format("#{0:x8}{1:x8}",
-                                attrs.HFSFileType, attrs.HFSCreator);
-                        } else {
-                            // Encode ProDOS types.
-                            napsExt = string.Format("#{0:x2}{1:x4}",
-                                attrs.FileType, attrs.AuxType);
-                        }
+                        string napsExt = attrs.GenerateNAPSExt();
                         if (dataStream != null) {
                             string napsPath = extractPath + napsExt;
                             if (!PrepareOutputFile(napsPath, out doCancel)) {
