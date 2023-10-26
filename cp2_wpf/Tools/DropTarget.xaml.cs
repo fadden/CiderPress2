@@ -174,8 +174,8 @@ namespace cp2_wpf.Tools {
                 ClipHelper.FileDescriptorReader.Read(descStream);
             int fileIndex = 0;
             foreach (ClipHelper.FileDescriptor desc in descriptors) {
-                string fileName = desc.FileName;
-                sb.AppendFormat("    {0}: '{1}': ", fileIndex, fileName);
+                sb.AppendFormat("    {0}: '{1}' len={2}: ",
+                    fileIndex, desc.FileName, desc.FileSize);
                 if ((desc.FileAttributes & FileAttributes.Directory) != 0) {
                     // Directories don't have contents.
                     sb.Append("is directory");

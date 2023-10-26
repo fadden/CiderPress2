@@ -1639,8 +1639,18 @@ namespace cp2_wpf {
                     ExtractFileWorker.PreserveMode.None);
             bool rawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false);
             bool doStrip = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false);
-            ClipFileSet clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
-                preserve, useRawData: rawMode, stripPaths: doStrip, exportSpec: null, AppHook);
+            bool doMacZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
+            ClipFileSet clipSet;
+            try {
+                // Drag/copy for extract only examines data structures, but drag/copy for export
+                // may have to open file contents.
+                Mouse.OverrideCursor = Cursors.Wait;
+                clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
+                    preserve, useRawData: rawMode, stripPaths: doStrip, enableMacZip: doMacZip,
+                    exportSpec: null, AppHook);
+            } finally {
+                Mouse.OverrideCursor = null;
+            }
 
             // Configure the virtual file descriptors that transmit the file contents.
             VirtualFileDataObject vfdo = new VirtualFileDataObject();
@@ -1655,9 +1665,7 @@ namespace cp2_wpf {
                 //vfds[i].Name = PathName.AdjustPathName(clipEntry.Attribs.FullPathName,
                 //        clipEntry.Attribs.FullPathSep, Path.DirectorySeparatorChar);
                 vfds[i].Name = clipEntry.ExtractPath;
-                if (clipEntry.Attribs.DataLength >= 0) {
-                    vfds[i].Length = clipEntry.Attribs.DataLength;
-                }
+                vfds[i].Length = clipEntry.EstimatedLength;
                 if (TimeStamp.IsValidDate(clipEntry.Attribs.CreateWhen)) {
                     vfds[i].CreateTimeUtc = clipEntry.Attribs.CreateWhen;
                 }

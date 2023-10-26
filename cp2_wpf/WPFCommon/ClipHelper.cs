@@ -162,7 +162,8 @@ namespace cp2_wpf.WPFCommon {
                 long creationTicks = reader.ReadInt64();
                 long lastAccessTicks = reader.ReadInt64();
                 long lastWriteTicks = reader.ReadInt64();
-                long fileSize = reader.ReadInt64();
+                uint fileSizeHi = reader.ReadUInt32();      // high word comes first
+                uint fileSizeLo = reader.ReadUInt32();
                 byte[] nameBytes = reader.ReadBytes(520);
 
                 if ((Flags & FileDescriptorFlags.ClsId) != 0) {
@@ -202,7 +203,7 @@ namespace cp2_wpf.WPFCommon {
                     }
                 }
                 if ((Flags & FileDescriptorFlags.FileSize) != 0) {
-                    FileSize = fileSize;
+                    FileSize = fileSizeLo | ((long)fileSizeHi << 32);
                 }
                 if ((Flags & FileDescriptorFlags.Unicode) != 0) {
                     // This flag doesn't seem to be set by Windows Explorer's Zip handling,

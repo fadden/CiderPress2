@@ -625,6 +625,8 @@ namespace DiskArc {
                 return ((ProDOS_FileEntry)entry).FileSystem;
             } else if (entry is RDOS_FileEntry) {
                 return ((RDOS_FileEntry)entry).FileSystem;
+            } else if (entry is NullFileEntry) {
+                return null;
             } else {
                 // Entry is invalid, part of an IArchive, or we have an un-handled IFileSystem.
                 Debug.Assert(!entry.IsValid || GetArchive(entry) != null);
