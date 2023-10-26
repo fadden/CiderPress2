@@ -346,6 +346,19 @@ limitations under the License.
 
                 <Separator/>
 
+                <TextBlock Text="Drag &amp; Copy mode:" Margin="4,5,0,0"
+                           ToolTip="Configure behavior when dragging and copying files in or out"/>
+                <RadioButton Content="Add/Extract" GroupName="aeix" Margin="4,0,0,0"
+                             IsChecked="{Binding IsChecked_AddExtract}"
+                             BorderBrush="{DynamicResource {x:Static SystemColors.MenuHighlightBrushKey}}"
+                             ToolTip="When dragging or pasting files, perform add/extract operations."/>
+                <RadioButton Content="Import/Export" GroupName="aeix" Margin="4,0,4,0"
+                             IsChecked="{Binding IsChecked_ImportExport}"
+                             BorderBrush="{DynamicResource {x:Static SystemColors.MenuHighlightBrushKey}}"
+                             ToolTip="When dragging or pasting files, perform import/export operations."/>
+
+                <Separator/>
+
                 <Button Command="Help"
                         ToolTip="Help - open manual in browser (F1)">
                     <ContentControl Template="{StaticResource icon_F1Help}"/>

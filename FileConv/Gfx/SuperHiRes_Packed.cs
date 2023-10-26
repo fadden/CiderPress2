@@ -56,6 +56,10 @@ namespace FileConv.Gfx {
             return Applicability.Not;
         }
 
+        public override Type GetExpectedType(Dictionary<string, string> options) {
+            return typeof(IBitmap);
+        }
+
         public override IConvOutput ConvertFile(Dictionary<string, string> options) {
             if (Applic <= Applicability.Not) {
                 Debug.Assert(false);

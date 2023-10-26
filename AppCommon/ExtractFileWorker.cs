@@ -643,7 +643,7 @@ namespace AppCommon {
                         ((ErrorText)convOutput).Text.ToString());
                     return false;
                 } else if (convOutput is FancyText && !((FancyText)convOutput).PreferSimple) {
-                    string rtfPath = extractPath + ".rtf";
+                    string rtfPath = extractPath + RTFGenerator.FILE_EXT;
                     if (!PrepareOutputFile(rtfPath, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -653,7 +653,7 @@ namespace AppCommon {
                         RTFGenerator.Generate((FancyText)convOutput, outStream);
                     }
                 } else if (convOutput is SimpleText) {
-                    string txtPath = extractPath + ".txt";
+                    string txtPath = extractPath + TXTGenerator.FILE_EXT;
                     if (!PrepareOutputFile(txtPath, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -663,7 +663,7 @@ namespace AppCommon {
                         TXTGenerator.Generate((SimpleText)convOutput, outStream);
                     }
                 } else if (convOutput is CellGrid) {
-                    string csvPath = extractPath + ".csv";
+                    string csvPath = extractPath + CSVGenerator.FILE_EXT;
                     if (!PrepareOutputFile(csvPath, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -673,7 +673,7 @@ namespace AppCommon {
                         CSVGenerator.Generate((CellGrid)convOutput, outStream);
                     }
                 } else if (convOutput is IBitmap) {
-                    string pngPath = extractPath + ".png";
+                    string pngPath = extractPath + PNGGenerator.FILE_EXT;
                     if (!PrepareOutputFile(pngPath, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -683,6 +683,7 @@ namespace AppCommon {
                         PNGGenerator.Generate((IBitmap)convOutput, outStream);
                     }
                 } else if (convOutput is HostConv) {
+                    // Should we just copy these to the output unmodified?
                     ReportConvFailure("GIF/JPEG/PNG should be extracted, not exported");
                     return false;
                 } else {

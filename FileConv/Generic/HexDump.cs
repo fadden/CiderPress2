@@ -65,6 +65,10 @@ namespace FileConv.Generic {
             return Applicability.Always_Hex;
         }
 
+        public override Type GetExpectedType(Dictionary<string, string> options) {
+            return typeof(SimpleText);
+        }
+
         public override IConvOutput ConvertFile(Dictionary<string, string> options) {
             SimpleText output = new SimpleText();
 

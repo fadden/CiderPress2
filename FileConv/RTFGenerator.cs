@@ -30,6 +30,8 @@ namespace FileConv {
     /// published April 1997 for Word 97.</para>
     /// </remarks>
     public static class RTFGenerator {
+        public const string FILE_EXT = ".rtf";
+
         /// <summary>
         /// RTF uses "twips", which are 1/20th of a point.  There are 72 points per inch.
         /// </summary>

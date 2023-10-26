@@ -1242,6 +1242,29 @@ namespace cp2_wpf {
 
         #region Drag & drop
 
+        public bool IsChecked_AddExtract {
+            get {
+                return AppSettings.Global.GetBool(AppSettings.DDCP_ADD_EXTRACT, true);
+            }
+            set {
+                if (value == true) {
+                    AppSettings.Global.SetBool(AppSettings.DDCP_ADD_EXTRACT, true);
+                }
+                OnPropertyChanged();
+            }
+        }
+        public bool IsChecked_ImportExport {
+            get {
+                return !AppSettings.Global.GetBool(AppSettings.DDCP_ADD_EXTRACT, true);
+            }
+            set {
+                if (value == true) {
+                    AppSettings.Global.SetBool(AppSettings.DDCP_ADD_EXTRACT, false);
+                }
+                OnPropertyChanged();
+            }
+        }
+
         /// <summary>
         /// Handles a drag event over the launch panel.
         /// </summary>
@@ -1298,12 +1321,12 @@ namespace cp2_wpf {
                 return;
             }
             mDragStartPosn = e.GetPosition(null);
+            mPreSelection.Clear();
             if (row != null && row.IsSelected) {
                 // The user clicked on an entry that is already selected.  Capture the selection
                 // before it gets cleared, in case they want to start a multi-entry drag.
                 FileListItem fli = (FileListItem)row.Item;
                 Debug.WriteLine("FL click on " + fli + " (already selected), capturing set");
-                mPreSelection.Clear();
                 mPreSelection.AddRange(grid.SelectedItems.Cast<FileListItem>());
             }
         }
@@ -1716,6 +1739,11 @@ namespace cp2_wpf {
         /// Triggers OnPropertyChanged for all of the side-panel options.  Call this after the
         /// settings object is loaded or updated.
         /// </summary>
+        /// <remarks>
+        /// This is necessary because some of the settings UI elements are effectively bound to
+        /// values from the settings value, but they get evaluated before the settings file is
+        /// loaded.
+        /// </remarks>
         public void PublishSideOptions() {
             IsChecked_AddCompress = IsChecked_AddCompress;
             IsChecked_AddRaw = IsChecked_AddRaw;
@@ -1759,6 +1787,10 @@ namespace cp2_wpf {
             }
             OnPropertyChanged(nameof(IsExportBestChecked));
             OnPropertyChanged(nameof(IsExportComboChecked));
+
+            // Toolbar.
+            IsChecked_AddExtract = IsChecked_AddExtract;
+            IsChecked_ImportExport = IsChecked_ImportExport;
         }
 
         #endregion Options Panel

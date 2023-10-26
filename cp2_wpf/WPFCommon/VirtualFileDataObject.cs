@@ -803,7 +803,7 @@ namespace Delay
             /// </summary>
             public override void Flush()
             {
-                throw new NotImplementedException();
+                // It looks like IStream output is unbuffered, so this is a no-op.
             }
 
             /// <summary>

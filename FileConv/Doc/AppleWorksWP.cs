@@ -138,6 +138,10 @@ namespace FileConv.Doc {
             return Applicability.Not;
         }
 
+        public override Type GetExpectedType(Dictionary<string, string> options) {
+            return typeof(FancyText);
+        }
+
         public override IConvOutput ConvertFile(Dictionary<string, string> options) {
             if (Applic <= Applicability.Not) {
                 Debug.Assert(false);

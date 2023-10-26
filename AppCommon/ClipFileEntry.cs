@@ -49,7 +49,8 @@ namespace AppCommon {
             private FilePart mPart;
             private FileAttribs mAttribs;
             private ExtractFileWorker.PreserveMode mPreserve;
-            private Converter? mConv;
+            private ConvConfig.FileConvSpec? mExportSpec;
+            private Type? mExpectedType;
             private AppHook mAppHook;
 
             /// <summary>
@@ -63,11 +64,12 @@ namespace AppCommon {
             ///   be opened in "raw" mode.  This may be ignored for "export" mode.</param>
             /// <param name="attribs">File attributes.</param>
             /// <param name="preserveMode">Preservation mode used for source data.</param>
-            /// <param name="conv">File converter to use, for "export" mode.</param>
+            /// <param name="expectedType">File converter type to use, for "export" mode.</param>
             /// <param name="appHook">Application hook reference.</param>
             public StreamGenerator(object archiveOrFileSystem, IFileEntry entry,
                     IFileEntry adfEntry, FilePart part, FileAttribs attribs,
-                    ExtractFileWorker.PreserveMode preserveMode, Converter? conv, AppHook appHook) {
+                    ExtractFileWorker.PreserveMode preserveMode,
+                    ConvConfig.FileConvSpec? exportSpec, Type? expectedType, AppHook appHook) {
                 Debug.Assert(adfEntry == IFileEntry.NO_ENTRY || archiveOrFileSystem is Zip);
 
                 mArchiveOrFileSystem = archiveOrFileSystem;
@@ -76,7 +78,8 @@ namespace AppCommon {
                 mPart = part;
                 mAttribs = attribs;
                 mPreserve = preserveMode;
-                mConv = conv;
+                mExportSpec = exportSpec;
+                mExpectedType = expectedType;
                 mAppHook = appHook;
             }
 
@@ -85,7 +88,14 @@ namespace AppCommon {
             /// streams, such as AppleSingle and ADF header files, will return -1, as will
             /// compressed streams of indeterminate length (gzip, Squeeze).
             /// </summary>
+            /// <remarks>
+            /// Accuracy matters.  If the estimated length is too short, the receiver may stop
+            /// reading early.  Better to return -1 than report an inaccurate value.
+            /// </remarks>
             public long GetEstimatedLength() {
+                if (mExportSpec != null) {
+                    return -1;      // size of export conversions is not known
+                }
                 switch (mPreserve) {
                     case ExtractFileWorker.PreserveMode.None:
                     case ExtractFileWorker.PreserveMode.Host:
@@ -121,9 +131,18 @@ namespace AppCommon {
             public void OutputToStream(Stream outStream) {
                 Debug.Assert(outStream.CanWrite);
 
-                if (mConv != null) {
-                    // TODO: do export instead of extract
-                    throw new NotImplementedException();
+                if (mExportSpec != null) {
+                    Type? exportType = ClipFileSet.DoClipExport(mArchiveOrFileSystem, mEntry,
+                        mAdfEntry, mAttribs, mPart == FilePart.RawData, mExportSpec, outStream,
+                        mAppHook);
+                    if (exportType != mExpectedType) {
+                        // This isn't terrible, but it means we probably have a file with the
+                        // wrong file extension.  This should only be possible if the converter
+                        // encountered something that caused it to change output types (e.g. to
+                        // display an error).
+                        Debug.Assert(false, "Export type mismatch: " + exportType +
+                            " vs " + mExpectedType);
+                    }
                 } else {
                     switch (mPreserve) {
                         case ExtractFileWorker.PreserveMode.None:
@@ -360,8 +379,8 @@ namespace AppCommon {
         public long EstimatedLength { get; set; }
 
         /// <summary>
-        /// Preservation mode.  The remote side needs this to tell it how to interpret the
-        /// contents of the incoming file stream.
+        /// Preservation mode.  For app-to-app transfers, the remote side needs this to tell it
+        /// how to interpret the contents of the incoming file stream.
         /// </summary>
         /// <remarks>
         /// This could be "global", held in the ClipFileSet, but having it here costs little and
@@ -394,13 +413,16 @@ namespace AppCommon {
         ///   filesystem.</param>
         /// <param name="preserveMode">File attribute preservation mode used when generating
         ///   the data.</param>
-        /// <param name="conv">File export converter (optional).</param>
+        /// <param name="exportSpec">Export conversion specification (only for "export").</param>
+        /// <param name="expectedType">Expected output from export conversion (only for
+        ///   "export").</param>
         /// <param name="appHook">Application hook reference.</param>
         public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, IFileEntry adfEntry,
                 FilePart part, FileAttribs attribs, string extractPath,
-                ExtractFileWorker.PreserveMode preserveMode, Converter? conv, AppHook appHook) {
+                ExtractFileWorker.PreserveMode preserveMode,
+                ConvConfig.FileConvSpec? exportSpec, Type? expectedType, AppHook appHook) {
             mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, adfEntry, part, attribs,
-                preserveMode, conv, appHook);
+                preserveMode, exportSpec, expectedType, appHook);
 
             IFileSystem? fs = entry.GetFileSystem();
             if (fs != null) {

@@ -56,6 +56,8 @@ namespace cp2_wpf {
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";
 
         // Add/extract/import/export.
+        public const string DDCP_ADD_EXTRACT = "ddcp-add-extract";
+
         public const string ADD_RECURSE_ENABLED = "add-recurse-enabled";
         public const string ADD_COMPRESS_ENABLED = "add-compress-enabled";
         public const string ADD_STRIP_PATHS_ENABLED = "add-strip-paths-enabled";

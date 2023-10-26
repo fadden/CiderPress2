@@ -80,6 +80,17 @@ namespace FileConv.Doc {
             }
         }
 
+        public override Type GetExpectedType(Dictionary<string, string> options) {
+            // Match behavior of ConvertFile().
+            int len = FileAttrs.AuxType;
+            len = GetIntOption(options, OPT_LEN, len);
+            if (len <= 0) {
+                return typeof(SimpleText);
+            } else {
+                return typeof(CellGrid);
+            }
+        }
+
         public override IConvOutput ConvertFile(Dictionary<string, string> options) {
             if (Applic <= Applicability.Not) {
                 Debug.Assert(false);

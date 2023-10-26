@@ -1564,6 +1564,10 @@ namespace cp2_wpf {
         /// Handles Actions : Export Files
         /// </summary>
         public void ExportFiles() {
+            HandleExtractExport(GetExportSpec());
+        }
+
+        private ConvConfig.FileConvSpec? GetExportSpec() {
             string convTag =
                 mMainWin.IsExportBestChecked ? ConvConfig.BEST : mMainWin.ExportConvTag;
             string settingKey = AppSettings.EXPORT_SETTING_PREFIX + convTag;
@@ -1584,7 +1588,7 @@ namespace cp2_wpf {
                 Debug.Assert(spec != null);
             }
             Debug.WriteLine("Export spec: " + spec);
-            HandleExtractExport(spec);
+            return spec;
         }
 
         /// <summary>
@@ -1631,8 +1635,7 @@ namespace cp2_wpf {
                 }
             }
 
-            // Prepare the file set according to the current options.
-            // TODO: get extract/export flag from GUI, get export spec if needed
+            // Collect relevant settings.
             SettingsHolder settings = AppSettings.Global;
             ExtractFileWorker.PreserveMode preserve =
                 settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
@@ -1640,6 +1643,12 @@ namespace cp2_wpf {
             bool rawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false);
             bool doStrip = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false);
             bool doMacZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
+            ConvConfig.FileConvSpec? exportSpec = null;
+            if (mMainWin.IsChecked_ImportExport) {
+                exportSpec = GetExportSpec();
+            }
+
+            // Prepare the file set according to the current options.
             ClipFileSet clipSet;
             try {
                 // Drag/copy for extract only examines data structures, but drag/copy for export
@@ -1647,7 +1656,7 @@ namespace cp2_wpf {
                 Mouse.OverrideCursor = Cursors.Wait;
                 clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
                     preserve, useRawData: rawMode, stripPaths: doStrip, enableMacZip: doMacZip,
-                    exportSpec: null, AppHook);
+                    exportSpec, AppHook);
             } finally {
                 Mouse.OverrideCursor = null;
             }
@@ -1662,8 +1671,6 @@ namespace cp2_wpf {
                 // Set the values that go into the Windows FILEDESCRIPTOR struct.  This won't be
                 // used if the receiver is a second copy of us.
                 vfds[i] = new VirtualFileDataObject.FileDescriptor();
-                //vfds[i].Name = PathName.AdjustPathName(clipEntry.Attribs.FullPathName,
-                //        clipEntry.Attribs.FullPathSep, Path.DirectorySeparatorChar);
                 vfds[i].Name = clipEntry.ExtractPath;
                 vfds[i].Length = clipEntry.EstimatedLength;
                 if (TimeStamp.IsValidDate(clipEntry.Attribs.CreateWhen)) {

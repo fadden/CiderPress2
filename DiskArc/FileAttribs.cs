@@ -263,6 +263,11 @@ namespace DiskArc {
             }
         }
 
+        public override string ToString() {
+            return string.Format("[FileAttribs: '{0}' type=${1:x2}/${2:x4} hfs=${3:x8}/${4:x8}]",
+                FullPathName, FileType, AuxType, HFSFileType, HFSCreator);
+        }
+
 
         //
         // The definitive document for ProDOS/HFS file type interaction appears to be "GS/OS

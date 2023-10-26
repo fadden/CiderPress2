@@ -264,6 +264,18 @@ namespace FileConv {
         public abstract IConvOutput ConvertFile(Dictionary<string, string> options);
 
         /// <summary>
+        /// Type of object that the converter is expected to generate.  This will be a subclass
+        /// of Converter.
+        /// </summary>
+        /// <remarks>
+        /// <para>Useful for clipboard operations, where we want to know the nature of the output
+        /// immediately, but don't actually generate it until necessary.</para>
+        /// <para>The actual output may depend on the current settings and the contents of the
+        /// file itself.  In the latter case, examining the file may be necessary.</para>
+        /// </remarks>
+        public abstract Type GetExpectedType(Dictionary<string, string> options);
+
+        /// <summary>
         /// Formats the resource fork, if present.
         /// </summary>
         public IConvOutput? FormatResources(Dictionary<string, string> options) {

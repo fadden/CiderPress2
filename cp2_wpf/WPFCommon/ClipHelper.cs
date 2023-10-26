@@ -27,8 +27,9 @@ namespace cp2_wpf.WPFCommon {
     /// Classes that provide access to file streams dropped or pasted into a Windows app.
     /// </summary>
     /// <remarks>
-    /// Substantially from <see href="https://stackoverflow.com/a/31972769/294248"/>.  This is
-    /// the "receiving" side; see <see cref="Delay.VirtualFileDataObject"/> for the "sending" side.
+    /// Substantially from <see href="https://stackoverflow.com/a/31972769/294248"/>, with some
+    /// fixes and rearranging.  This is the "receiving" side of a clipboard operation; see
+    /// <see cref="Delay.VirtualFileDataObject"/> for the "sending" side.
     /// </remarks>
     public static class ClipHelper {
         // Names of formats found in clipboard data object.
@@ -41,7 +42,8 @@ namespace cp2_wpf.WPFCommon {
         /// </summary>
         /// <param name="dataObject">Data object that has been dropped or pasted.</param>
         /// <param name="index">Index of file.</param>
-        /// <returns>Stream with file contents.</returns>
+        /// <returns>Stream with file contents.  It will be readable, but may not be
+        ///   seekable.</returns>
         internal static Stream? GetFileContents(System.Windows.IDataObject dataObject, int index) {
             // cast the default IDataObject to a COM IDataObject
             System.Runtime.InteropServices.ComTypes.IDataObject comDataObject;

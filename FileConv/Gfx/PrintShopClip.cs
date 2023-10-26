@@ -56,6 +56,23 @@ namespace FileConv.Gfx {
         private const int XMULT = 2;
         private const int YMULT = 3;
 
+        /// <summary>
+        /// Print Shop GS palette.  The bit scheme looks like CMYK, but in practice it's closer
+        /// to RGB primaries and the classic Apple II colors.  The values in the table were
+        /// obtained from a KEGS screen grab.
+        /// </summary>
+        public static readonly Palette8 Palette_PSGS = new Palette8("Print Shop GS",
+            new int[] {
+                ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 000 white
+                ConvUtil.MakeRGB(0x00, 0x00, 0xff),     // 001 blue (cyan?)
+                ConvUtil.MakeRGB(0xff, 0x00, 0x00),     // 010 red (magenta?)
+                ConvUtil.MakeRGB(0xcc, 0x00, 0xcc),     // 011 purple
+                ConvUtil.MakeRGB(0xff, 0xff, 0x00),     // 100 yellow
+                ConvUtil.MakeRGB(0x00, 0xff, 0x00),     // 101 green
+                ConvUtil.MakeRGB(0xff, 0x66, 0x00),     // 110 orange
+                ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 111 black
+            });
+
 
         private PrintShopClip() { }
 
@@ -100,22 +117,9 @@ namespace FileConv.Gfx {
             return Applicability.Not;
         }
 
-        /// <summary>
-        /// Print Shop GS palette.  The bit scheme looks like CMYK, but in practice it's closer
-        /// to RGB primaries and the classic Apple II colors.  The values in the table were
-        /// obtained from a KEGS screen grab.
-        /// </summary>
-        public static readonly Palette8 Palette_PSGS = new Palette8("Print Shop GS",
-            new int[] {
-                ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 000 white
-                ConvUtil.MakeRGB(0x00, 0x00, 0xff),     // 001 blue (cyan?)
-                ConvUtil.MakeRGB(0xff, 0x00, 0x00),     // 010 red (magenta?)
-                ConvUtil.MakeRGB(0xcc, 0x00, 0xcc),     // 011 purple
-                ConvUtil.MakeRGB(0xff, 0xff, 0x00),     // 100 yellow
-                ConvUtil.MakeRGB(0x00, 0xff, 0x00),     // 101 green
-                ConvUtil.MakeRGB(0xff, 0x66, 0x00),     // 110 orange
-                ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 111 black
-            });
+        public override Type GetExpectedType(Dictionary<string, string> options) {
+            return typeof(IBitmap);
+        }
 
         public override IConvOutput ConvertFile(Dictionary<string, string> options) {
             if (Applic <= Applicability.Not) {

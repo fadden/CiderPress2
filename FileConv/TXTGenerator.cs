@@ -22,6 +22,8 @@ namespace FileConv {
     /// end-of-line markers.
     /// </summary>
     public static class TXTGenerator {
+        public const string FILE_EXT = ".txt";
+
         /// <summary>
         /// Generates a host-compatible text file from a text document.
         /// </summary>

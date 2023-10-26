@@ -23,6 +23,8 @@ namespace FileConv {
     /// See also <see href="https://en.wikipedia.org/wiki/Comma-separated_values"/>.
     /// </summary>
     public static class CSVGenerator {
+        public const string FILE_EXT = ".csv";
+
         /// <summary>
         /// Generates a CSV document.
         /// </summary>

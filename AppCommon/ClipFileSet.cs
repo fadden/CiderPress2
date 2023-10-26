@@ -17,7 +17,6 @@ using System;
 using System.Diagnostics;
 using System.Text;
 
-using AppCommon;
 using CommonUtil;
 using DiskArc;
 using DiskArc.Arc;
@@ -180,7 +179,8 @@ namespace AppCommon {
                     string macZipName = Zip.GenerateMacZipName(entry.FullPathName);
                     if (!string.IsNullOrEmpty(macZipName)) {
                         if (arc.TryFindFileEntry(macZipName, out adfEntry)) {
-                            // Update the attributes with values from the ADF header.
+                            // Update the attributes with values from the ADF header.  This will
+                            // set RsrcLength if a resource fork is included.
                             GetMacZipAttribs(arc, adfEntry, attrs, appHook);
                         }
                     }
@@ -254,7 +254,7 @@ namespace AppCommon {
                 string extractPath = PathName.AdjustPathName(dirName, dirSep,
                     PathName.DEFAULT_REPL_CHAR);
                 Entries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
-                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, appHook));
+                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, appHook));
                 mSynthDirs.Add(dirName, dirName);
             }
         }
@@ -379,7 +379,7 @@ namespace AppCommon {
                 string extractPath = ExtractFileWorker.GetAdjPathName(entry, aboveRootEntry,
                     Path.DirectorySeparatorChar);
                 Entries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY, FilePart.DataFork,
-                    attrs, extractPath, mPreserveMode, null, appHook));
+                    attrs, extractPath, mPreserveMode, null, null, appHook));
                 mAddedDirs.Add(entry, entry);
             }
         }
@@ -420,69 +420,66 @@ namespace AppCommon {
 
         #endregion Disk
 
-        private void CreateForExtract(object archiveOrFilesystem, IFileEntry entry,
+        private void CreateForExtract(object archiveOrFileSystem, IFileEntry entry,
                 IFileEntry adfEntry, FileAttribs attrs, string extractPath, AppHook appHook) {
             FilePart dataPart = mUseRawData ? FilePart.RawData : FilePart.DataFork;
-
-            // Don't generate output for zero-length resource forks, except on ProDOS volumes,
-            // so that we don't lose track of which files are extended.
-            bool hasRsrcFork = (adfEntry != IFileEntry.NO_ENTRY && attrs.RsrcLength > 0) ||
-                (entry.HasRsrcFork && (entry is ProDOS_FileEntry || entry.RsrcLength > 0));
+            bool hasRsrcFork = HasRsrcFork(entry, adfEntry, attrs);
 
             // All we really need to do here is create entries for one or both forks with
             // the appropriate extract paths.  Filling in the contents happens later.
             switch (mPreserveMode) {
                 case ExtractFileWorker.PreserveMode.None:
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, appHook));
+                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, appHook));
                     }
                     // Ignore resource fork.
                     break;
                 case ExtractFileWorker.PreserveMode.ADF:
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, appHook));
+                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, appHook));
                     }
                     if (hasRsrcFork || attrs.HasTypeInfo) {
                         // Form ADF header file name.  Tag it as "resource fork".
                         string adfPath = Path.Combine(Path.GetDirectoryName(extractPath)!,
                             AppleSingle.ADF_PREFIX + Path.GetFileName(extractPath));
-                        Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
-                            FilePart.RsrcFork, attrs, adfPath, mPreserveMode, null, appHook));
+                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            FilePart.RsrcFork, attrs, adfPath, mPreserveMode, null, null, appHook));
                     }
                     break;
                 case ExtractFileWorker.PreserveMode.AS:
                     // Form AppleSingle file name.  Output single file for both forks.
                     string asPath = extractPath + AppleSingle.AS_EXT;
-                    Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
-                        dataPart, attrs, asPath, mPreserveMode, null, appHook));
+                    Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                        dataPart, attrs, asPath, mPreserveMode, null, null, appHook));
                     break;
                 case ExtractFileWorker.PreserveMode.Host:
                     // Output separate files for each fork.
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, appHook));
+                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, appHook));
                     }
                     if (hasRsrcFork) {
                         // Generate name for filesystem resource fork (assume Mac OS naming).
                         string rsrcPath = Path.Combine(extractPath, "..namedfork");
                         rsrcPath = Path.Combine(rsrcPath, "rsrc");
-                        Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
-                            FilePart.RsrcFork, attrs, rsrcPath, mPreserveMode, null, appHook));
+                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            FilePart.RsrcFork, attrs, rsrcPath, mPreserveMode, null, null,
+                            appHook));
                     }
                     break;
                 case ExtractFileWorker.PreserveMode.NAPS:
                     string napsExt = attrs.GenerateNAPSExt();
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
+                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             dataPart, attrs, extractPath + napsExt, mPreserveMode,
-                            null, appHook));
+                            null, null, appHook));
                     }
                     if (hasRsrcFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFilesystem, entry, adfEntry,
+                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             FilePart.RsrcFork, attrs, extractPath + napsExt + "r", mPreserveMode,
-                            null, appHook));
+                            null, null, appHook));
                     }
                     break;
                 default:
@@ -490,18 +487,215 @@ namespace AppCommon {
             }
         }
 
-        private void CreateForExport(object archiveOrFilesystem, IFileEntry entry,
-                IFileEntry? adfEntry, FileAttribs attrs, string extractPath, AppHook appHook) {
+        private void CreateForExport(object archiveOrFileSystem, IFileEntry entry,
+                IFileEntry adfEntry, FileAttribs attrs, string extractPath,
+                AppHook appHook) {
             // We need to establish what sort of conversion will take place so that we can
-            // set the appropriate filename extension.  To simplify things a bit, we pass the
-            // converter we got into the ClipFileEntry so it's ready to go.
+            // set the appropriate filename extension.  This requires opening all forks, with
+            // seekable streams.
+            //
+            // TODO? We don't necessarily need to extract the entire stream; for applicability
+            // tests we should be able to just read the first several KB.  (We may need to set
+            // the length to match the original to satisfy bounds checks; for certain types of
+            // compression the length isn't knowable without extracting the full thing.)
 
-            // need to open data/rsrc streams, extracting copies as needed, so we can
-            // do GetApplicableConverters; this could be very slow
-            // --> just grab first 64KB for applicability check?  to avoid length check
-            //   issues we can set size to full length but only read the first 64KB
+            Debug.Assert(mExportSpec != null);
 
-            throw new NotImplementedException();
+            Type? expectedType = DoClipExport(archiveOrFileSystem, entry, adfEntry, attrs,
+                mUseRawData, mExportSpec, null, appHook);
+            if (expectedType == null) {
+                return;
+            }
+            string ext;
+            if (expectedType == typeof(SimpleText)) {
+                ext = TXTGenerator.FILE_EXT;
+            } else if (expectedType == typeof(FancyText)) {
+                ext = RTFGenerator.FILE_EXT;
+            } else if (expectedType == typeof(CellGrid)) {
+                ext = CSVGenerator.FILE_EXT;
+            } else if (expectedType == typeof(IBitmap)) {
+                ext = PNGGenerator.FILE_EXT;
+            } else if (expectedType == typeof(HostConv)) {
+                ext = string.Empty;
+            } else {
+                Debug.Assert(false);
+                ext = ".UNK";
+            }
+
+            // Create the clip entry.  We can't just pass the Converter instance in because
+            // it has references to the input streams, which will be closed before this
+            // function returns.  The only thing that really matters is that the output type
+            // matches, because if it doesn't then the file extension we set here will be
+            // incorrect.
+            Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                FilePart.DataFork, attrs, extractPath + ext, mPreserveMode,
+                mExportSpec, expectedType, appHook));
+        }
+
+        /// <summary>
+        /// Performs all or part of a file export operation.  For the "copy" side we evaluate
+        /// the file and return converter type information.  For the "paste" side we also do
+        /// the actual conversion.
+        /// </summary>
+        /// <returns>Type of Converter subclass that will be used.</returns>
+        public static Type? DoClipExport(object archiveOrFileSystem, IFileEntry entry,
+                IFileEntry adfEntry, FileAttribs attrs, bool useRawData,
+                ConvConfig.FileConvSpec exportSpec, Stream? outStream, AppHook appHook) {
+            FilePart dataPart = useRawData ? FilePart.RawData : FilePart.DataFork;
+            bool hasRsrcFork = HasRsrcFork(entry, adfEntry, attrs);
+
+            Stream? dataStream = null;
+            Stream? rsrcStream = null;
+            AppleSingle? adfArchive = null;
+            Stream? adfStream = null;
+            Stream? dataCopy = null;
+            Stream? rsrcCopy = null;
+            try {
+                if (entry.HasDataFork) {
+                    dataStream = OpenEntryPart(archiveOrFileSystem, entry, dataPart);
+                } else if (entry.IsDiskImage) {
+                    // Exporting a disk image?  Most unexpected.
+                    dataStream = OpenEntryPart(archiveOrFileSystem, entry, FilePart.DiskImage);
+                }
+
+                if (adfEntry != IFileEntry.NO_ENTRY) {
+                    // Handle paired MacZip entry.  Need to extract attributes and check for
+                    // a resource fork.
+                    try {
+                        IArchive arc = (IArchive)archiveOrFileSystem;
+                        // Copy to temp file; can't use unseekable stream as archive source.
+                        adfStream = ArcTemp.ExtractToTemp(arc, adfEntry, dataPart);
+                        adfArchive = AppleSingle.OpenArchive(adfStream, appHook);
+                        IFileEntry adfArchiveEntry = adfArchive.GetFirstEntry();
+                        attrs.GetFromAppleSingle(adfArchiveEntry);
+                        if (adfArchiveEntry.HasRsrcFork && adfArchiveEntry.RsrcLength > 0) {
+                            rsrcStream = adfArchive.OpenPart(adfArchiveEntry, FilePart.RsrcFork);
+                        }
+                    } catch (Exception ex) {
+                        // Never mind.
+                        appHook.LogW("Unable to get ADF attrs for '" +
+                            entry.FullPathName + "': " + ex.Message);
+                        // keep going
+                        Debug.Assert(rsrcStream == null);
+                    }
+                }
+
+                // If we didn't get a resource fork from ADF, see if the entry has one.
+                if (rsrcStream == null && hasRsrcFork) {
+                    rsrcStream = OpenEntryPart(archiveOrFileSystem, entry, FilePart.RsrcFork);
+                }
+
+                // Copy to seekable stream if necessary.
+                if (dataStream != null && !dataStream.CanSeek) {
+                    dataCopy = TempFile.CopyToTemp(dataStream, attrs.DataLength);
+                } else {
+                    dataCopy = dataStream;
+                }
+                if (rsrcStream != null && !rsrcStream.CanSeek) {
+                    rsrcCopy = TempFile.CopyToTemp(rsrcStream, attrs.RsrcLength);
+                } else {
+                    rsrcCopy = rsrcStream;
+                }
+
+                // Find the converter.  If we don't find one, don't export the file.  This allows
+                // the user to drag a big pile of stuff and only get the stuff that matches.
+                Converter? conv;
+                if (exportSpec.Tag == ConvConfig.BEST) {
+                    List<Converter> applics = ExportFoundry.GetApplicableConverters(attrs,
+                        dataCopy, rsrcCopy, appHook);
+                    conv = applics[0];
+                } else {
+                    // One specific converter.
+                    conv = ExportFoundry.GetConverter(exportSpec.Tag, attrs, dataCopy, rsrcCopy,
+                        appHook);
+                    if (conv == null) {
+                        appHook.LogE("no converter found for tag '" + exportSpec.Tag + "'");
+                        return null;
+                    }
+                    if (conv.Applic <= Converter.Applicability.Not) {
+                        appHook.LogW("converter " + conv + " is not suitable for '" +
+                            attrs.FileNameOnly + "'");
+                        return null;
+                    }
+                }
+
+                // If an output stream is provided, do the conversion and generate the output.
+                if (outStream != null) {
+                    IConvOutput convOutput = conv.ConvertFile(exportSpec.Options);
+                    if (convOutput is ErrorText) {
+                        appHook.LogW("conversion failed: " +
+                            ((ErrorText)convOutput).Text.ToString());
+                        return null;
+                    } else if (convOutput is FancyText && !((FancyText)convOutput).PreferSimple) {
+                        RTFGenerator.Generate((FancyText)convOutput, outStream);
+                    } else if (convOutput is SimpleText) {
+                        TXTGenerator.Generate((SimpleText)convOutput, outStream);
+                    } else if (convOutput is CellGrid) {
+                        CSVGenerator.Generate((CellGrid)convOutput, outStream);
+                    } else if (convOutput is IBitmap) {
+                        PNGGenerator.Generate((IBitmap)convOutput, outStream);
+                    } else if (convOutput is HostConv) {
+                        // Copy directly to output.
+                        if (dataStream != null) {
+                            dataStream.Position = 0;
+                            dataStream.CopyTo(outStream);
+                        }
+                    } else {
+                        Debug.Assert(false, "unknown IConvOutput impl " + convOutput);
+                        return null;
+                    }
+                    if (convOutput is IBitmap) {
+                        return typeof(IBitmap);
+                    } else {
+                        return convOutput.GetType();
+                    }
+                } else {
+                    Type expectedType = conv.GetExpectedType(exportSpec.Options);
+                    return expectedType;
+                }
+            } finally {
+                dataStream?.Dispose();
+                rsrcStream?.Dispose();
+                adfArchive?.Dispose();
+                adfStream?.Dispose();
+                dataCopy?.Dispose();
+                rsrcCopy?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the entry has a resource fork.  This is complicated by MacZip
+        /// and the desire to preserve ProDOS storage types.
+        /// </summary>
+        private static bool HasRsrcFork(IFileEntry entry, IFileEntry adfEntry, FileAttribs attrs) {
+            if (adfEntry != IFileEntry.NO_ENTRY) {
+                // MacZip entry.  See if the ADF header has a non-empty resource fork.
+                Debug.Assert(entry is Zip);
+                return attrs.RsrcLength > 0;
+            }
+            if (!entry.HasRsrcFork) {
+                return false;
+            }
+            // We want to return true for zero-length resource forks if we find them in ProDOS
+            // volumes or NuFX archives.  In these formats the resource fork is optional, and
+            // we don't want to lose the fact that the file is extended.
+            return entry is ProDOS_FileEntry || entry is NuFX_FileEntry;
+        }
+
+        /// <summary>
+        /// Opens a part of a file, in an archive or filesystem.
+        /// </summary>
+        private static Stream OpenEntryPart(object archiveOrFileSystem, IFileEntry entry,
+                FilePart part) {
+            if (archiveOrFileSystem is IArchive) {
+                IArchive arc = (IArchive)archiveOrFileSystem;
+                return arc.OpenPart(entry, part);
+            } else if (archiveOrFileSystem is IFileSystem) {
+                IFileSystem fs = (IFileSystem)archiveOrFileSystem;
+                return fs.OpenFile(entry, FileAccessMode.ReadOnly, part);
+            } else {
+                throw new NotImplementedException("Unexpected: " + archiveOrFileSystem);
+            }
         }
     }
 }
