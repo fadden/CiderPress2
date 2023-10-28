@@ -44,18 +44,19 @@ namespace cp2_wpf.WPFCommon {
         /// <param name="index">Index of file.</param>
         /// <returns>Stream with file contents.  It will be readable, but may not be
         ///   seekable.</returns>
-        internal static Stream? GetFileContents(System.Windows.IDataObject dataObject, int index) {
+        public static Stream? GetFileContents(System.Windows.IDataObject dataObject, int index) {
+            int formatId = DataFormats.GetDataFormat("FileContents").Id;
+            return GetFileContents(dataObject, index, (short)formatId);
+        }
+
+        internal static Stream? GetFileContents(System.Windows.IDataObject dataObject, int index,
+                short formatId) {
             // cast the default IDataObject to a COM IDataObject
             System.Runtime.InteropServices.ComTypes.IDataObject comDataObject;
             comDataObject = (System.Runtime.InteropServices.ComTypes.IDataObject)dataObject;
 
-            DataFormat Format = DataFormats.GetDataFormat("FileContents");
-            if (Format == null) {
-                return null;
-            }
-
             FORMATETC formatetc = new FORMATETC();
-            formatetc.cfFormat = (short)Format.Id;
+            formatetc.cfFormat = formatId;
             formatetc.dwAspect = DVASPECT.DVASPECT_CONTENT;
             formatetc.lindex = index;
             formatetc.tymed = TYMED.TYMED_ISTREAM | TYMED.TYMED_HGLOBAL;

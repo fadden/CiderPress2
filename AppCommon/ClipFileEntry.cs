@@ -84,31 +84,45 @@ namespace AppCommon {
             }
 
             /// <summary>
-            /// Determines the estimated length of the contents of this entry.  Generated
-            /// streams, such as AppleSingle and ADF header files, will return -1, as will
-            /// compressed streams of indeterminate length (gzip, Squeeze).
+            /// Determines the length of the contents of this entry.  Generated streams, such as
+            /// AppleSingle/ADF header files and export converter output, will return -1, as will
+            /// compressed streams with indeterminate length (gzip, Squeeze).
             /// </summary>
             /// <remarks>
-            /// Accuracy matters.  If the estimated length is too short, the receiver may stop
-            /// reading early.  Better to return -1 than report an inaccurate value.
+            /// Accuracy matters.  If the stated length is too short, the receiver may stop
+            /// reading early.  Better to return -1 than report an inaccurate value.  The only
+            /// value in providing this is so that the conflict resolution dialog can report
+            /// the sizes of the "old" and "new" versions.
             /// </remarks>
-            public long GetEstimatedLength() {
+            public long GetOutputLength() {
                 if (mExportSpec != null) {
                     return -1;      // size of export conversions is not known
                 }
                 switch (mPreserve) {
+                    case ExtractFileWorker.PreserveMode.Unknown:        // for direct xfer
                     case ExtractFileWorker.PreserveMode.None:
                     case ExtractFileWorker.PreserveMode.Host:
                     case ExtractFileWorker.PreserveMode.NAPS:
                         if (mPart == FilePart.RsrcFork) {
+                            // Always use the RsrcLength from the FileAttribs because it has
+                            // the actual resource fork length from MacZip entries.
                             return mAttribs.RsrcLength;
-                        } else {
+                        } else if (mPart == FilePart.DataFork) {
                             return mAttribs.DataLength;
+                        } else if (mPart == FilePart.RawData) {
+                            // We could test this for DOS_FileEntry and report its RawDataLength
+                            // value, and just return DataLength for anything else.  However, that
+                            // would be fragile if we ever use RawData for something else.
+                            return -1;
+                        } else {
+                            // Disk image, don't bother.
+                            return -1;
                         }
                     case ExtractFileWorker.PreserveMode.ADF:
-                        if (mPart != FilePart.RsrcFork) {
+                        if (mPart == FilePart.DataFork) {
                             return mAttribs.DataLength;
                         } else {
+                            // Resource fork is generated.
                             return -1;
                         }
                     case ExtractFileWorker.PreserveMode.AS:
@@ -145,6 +159,7 @@ namespace AppCommon {
                     }
                 } else {
                     switch (mPreserve) {
+                        case ExtractFileWorker.PreserveMode.Unknown:    // direct xfer
                         case ExtractFileWorker.PreserveMode.None:
                         case ExtractFileWorker.PreserveMode.Host:
                         case ExtractFileWorker.PreserveMode.NAPS:
@@ -169,7 +184,6 @@ namespace AppCommon {
                             // Generate an AppleSingle archive with both forks and the type info.
                             GenerateAS(outStream);
                             break;
-                        case ExtractFileWorker.PreserveMode.Unknown:
                         default:
                             Debug.Assert(false);
                             return;
@@ -376,7 +390,7 @@ namespace AppCommon {
         /// <summary>
         /// Estimated length of this stream.  May be -1 if the length can't be determined easily.
         /// </summary>
-        public long EstimatedLength { get; set; }
+        public long OutputLength { get; set; }
 
         /// <summary>
         /// Preservation mode.  For app-to-app transfers, the remote side needs this to tell it
@@ -386,8 +400,8 @@ namespace AppCommon {
         /// This could be "global", held in the ClipFileSet, but having it here costs little and
         /// ensures that we have all of the pieces needed to reconstruct the data in one place.
         /// </remarks>
-        public ExtractFileWorker.PreserveMode Preserve { get; set; } =
-            ExtractFileWorker.PreserveMode.Unknown;
+        //public ExtractFileWorker.PreserveMode Preserve { get; set; } =
+        //    ExtractFileWorker.PreserveMode.Unknown;
 
         // TODO? sparse map to preserve DOS file structure
 
@@ -398,7 +412,8 @@ namespace AppCommon {
         public ClipFileEntry() { }
 
         /// <summary>
-        /// Standard constructor.
+        /// Constructor for "foreign transfer" entries.  These require a host-compatible extract
+        /// filename, and can take export conversion parameters.
         /// </summary>
         /// <param name="archiveOrFileSystem">IArchive or IFileSystem instance.</param>
         /// <param name="entry">File entry this represents.  This may be NO_ENTRY for
@@ -408,7 +423,7 @@ namespace AppCommon {
         /// <param name="part">Which part of the file this is.  RawData and DiskImage are
         ///   possible.</param>
         /// <param name="attribs">File attributes.  May come from the file entry or from the
-        ///   ADF header.</param>
+        ///   MacZip ADF header.</param>
         /// <param name="extractPath">Filename to use when extracting the file on the host
         ///   filesystem.</param>
         /// <param name="preserveMode">File attribute preservation mode used when generating
@@ -431,8 +446,26 @@ namespace AppCommon {
             Part = part;
             Attribs = attribs;
             ExtractPath = extractPath;
-            EstimatedLength = mStreamGen.GetEstimatedLength();
-            Preserve = preserveMode;
+            OutputLength = mStreamGen.GetOutputLength();
+        }
+
+        /// <summary>
+        /// Constructor for "direct transfer" entries.
+        /// </summary>
+        /// <param name="archiveOrFileSystem">IArchive or IFileSystem instance.</param>
+        /// <param name="entry">File entry this represents.  This may be NO_ENTRY for
+        ///   synthetic directory entries (which have no contents).</param>
+        /// <param name="adfEntry">MacZip ADF header entry, or NO_ENTRY if this is not part of
+        ///   a MacZip pair.</param>
+        /// <param name="part">Which part of the file this is.  RawData and DiskImage are
+        ///   possible.</param>
+        /// <param name="attribs">File attributes.  May come from the file entry or from the
+        ///   MacZip ADF header.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, IFileEntry adfEntry,
+                FilePart part, FileAttribs attribs, AppHook appHook) :
+            this(archiveOrFileSystem, entry, adfEntry, part, attribs, attribs.FullPathName,
+                ExtractFileWorker.PreserveMode.Unknown, null, null, appHook) {
         }
 
         public override string ToString() {

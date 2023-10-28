@@ -28,10 +28,12 @@ namespace cp2_wpf {
     /// </summary>
     [Serializable]
     internal class ClipInfo {
-        public const string CLIPBOARD_FORMAT_NAME = "faddenSoft:CiderPressII:v1";
-        public static short CLIPBOARD_FORMAT = RegisterFormat();
+        public const string XFER_METADATA_NAME = "faddenSoft:CiderPressII:md-v1";
+        public static short XFER_METADATA = RegisterFormat(XFER_METADATA_NAME);
+        public const string XFER_STREAMS_NAME = "faddenSoft:CiderPressII:st-v1";
+        public static short XFER_STREAMS = RegisterFormat(XFER_STREAMS_NAME);
 
-        public ClipFileSet? ClipSet { get; set; } = null;
+        public List<ClipFileEntry>? ClipEntries { get; set; } = null;
 
         // Fields split out of a CommonUtil.Version object.
         public int AppVersionMajor { get; set; }
@@ -47,24 +49,24 @@ namespace cp2_wpf {
         /// Constructor.  Most of the goodies are in the ClipFileSet, but we want to add some
         /// application-level stuff like the version number.
         /// </summary>
-        public ClipInfo(ClipFileSet clipSet, CommonUtil.Version appVersion) {
-            ClipSet = clipSet;
+        public ClipInfo(List<ClipFileEntry> clipEntries, CommonUtil.Version appVersion) {
+            ClipEntries = clipEntries;
             AppVersionMajor = appVersion.Major;
             AppVersionMinor = appVersion.Minor;
             AppVersionPatch = appVersion.Patch;
         }
 
         /// <summary>
-        /// Registers our clipboard format with the system.
+        /// Registers a clipboard format with the system.
         /// </summary>
-        /// <returns>Clipboard format index.</returns>
-        private static short RegisterFormat() {
+        /// <returns>Clipboard format index (0xc000-ffff).</returns>
+        private static short RegisterFormat(string name) {
             // Return value should be 0xc000-0xffff.
-            uint fmtNum = RegisterClipboardFormat(CLIPBOARD_FORMAT_NAME);
+            uint fmtNum = RegisterClipboardFormat(name);
             if (fmtNum == 0) {
                 // TODO: if this is likely to occur, we should handle it better
                 throw new Exception("Unable to register clipboard format '" +
-                    CLIPBOARD_FORMAT_NAME + "', error=" + Marshal.GetLastWin32Error());
+                    name + "', error=" + Marshal.GetLastWin32Error());
             }
             Debug.Assert(fmtNum == (ushort)fmtNum);
             Debug.WriteLine("Registered clipboard format 0x" + fmtNum.ToString("x4"));

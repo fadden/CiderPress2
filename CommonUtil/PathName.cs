@@ -138,6 +138,23 @@ namespace CommonUtil {
         }
 
         /// <summary>
+        /// Strips the directory names out of a pathname, leaving only the filename.  If the
+        /// pathname ends with a separator character (e.g. "/usr/local/"), an empty string will
+        /// be returned.
+        /// </summary>
+        /// <param name="pathName">Full or partial pathname.</param>
+        /// <param name="dirSep">Directory separator character used for this pathname.</param>
+        /// <returns></returns>
+        public static string GetFileName(string pathName, char dirSep) {
+            int lastIndex = pathName.LastIndexOf(dirSep);
+            if (lastIndex < 0 || lastIndex == pathName.Length - 1) {
+                return string.Empty;
+            } else {
+                return pathName.Substring(lastIndex + 1);
+            }
+        }
+
+        /// <summary>
         /// Splits a partial path into components.  Directories are separated by any of the
         /// characters in <paramref name="dirSepChars"/>.  Separator characters may be escaped
         /// with a backslash.

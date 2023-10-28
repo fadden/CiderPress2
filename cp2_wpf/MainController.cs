@@ -1068,16 +1068,16 @@ namespace cp2_wpf {
             Debug.WriteLine("Paste from clipboard (TODO)");
 
             IDataObject clipData = Clipboard.GetDataObject();
-            object? data = clipData.GetData(ClipInfo.CLIPBOARD_FORMAT_NAME);
+            object? data = clipData.GetData(ClipInfo.XFER_METADATA_NAME);
             if (data is null) {
                 // TODO: could be a paste from Windows Explorer ZIP folder; check for
                 //  ClipHelper.DESC_ARRAY_FORMAT + ClipHelper.FILE_CONTENTS_FORMAT
                 //  (also need to do that on drag-in, this should be common code)
-                Debug.WriteLine("Didn't find " + ClipInfo.CLIPBOARD_FORMAT_NAME);
+                Debug.WriteLine("Didn't find " + ClipInfo.XFER_METADATA_NAME);
                 return;
             }
             if (data is not MemoryStream) {
-                Debug.WriteLine("Found " + ClipInfo.CLIPBOARD_FORMAT_NAME + " w/o MemoryStream");
+                Debug.WriteLine("Found " + ClipInfo.XFER_METADATA_NAME + " w/o MemoryStream");
                 return;
             }
             ClipInfo clipInfo;
@@ -1087,8 +1087,8 @@ namespace cp2_wpf {
                     return;
                 }
                 clipInfo = (ClipInfo)parsed;
-                if (clipInfo.ClipSet == null) {
-                    Debug.WriteLine("ClipInfo arrived without a ClipFileSet");
+                if (clipInfo.ClipEntries == null) {
+                    Debug.WriteLine("ClipInfo arrived without ClipEntries");
                     return;
                 }
             } catch (JsonException ex) {
@@ -1099,8 +1099,8 @@ namespace cp2_wpf {
             Debug.WriteLine("Paste from v" +
                 new CommonUtil.Version(clipInfo.AppVersionMajor, clipInfo.AppVersionMinor,
                     clipInfo.AppVersionPatch) +
-                " count=" + clipInfo.ClipSet.Count);
-            foreach (ClipFileEntry entry in clipInfo.ClipSet.Entries) {
+                " count=" + clipInfo.ClipEntries.Count);
+            foreach (ClipFileEntry entry in clipInfo.ClipEntries) {
                 Debug.WriteLine(" - " + entry);
             }
         }
@@ -1662,17 +1662,18 @@ namespace cp2_wpf {
             }
 
             // Configure the virtual file descriptors that transmit the file contents.
+            List<ClipFileEntry> clipEntries = clipSet.ForeignEntries;
             VirtualFileDataObject vfdo = new VirtualFileDataObject();
             VirtualFileDataObject.FileDescriptor[] vfds =
-                new VirtualFileDataObject.FileDescriptor[clipSet.Count];
+                new VirtualFileDataObject.FileDescriptor[clipEntries.Count];
 
-            for (int i = 0; i < clipSet.Count; i++) {
-                ClipFileEntry clipEntry = clipSet[i];
+            for (int i = 0; i < clipEntries.Count; i++) {
+                ClipFileEntry clipEntry = clipEntries[i];
                 // Set the values that go into the Windows FILEDESCRIPTOR struct.  This won't be
                 // used if the receiver is a second copy of us.
                 vfds[i] = new VirtualFileDataObject.FileDescriptor();
                 vfds[i].Name = clipEntry.ExtractPath;
-                vfds[i].Length = clipEntry.EstimatedLength;
+                vfds[i].Length = clipEntry.OutputLength;
                 if (TimeStamp.IsValidDate(clipEntry.Attribs.CreateWhen)) {
                     vfds[i].CreateTimeUtc = clipEntry.Attribs.CreateWhen;
                 }
@@ -1689,12 +1690,22 @@ namespace cp2_wpf {
             }
             vfdo.SetData(vfds);
 
-            // Serialize extended attributes.
-            ClipInfo clipInfo = new ClipInfo(clipSet, GlobalAppVersion.AppVersion);
-            string cereal = JsonSerializer.Serialize(clipInfo,
-                new JsonSerializerOptions() { WriteIndented = true });
-            vfdo.SetData((short)ClipInfo.CLIPBOARD_FORMAT,
-                Encoding.UTF8.GetBytes(cereal));
+            // Serialize direct transfer data.  There won't be any for "export" mode.
+            if (clipSet.XferEntries.Count > 0) {
+                ClipInfo clipInfo = new ClipInfo(clipSet.XferEntries, GlobalAppVersion.AppVersion);
+                string cereal = JsonSerializer.Serialize(clipInfo,
+                    new JsonSerializerOptions() { WriteIndented = true });
+                vfdo.SetData(ClipInfo.XFER_METADATA, Encoding.UTF8.GetBytes(cereal));
+
+                for (int i = 0; i < clipSet.XferEntries.Count; i++) {
+                    ClipFileEntry clipEntry = clipSet.XferEntries[i];
+                    if (!clipEntry.Attribs.IsDirectory) {
+                        vfdo.SetData(ClipInfo.XFER_STREAMS, i, stream => {
+                            clipEntry.mStreamGen!.OutputToStream(stream);
+                        });
+                    }
+                }
+            }
 
             //vfdo.SetData(DataFormats.UnicodeText,
             //    "This is a test (" + dataGrid.SelectedItems.Count + ")");

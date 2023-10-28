@@ -15,16 +15,16 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
+using AppCommon;
 using CommonUtil;
 using cp2_wpf.WPFCommon;
 
@@ -97,27 +97,27 @@ namespace cp2_wpf.Tools {
 
             string[] formats = dataObj.GetFormats(false);
 
-            sb.Append("Found " + formats.Length + " formats:\r\n");
+            sb.AppendLine("Found " + formats.Length + " formats:");
             foreach (string format in formats) {
                 sb.Append("\u2022 ");
                 sb.Append(format);
                 if (format == ClipHelper.DESC_ARRAY_FORMAT) {
-                    sb.Append(":\r\n");
+                    sb.AppendLine(":");
                     DumpDescriptors(dataObj, sb);
                     continue;
                 } else if (format == ClipHelper.FILE_CONTENTS_FORMAT) {
                     // Should have been accompanied by descriptor array, and dumped with that.
                     // The data cannot be obtained from GetData(), since it's an array of streams.
-                    sb.Append(": (shown in descriptor section)\r\n");
+                    sb.AppendLine(": (shown in descriptor section)");
                     continue;
-                } else if (format == ClipInfo.CLIPBOARD_FORMAT_NAME) {
-                    sb.Append(":\r\n");
+                } else if (format == ClipInfo.XFER_METADATA_NAME) {
+                    sb.AppendLine(":");
                     // Dump the full text of the JSON stream for debugging.
-                    MemoryStream cerealStream = (MemoryStream)dataObj.GetData(format);
-                    using (StreamReader sr = new StreamReader(cerealStream, Encoding.UTF8)) {
-                        string cereal = sr.ReadToEnd();
-                        sb.AppendLine(cereal);
-                    }
+                    object? data = dataObj.GetData(format);
+                    DumpXferEntries(dataObj, sb);
+                    continue;
+                } else if (format == ClipInfo.XFER_STREAMS_NAME) {
+                    sb.AppendLine(": (shown in metadata section)");
                     continue;
                 }
 
@@ -169,7 +169,12 @@ namespace cp2_wpf.Tools {
         }
 
         private void DumpDescriptors(IDataObject dataObj, StringBuilder sb) {
-            MemoryStream descStream = (MemoryStream)dataObj.GetData(ClipHelper.DESC_ARRAY_FORMAT);
+            object? data = dataObj.GetData(ClipHelper.DESC_ARRAY_FORMAT);
+            if (data is not MemoryStream) {
+                sb.AppendLine("ERROR: descriptors not in memory stream");
+                return;
+            }
+            MemoryStream descStream = (MemoryStream)data;
             IEnumerable<ClipHelper.FileDescriptor> descriptors =
                 ClipHelper.FileDescriptorReader.Read(descStream);
             int fileIndex = 0;
@@ -187,7 +192,6 @@ namespace cp2_wpf.Tools {
                         } else {
                             contents.Position = 0;
                             long fileLen = 0;
-                            Debug.WriteLine("+ starting read");
                             while (contents.ReadByte() >= 0) {
                                 // read contents...slowly
                                 fileLen++;
@@ -198,7 +202,62 @@ namespace cp2_wpf.Tools {
                     Debug.WriteLine("+ stream closed");
                 }
                 fileIndex++;
-                sb.Append("\r\n");
+                sb.AppendLine();
+            }
+        }
+
+        private void DumpXferEntries(IDataObject dataObj, StringBuilder sb) {
+            object? data = dataObj.GetData(ClipInfo.XFER_METADATA_NAME);
+            if (data is not MemoryStream) {
+                sb.AppendLine("ERROR: metadata not in memory stream");
+                return;
+            }
+            MemoryStream cerealStream = (MemoryStream)data;
+            try {
+                object? parsed = JsonSerializer.Deserialize((MemoryStream)data,
+                    typeof(ClipInfo));
+                if (parsed == null) {
+                    sb.AppendLine("ERROR: deserialization came up empty");
+                } else {
+                    ClipInfo clipInfo = (ClipInfo)parsed;
+                    if (clipInfo.ClipEntries == null) {
+                        sb.AppendLine("ERROR: ClipInfo arrived without any entries");
+                    } else {
+                        for (int index = 0; index < clipInfo.ClipEntries.Count; index++) {
+                            ClipFileEntry clipEntry = clipInfo.ClipEntries[index];
+                            sb.AppendFormat("    {0}: '{1}' len={2}: ",
+                                index, clipEntry.Attribs.FullPathName, clipEntry.OutputLength);
+                            if (clipEntry.Attribs.IsDirectory) {
+                                sb.AppendLine("is directory");
+                                continue;
+                            }
+                            using (Stream? contents = ClipHelper.GetFileContents(dataObj,
+                                    index, ClipInfo.XFER_STREAMS)) {
+                                if (contents == null) {
+                                    sb.Append("contents are null");
+                                } else {
+                                    contents.Position = 0;
+                                    long fileLen = 0;
+                                    while (contents.ReadByte() >= 0) {
+                                        // read contents...slowly
+                                        fileLen++;
+                                    }
+                                    sb.Append("read " + fileLen + " bytes");
+                                }
+                            }
+                            sb.AppendLine();
+                        }
+                    }
+                }
+            } catch (JsonException ex) {
+                sb.AppendLine("ERROR: deserialization failed: " + ex.Message);
+            }
+
+            // Dump the JSON.
+            cerealStream.Position = 0;
+            using (StreamReader sr = new StreamReader(cerealStream, Encoding.UTF8)) {
+                string cereal = sr.ReadToEnd();
+                sb.AppendLine(cereal);
             }
         }
 

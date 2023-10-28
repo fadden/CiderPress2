@@ -27,64 +27,50 @@ using static DiskArc.IFileSystem;
 
 namespace AppCommon {
     /// <summary>
-    /// <para>This holds a set of file entry information that can be serialized and placed on the
-    /// system clipboard.  It effectively comes in two varieties: instances used to generate
-    /// the list of entries, which have various fields populated, and instances used to receive
-    /// serialized data, which only has the ClipFileEntry list set.  It would be best to avoid
-    /// using this class as anything but a list-holder once it has been constructed.</para>
+    /// <para>This generates a set of information used when transferring data to the clipboard.
+    /// There are two modes: transfer to foreign programs, such as Windows Explorer and Chrome,
+    /// and direct transfer to an instance of CiderPress II.</para>
     /// </summary>
-    [Serializable]
     public class ClipFileSet {
-        public int Count => Entries.Count;
-
-        public ClipFileEntry this[int index] {
-            get { return Entries[index]; }
-        }
-
         /// <summary>
         /// List of entries for the clipboard.  This will be serialized.
         /// </summary>
-        public List<ClipFileEntry> Entries { get; set; } = new List<ClipFileEntry>();
+        public List<ClipFileEntry> XferEntries { get; set; } = new List<ClipFileEntry>();
+
+        /// <summary>
+        /// List of entries that will be streamed to other applications.  This is used to
+        /// generate the clipboard data (e.g. FILEDESCRIPTORW and FILECONTENTS in Windows), but
+        /// is not directly serialized onto it.
+        /// </summary>
+        public List<ClipFileEntry> ForeignEntries { get; set; } = new List<ClipFileEntry>();
 
         //
         // Innards.
         //
 
-        [NonSerialized]
         private bool mStripPaths;
-        [NonSerialized]
         private bool mEnableMacZip;
-        [NonSerialized]
         private ExtractFileWorker.PreserveMode mPreserveMode;
-        [NonSerialized]
         private ConvConfig.FileConvSpec? mExportSpec;
+        private AppHook mAppHook;
 
         //
         // Additional innards for archives.
         //
 
-        [NonSerialized]
         private Dictionary<string, string> mSynthDirs = new Dictionary<string, string>();
 
         //
         // Additional innards for filesystems.
         //
 
-        [NonSerialized]
         private IFileEntry mBaseDir = IFileEntry.NO_ENTRY;
-        [NonSerialized]
         private bool mUseRawData;
 
         // Keep track of directories we've already added to the output.
-        [NonSerialized]
         private Dictionary<IFileEntry, IFileEntry> mAddedDirs =
             new Dictionary<IFileEntry, IFileEntry>();
 
-
-        /// <summary>
-        /// Nullary constructor, for the deserializer.
-        /// </summary>
-        public ClipFileSet() { }
 
         /// <summary>
         /// Constructs a set of ClipFileEntries that contains the entries provided.  Additional
@@ -118,12 +104,13 @@ namespace AppCommon {
             mStripPaths = stripPaths;
             mEnableMacZip = enableMacZip;
             mExportSpec = exportSpec;
+            mAppHook = appHook;
 
             if (archiveOrFileSystem is IArchive) {
                 Debug.Assert(baseDir == IFileEntry.NO_ENTRY);
-                GenerateFromArchive((IArchive)archiveOrFileSystem, entries, appHook);
+                GenerateFromArchive((IArchive)archiveOrFileSystem, entries);
             } else if (archiveOrFileSystem is IFileSystem) {
-                GenerateFromDisk((IFileSystem)archiveOrFileSystem, entries, appHook);
+                GenerateFromDisk((IFileSystem)archiveOrFileSystem, entries);
             } else {
                 throw new ArgumentException("Invalid archive/fs object");
             }
@@ -136,9 +123,9 @@ namespace AppCommon {
         /// </summary>
         /// <param name="arc">File archive reference.</param>
         /// <param name="entries">List of entries to add.</param>
-        /// <param name="appHook">Application hook reference.</param>
-        private void GenerateFromArchive(IArchive arc, List<IFileEntry> entries, AppHook appHook) {
-            Debug.Assert(Entries.Count == 0);
+        private void GenerateFromArchive(IArchive arc, List<IFileEntry> entries) {
+            Debug.Assert(XferEntries.Count == 0);
+            Debug.Assert(ForeignEntries.Count == 0);
 
             foreach (IFileEntry entry in entries) {
                 if (entry.IsDirectory) {
@@ -155,18 +142,19 @@ namespace AppCommon {
                     extractPath = PathName.AdjustPathName(entry.FullPathName,
                         entry.DirectorySeparatorChar, PathName.DEFAULT_REPL_CHAR);
                 }
-                if (mStripPaths) {
-                    extractPath = Path.GetFileName(extractPath);
-                }
 
                 // Synthesize entries for directories.
                 if (!mStripPaths) {
-                    AddPathDirEntries(arc, entry.FullPathName, entry.DirectorySeparatorChar,
-                        appHook);
+                    AddPathDirEntries(arc, entry.FullPathName, entry.DirectorySeparatorChar);
                 }
 
                 // Generate file attributes.  The same object will be used for both forks.
                 FileAttribs attrs = new FileAttribs(entry);
+                if (mStripPaths) {
+                    extractPath = Path.GetFileName(extractPath);
+                    attrs.FullPathName = PathName.GetFileName(attrs.FullPathName,
+                        attrs.FullPathSep);
+                }
 
                 // Handle MacZip archives, if enabled.
                 IFileEntry adfEntry = IFileEntry.NO_ENTRY;
@@ -181,15 +169,15 @@ namespace AppCommon {
                         if (arc.TryFindFileEntry(macZipName, out adfEntry)) {
                             // Update the attributes with values from the ADF header.  This will
                             // set RsrcLength if a resource fork is included.
-                            GetMacZipAttribs(arc, adfEntry, attrs, appHook);
+                            GetMacZipAttribs(arc, adfEntry, attrs, mAppHook);
                         }
                     }
                 }
 
                 if (mExportSpec == null) {
-                    CreateForExtract(arc, entry, adfEntry, attrs, extractPath, appHook);
+                    CreateForExtract(arc, entry, adfEntry, attrs, extractPath);
                 } else {
-                    CreateForExport(arc, entry, adfEntry, attrs, extractPath, appHook);
+                    CreateForExport(arc, entry, adfEntry, attrs, extractPath);
                 }
             }
         }
@@ -233,7 +221,7 @@ namespace AppCommon {
         /// <param name="pathName">Partial pathname.</param>
         /// <param name="dirSep">Directory separator character.</param>
         /// <param name="appHook">Application hook reference.</param>
-        private void AddPathDirEntries(IArchive arc, string pathName, char dirSep, AppHook appHook) {
+        private void AddPathDirEntries(IArchive arc, string pathName, char dirSep) {
             Debug.Assert(!mStripPaths);
 
             // Remove the filename.
@@ -243,7 +231,7 @@ namespace AppCommon {
                 return;
             }
             // See if there's another level.
-            AddPathDirEntries(arc, dirName, dirSep, appHook);
+            AddPathDirEntries(arc, dirName, dirSep);
 
             // Case-sensitive string comparison.
             if (!mSynthDirs.ContainsKey(dirName)) {
@@ -253,8 +241,10 @@ namespace AppCommon {
                 attrs.IsDirectory = true;
                 string extractPath = PathName.AdjustPathName(dirName, dirSep,
                     PathName.DEFAULT_REPL_CHAR);
-                Entries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
-                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, appHook));
+                ForeignEntries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
+                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, mAppHook));
+                XferEntries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
+                    FilePart.DataFork, attrs, mAppHook));
                 mSynthDirs.Add(dirName, dirName);
             }
         }
@@ -287,8 +277,10 @@ namespace AppCommon {
         /// will be descended into.
         /// </summary>
         /// <param name="fs">Filesystem reference.</param>
-        private void GenerateFromDisk(IFileSystem fs, List<IFileEntry> entries, AppHook appHook) {
-            Debug.Assert(Entries.Count == 0);
+        /// <param name="entries">List of entries to process.</param>
+        private void GenerateFromDisk(IFileSystem fs, List<IFileEntry> entries) {
+            Debug.Assert(XferEntries.Count == 0);
+            Debug.Assert(ForeignEntries.Count == 0);
             fs.PrepareFileAccess(true);
 
             IFileEntry aboveRootEntry;
@@ -299,7 +291,7 @@ namespace AppCommon {
             }
 
             foreach (IFileEntry entry in entries) {
-                GenerateDiskEntries(fs, entry, aboveRootEntry, appHook);
+                GenerateDiskEntries(fs, entry, aboveRootEntry);
             }
         }
 
@@ -311,20 +303,19 @@ namespace AppCommon {
         /// <param name="entry">File entry to process.</param>
         /// <param name="aboveRootEntry">Entry above the root, used to limit the partial path
         ///   prefix.</param>
-        /// <param name="appHook">Application hook reference.</param>
         private void GenerateDiskEntries(IFileSystem fs, IFileEntry entry,
-                IFileEntry aboveRootEntry, AppHook appHook) {
+                IFileEntry aboveRootEntry) {
             if (!mStripPaths) {
                 // Ensure we have entries for the directories that make up the path.  Windows
                 // Explorer doesn't actually require this -- it generates missing paths as
                 // needed -- but other systems might be different.  It also gives us a way to
                 // create empty directories, and a way to pass the directory file dates along.
-                AddMissingDirectories(fs, entry, aboveRootEntry, appHook);
+                AddMissingDirectories(fs, entry, aboveRootEntry);
             }
             if (entry.IsDirectory) {
                 // Current directory, if not stripped, was added above.
                 foreach (IFileEntry child in entry) {
-                    GenerateDiskEntries(fs, child, aboveRootEntry, appHook);
+                    GenerateDiskEntries(fs, child, aboveRootEntry);
                 }
             } else {
                 // We pass the original pathname through the file attribute serialization, and
@@ -338,18 +329,20 @@ namespace AppCommon {
                     extractPath = ExtractFileWorker.GetAdjPathName(entry, aboveRootEntry,
                         Path.DirectorySeparatorChar);
                 }
-                if (mStripPaths) {
-                    extractPath = Path.GetFileName(extractPath);
-                }
 
                 // Generate file attributes.  The same object will be used for both forks.
                 FileAttribs attrs = new FileAttribs(entry);
                 attrs.FullPathName = ReRootedPathName(entry, aboveRootEntry);
+                if (mStripPaths) {
+                    extractPath = Path.GetFileName(extractPath);
+                    attrs.FullPathName =
+                        PathName.GetFileName(attrs.FullPathName, attrs.FullPathSep);
+                }
 
                 if (mExportSpec == null) {
-                    CreateForExtract(fs, entry, IFileEntry.NO_ENTRY, attrs, extractPath, appHook);
+                    CreateForExtract(fs, entry, IFileEntry.NO_ENTRY, attrs, extractPath);
                 } else {
-                    CreateForExport(fs, entry, IFileEntry.NO_ENTRY, attrs, extractPath, appHook);
+                    CreateForExport(fs, entry, IFileEntry.NO_ENTRY, attrs, extractPath);
                 }
             }
         }
@@ -365,12 +358,12 @@ namespace AppCommon {
         ///   prefix.</param>
         /// <param name="appHook">Application hook reference.</param>
         private void AddMissingDirectories(IFileSystem fs, IFileEntry entry,
-                IFileEntry aboveRootEntry, AppHook appHook) {
+                IFileEntry aboveRootEntry) {
             if (entry.ContainingDir == aboveRootEntry) {
                 return;
             }
             // Recursively check parents.
-            AddMissingDirectories(fs, entry.ContainingDir, aboveRootEntry, appHook);
+            AddMissingDirectories(fs, entry.ContainingDir, aboveRootEntry);
             if (entry.IsDirectory && !mAddedDirs.ContainsKey(entry)) {
                 // Add this directory to the output list.
                 FileAttribs attrs = new FileAttribs(entry);
@@ -378,8 +371,10 @@ namespace AppCommon {
                 Debug.Assert(attrs.IsDirectory);
                 string extractPath = ExtractFileWorker.GetAdjPathName(entry, aboveRootEntry,
                     Path.DirectorySeparatorChar);
-                Entries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY, FilePart.DataFork,
-                    attrs, extractPath, mPreserveMode, null, null, appHook));
+                ForeignEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
+                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, mAppHook));
+                XferEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
+                    FilePart.DataFork, attrs, mAppHook));
                 mAddedDirs.Add(entry, entry);
             }
         }
@@ -420,66 +415,83 @@ namespace AppCommon {
 
         #endregion Disk
 
+        /// <summary>
+        /// Creates one or two entries in each of the file sets for the specified file.
+        /// </summary>
         private void CreateForExtract(object archiveOrFileSystem, IFileEntry entry,
-                IFileEntry adfEntry, FileAttribs attrs, string extractPath, AppHook appHook) {
+                IFileEntry adfEntry, FileAttribs attrs, string extractPath) {
             FilePart dataPart = mUseRawData ? FilePart.RawData : FilePart.DataFork;
             bool hasRsrcFork = HasRsrcFork(entry, adfEntry, attrs);
+
+            // Create entries for direct transfer.
+            if (entry.HasDataFork) {
+                XferEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                    dataPart, attrs, mAppHook));
+            } else if (entry.IsDiskImage) {
+                XferEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                    FilePart.DiskImage, attrs, mAppHook));
+            }
+            if (hasRsrcFork) {
+                XferEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                    FilePart.RsrcFork, attrs, mAppHook));
+            }
 
             // All we really need to do here is create entries for one or both forks with
             // the appropriate extract paths.  Filling in the contents happens later.
             switch (mPreserveMode) {
                 case ExtractFileWorker.PreserveMode.None:
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, null, appHook));
+                        ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
                     }
                     // Ignore resource fork.
                     break;
                 case ExtractFileWorker.PreserveMode.ADF:
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, null, appHook));
+                        ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
                     }
                     if (hasRsrcFork || attrs.HasTypeInfo) {
                         // Form ADF header file name.  Tag it as "resource fork".
                         string adfPath = Path.Combine(Path.GetDirectoryName(extractPath)!,
                             AppleSingle.ADF_PREFIX + Path.GetFileName(extractPath));
-                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            FilePart.RsrcFork, attrs, adfPath, mPreserveMode, null, null, appHook));
+                        ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            FilePart.RsrcFork, attrs, adfPath, mPreserveMode, null, null,
+                            mAppHook));
                     }
                     break;
                 case ExtractFileWorker.PreserveMode.AS:
                     // Form AppleSingle file name.  Output single file for both forks.
                     string asPath = extractPath + AppleSingle.AS_EXT;
-                    Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                        dataPart, attrs, asPath, mPreserveMode, null, null, appHook));
+                    ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                        dataPart, attrs, asPath, mPreserveMode, null, null, mAppHook));
                     break;
                 case ExtractFileWorker.PreserveMode.Host:
                     // Output separate files for each fork.
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, null, appHook));
+                        ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
                     }
                     if (hasRsrcFork) {
                         // Generate name for filesystem resource fork (assume Mac OS naming).
                         string rsrcPath = Path.Combine(extractPath, "..namedfork");
                         rsrcPath = Path.Combine(rsrcPath, "rsrc");
-                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                        ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             FilePart.RsrcFork, attrs, rsrcPath, mPreserveMode, null, null,
-                            appHook));
+                            mAppHook));
                     }
                     break;
                 case ExtractFileWorker.PreserveMode.NAPS:
                     string napsExt = attrs.GenerateNAPSExt();
                     if (entry.HasDataFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                        ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             dataPart, attrs, extractPath + napsExt, mPreserveMode,
-                            null, null, appHook));
+                            null, null, mAppHook));
                     }
                     if (hasRsrcFork) {
-                        Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+                        ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             FilePart.RsrcFork, attrs, extractPath + napsExt + "r", mPreserveMode,
-                            null, null, appHook));
+                            null, null, mAppHook));
                     }
                     break;
                 default:
@@ -487,9 +499,15 @@ namespace AppCommon {
             }
         }
 
+        /// <summary>
+        /// Creates a new entry in the "foreign" set for the converted file.  If the conversion
+        /// isn't possible, no entry is created.
+        /// </summary>
+        /// <remarks>
+        /// No entries are added for the "xfer" set.
+        /// </remarks>
         private void CreateForExport(object archiveOrFileSystem, IFileEntry entry,
-                IFileEntry adfEntry, FileAttribs attrs, string extractPath,
-                AppHook appHook) {
+                IFileEntry adfEntry, FileAttribs attrs, string extractPath) {
             // We need to establish what sort of conversion will take place so that we can
             // set the appropriate filename extension.  This requires opening all forks, with
             // seekable streams.
@@ -502,7 +520,7 @@ namespace AppCommon {
             Debug.Assert(mExportSpec != null);
 
             Type? expectedType = DoClipExport(archiveOrFileSystem, entry, adfEntry, attrs,
-                mUseRawData, mExportSpec, null, appHook);
+                mUseRawData, mExportSpec, null, mAppHook);
             if (expectedType == null) {
                 return;
             }
@@ -527,9 +545,9 @@ namespace AppCommon {
             // function returns.  The only thing that really matters is that the output type
             // matches, because if it doesn't then the file extension we set here will be
             // incorrect.
-            Entries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
+            ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                 FilePart.DataFork, attrs, extractPath + ext, mPreserveMode,
-                mExportSpec, expectedType, appHook));
+                mExportSpec, expectedType, mAppHook));
         }
 
         /// <summary>
@@ -537,6 +555,8 @@ namespace AppCommon {
         /// the file and return converter type information.  For the "paste" side we also do
         /// the actual conversion.
         /// </summary>
+        /// <param name="outStream">Stream to write the output to.  If null, the conversion is
+        ///   not performed.</param>
         /// <returns>Type of Converter subclass that will be used.</returns>
         public static Type? DoClipExport(object archiveOrFileSystem, IFileEntry entry,
                 IFileEntry adfEntry, FileAttribs attrs, bool useRawData,
@@ -665,12 +685,12 @@ namespace AppCommon {
 
         /// <summary>
         /// Determines whether the entry has a resource fork.  This is complicated by MacZip
-        /// and the desire to preserve ProDOS storage types.
+        /// and the desire to preserve ProDOS extended storage type status.
         /// </summary>
         private static bool HasRsrcFork(IFileEntry entry, IFileEntry adfEntry, FileAttribs attrs) {
             if (adfEntry != IFileEntry.NO_ENTRY) {
                 // MacZip entry.  See if the ADF header has a non-empty resource fork.
-                Debug.Assert(entry is Zip);
+                Debug.Assert(entry is Zip_FileEntry);
                 return attrs.RsrcLength > 0;
             }
             if (!entry.HasRsrcFork) {

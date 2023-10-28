@@ -139,8 +139,8 @@ The order in which files appear in a directory can be important, so an effort is
 preserve the order of the files.  They will generally be moved in the order in which they appear
 in the file list on screen.
 
-Copy & paste within an archive or disk image is not permitted, primarily because it's not
-possible to read from a file archive while modifying it.  (Disk images could work, so long as
+Copy & paste within a file archive or filesystem is not permitted, primarily because it's not
+possible to read from a file archive while modifying it.  (Filesystems could work, so long as
 care is taken not to overwrite one of the files being copied.)
 
 ## Drag / Copy Between Applications ##
@@ -149,26 +149,23 @@ Inter-application Drag and Copy operations can be initiated from the file list. 
 identical behavior behind the scenes: in both cases, a collection of "virtual" file references and
 metadata is collected and provided to Windows.  The file data itself is not copied to the
 clipboard.  Using virtual file streams improves performance when starting a drag or copy
-operation, and allows files to be dragged or pasted directly into other applications, such as
+operation, and allows files to be dragged or pasted directly into "foreign" applications, such as
 Windows Explorer.
 
 Data is read from the virtual streams at the time the files are dropped or pasted.  Because of
 this, files copied onto the clipboard cannot be pasted after the source archive or disk image is
-closed.  Similarly, files cannot be pasted if they are deleted from a disk image or file archive
-after being copied and before being pasted.
+closed.  Similarly, files copied to the clipboard cannot be pasted if they are deleted from a
+disk image or file archive after being copied.
 
-The application has no ability to influence how Windows Explorer handles the clipboard data, so
-the file data must be arranged in the clipboard in a way that allows it to be written to Windows
-without further action.  This requires separating data and resource forks into separate file
-entries, with filenames and file contents appropriate for Windows and the currently-selected
-attribute preservation system (NAPS, AppleSingle, etc).  When dragging or copying between
-instances of CiderPress II, it's possible to pass a second set of file attributes, including the
-unmodified filename, but the file content streams work the same way they do for Windows Explorer
-drops.  If AppleSingle preservation is selected, the receiving instance of CiderPress II will need
-to unpack the AppleSingle archive.  If the selected options are likely to lead to a loss of data,
-e.g. a ProDOS-to-ProDOS copy is done in a way that would potentially lose resource forks because
-the preservation method is set to "none", the receiving application will detect the situation
-and issue a warning before continuing.
+The application has no ability to influence how Windows Explorer handles the clipboard data
+prepared for "foreign" transfers, so the file data must be arranged in the clipboard in a way that
+allows it to be written to Windows without further action.  This requires separating data and
+resource forks into separate file entries, with filenames and file contents appropriate for Windows
+and the currently-selected attribute preservation system (NAPS, AppleSingle, etc).
+
+When dragging or copying between instances of CiderPress II, a different set of metadata and
+virtual file streams is used.  These copy both forks and all file attributes.  Certain options,
+such as "strip paths" and "use raw data", will change how the data is placed on the clipboard.
 
 Files may be dropped into the file list or the directory tree, from a drag initiated from another
 application instance or from Windows explorer.  If dropped in the file list, we check
@@ -181,10 +178,16 @@ preserve the order when copying them.  However, directory entries need to come b
 entries that use them, to ensure that the appropriate hierarchy is established before trying
 to create the files.
 
-(? May need to synthesize a set of directories when extracting partial paths from a file
-archive, since there aren't always actual directory entries in the archive.)
+### Dragging in From Windows Explorer ###
 
-### Partial Pathnames ###
+Files dragged from a Windows Explorer window are presented to CiderPress II as a list of filenames.
+This works like any other add/import operation.
+
+The exception to this is when Windows Explorer is treating a ZIP archive as if it were part of
+the filesystem.  In this case, the files are delivered as metadata and virtual file streams.
+This mode of operation is not currently supported.
+
+### Partial Pathname Handling ###
 
 Suppose we have an HFS disk image with the following set of files:
 ```
@@ -230,7 +233,7 @@ list will be extracted with their full paths.
 
 When files are copied between instances of CiderPress II, the receiving application also has an
 opportunity to strip paths from the incoming files.  (The "strip paths" option is configured
-separately for add and extract operations.)
+separately for add operations and extract operations.)
 
 ### DOS File handling ###
 
@@ -260,13 +263,14 @@ options can be set in the options bar on the right side of the window.
 [ right-side options bar to be explained elsewhere ]
 
 When transferring files between CiderPress II instances, the mode must be set to "extract".  If
-the mode is set to "export", the receiving instance will refuse to accept the files.
+the mode is set to "export", the "direct transfer" data will not be placed on the clipboard.
 
 ## Misc ##
 
 Windows does not allow drag & drop operations between applications with different privilege
-levels when UAC (User Access Control) is enabled.  If you run CiderPress II as Administrator,
-e.g. to allow access to physical media, you may not be able to drag files in and out.
+levels when UAC (User Access Control) is enabled.  Windows Explorer does not usually run as
+administrator, so if you run CiderPress II with elevated privileges, e.g. to gain access to
+physical media, you may not be able to drag files in and out.
 
-If nothing is open, dropping a file from Windows Explorer into the main application window
-will tell the application to try to open that file.
+If no archive is open in the application, dropping a file from Windows Explorer into the main
+application window will cause CiderPress II to try to open that file.

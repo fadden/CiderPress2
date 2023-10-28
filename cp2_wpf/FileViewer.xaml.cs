@@ -653,16 +653,16 @@ namespace cp2_wpf {
             string filter, ext;
             if (convOut is FancyText && !((FancyText)convOut).PreferSimple) {
                 filter = WinUtil.FILE_FILTER_RTF;
-                ext = prefix + ".rtf";
+                ext = prefix + RTFGenerator.FILE_EXT;
             } else if (convOut is SimpleText) {
                 filter = WinUtil.FILE_FILTER_TEXT;
-                ext = prefix + ".txt";
+                ext = prefix + TXTGenerator.FILE_EXT;
             } else if (convOut is CellGrid) {
                 filter = WinUtil.FILE_FILTER_CSV;
-                ext = prefix + ".csv";
+                ext = prefix + CSVGenerator.FILE_EXT;
             } else if (convOut is IBitmap) {
                 filter = WinUtil.FILE_FILTER_PNG;
-                ext = prefix + ".png";
+                ext = prefix + PNGGenerator.FILE_EXT;
             } else {
                 Debug.Assert(false, "not handling " + convOut.GetType().Name);
                 return;
