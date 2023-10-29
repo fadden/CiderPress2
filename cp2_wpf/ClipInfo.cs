@@ -16,15 +16,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Windows;
 
 using AppCommon;
-using CommonUtil;
 
 namespace cp2_wpf {
     /// <summary>
-    /// Extended attribute information added to the clipboard for the benefit of drop/paste
-    /// operations that terminate in a second copy of CiderPress II.
+    /// Extended attribute information added to the clipboard for the benefit of drag/copy
+    /// operations that originate and terminate in this application.
     /// </summary>
     [Serializable]
     internal class ClipInfo {
@@ -33,12 +34,17 @@ namespace cp2_wpf {
         public const string XFER_STREAMS_NAME = "faddenSoft:CiderPressII:st-v1";
         public static short XFER_STREAMS = RegisterFormat(XFER_STREAMS_NAME);
 
+        /// <summary>
+        /// List of ClipFileEntry objects.  We receive one of these for every fork of every
+        /// file on the clipboard.
+        /// </summary>
         public List<ClipFileEntry>? ClipEntries { get; set; } = null;
 
         // Fields split out of a CommonUtil.Version object.
         public int AppVersionMajor { get; set; }
         public int AppVersionMinor { get; set; }
         public int AppVersionPatch { get; set; }
+
 
         /// <summary>
         /// Nullary constructor, for the deserializer.
@@ -54,6 +60,22 @@ namespace cp2_wpf {
             AppVersionMajor = appVersion.Major;
             AppVersionMinor = appVersion.Minor;
             AppVersionPatch = appVersion.Patch;
+        }
+
+        /// <summary>
+        /// Returns true if we find our metadata and streams on the clipboard.
+        /// </summary>
+        public static bool IsPasteFromCP2() {
+            IDataObject dataObj = Clipboard.GetDataObject();
+            object? metaData = dataObj.GetData(XFER_METADATA_NAME);
+            if (!(metaData is MemoryStream)) {
+                return false;
+            }
+            //object? streamData = dataObj.GetData(XFER_STREAMS_NAME);
+            //if (streamData is null) {
+            //    return false;
+            //}
+            return true;
         }
 
         /// <summary>

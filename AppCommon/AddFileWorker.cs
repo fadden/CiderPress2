@@ -88,6 +88,7 @@ namespace AppCommon {
 
         private AppHook mAppHook;
 
+
         /// <summary>
         /// Constructor.
         /// </summary>

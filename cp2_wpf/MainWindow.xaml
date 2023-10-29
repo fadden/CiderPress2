@@ -200,7 +200,7 @@ limitations under the License.
         <CommandBinding Command="{StaticResource OpenPhysicalDriveCmd}"
                         Executed="OpenPhysicalDriveCmd_Executed"/>
         <CommandBinding Command="Paste"
-                        CanExecute="IsFileOpen" Executed="PasteCmd_Executed"/>
+                        CanExecute="CanPasteFiles" Executed="PasteCmd_Executed"/>
         <CommandBinding Command="{StaticResource RecentFileCmd}" x:Name="recentFileCmd"
                         Executed="RecentFileCmd_Executed"/>
         <CommandBinding Command="{StaticResource ReplacePartitionCmd}"

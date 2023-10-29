@@ -420,16 +420,20 @@ namespace AppCommon {
         /// </summary>
         private void CreateForExtract(object archiveOrFileSystem, IFileEntry entry,
                 IFileEntry adfEntry, FileAttribs attrs, string extractPath) {
-            FilePart dataPart = mUseRawData ? FilePart.RawData : FilePart.DataFork;
+            FilePart dataPart;
             bool hasRsrcFork = HasRsrcFork(entry, adfEntry, attrs);
 
             // Create entries for direct transfer.
             if (entry.HasDataFork) {
+                dataPart = mUseRawData ? FilePart.RawData : FilePart.DataFork;
                 XferEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                     dataPart, attrs, mAppHook));
             } else if (entry.IsDiskImage) {
+                dataPart = FilePart.DiskImage;
                 XferEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                     FilePart.DiskImage, attrs, mAppHook));
+            } else {
+                dataPart = FilePart.Unknown;
             }
             if (hasRsrcFork) {
                 XferEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
@@ -440,14 +444,14 @@ namespace AppCommon {
             // the appropriate extract paths.  Filling in the contents happens later.
             switch (mPreserveMode) {
                 case ExtractFileWorker.PreserveMode.None:
-                    if (entry.HasDataFork) {
+                    if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
                     }
                     // Ignore resource fork.
                     break;
                 case ExtractFileWorker.PreserveMode.ADF:
-                    if (entry.HasDataFork) {
+                    if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
                     }
@@ -468,7 +472,7 @@ namespace AppCommon {
                     break;
                 case ExtractFileWorker.PreserveMode.Host:
                     // Output separate files for each fork.
-                    if (entry.HasDataFork) {
+                    if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
                     }
@@ -483,7 +487,7 @@ namespace AppCommon {
                     break;
                 case ExtractFileWorker.PreserveMode.NAPS:
                     string napsExt = attrs.GenerateNAPSExt();
-                    if (entry.HasDataFork) {
+                    if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             dataPart, attrs, extractPath + napsExt, mPreserveMode,
                             null, null, mAppHook));

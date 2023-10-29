@@ -302,7 +302,7 @@ namespace AppCommon {
                 Stream? rsrcCopy = null;
                 try {
                     using (Stream tmpOut = TempFile.CreateTempFile()) {
-                        if (mEntry.HasDataFork) {
+                        if (mEntry.HasDataFork || mEntry.IsDiskImage) {
                             // Make copy of stream, if necessary.
                             // Open part specified for entry; should be data fork, could be
                             // raw data (or potentially even disk image).

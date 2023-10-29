@@ -387,7 +387,7 @@ namespace DiskArc.Arc {
                         break;
                 }
             }
-            Archive.AppHook.LogI("Apple" + (Archive.IsAppleDouble ? "Double" : "Single") +
+            Archive.AppHook.LogD("Scanned Apple" + (Archive.IsAppleDouble ? "Double" : "Single") +
                 " version=" + VersionNumber + " homeFS=" + HomeFS +
                 (IsLittleEndian ? " (little-endian)" : ""));
 

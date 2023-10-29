@@ -438,6 +438,10 @@ namespace cp2_wpf {
                 mMainCtrl.IsMultiFileItemSelected && ShowCenterFileList &&
                 mMainCtrl.AreFileEntriesSelected);
         }
+        private void CanPasteFiles(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+                ClipInfo.IsPasteFromCP2());
+        }
         private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.CanEditBlocks);

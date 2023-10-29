@@ -24,10 +24,12 @@
 // Things I'm unclear on:
 // - It looks like Windows can allow the local side to have a Read() callback when the
 //   implementation is in native code.  I don't know if the "write everything up front" approach
-//   used here is an implementation choice or a limitation imposed by .NET.
+//   used here is an implementation choice or a limitation imposed by .NET.  (Windows generally
+//   favors data-on-demand for the clipboard; cf. WM_RENDERFORMAT.)
 //
 // Minor edits have been made:
 //  - expanded set of supported file attributes
+//  - catch exceptions on stream I/O and report error
 //  - silence the nullability checker
 //  - add a SetData(string, string) call for convenience
 //
@@ -266,6 +268,9 @@ namespace Delay
         /// <param name="medium">A STGMEDIUM that defines the storage medium containing the data being transferred.</param>
         void System.Runtime.InteropServices.ComTypes.IDataObject.GetDataHere(ref FORMATETC format, ref STGMEDIUM medium)
         {
+            // NOTE: we end up here if we try to GetData("format") on an IStream array.  I think
+            // we could just forward the call to the underlying DataObject, but I'm not sure if
+            // that's what we want.  The current ClipHelper implementation doesn't need this.
             throw new NotImplementedException();
         }
 
@@ -412,18 +417,26 @@ namespace Delay
                         // Create IStream for data
                         var ptr = IntPtr.Zero;
                         var iStream = NativeMethods.CreateStreamOnHGlobal(IntPtr.Zero, true);
+                        int result = NativeMethods.S_OK;
                         if (streamData != null)
                         {
                             // Wrap in a .NET-friendly Stream and call provided code to fill it
                             using (var stream = new IStreamWrapper(iStream))
                             {
-                                streamData(stream);
+                                try {
+                                    // No return value; use Func<T,TResult> if we want one.
+                                    streamData(stream);
+                                } catch {
+                                    // Could be IOException, InvalidDataException, etc.  Just
+                                    // report a generic failure code.
+                                    result = NativeMethods.E_FAIL;
+                                }
                             }
                         }
                         // Return an IntPtr for the IStream
                         ptr = Marshal.GetComInterfaceForObject(iStream, typeof(IStream));
                         Marshal.ReleaseComObject(iStream);
-                        return new Tuple<IntPtr, int>(ptr, NativeMethods.S_OK);
+                        return new Tuple<IntPtr, int>(ptr, result);
                     },
                 });
         }
@@ -956,15 +969,15 @@ namespace Delay
             public const int DRAGDROP_S_DROP = 0x00040100;
             public const int DRAGDROP_S_CANCEL = 0x00040101;
             public const int DRAGDROP_S_USEDEFAULTCURSORS = 0x00040102;
-            public const int DV_E_DVASPECT = -2147221397;
-            public const int DV_E_FORMATETC = -2147221404;
-            public const int DV_E_TYMED = -2147221399;
-            public const int E_FAIL = -2147467259;
+            public const int DV_E_DVASPECT = -2147221397;           // 0x8004006B
+            public const int DV_E_FORMATETC = -2147221404;          // 0x80040064
+            public const int DV_E_TYMED = -2147221399;              // 0x80040069
+            public const int E_FAIL = -2147467259;                  // 0x80004005
             public const uint FD_ATTRIBUTES = 0x00000004;
             public const uint FD_CREATETIME = 0x00000008;
             public const uint FD_WRITESTIME = 0x00000020;
             public const uint FD_FILESIZE = 0x00000040;
-            public const int OLE_E_ADVISENOTSUPPORTED = -2147221501;
+            public const int OLE_E_ADVISENOTSUPPORTED = -2147221501;    // 0x80040003
             public const int S_OK = 0;
             public const int S_FALSE = 1;
             public const int VARIANT_FALSE = 0;

@@ -1061,28 +1061,20 @@ namespace cp2_wpf {
         }
 
         public void PasteFromClipboard() {
-            // TODO:
-            // - confirm that the clipboard contents are from us (this test should be applied
-            //   at "can execute" time)
-            // - add/import to currently-selected directory
-            Debug.WriteLine("Paste from clipboard (TODO)");
-
-            IDataObject clipData = Clipboard.GetDataObject();
-            object? data = clipData.GetData(ClipInfo.XFER_METADATA_NAME);
-            if (data is null) {
-                // TODO: could be a paste from Windows Explorer ZIP folder; check for
-                //  ClipHelper.DESC_ARRAY_FORMAT + ClipHelper.FILE_CONTENTS_FORMAT
-                //  (also need to do that on drag-in, this should be common code)
+            IDataObject dataObj = Clipboard.GetDataObject();
+            object? metaData = dataObj.GetData(ClipInfo.XFER_METADATA_NAME);
+            if (metaData is null) {
+                // TODO? handle paste from Windows Explorer ZIP folder
                 Debug.WriteLine("Didn't find " + ClipInfo.XFER_METADATA_NAME);
                 return;
             }
-            if (data is not MemoryStream) {
+            if (metaData is not MemoryStream) {
                 Debug.WriteLine("Found " + ClipInfo.XFER_METADATA_NAME + " w/o MemoryStream");
                 return;
             }
             ClipInfo clipInfo;
             try {
-                object? parsed = JsonSerializer.Deserialize((MemoryStream)data, typeof(ClipInfo));
+                object? parsed = JsonSerializer.Deserialize((MemoryStream)metaData, typeof(ClipInfo));
                 if (parsed == null) {
                     return;
                 }
@@ -1096,13 +1088,59 @@ namespace cp2_wpf {
                 return;
             }
 
-            Debug.WriteLine("Paste from v" +
-                new CommonUtil.Version(clipInfo.AppVersionMajor, clipInfo.AppVersionMinor,
-                    clipInfo.AppVersionPatch) +
-                " count=" + clipInfo.ClipEntries.Count);
-            foreach (ClipFileEntry entry in clipInfo.ClipEntries) {
-                Debug.WriteLine(" - " + entry);
+            if (clipInfo.AppVersionMajor != GlobalAppVersion.AppVersion.Major ||
+                    clipInfo.AppVersionMinor != GlobalAppVersion.AppVersion.Minor ||
+                    clipInfo.AppVersionPatch != GlobalAppVersion.AppVersion.Patch) {
+                MessageBox.Show(mMainWin,
+                    "Cannot copy & paste between different versions of the application.",
+                    "Version Mismatch", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
+            if (clipInfo.ClipEntries.Count == 0) {
+                Debug.WriteLine("Pasting empty file set");
+                return;
+            }
+            AppHook.LogI("Paste from clipboard; found " + clipInfo.ClipEntries.Count +
+                " files/forks");
+
+            // Define delegate that provides a read-only non-seekable stream for the contents
+            // of a given entry.
+            ClipPasteWorker.ClipStreamGenerator streamGen = delegate (ClipFileEntry clipEntry) {
+                int index = clipInfo.ClipEntries.IndexOf(clipEntry);
+                if (index < 0) {
+                    return null;
+                }
+                return ClipHelper.GetFileContents(dataObj, index, ClipInfo.XFER_STREAMS);
+            };
+
+            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
+                    out IFileEntry targetDir)) {
+                // We don't have an archive and (optionally) directory target selected.
+                return;
+            }
+
+            SettingsHolder settings = AppSettings.Global;
+            ClipPasteProgress prog =
+                new ClipPasteProgress(archiveOrFileSystem, daNode, targetDir, clipInfo, streamGen,
+                        AppHook) {
+                    DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
+                    EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
+                    StripPaths = settings.GetBool(AppSettings.ADD_STRIP_PATHS_ENABLED, false),
+                    RawMode = settings.GetBool(AppSettings.ADD_RAW_ENABLED, false),
+                };
+
+            // Do the extraction on a background thread so we can show progress.
+            WorkProgress workDialog = new WorkProgress(mMainWin, prog, false);
+            if (workDialog.ShowDialog() == true) {
+                mMainWin.PostNotification("Files added", true);
+            } else {
+                mMainWin.PostNotification("Cancelled", false);
+            }
+
+            // Refresh the contents of the file list.  Do this even if the operation was
+            // cancelled, because it might have completed partially.
+            RefreshDirAndFileList();
+
         }
 
         private void HandleAddImport(ConvConfig.FileConvSpec? spec) {
