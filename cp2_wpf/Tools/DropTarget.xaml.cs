@@ -108,7 +108,7 @@ namespace cp2_wpf.Tools {
                 } else if (format == ClipHelper.FILE_CONTENTS_FORMAT) {
                     // Should have been accompanied by descriptor array, and dumped with that.
                     // The data cannot be obtained from GetData(), since it's an array of streams.
-                    sb.AppendLine(": (shown in descriptor section)");
+                    sb.AppendLine(": (shown in " + ClipHelper.DESC_ARRAY_FORMAT + " section)");
                     continue;
                 } else if (format == ClipInfo.XFER_METADATA_NAME) {
                     sb.AppendLine(":");
@@ -117,7 +117,7 @@ namespace cp2_wpf.Tools {
                     DumpXferEntries(dataObj, sb);
                     continue;
                 } else if (format == ClipInfo.XFER_STREAMS_NAME) {
-                    sb.AppendLine(": (shown in metadata section)");
+                    sb.AppendLine(": (shown in " + ClipInfo.XFER_METADATA_NAME + " section)");
                     continue;
                 }
 
@@ -168,6 +168,9 @@ namespace cp2_wpf.Tools {
             TextArea = sb.ToString();
         }
 
+        /// <summary>
+        /// Dump FileGroupDescriptorW+FileContents.
+        /// </summary>
         private void DumpDescriptors(IDataObject dataObj, StringBuilder sb) {
             object? data = dataObj.GetData(ClipHelper.DESC_ARRAY_FORMAT);
             if (data is not MemoryStream) {
@@ -191,12 +194,7 @@ namespace cp2_wpf.Tools {
                             sb.Append("contents are null");
                         } else {
                             contents.Position = 0;
-                            long fileLen = 0;
-                            while (contents.ReadByte() >= 0) {
-                                // read contents...slowly
-                                fileLen++;
-                            }
-                            sb.Append("read " + fileLen + " bytes");
+                            ReadContents(contents, sb);
                         }
                     }
                     Debug.WriteLine("+ stream closed");
@@ -206,6 +204,9 @@ namespace cp2_wpf.Tools {
             }
         }
 
+        /// <summary>
+        /// Dump CiderPress II file transfer elements.
+        /// </summary>
         private void DumpXferEntries(IDataObject dataObj, StringBuilder sb) {
             object? data = dataObj.GetData(ClipInfo.XFER_METADATA_NAME);
             if (data is not MemoryStream) {
@@ -237,12 +238,7 @@ namespace cp2_wpf.Tools {
                                     sb.Append("contents are null");
                                 } else {
                                     contents.Position = 0;
-                                    long fileLen = 0;
-                                    while (contents.ReadByte() >= 0) {
-                                        // read contents...slowly
-                                        fileLen++;
-                                    }
-                                    sb.Append("read " + fileLen + " bytes");
+                                    ReadContents(contents, sb);
                                 }
                             }
                             sb.AppendLine();
@@ -259,6 +255,23 @@ namespace cp2_wpf.Tools {
                 string cereal = sr.ReadToEnd();
                 sb.AppendLine(cereal);
             }
+        }
+
+        private byte[] mReadBuf = new byte[8192];
+
+        /// <summary>
+        /// Reads the contents of the stream until EOF is reached.
+        /// </summary>
+        private void ReadContents(Stream stream, StringBuilder sb) {
+            long fileLen = 0;
+            while (true) {
+                int actual = stream.Read(mReadBuf, 0, mReadBuf.Length);
+                if (actual == 0) {
+                    break;
+                }
+                fileLen += actual;
+            }
+            sb.Append("read " + fileLen + " bytes");
         }
 
         private const int MAX_STRING = 80;

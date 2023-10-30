@@ -20,6 +20,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
+using System.Threading;
 using System.Windows;
 
 namespace cp2_wpf.WPFCommon {
@@ -83,6 +84,9 @@ namespace cp2_wpf.WPFCommon {
             }
         }
 
+        private const int STREAM_SEEK_SET = 0;
+        private const int STREAM_SEEK_CUR = 1;
+
         /// <summary>
         /// Copies the IStream into a managed stream.
         /// </summary>
@@ -101,12 +105,67 @@ namespace cp2_wpf.WPFCommon {
             int iStreamSize = (int)iStreamStat.cbSize;
 
             // read the data from the IStream into a managed byte array
+            // cf. https://stackoverflow.com/q/1958950/294248
             byte[] iStreamContent = new byte[iStreamSize];
-            iStream.Read(iStreamContent, iStreamContent.Length, IntPtr.Zero);
+
+            IntPtr argBuffer = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(long)));
+            try {
+                // See if we're seeked to the beginning.  If not, seek there.
+                iStream.Seek(0, STREAM_SEEK_CUR, argBuffer);
+                long curPosn = Marshal.ReadInt64(argBuffer);
+                if (curPosn != 0) {
+                    Debug.WriteLine("NOTE: initial IStream position=" + curPosn);
+                    iStream.Seek(0, STREAM_SEEK_SET, IntPtr.Zero);
+                }
+                iStream.Read(iStreamContent, iStreamContent.Length, argBuffer);
+                // The 3rd argument, which gets the actual number of bytes read, is documented as
+                // "pointer to ULONG", which would be 64 bits.  However, the 2nd (count) arg is
+                // only 32 bits.  The COM implementation is less capable than the interface
+                // indicates.  For little-endian only the first 32 bits matter, so I'm just
+                // grabbing those on the off chance that the underlying code only does 32 and
+                // garbage could appear in the high part of the word (plus, all the examples I
+                // can find use "int").
+                long actual = Marshal.ReadInt32(argBuffer);
+                if (actual != iStreamContent.Length) {
+                    Debug.WriteLine("Data read mismatch: expected len=" + iStreamContent.Length +
+                        " actual=" + actual);
+                }
+            } finally {
+                Marshal.FreeCoTaskMem(argBuffer);
+            }
 
             // wrap the managed byte array into a memory stream
             return new MemoryStream(iStreamContent);
         }
+
+        /// <summary>
+        /// Obtains the IStream from the clipboard, executing the code on a short-lived thread.
+        /// This is necessary because Windows clipboard operations can only be called from
+        /// Single Thread Apartment (STA) threads, and while the GUI thread qualifies, the
+        /// BackgroundWorker pool threads do not.
+        /// </summary>
+        /// <param name="index">Stream index.</param>
+        /// <param name="formatId">Clipboard format identifier.</param>
+        /// <returns>Readable stream, or null if there was an error on the remote side.</returns>
+        public static Stream? GetFileContentsSTA(int index, short formatId) {
+            // Let's not think about the performance consequences of starting a new thread for
+            // every fork of every file.  (Do we want a dedicated thread here?)
+            Stream? inStream = null;
+            Thread staThread = new Thread(
+                delegate () {
+                    // Need to query for the clipboard data here or we get an error that says the
+                    // object was marshalled for a different thread.
+                    System.Windows.IDataObject clipObj = Clipboard.GetDataObject();
+                    // The Stream will have all of the data written into it already.  The result
+                    // will be null if there was a read error on the remote side.
+                    inStream = GetFileContents(clipObj, index, formatId);
+                });
+            staThread.SetApartmentState(ApartmentState.STA);
+            staThread.Start();
+            staThread.Join();
+            return inStream;
+        }
+
 
         /// <summary>
         /// Managed representation of a FileDescriptor structure.

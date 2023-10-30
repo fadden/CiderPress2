@@ -188,6 +188,10 @@ namespace AppCommon {
                             Debug.Assert(false);
                             return;
                     }
+
+                    // Set the position back to zero.  This matters because the remote side
+                    // shares the seek pointer, and might not remember to reset the position.
+                    outStream.Position = 0;
                 }
             }
 
@@ -436,6 +440,7 @@ namespace AppCommon {
                 FilePart part, FileAttribs attribs, string extractPath,
                 ExtractFileWorker.PreserveMode preserveMode,
                 ConvConfig.FileConvSpec? exportSpec, Type? expectedType, AppHook appHook) {
+            Debug.Assert(!string.IsNullOrEmpty(attribs.FileNameOnly));
             mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, adfEntry, part, attribs,
                 preserveMode, exportSpec, expectedType, appHook);
 

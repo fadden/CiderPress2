@@ -66,6 +66,9 @@ namespace cp2_wpf.Actions {
             ClipPasteWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
                 return ProgressUtil.HandleCallback(what, "paste", mLeafNode, bkWorker);
             };
+            if (mClipInfo.ClipEntries == null) {
+                throw new NullReferenceException("No ClipEntries in ClipInfo");
+            }
             ClipPasteWorker pasteWorker = new ClipPasteWorker(mClipInfo.ClipEntries, mStreamGen,
                 cbFunc, doCompress: DoCompress, macZip: EnableMacOSZip, stripPaths: StripPaths,
                 rawMode: RawMode, mAppHook);

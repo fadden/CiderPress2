@@ -712,7 +712,7 @@ namespace DiskArc.FS {
             bool isMove = (ContainingDir != idestDir);
             bool isNewName = (mFileName != newFileName);
             if (!isMove && !isNewName) {
-                Debug.WriteLine("DoMoveFile: no-op");
+                //Debug.WriteLine("DoMoveFile: no-op");
                 return;
             }
 

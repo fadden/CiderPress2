@@ -1108,9 +1108,10 @@ namespace cp2_wpf {
             ClipPasteWorker.ClipStreamGenerator streamGen = delegate (ClipFileEntry clipEntry) {
                 int index = clipInfo.ClipEntries.IndexOf(clipEntry);
                 if (index < 0) {
+                    Debug.WriteLine("Unable to find stream index " + index);
                     return null;
                 }
-                return ClipHelper.GetFileContents(dataObj, index, ClipInfo.XFER_STREAMS);
+                return ClipHelper.GetFileContentsSTA(index, ClipInfo.XFER_STREAMS);
             };
 
             if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,

@@ -24,8 +24,8 @@
 // Things I'm unclear on:
 // - It looks like Windows can allow the local side to have a Read() callback when the
 //   implementation is in native code.  I don't know if the "write everything up front" approach
-//   used here is an implementation choice or a limitation imposed by .NET.  (Windows generally
-//   favors data-on-demand for the clipboard; cf. WM_RENDERFORMAT.)
+//   used here is an implementation choice or a limitation imposed by .NET.  The local and remote
+//   sides of an IStream share the seek pointer, so I/O would need to be coordinated.
 //
 // Minor edits have been made:
 //  - expanded set of supported file attributes
@@ -39,6 +39,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -271,6 +272,8 @@ namespace Delay
             // NOTE: we end up here if we try to GetData("format") on an IStream array.  I think
             // we could just forward the call to the underlying DataObject, but I'm not sure if
             // that's what we want.  The current ClipHelper implementation doesn't need this.
+            //
+            // We can also get here after an exception on the stream opener.
             throw new NotImplementedException();
         }
 
@@ -426,9 +429,10 @@ namespace Delay
                                 try {
                                     // No return value; use Func<T,TResult> if we want one.
                                     streamData(stream);
-                                } catch {
+                                } catch (Exception ex) {
                                     // Could be IOException, InvalidDataException, etc.  Just
                                     // report a generic failure code.
+                                    Debug.WriteLine("IStream callback failed: " + ex);
                                     result = NativeMethods.E_FAIL;
                                 }
                             }
@@ -833,7 +837,12 @@ namespace Delay
             public override long Position
             {
                 get { throw new NotImplementedException(); }
-                set { throw new NotImplementedException(); }
+                set {
+                    // This turns out to be important, because the local and remote copies of
+                    // the IStream object share the same seek pointer (unless you use
+                    // IStream::Clone).
+                    _iStream.Seek(value, NativeMethods.SEEK_STREAM_SET, IntPtr.Zero);
+                }
             }
 
             /// <summary>
@@ -982,6 +991,9 @@ namespace Delay
             public const int S_FALSE = 1;
             public const int VARIANT_FALSE = 0;
             public const int VARIANT_TRUE = -1;
+            public const int SEEK_STREAM_SET = 0;
+            public const int SEEK_STREAM_CUR = 1;
+            public const int SEEK_STREAM_END = 2;
 
             public const string CFSTR_FILECONTENTS = "FileContents";
             public const string CFSTR_FILEDESCRIPTORW = "FileGroupDescriptorW";

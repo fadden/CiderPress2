@@ -144,13 +144,33 @@ namespace CommonUtil {
         /// </summary>
         /// <param name="pathName">Full or partial pathname.</param>
         /// <param name="dirSep">Directory separator character used for this pathname.</param>
-        /// <returns></returns>
+        /// <returns>Filename.</returns>
         public static string GetFileName(string pathName, char dirSep) {
             int lastIndex = pathName.LastIndexOf(dirSep);
-            if (lastIndex < 0 || lastIndex == pathName.Length - 1) {
-                return string.Empty;
+            if (lastIndex < 0) {
+                return pathName;        // was just a filename
+            } else if (lastIndex == pathName.Length - 1) {
+                return string.Empty;    // no filename here
             } else {
                 return pathName.Substring(lastIndex + 1);
+            }
+        }
+
+        /// <summary>
+        /// Removes the last component from a pathname, leaving the directory name.  If the
+        /// pathname ends with a separator character (e.g. "/usr/local/"), only the separator
+        /// character will be removed.
+        /// </summary>
+        /// <param name="pathName">Full or partial pathname.</param>
+        /// <param name="dirSep">Directory separator character used for this pathname.</param>
+        /// <returns>Directory name, or an empty string if the pathname argument was only a
+        ///   filename.</returns>
+        public static string GetDirectoryName(string pathName, char dirSep) {
+            int lastIndex = pathName.LastIndexOf(dirSep);
+            if (lastIndex <= 0) {
+                return string.Empty;
+            } else {
+                return pathName.Substring(0, lastIndex);
             }
         }
 

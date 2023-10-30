@@ -364,18 +364,17 @@ namespace AppCommon {
                 Debug.Assert(targetDir.IsDirectory);
                 Debug.Assert(targetDir.GetFileSystem() == fileSystem);
             }
+            if (fileSystem.IsReadOnly) {
+                // Should have been caught be caller.
+                throw new Exception("target filesystem is read-only" +
+                    (fileSystem.IsDubious ? " (damage)" : ""));
+            }
 
             bool canRsrcFork = fileSystem.Characteristics.HasResourceForks;
             bool doStripPaths = StripPaths || !fileSystem.Characteristics.IsHierarchical;
             bool useRawMode = RawMode;
 
             AddFileEntry[] addEntries = GenerateSortedArray(mFileSet);
-
-            if (fileSystem.IsReadOnly) {
-                // Should have been caught be caller.
-                throw new Exception("target filesystem is read-only" +
-                    (fileSystem.IsDubious ? " (damage)" : ""));
-            }
 
             IFileEntry targetDirEnt = (targetDir == IFileEntry.NO_ENTRY) ?
                 fileSystem.GetVolDirEntry() : targetDir;
@@ -459,6 +458,9 @@ namespace AppCommon {
                         // For now, just delete and recreate the entry.
                         fileSystem.DeleteFile(newEntry);
                         newEntry = IFileEntry.NO_ENTRY;
+                    } else {
+                        // Adding a directory that already exists.
+                        Debug.Assert(addEnt.IsDirectory && newEntry.IsDirectory);
                     }
                 }
 
@@ -485,8 +487,8 @@ namespace AppCommon {
                         using (DiskFileStream outStream = fileSystem.OpenFile(newEntry,
                                 FileAccessMode.ReadWrite, part)) {
                             CopyFilePart(addEnt.FullDataPath, addEnt.DataSource, FilePart.DataFork,
-                                mFunc, progressPerc, newEntry.FullPathName,
-                                fileSystem.Characteristics.DirSep, outStream, mAppHook);
+                                progressPerc, newEntry.FullPathName,
+                                fileSystem.Characteristics.DirSep, outStream);
                         }
                     } catch {
                         // Copy or conversion failed, clean up.
@@ -502,8 +504,8 @@ namespace AppCommon {
                         using (DiskFileStream outStream = fileSystem.OpenFile(newEntry,
                                 FileAccessMode.ReadWrite, FilePart.RsrcFork)) {
                             CopyFilePart(addEnt.FullRsrcPath, addEnt.RsrcSource, FilePart.RsrcFork,
-                                mFunc, progressPerc, newEntry.FullPathName,
-                                fileSystem.Characteristics.DirSep, outStream, mAppHook);
+                                progressPerc, newEntry.FullPathName,
+                                fileSystem.Characteristics.DirSep, outStream);
                         }
                     } catch {
                         // Copy failed, clean up.
@@ -530,7 +532,7 @@ namespace AppCommon {
         /// <param name="storageDirSep">Directory separator character used in storage dir.</param>
         /// <returns>File entry for destination directory.</returns>
         /// <exception cref="IOException">Something failed.</exception>
-        private static IFileEntry CreateSubdirectories(IFileSystem fileSystem,
+        internal static IFileEntry CreateSubdirectories(IFileSystem fileSystem,
                 IFileEntry targetDirEnt, string storageDir, char storageDirSep) {
             if (string.IsNullOrEmpty(storageDir)) {
                 return targetDirEnt;
@@ -570,13 +572,13 @@ namespace AppCommon {
         /// <param name="fullPath">Path to source.</param>
         /// <param name="sourceType">Source type; could be plain or ADF/AS.</param>
         /// <param name="part">Which part we're interested in.</param>
-        /// <param name="func">Progress callback function.</param>
         /// <param name="progressPercent">Percent complete for progress update.</param>
+        /// <param name="storageName">Name of file as it appears in the filesystem.</param>
+        /// <param name="storageDirSep">Directory separator char for storageName.</param>
         /// <param name="outStream">Destination stream.</param>
-        /// <param name="appHook">Application hook reference.</param>
         private void CopyFilePart(string fullPath, AddFileEntry.SourceType sourceType,
-                FilePart part, CallbackFunc func, int progressPercent, string storageName,
-                char storageDirSep, DiskFileStream outStream, AppHook appHook) {
+                FilePart part, int progressPercent, string storageName,
+                char storageDirSep, DiskFileStream outStream) {
             Debug.Assert(part == FilePart.DataFork || part == FilePart.RsrcFork);
             Stream? outerStream = null;
             Stream? fileStream = null;
@@ -676,7 +678,7 @@ namespace AppCommon {
         /// </summary>
         /// <param name="addEnt">Source add-file entry.</param>
         /// <param name="newEntry">Destination file entry.</param>
-        private void CopyAttributes(AddFileEntry addEnt, IFileEntry newEntry) {
+        private static void CopyAttributes(AddFileEntry addEnt, IFileEntry newEntry) {
             // This test isn't ideal, because the Has*Types properties aren't necessarily fixed
             // for all formats.  It should be correct for HFS-only formats though, and we're
             // calling here after filesystem entries are fully-formed.
