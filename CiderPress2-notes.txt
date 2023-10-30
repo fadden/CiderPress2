@@ -139,9 +139,9 @@ The order in which files appear in a directory can be important, so an effort is
 preserve the order of the files.  They will generally be moved in the order in which they appear
 in the file list on screen.
 
-Copy & paste within a file archive or filesystem is not permitted, primarily because it's not
-possible to read from a file archive while modifying it.  (Filesystems could work, so long as
-care is taken not to overwrite one of the files being copied.)
+Copy & paste within a file archive is not permitted, because it's not possible to read from an
+entry while modifying the archive.  Copy & paste within a disk image is allowed, but attempting
+to copy a file onto itself will fail.
 
 ## Drag / Copy Between Applications ##
 

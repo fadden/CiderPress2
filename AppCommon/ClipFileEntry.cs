@@ -397,15 +397,10 @@ namespace AppCommon {
         public long OutputLength { get; set; }
 
         /// <summary>
-        /// Preservation mode.  For app-to-app transfers, the remote side needs this to tell it
-        /// how to interpret the contents of the incoming file stream.
+        /// Hash code for object on source side.  Only useful when detecting self-overwrite
+        /// for copy & paste within a single application instance.
         /// </summary>
-        /// <remarks>
-        /// This could be "global", held in the ClipFileSet, but having it here costs little and
-        /// ensures that we have all of the pieces needed to reconstruct the data in one place.
-        /// </remarks>
-        //public ExtractFileWorker.PreserveMode Preserve { get; set; } =
-        //    ExtractFileWorker.PreserveMode.Unknown;
+        public int EntryHashCode { get; set; }
 
         // TODO? sparse map to preserve DOS file structure
 
@@ -452,6 +447,7 @@ namespace AppCommon {
             Attribs = attribs;
             ExtractPath = extractPath;
             OutputLength = mStreamGen.GetOutputLength();
+            EntryHashCode = entry.GetHashCode();
         }
 
         /// <summary>

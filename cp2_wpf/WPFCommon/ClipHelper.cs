@@ -119,12 +119,7 @@ namespace cp2_wpf.WPFCommon {
                 }
                 iStream.Read(iStreamContent, iStreamContent.Length, argBuffer);
                 // The 3rd argument, which gets the actual number of bytes read, is documented as
-                // "pointer to ULONG", which would be 64 bits.  However, the 2nd (count) arg is
-                // only 32 bits.  The COM implementation is less capable than the interface
-                // indicates.  For little-endian only the first 32 bits matter, so I'm just
-                // grabbing those on the off chance that the underlying code only does 32 and
-                // garbage could appear in the high part of the word (plus, all the examples I
-                // can find use "int").
+                // "pointer to ULONG", but that's in the C++ sense (32-bit value).
                 long actual = Marshal.ReadInt32(argBuffer);
                 if (actual != iStreamContent.Length) {
                     Debug.WriteLine("Data read mismatch: expected len=" + iStreamContent.Length +
@@ -147,18 +142,19 @@ namespace cp2_wpf.WPFCommon {
         /// <param name="index">Stream index.</param>
         /// <param name="formatId">Clipboard format identifier.</param>
         /// <returns>Readable stream, or null if there was an error on the remote side.</returns>
-        public static Stream? GetFileContentsSTA(int index, short formatId) {
-            // Let's not think about the performance consequences of starting a new thread for
-            // every fork of every file.  (Do we want a dedicated thread here?)
+        public static Stream? GetClipboardContentsSTA(int index, short formatId) {
+            // Starting a new thread for every fork of every file is probably suboptimal.
+            // We may want to have a dedicated thread for the span of a single operation.
             Stream? inStream = null;
             Thread staThread = new Thread(
                 delegate () {
                     // Need to query for the clipboard data here or we get an error that says the
-                    // object was marshalled for a different thread.
-                    System.Windows.IDataObject clipObj = Clipboard.GetDataObject();
+                    // object was marshalled for a different thread (RPC_E_WRONG_THREAD).
+                    System.Windows.IDataObject dataObj = Clipboard.GetDataObject();
+
                     // The Stream will have all of the data written into it already.  The result
                     // will be null if there was a read error on the remote side.
-                    inStream = GetFileContents(clipObj, index, formatId);
+                    inStream = GetFileContents(dataObj, index, formatId);
                 });
             staThread.SetApartmentState(ApartmentState.STA);
             staThread.Start();

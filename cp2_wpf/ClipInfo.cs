@@ -45,6 +45,8 @@ namespace cp2_wpf {
         public int AppVersionMinor { get; set; }
         public int AppVersionPatch { get; set; }
 
+        public int ProcessId { get; set; }
+
 
         /// <summary>
         /// Nullary constructor, for the deserializer.
@@ -60,13 +62,15 @@ namespace cp2_wpf {
             AppVersionMajor = appVersion.Major;
             AppVersionMinor = appVersion.Minor;
             AppVersionPatch = appVersion.Patch;
+            ProcessId = Process.GetCurrentProcess().Id;
         }
 
         /// <summary>
-        /// Returns true if we find our metadata and streams on the clipboard.
+        /// Returns true if we find our metadata and streams on the clipboard or in a drop.
         /// </summary>
-        public static bool IsPasteFromCP2() {
-            IDataObject dataObj = Clipboard.GetDataObject();
+        /// <param name="dropObject">Data object from drop, or null to check clipboard.</param>
+        public static bool IsDataFromCP2(IDataObject? dropObject) {
+            IDataObject dataObj = (dropObject == null) ? Clipboard.GetDataObject() : dropObject;
             object? metaData = dataObj.GetData(XFER_METADATA_NAME);
             if (!(metaData is MemoryStream)) {
                 return false;

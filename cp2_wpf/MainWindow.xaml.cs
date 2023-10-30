@@ -440,7 +440,7 @@ namespace cp2_wpf {
         }
         private void CanPasteFiles(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
-                ClipInfo.IsPasteFromCP2());
+                ClipInfo.IsDataFromCP2(null));
         }
         private void CanEditBlocks(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
@@ -568,7 +568,7 @@ namespace cp2_wpf {
             mMainCtrl.ReplacePartition();
         }
         private void PasteCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            mMainCtrl.PasteFromClipboard();
+            mMainCtrl.PasteOrDrop(null, IFileEntry.NO_ENTRY);
         }
         private void RecentFileCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             int recentIndex;
@@ -1442,8 +1442,9 @@ namespace cp2_wpf {
                 // File drop from Windows Explorer.
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 mMainCtrl.AddFileDrop(dropTarget, files);
+            } else if (ClipInfo.IsDataFromCP2(e.Data)) {
+                mMainCtrl.PasteOrDrop(e.Data, dropTarget);
             } else {
-                // TODO: handle WinExp ZIP folder - share Paste code
                 Debug.WriteLine("FL no valid drop");
             }
         }
@@ -1499,7 +1500,7 @@ namespace cp2_wpf {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 mMainCtrl.AddFileDrop(dropTarget, files);
             } else {
-                Debug.WriteLine("FL no valid drop");
+                Debug.WriteLine("DT no valid drop");
             }
         }
 

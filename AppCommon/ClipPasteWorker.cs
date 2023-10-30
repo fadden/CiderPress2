@@ -73,6 +73,12 @@ namespace AppCommon {
         /// </summary>
         private CallbackFunc mFunc;
 
+        /// <summary>
+        /// Used to determine if we're copying files onto themselves (files can only be open in
+        /// one process at a time, so if the PID matches then we can use the object hashes).
+        /// </summary>
+        private bool mIsSameProcess;
+
         private List<ClipFileEntry> mClipEntries;
 
         private ClipStreamGenerator mClipStreamGen;
@@ -85,7 +91,7 @@ namespace AppCommon {
 
         public ClipPasteWorker(List<ClipFileEntry> clipEntries, ClipStreamGenerator clipStreamGen,
                 CallbackFunc func, bool doCompress, bool macZip, bool stripPaths, bool rawMode,
-                AppHook appHook) {
+                bool isSameProcess, AppHook appHook) {
             mClipEntries = clipEntries;
             mClipStreamGen = clipStreamGen;
             mFunc = func;
@@ -93,6 +99,7 @@ namespace AppCommon {
             EnableMacOSZip = macZip;
             StripPaths = stripPaths;
             RawMode = rawMode;
+            mIsSameProcess = isSameProcess;
             mAppHook = appHook;
         }
 
@@ -184,6 +191,9 @@ namespace AppCommon {
                 // Add the new file to subDirEnt.  See if it already exists.
                 string adjName = fileSystem.AdjustFileName(storageName);
                 if (fileSystem.TryFindFileEntry(subDirEnt, adjName, out IFileEntry newEntry)) {
+                    if (mIsSameProcess && newEntry.GetHashCode() == clipEntry.EntryHashCode) {
+                        throw new Exception("Cannot ovewrite entry with itself");
+                    }
                     if (clipEntry.Attribs.IsDirectory && !newEntry.IsDirectory) {
                         throw new Exception("Cannot replace non-directory '" + newEntry.FileName +
                             "' with directory");

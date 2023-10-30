@@ -69,9 +69,10 @@ namespace cp2_wpf.Actions {
             if (mClipInfo.ClipEntries == null) {
                 throw new NullReferenceException("No ClipEntries in ClipInfo");
             }
+            bool isSameProcess = (Process.GetCurrentProcess().Id == mClipInfo.ProcessId);
             ClipPasteWorker pasteWorker = new ClipPasteWorker(mClipInfo.ClipEntries, mStreamGen,
                 cbFunc, doCompress: DoCompress, macZip: EnableMacOSZip, stripPaths: StripPaths,
-                rawMode: RawMode, mAppHook);
+                rawMode: RawMode, isSameProcess: isSameProcess, mAppHook);
 
             if (mArchiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)mArchiveOrFileSystem;

@@ -1060,8 +1060,11 @@ namespace cp2_wpf {
             HandleAddImport(null);
         }
 
-        public void PasteFromClipboard() {
-            IDataObject dataObj = Clipboard.GetDataObject();
+        /// <summary>
+        /// Handles paste and file-list drop operations.
+        /// </summary>
+        public void PasteOrDrop(IDataObject? dropObj, IFileEntry dropTarget) {
+            IDataObject dataObj = (dropObj != null) ? dropObj : Clipboard.GetDataObject();
             object? metaData = dataObj.GetData(ClipInfo.XFER_METADATA_NAME);
             if (metaData is null) {
                 // TODO? handle paste from Windows Explorer ZIP folder
@@ -1103,7 +1106,7 @@ namespace cp2_wpf {
             AppHook.LogI("Paste from clipboard; found " + clipInfo.ClipEntries.Count +
                 " files/forks");
 
-            // Define delegate that provides a read-only non-seekable stream for the contents
+            // Define a delegate that provides a read-only non-seekable stream for the contents
             // of a given entry.
             ClipPasteWorker.ClipStreamGenerator streamGen = delegate (ClipFileEntry clipEntry) {
                 int index = clipInfo.ClipEntries.IndexOf(clipEntry);
@@ -1111,13 +1114,20 @@ namespace cp2_wpf {
                     Debug.WriteLine("Unable to find stream index " + index);
                     return null;
                 }
-                return ClipHelper.GetFileContentsSTA(index, ClipInfo.XFER_STREAMS);
+                if (dropObj == null) {
+                    return ClipHelper.GetClipboardContentsSTA(index, ClipInfo.XFER_STREAMS);
+                } else {
+                    return ClipHelper.GetFileContents(dropObj, index, ClipInfo.XFER_STREAMS);
+                }
             };
 
             if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
                     out IFileEntry targetDir)) {
                 // We don't have an archive and (optionally) directory target selected.
                 return;
+            }
+            if (dropTarget != IFileEntry.NO_ENTRY && dropTarget.IsDirectory) {
+                targetDir = dropTarget;
             }
 
             SettingsHolder settings = AppSettings.Global;
@@ -1141,7 +1151,6 @@ namespace cp2_wpf {
             // Refresh the contents of the file list.  Do this even if the operation was
             // cancelled, because it might have completed partially.
             RefreshDirAndFileList();
-
         }
 
         private void HandleAddImport(ConvConfig.FileConvSpec? spec) {
@@ -1161,23 +1170,24 @@ namespace cp2_wpf {
                 return;
             }
             AppSettings.Global.SetString(AppSettings.LAST_ADD_DIR, fileDlg.BasePath);
-            AddPaths(fileDlg.SelectedPaths, spec);
+            AddPaths(fileDlg.SelectedPaths, IFileEntry.NO_ENTRY, spec);
         }
 
         /// <summary>
         /// Handles file drop.
         /// </summary>
-        /// <param name="dropTarget">File entry onto which the files were dropped.</param>
+        /// <param name="dropTarget">File entry onto which the files were dropped, or
+        ///   NO_ENTRY for archives.</param>
         /// <param name="pathNames">List of pathnames to add.</param>
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
-            // TODO: pay attention to dropTarget; will be NO_ENTRY for IArchive
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
             ConvConfig.FileConvSpec? spec = null;       // TODO: import if configured
-            AddPaths(pathNames, spec);
+            AddPaths(pathNames, dropTarget, spec);
         }
 
-        private void AddPaths(string[] pathNames, ConvConfig.FileConvSpec? importSpec) {
+        private void AddPaths(string[] pathNames, IFileEntry dropTarget,
+                ConvConfig.FileConvSpec? importSpec) {
             Debug.WriteLine("Add paths (importSpec=" + importSpec + "):");
             foreach (string path in pathNames) {
                 Debug.WriteLine("  " + path);
@@ -1187,6 +1197,9 @@ namespace cp2_wpf {
                     out IFileEntry targetDir)) {
                 // We don't have an archive and (optionally) directory target selected.
                 return;
+            }
+            if (dropTarget != IFileEntry.NO_ENTRY && dropTarget.IsDirectory) {
+                targetDir = dropTarget;
             }
 
             // Since we're dragging files out of an explorer window, all files should have the
