@@ -149,6 +149,15 @@ namespace cp2_wpf {
             }
         }
 
+        public bool EnableDOSTextConv {
+            get { return mSettings.GetBool(AppSettings.DOS_TEXT_CONV_ENABLED, false); }
+            set {
+                mSettings.SetBool(AppSettings.DOS_TEXT_CONV_ENABLED, value);
+                OnPropertyChanged();
+                IsDirty = true;
+            }
+        }
+
         private void ConfigureImportOptions_Click(object sender, RoutedEventArgs e) {
             SettingsHolder settings = new SettingsHolder(mSettings);
             EditConvertOpts dialog = new EditConvertOpts(this, false, settings);

@@ -59,8 +59,10 @@ namespace AppCommon {
         public delegate CallbackFacts.Results CallbackFunc(CallbackFacts what, object? obj);
 
         private CallbackFunc mFunc;
-        private AppHook mAppHook;
+
         private byte[]? mCopyBuf = null;
+
+        private AppHook mAppHook;
 
 
         /// <summary>
@@ -230,6 +232,7 @@ namespace AppCommon {
 
                 // Set up data fork part.
                 if (srcEntry.HasDataFork) {
+                    // TODO? handle DOS text conversions
                     CopyFileSource cpSource = new CopyFileSource(srcObj, srcEntry,
                         FilePart.DataFork, false, mFunc, dataPerc, mAppHook);
                     dstArchive.AddPart(newEntry, FilePart.DataFork, cpSource, fmt);

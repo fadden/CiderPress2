@@ -1184,11 +1184,12 @@ archives that need to be rewritten.
 #### `--convert-dos-text` (default), `--no-convert-dos-text`
 
 Converts text files that are copied to or from a DOS volume.  High ASCII
-is added or removed.  End-of-line characters are not touched.
+is added or removed.  End-of-line characters are not otherwise altered.
 
-This option is currently only available for the `copy` command.  To get
-the same effect when adding or extracting files, use the `import` and
-`export` commands.
+This option is currently only meaningful for the `copy` command, and is only
+enabled when copying to a filesystem (i.e. not to a file archive).  To get the
+same effect when adding or extracting files, use the `import` or `export`
+command.
 
 #### `--depth={shallow,subvol,max}` (default=shallow)
 

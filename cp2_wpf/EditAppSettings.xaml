@@ -84,6 +84,10 @@ limitations under the License.
                                         Click="ConfigureExportOptions_Click"/>
                             </StackPanel>
                         </GroupBox>
+
+                        <CheckBox Content="Enable DOS text conversion" Margin="0,4,0,0"
+                                  ToolTip="Convert DOS text files when copying and pasting between filesystems"
+                                  IsChecked="{Binding EnableDOSTextConv}"/>
                     </StackPanel>
 
                     <CheckBox Grid.Column="0" Grid.Row="4" Content="Enable DEBUG menu" Margin="4,16,0,0"

@@ -53,6 +53,7 @@ namespace cp2_wpf {
 
         // File handling features.
         public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
+        public const string DOS_TEXT_CONV_ENABLED = "dos-text-conv-enabled";
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";
 
         // Add/extract/import/export.

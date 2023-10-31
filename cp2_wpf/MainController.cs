@@ -1149,6 +1149,7 @@ namespace cp2_wpf {
                         AppHook) {
                     DoCompress = settings.GetBool(AppSettings.ADD_COMPRESS_ENABLED, true),
                     EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
+                    ConvertDOSText = settings.GetBool(AppSettings.DOS_TEXT_CONV_ENABLED, false),
                     StripPaths = settings.GetBool(AppSettings.ADD_STRIP_PATHS_ENABLED, false),
                     RawMode = settings.GetBool(AppSettings.ADD_RAW_ENABLED, false),
                 };

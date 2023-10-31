@@ -105,9 +105,6 @@ Utilities such as NuLib2 and the original CiderPress blend the operations
 together, which can lead to some ambiguous behavior.
 
 
------
-[ future design, not yet implemented ]
-
 # Drag & Drop, Copy & Paste #
 
 There are two basic scenarios for drag & drop: in-app and inter-app.  Drag & drop within the
@@ -235,7 +232,7 @@ When files are copied between instances of CiderPress II, the receiving applicat
 opportunity to strip paths from the incoming files.  (The "strip paths" option is configured
 separately for add operations and extract operations.)
 
-### DOS File handling ###
+### DOS 3.x File Handling ###
 
 There are two additional considerations when working with files on DOS disks: "raw" mode and
 text file character conversion.
@@ -246,9 +243,12 @@ enabled for DOS-to-DOS transfers and disabled for anything else.  Setting it on 
 side is not necessary, as the mode flag is passed along with the extended attribute data.
 
 DOS text files have the high bit set on every character, while ProDOS and other filesystems store
-text files with the high bit clear.  This conversion is performed when copying files between
-instances of CiderPress II, but not when dropping or pasting in Windows Explorer or other
-applications.
+text files with the high bit clear.  A conversion can optionally be applied when copying and
+pasting files within or between instances of CiderPress II.  The conversion does not affect files
+copied to or from other applications, such as Windows Explorer, but that can be accomplished using
+the import/export text feature.  The conversion is only enabled when copying to a filesystem,
+e.g. from DOS to ProDOS, ProDOS to DOS, or NuFX to DOS, but not DOS to NuFX.  The
+"Convert DOS Text" option must be enabled in the application settings on the receiving side.
 
 ## Add/Extract vs. Import/Export ##
 

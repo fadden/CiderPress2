@@ -58,6 +58,11 @@ namespace AppCommon {
         public bool EnableMacOSZip { get; set; } = false;
 
         /// <summary>
+        /// If set, convert text files when transferring them to or from DOS filesystems.
+        /// </summary>
+        public bool ConvertDOSText { get; set; } = true;
+
+        /// <summary>
         /// If set, strip pathnames off of files before adding them.  For a filesystem, all
         /// files will be added to the target directory.
         /// </summary>
@@ -83,6 +88,8 @@ namespace AppCommon {
 
         private ClipStreamGenerator mClipStreamGen;
 
+        private byte[]? mCopyBuf = null;
+
         /// <summary>
         /// Application hook reference.
         /// </summary>
@@ -90,13 +97,14 @@ namespace AppCommon {
 
 
         public ClipPasteWorker(List<ClipFileEntry> clipEntries, ClipStreamGenerator clipStreamGen,
-                CallbackFunc func, bool doCompress, bool macZip, bool stripPaths, bool rawMode,
-                bool isSameProcess, AppHook appHook) {
+                CallbackFunc func, bool doCompress, bool macZip, bool convDosText, bool stripPaths,
+                bool rawMode, bool isSameProcess, AppHook appHook) {
             mClipEntries = clipEntries;
             mClipStreamGen = clipStreamGen;
             mFunc = func;
             DoCompress = doCompress;
             EnableMacOSZip = macZip;
+            ConvertDOSText = convDosText;
             StripPaths = stripPaths;
             RawMode = rawMode;
             mIsSameProcess = isSameProcess;
@@ -230,6 +238,7 @@ namespace AppCommon {
                     DoCompress ? CompressionFormat.Default : CompressionFormat.Uncompressed;
                 int progressPerc = (100 * dataIdx) / mClipEntries.Count;
                 if (dataPart != null) {
+                    // TODO? handle DOS text conversions
                     ClipFileSource clSource = new ClipFileSource(adjPath,
                         archive.Characteristics.DefaultDirSep, dataPart, dataPart.Part,
                         mFunc, progressPerc, mClipStreamGen, mAppHook);
@@ -486,7 +495,8 @@ namespace AppCommon {
                         using (DiskFileStream outStream = fileSystem.OpenFile(newEntry,
                                 FileAccessMode.ReadWrite, dataPart.Part)) {
                             CopyFilePart(dataPart, progressPerc, newEntry.FullPathName,
-                                newEntry.DirectorySeparatorChar, outStream);
+                                newEntry.DirectorySeparatorChar,
+                                GetDOSConvMode(dataPart, fileSystem is DiskArc.FS.DOS), outStream);
                         }
                     } catch {
                         // Copy or conversion failed, clean up.
@@ -502,7 +512,8 @@ namespace AppCommon {
                         using (DiskFileStream outStream = fileSystem.OpenFile(newEntry,
                                 FileAccessMode.ReadWrite, rsrcPart.Part)) {
                             CopyFilePart(rsrcPart, progressPerc, newEntry.FullPathName,
-                                newEntry.DirectorySeparatorChar, outStream);
+                                newEntry.DirectorySeparatorChar,
+                                CallbackFacts.DOSConvMode.None, outStream);
                         }
                     } catch {
                         // Copy failed, clean up.
@@ -521,6 +532,28 @@ namespace AppCommon {
         }
 
         /// <summary>
+        /// Calculates the DOS conversion mode.
+        /// </summary>
+        /// <param name="srcEntry">Entry for file source.</param>
+        /// <param name="targetIsDOS">True if the destination is a DOS filesystem.</param>
+        /// <returns>DOS text conversion mode.</returns>
+        private CallbackFacts.DOSConvMode GetDOSConvMode(ClipFileEntry srcEntry, bool targetIsDOS) {
+            if (!ConvertDOSText || srcEntry.Attribs.FileType != FileAttribs.FILE_TYPE_TXT) {
+                // Not enabled, or not a text file.
+                return CallbackFacts.DOSConvMode.None;
+            }
+            bool srcIsDOS = (srcEntry.FSType == FileSystemType.DOS32 ||
+                srcEntry.FSType == FileSystemType.DOS33);
+            if (srcIsDOS && !targetIsDOS) {
+                return CallbackFacts.DOSConvMode.FromDOS;
+            } else if (!srcIsDOS && targetIsDOS) {
+                return CallbackFacts.DOSConvMode.ToDOS;
+            } else {
+                return CallbackFacts.DOSConvMode.None;
+            }
+        }
+
+        /// <summary>
         /// Copies a part (i.e fork) of a file to a disk image file stream.
         /// </summary>
         /// <param name="clipEntry">Clip file entry for this file part.</param>
@@ -530,7 +563,8 @@ namespace AppCommon {
         /// <param name="outStream">Destination stream.</param>
         /// <exception cref="IOException">Error opening source stream.</exception>
         private void CopyFilePart(ClipFileEntry clipEntry, int progressPercent,
-                string storageName, char storageDirSep, DiskFileStream outStream) {
+                string storageName, char storageDirSep, CallbackFacts.DOSConvMode dosConvMode,
+                DiskFileStream outStream) {
             CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.Progress);
             facts.OrigPathName = clipEntry.Attribs.FullPathName;
             facts.OrigDirSep = clipEntry.Attribs.FullPathSep;
@@ -538,14 +572,42 @@ namespace AppCommon {
             facts.NewDirSep = storageDirSep;
             facts.ProgressPercent = progressPercent;
             facts.Part = clipEntry.Part;
+            facts.DOSConv = dosConvMode;
             mFunc(facts);
+
+            if (mCopyBuf == null) {
+                mCopyBuf = new byte[32768];
+            }
 
             using (Stream? inStream = mClipStreamGen(clipEntry)) {
                 if (inStream == null) {
                     throw new IOException("Unable to open source stream");
                 }
-                // Simply copy the data.
-                inStream.CopyTo(outStream);
+                while (true) {
+                    int actual = inStream.Read(mCopyBuf, 0, mCopyBuf.Length);
+                    if (actual == 0) {
+                        break;      // EOF
+                    }
+
+                    switch (dosConvMode) {
+                        case CallbackFacts.DOSConvMode.FromDOS:
+                            for (int i = 0; i < actual; i++) {
+                                mCopyBuf[i] &= 0x7f;        // clear high bit on all values
+                            }
+                            break;
+                        case CallbackFacts.DOSConvMode.ToDOS:
+                            for (int i = 0; i < actual; i++) {
+                                if (mCopyBuf[i] != 0x00) {  // set high bit on everything but NULs
+                                    mCopyBuf[i] |= 0x80;
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+
+                    outStream.Write(mCopyBuf, 0, actual);
+                }
             }
         }
     }

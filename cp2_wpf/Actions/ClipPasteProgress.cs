@@ -37,6 +37,7 @@ namespace cp2_wpf.Actions {
 
         public bool DoCompress { get; set; }
         public bool EnableMacOSZip { get; set; }
+        public bool ConvertDOSText { get; set; }
         public bool StripPaths { get; set; }
         public bool RawMode { get; set; }
 
@@ -71,7 +72,8 @@ namespace cp2_wpf.Actions {
             }
             bool isSameProcess = (Process.GetCurrentProcess().Id == mClipInfo.ProcessId);
             ClipPasteWorker pasteWorker = new ClipPasteWorker(mClipInfo.ClipEntries, mStreamGen,
-                cbFunc, doCompress: DoCompress, macZip: EnableMacOSZip, stripPaths: StripPaths,
+                cbFunc, doCompress: DoCompress, macZip: EnableMacOSZip,
+                convDosText: ConvertDOSText, stripPaths: StripPaths,
                 rawMode: RawMode, isSameProcess: isSameProcess, mAppHook);
 
             if (mArchiveOrFileSystem is IArchive) {
