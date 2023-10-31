@@ -673,6 +673,8 @@ namespace AppCommon {
                     }
                     if (convOutput is IBitmap) {
                         return typeof(IBitmap);
+                    } else if (convOutput is FancyText && ((FancyText)convOutput).PreferSimple) {
+                        return typeof(SimpleText);
                     } else {
                         return convOutput.GetType();
                     }

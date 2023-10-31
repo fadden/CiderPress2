@@ -1195,8 +1195,7 @@ namespace cp2_wpf {
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
-            ConvConfig.FileConvSpec? spec = null;       // TODO: import if configured
-            AddPaths(pathNames, dropTarget, spec);
+            AddPaths(pathNames, dropTarget, GetImportSpec());
         }
 
         private void AddPaths(string[] pathNames, IFileEntry dropTarget,
@@ -1632,6 +1631,29 @@ namespace cp2_wpf {
             HandleExtractExport(GetExportSpec());
         }
 
+        private ConvConfig.FileConvSpec? GetImportSpec() {
+            string convTag = mMainWin.ImportConvTag;
+            string settingKey = AppSettings.IMPORT_SETTING_PREFIX + convTag;
+            string convSettings = AppSettings.Global.GetString(settingKey, string.Empty);
+
+            ConvConfig.FileConvSpec? spec;
+            if (string.IsNullOrEmpty(convSettings)) {
+                spec = ConvConfig.CreateSpec(convTag);
+            } else {
+                spec = ConvConfig.CreateSpec(convTag + "," + convSettings);
+            }
+            if (spec == null) {
+                // String parsing failure.  Use default options.
+                Debug.Assert(false);
+                AppHook.LogW("Failed to parse converter settings for " + convTag + " '" +
+                    convSettings + "'");
+                spec = ConvConfig.CreateSpec(convTag);
+                Debug.Assert(spec != null);
+            }
+            Debug.WriteLine("Import spec: " + spec);
+            return spec;
+        }
+
         private ConvConfig.FileConvSpec? GetExportSpec() {
             string convTag =
                 mMainWin.IsExportBestChecked ? ConvConfig.BEST : mMainWin.ExportConvTag;
@@ -1845,26 +1867,7 @@ namespace cp2_wpf {
         /// Handles Actions : Export Files
         /// </summary>
         public void ImportFiles() {
-            string convTag = mMainWin.ImportConvTag;
-            string settingKey = AppSettings.IMPORT_SETTING_PREFIX + convTag;
-            string convSettings = AppSettings.Global.GetString(settingKey, string.Empty);
-
-            ConvConfig.FileConvSpec? spec;
-            if (string.IsNullOrEmpty(convSettings)) {
-                spec = ConvConfig.CreateSpec(convTag);
-            } else {
-                spec = ConvConfig.CreateSpec(convTag + "," + convSettings);
-            }
-            if (spec == null) {
-                // String parsing failure.  Use default options.
-                Debug.Assert(false);
-                AppHook.LogW("Failed to parse converter settings for " + convTag + " '" +
-                    convSettings + "'");
-                spec = ConvConfig.CreateSpec(convTag);
-                Debug.Assert(spec != null);
-            }
-            Debug.WriteLine("Export spec: " + spec);
-            HandleAddImport(spec);
+            HandleAddImport(GetImportSpec());
         }
 
         /// <summary>
