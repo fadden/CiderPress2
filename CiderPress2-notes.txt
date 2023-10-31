@@ -260,6 +260,9 @@ A simple button on the toolbar determines whether "extract" or "export" mode wil
 The behavior is otherwise the same as it would be if that menu command were chosen.  The various
 options can be set in the options bar on the right side of the window.
 
+If the export conversion mode is set to a specific type, rather than "best", then only the
+items suited for conversion will be exported.
+
 [ right-side options bar to be explained elsewhere ]
 
 When transferring files between CiderPress II instances, the mode must be set to "extract".  If

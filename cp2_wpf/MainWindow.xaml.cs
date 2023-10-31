@@ -598,6 +598,9 @@ namespace cp2_wpf {
         private void ScanForSubVolCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.ScanForSubVol();
         }
+        private void SelectAllCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            fileListDataGrid.SelectAll();
+        }
         private void ShowDirListCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             PreferSingleDirList = true;
             if (!ShowSingleDirFileList) {

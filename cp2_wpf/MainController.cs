@@ -1705,7 +1705,7 @@ namespace cp2_wpf {
         internal VirtualFileDataObject GenerateVFDO() {
             DataGrid dataGrid = mMainWin.fileListDataGrid;
             if (dataGrid.SelectedItems.Count == 0) {
-                Debug.Assert(false);        // not expected; continue anyway to create empty obj
+                // continue anyway to create empty obj
             }
 
             List<IFileEntry> entries = new List<IFileEntry>();
@@ -1749,6 +1749,9 @@ namespace cp2_wpf {
             }
 
             // Configure the virtual file descriptors that transmit the file contents.
+            // The start/end actions on the VFDO only work if the drop *target* supports
+            // drop as an asynchronous operation.  So they'll fire if dragging into Windows
+            // Explorer but not into another CP2 window, unless we figure that part out.
             List<ClipFileEntry> clipEntries = clipSet.ForeignEntries;
             VirtualFileDataObject vfdo = new VirtualFileDataObject();
             VirtualFileDataObject.FileDescriptor[] vfds =

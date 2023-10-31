@@ -213,6 +213,8 @@ limitations under the License.
                         CanExecute="IsNibbleImageSelected" Executed="ScanForBadBlocksCmd_Executed"/>
         <CommandBinding Command="{StaticResource ScanForSubVolCmd}"
                         CanExecute="IsFileSystemSelected" Executed="ScanForSubVolCmd_Executed"/>
+        <CommandBinding Command="SelectAll"
+                        CanExecute="IsFileOpen" Executed="SelectAllCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowDirListCmd}"
                         CanExecute="IsFileOpen" Executed="ShowDirListCmd_Executed"/>
         <CommandBinding Command="{StaticResource ShowFullListCmd}"
