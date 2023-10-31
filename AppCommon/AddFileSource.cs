@@ -27,8 +27,6 @@ namespace AppCommon {
     /// AppleSingle/AppleDouble.
     /// </summary>
     public class AddFileSource : IPartSource {
-        private bool mDisposed;
-
         private string mFullPath;
         private AddFileEntry.SourceType mSourceType;
         private FilePart mPart;
@@ -39,6 +37,8 @@ namespace AppCommon {
         private FileConv.Importer? mImporter;
         private Dictionary<string, string>? mImportOptions;
         private AppHook mAppHook;
+
+        private bool mDisposed;
 
         /// <summary>
         /// AppleSingle archive object we create to read data out of AS/ADF sources.

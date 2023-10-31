@@ -238,6 +238,7 @@ namespace AppCommon {
                 // Generate an entry for the directory.
                 FileAttribs attrs = new FileAttribs();
                 attrs.FullPathName = dirName;
+                attrs.FileNameOnly = PathName.GetFileName(dirName, dirSep);
                 attrs.IsDirectory = true;
                 string extractPath = PathName.AdjustPathName(dirName, dirSep,
                     PathName.DEFAULT_REPL_CHAR);
@@ -368,6 +369,8 @@ namespace AppCommon {
                 // Add this directory to the output list.
                 FileAttribs attrs = new FileAttribs(entry);
                 attrs.FullPathName = ReRootedPathName(entry, aboveRootEntry);
+                attrs.FullPathSep = entry.DirectorySeparatorChar;
+                attrs.FileNameOnly = PathName.GetFileName(attrs.FullPathName, attrs.FullPathSep);
                 Debug.Assert(attrs.IsDirectory);
                 string extractPath = ExtractFileWorker.GetAdjPathName(entry, aboveRootEntry,
                     Path.DirectorySeparatorChar);
@@ -703,7 +706,10 @@ namespace AppCommon {
             // We want to return true for zero-length resource forks if we find them in ProDOS
             // volumes or NuFX archives.  In these formats the resource fork is optional, and
             // we don't want to lose the fact that the file is extended.
-            return entry is ProDOS_FileEntry || entry is NuFX_FileEntry;
+            if (attrs.RsrcLength == 0) {
+                return entry is ProDOS_FileEntry || entry is NuFX_FileEntry;
+            }
+            return attrs.RsrcLength > 0;
         }
 
         /// <summary>

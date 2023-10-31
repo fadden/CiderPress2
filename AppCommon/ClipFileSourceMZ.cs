@@ -23,35 +23,31 @@ using static DiskArc.Defs;
 
 namespace AppCommon {
     /// <summary>
-    /// Variation of AddFileSource, used for MacOSZip mode.  We need to generate an AppleDouble
-    /// "header" file on the fly, from whatever source was provided.
+    /// Variation of ClipFileSource, used for MacOSZip mode.  We need to generate an AppleDouble
+    /// "header" file on the fly.
     /// </summary>
-    public class AddFileSourceMZ : IPartSource {
-        private AddFileEntry mEntry;
-        private AddFileWorker.CallbackFunc mFunc;
+    public class ClipFileSourceMZ : IPartSource {
+        private string mAdjPath;
+        private char mDirSep;
+        private ClipFileEntry mClipEntry;
         private int mProgressPercent;
-        private FileConv.Importer? mImporter;
-        private Dictionary<string, string>? mImportOptions;
+        private ClipPasteWorker.CallbackFunc mFunc;
+        private ClipPasteWorker.ClipStreamGenerator mClipStreamGen;
         private AppHook mAppHook;
 
         private bool mDisposed;
         private MemoryStream? mHeaderStream;
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="entry">File entry to add.</param>
-        /// <param name="func">Progress callback function.</param>
-        /// <param name="progressPercent">Percent complete for progress update.</param>
-        /// <param name="appHook">Application hook reference.</param>
-        public AddFileSourceMZ(AddFileEntry entry, AddFileWorker.CallbackFunc func,
-                int progressPercent, FileConv.Importer? importer,
-                Dictionary<string, string>? importOptions, AppHook appHook) {
-            mEntry = entry;
-            mFunc = func;
+
+        public ClipFileSourceMZ(string adjPath, char dirSep, ClipFileEntry clipEntry,
+                ClipPasteWorker.CallbackFunc func, int progressPercent,
+                ClipPasteWorker.ClipStreamGenerator streamGen, AppHook appHook) {
+            mAdjPath = adjPath;
+            mDirSep = dirSep;
+            mClipEntry = clipEntry;
             mProgressPercent = progressPercent;
-            mImporter = importer;
-            mImportOptions = importOptions;
+            mFunc = func;
+            mClipStreamGen = streamGen;
             mAppHook = appHook;
         }
 
@@ -61,27 +57,19 @@ namespace AppCommon {
             using AppleSingle header = AppleSingle.CreateDouble(2, mAppHook);
             header.StartTransaction();
             IFileEntry hdrEntry = header.GetFirstEntry();
-            hdrEntry.FileType = mEntry.FileType;
-            hdrEntry.AuxType = mEntry.AuxType;
-            hdrEntry.HFSFileType = mEntry.HFSFileType;
-            hdrEntry.HFSCreator = mEntry.HFSCreator;
-            hdrEntry.CreateWhen = mEntry.CreateWhen;
-            hdrEntry.ModWhen = mEntry.ModWhen;
-            hdrEntry.Access = mEntry.Access;
-            //hdrEntry.Comment = mEntry.Comment;
+            hdrEntry.FileType = mClipEntry.Attribs.FileType;
+            hdrEntry.AuxType = mClipEntry.Attribs.AuxType;
+            hdrEntry.HFSFileType = mClipEntry.Attribs.HFSFileType;
+            hdrEntry.HFSCreator = mClipEntry.Attribs.HFSCreator;
+            hdrEntry.CreateWhen = mClipEntry.Attribs.CreateWhen;
+            hdrEntry.ModWhen = mClipEntry.Attribs.ModWhen;
+            hdrEntry.Access = mClipEntry.Attribs.Access;
 
             // Read the resource fork from whatever source was provided.
-            if (mEntry.HasRsrcFork) {
-                string storageDisplayName;
-                if (string.IsNullOrEmpty(mEntry.StorageDir)) {
-                    storageDisplayName = mEntry.StorageName;
-                } else {
-                    storageDisplayName = mEntry.StorageDir + mEntry.StorageDirSep +
-                        mEntry.StorageName;
-                }
-                AddFileSource subSource = new AddFileSource(mEntry.FullRsrcPath, mEntry.RsrcSource,
-                    FilePart.RsrcFork, mFunc, mProgressPercent, storageDisplayName,
-                    mEntry.StorageDirSep, mImporter, mImportOptions, mAppHook);
+            if (mClipEntry.Part == FilePart.RsrcFork) {
+                // We don't have the adjusted output path handy.
+                ClipFileSource subSource = new ClipFileSource(mAdjPath, mDirSep, mClipEntry,
+                    mClipEntry.Part, mFunc, mProgressPercent, mClipStreamGen, mAppHook);
                 header.AddPart(hdrEntry, FilePart.RsrcFork, subSource, CompressionFormat.Default);
             }
 
@@ -109,7 +97,7 @@ namespace AppCommon {
             mHeaderStream = null;
         }
 
-        ~AddFileSourceMZ() {
+        ~ClipFileSourceMZ() {
             Dispose(false);
         }
         public void Dispose() {
@@ -118,7 +106,7 @@ namespace AppCommon {
         }
         protected virtual void Dispose(bool disposing) {
             if (mDisposed) {
-                Debug.Assert(!mDisposed, "Double dispose AddFileSourceMZ (disposing=" +
+                Debug.Assert(!mDisposed, "Double dispose ClipFileSourceMZ (disposing=" +
                     disposing + ")");
                 return;
             }
@@ -126,8 +114,8 @@ namespace AppCommon {
             if (disposing) {
                 Close();
             } else {
-                mAppHook.LogW("GC disposing AddFileSourceMZ: " + mEntry);
-                Debug.Assert(false, "GC disposing AddFileSourceMZ: " + mEntry);
+                mAppHook.LogW("GC disposing ClipFileSourceMZ: " + mClipEntry);
+                Debug.Assert(false, "GC disposing ClipFileSourceMZ: " + mClipEntry);
             }
             mDisposed = true;
         }

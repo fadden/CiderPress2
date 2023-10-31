@@ -104,8 +104,217 @@ namespace AppCommon {
         }
 
         public void AddFilesToArchive(IArchive archive, out bool isCancelled) {
+            Debug.Assert(!archive.Characteristics.HasSingleEntry);
+            bool canRsrcFork = archive.Characteristics.HasResourceForks ||
+                (archive is Zip && EnableMacOSZip);
+            bool doStripPaths = StripPaths ||
+                archive.Characteristics.DefaultDirSep == IFileEntry.NO_DIR_SEP;
+
+            if (archive.IsDubious) {
+                throw new Exception("target archive is read-only (damage)");
+            }
+
+            // Generate a list of archive contents, used when checking for duplicate entries.  We
+            // want to do case-insensitive comparisons for general consistency.
+            Dictionary<string, IFileEntry> dupCheck =
+                new Dictionary<string, IFileEntry>(StringComparer.InvariantCultureIgnoreCase);
+            foreach (IFileEntry entry in archive) {
+                // Archive might already have duplicates, so don't call Add().
+                dupCheck[entry.FileName] = entry;
+            }
+
+            for (int idx = 0; idx < mClipEntries.Count; idx++) {
+                ClipFileEntry clipEntry = mClipEntries[idx];
+                if (clipEntry.Attribs.IsDirectory) {
+                    // We don't add explicit directory entries to archives.
+                    continue;
+                }
+
+                // Find the parts for this entry.  If the entry has both data and resource forks,
+                // the data fork will come first, and the resource fork will be in the following
+                // entry and have an identical filename.  (We could make this absolutely
+                // unequivocal by adding a file serial number on the source side.)
+                ClipFileEntry? dataPart = null;
+                ClipFileEntry? rsrcPart = null;
+                if (clipEntry.Part == FilePart.DataFork || clipEntry.Part == FilePart.RawData ||
+                        clipEntry.Part == FilePart.DiskImage) {
+                    dataPart = clipEntry;
+                } else if (clipEntry.Part == FilePart.RsrcFork) {
+                    rsrcPart = clipEntry;
+                }
+                int dataIdx = idx;      // used for progress counter
+                if (rsrcPart == null && idx < mClipEntries.Count - 1) {
+                    ClipFileEntry checkEntry = mClipEntries[idx + 1];
+                    if (checkEntry.Part == FilePart.RsrcFork &&
+                            checkEntry.Attribs.FullPathName == clipEntry.Attribs.FullPathName) {
+                        rsrcPart = checkEntry;
+                        idx++;
+                    }
+                }
+                if (dataPart == null && rsrcPart == null) {
+                    Debug.Assert(false, "no valid parts?");
+                    continue;
+                }
+
+                if (dataPart == null && !canRsrcFork) {
+                    // Nothing but a resource fork, and we can't store those.  Complain and move on.
+                    Debug.Assert(rsrcPart == null);
+                    CallbackFacts facts = new CallbackFacts(
+                        CallbackFacts.Reasons.ResourceForkIgnored,
+                        clipEntry.Attribs.FullPathName, Path.DirectorySeparatorChar);
+                    facts.Part = FilePart.RsrcFork;
+                    mFunc(facts);
+                    continue;
+                }
+
+                // Adjust the storage name to what the archive can handle.
+                string storageDir;
+                if (doStripPaths) {
+                    storageDir = string.Empty;
+                } else {
+                    storageDir = PathName.GetDirectoryName(clipEntry.Attribs.FullPathName,
+                        clipEntry.Attribs.FullPathSep);
+                }
+                string storageName = PathName.GetFileName(clipEntry.Attribs.FullPathName,
+                        clipEntry.Attribs.FullPathSep);
+                string? adjPath = AddFileWorker.AdjustArchivePath(archive, storageDir,
+                    clipEntry.Attribs.FullPathSep, storageName);
+                if (adjPath == null) {
+                    // Unable to adjust; assume total path is too long.
+                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.PathTooLong,
+                        storageDir + Path.DirectorySeparatorChar + storageName,
+                        Path.DirectorySeparatorChar);
+                    CallbackFacts.Results result = mFunc(facts);
+                    if (result == CallbackFacts.Results.Skip) {
+                        continue;
+                    } else {
+                        isCancelled = true;
+                        return;
+                    }
+                }
+
+                // Check for a duplicate.  If it exists, ask the user if they want to overwrite
+                // or skip.
+                if (dupCheck.TryGetValue(adjPath, out IFileEntry? dupEntry)) {
+                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
+                        adjPath, clipEntry.Attribs.FullPathSep);
+                    CallbackFacts.Results result = mFunc(facts);
+                    switch (result) {
+                        case CallbackFacts.Results.Cancel:
+                            isCancelled = true;
+                            return;
+                        case CallbackFacts.Results.Skip:
+                            adjPath = null;
+                            break;
+                        case CallbackFacts.Results.Overwrite:
+                            break;
+                        default:
+                            Debug.Assert(false);
+                            break;
+                    }
+                }
+                if (adjPath == null) {
+                    continue;
+                }
+                if (dupEntry != null) {
+                    archive.DeleteRecord(dupEntry);
+                }
+
+                // Create new record.
+                IFileEntry newEntry = archive.CreateRecord();
+                clipEntry.Attribs.FullPathName = adjPath;
+                clipEntry.Attribs.FullPathSep = archive.Characteristics.DefaultDirSep;
+                clipEntry.Attribs.CopyAttrsTo(newEntry, false);
+
+                CompressionFormat fmt =
+                    DoCompress ? CompressionFormat.Default : CompressionFormat.Uncompressed;
+                int progressPerc = (100 * dataIdx) / mClipEntries.Count;
+                if (dataPart != null) {
+                    ClipFileSource clSource = new ClipFileSource(adjPath,
+                        archive.Characteristics.DefaultDirSep, dataPart, dataPart.Part,
+                        mFunc, progressPerc, mClipStreamGen, mAppHook);
+                    archive.AddPart(newEntry, dataPart.Part, clSource, fmt);
+                }
+
+                progressPerc = (100 * idx) / mClipEntries.Count;
+                if (archive is Zip && EnableMacOSZip) {
+                    if (dataPart == null) {
+                        // We want to keep the data fork part, since AppleDouble requires both.
+                        // We didn't give it a data part earlier, so do it now.
+                        SimplePartSource zeroSource =
+                            new SimplePartSource(new MemoryStream(new byte[0]));
+                        archive.AddPart(newEntry, FilePart.DataFork, zeroSource, fmt);
+                    }
+                    // Create the "header" file if there's a resource fork, or if we just need
+                    // to preserve the file type info.
+                    if (rsrcPart != null) {
+                        AddMacZipRecord(archive, rsrcPart, adjPath, progressPerc, fmt);
+                    } else if (clipEntry.Attribs.HasTypeInfo) {
+                        AddMacZipRecord(archive, clipEntry, adjPath, progressPerc, fmt);
+                    }
+                } else if (rsrcPart != null) {
+                    if (!canRsrcFork) {
+                        // Nowhere to put this resource fork.  Report it and move on.
+                        Debug.Assert(dataPart != null);
+                        CallbackFacts facts = new CallbackFacts(
+                            CallbackFacts.Reasons.ResourceForkIgnored,
+                            clipEntry.Attribs.FullPathName,
+                            clipEntry.Attribs.FullPathSep);
+                        facts.Part = FilePart.RsrcFork;
+                        mFunc(facts);
+                    } else {
+                        // Add resource fork to record created earlier.
+                        ClipFileSource clSource = new ClipFileSource(adjPath,
+                            archive.Characteristics.DefaultDirSep, rsrcPart, rsrcPart.Part,
+                            mFunc, progressPerc, mClipStreamGen, mAppHook);
+                        archive.AddPart(newEntry, rsrcPart.Part, clSource, fmt);
+                    }
+                }
+            }
             isCancelled = false;
-            throw new NotImplementedException("soon!");
+        }
+
+        /// <summary>
+        /// Adds a special MacOSX ZIP record that will hold file type data and/or resource fork.
+        /// </summary>
+        /// <param name="archive">ZIP archive we're working on.</param>
+        /// <param name="clipEntry">Clip entry for the resource fork if it's available, otherwise
+        ///   for the data fork which has nonzero type info.</param>
+        private void AddMacZipRecord(IArchive archive, ClipFileEntry clipEntry,
+                string adjPath, int progressPercent, CompressionFormat fmt) {
+            Debug.Assert(archive is Zip);
+            Debug.Assert(clipEntry.Part == FilePart.RsrcFork || clipEntry.Attribs.HasTypeInfo);
+
+            // Create a new record.
+            IFileEntry rsrcEntry = archive.CreateRecord();
+
+            // Form __MACOSX/path/._filename string.
+            StringBuilder sb = new StringBuilder();
+            sb.Append(Zip.MAC_ZIP_RSRC_PREFIX);
+            sb.Append(archive.Characteristics.DefaultDirSep);
+            int fileNameSplit =
+                adjPath.LastIndexOf(archive.Characteristics.DefaultDirSep);
+            if (fileNameSplit < 0) {
+                // Just the filename.
+                sb.Append(AppleSingle.ADF_PREFIX);
+                sb.Append(adjPath);
+            } else {
+                sb.Append(adjPath.Substring(0, fileNameSplit + 1));
+                sb.Append(AppleSingle.ADF_PREFIX);
+                sb.Append(adjPath.Substring(fileNameSplit + 1));
+            }
+
+            rsrcEntry.FileName = sb.ToString();
+            rsrcEntry.DirectorySeparatorChar = archive.Characteristics.DefaultDirSep;
+            rsrcEntry.ModWhen = clipEntry.Attribs.ModWhen;        // match the modification date
+
+            // Add the part.  This will be an AppleDouble "header" file that has the file
+            // type info and (if present) the resource fork.  This will be generated on the fly
+            // so we don't have to read the input file up front and hold onto it while we work.
+            ClipFileSourceMZ clSource = new ClipFileSourceMZ(adjPath,
+                archive.Characteristics.DefaultDirSep, clipEntry, mFunc, progressPercent,
+                mClipStreamGen, mAppHook);
+            archive.AddPart(rsrcEntry, FilePart.DataFork, clSource, fmt);
         }
 
         /// <summary>
@@ -146,9 +355,11 @@ namespace AppCommon {
                 if (clipEntry.Part == FilePart.DataFork || clipEntry.Part == FilePart.RawData ||
                         clipEntry.Part == FilePart.DiskImage) {
                     dataPart = clipEntry;
+                } else if (clipEntry.Part == FilePart.RsrcFork) {
+                    rsrcPart = clipEntry;
                 }
                 int dataIdx = idx;      // used for progress counter
-                if (idx < mClipEntries.Count - 1) {
+                if (rsrcPart == null && idx < mClipEntries.Count - 1) {
                     ClipFileEntry checkEntry = mClipEntries[idx + 1];
                     if (checkEntry.Part == FilePart.RsrcFork &&
                             checkEntry.Attribs.FullPathName == clipEntry.Attribs.FullPathName) {
@@ -156,13 +367,17 @@ namespace AppCommon {
                         idx++;
                     }
                 }
+                if (dataPart == null && rsrcPart == null) {
+                    Debug.Assert(false, "no valid parts?");
+                    continue;
+                }
 
                 if (doStripPaths && clipEntry.Attribs.IsDirectory) {
                     Debug.Assert(rsrcPart == null);
                     continue;
                 }
 
-                if (clipEntry.Part == FilePart.RsrcFork && !canRsrcFork) {
+                if (dataPart == null && !canRsrcFork) {
                     // Nothing but a resource fork, and we can't store those.  Complain and move on.
                     Debug.Assert(rsrcPart == null);
                     CallbackFacts facts = new CallbackFacts(

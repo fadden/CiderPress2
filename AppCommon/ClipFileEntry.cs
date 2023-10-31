@@ -397,8 +397,8 @@ namespace AppCommon {
         public long OutputLength { get; set; }
 
         /// <summary>
-        /// Hash code for object on source side.  Only useful when detecting self-overwrite
-        /// for copy & paste within a single application instance.
+        /// Hash code for object on source side.  Used for detecting self-overwrite when
+        /// copying & pasting within a single application instance.
         /// </summary>
         public int EntryHashCode { get; set; }
 
@@ -436,6 +436,7 @@ namespace AppCommon {
                 ExtractFileWorker.PreserveMode preserveMode,
                 ConvConfig.FileConvSpec? exportSpec, Type? expectedType, AppHook appHook) {
             Debug.Assert(!string.IsNullOrEmpty(attribs.FileNameOnly));
+            Debug.Assert(!string.IsNullOrEmpty(attribs.FullPathName));
             mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, adfEntry, part, attribs,
                 preserveMode, exportSpec, expectedType, appHook);
 

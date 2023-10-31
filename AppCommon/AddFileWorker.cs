@@ -183,6 +183,8 @@ namespace AppCommon {
                     }
                 }
 
+                // Check for a duplicate.  If it exists, ask the user if they want to overwrite
+                // or skip.
                 if (dupCheck.TryGetValue(adjPath, out IFileEntry? dupEntry)) {
                     CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
                         adjPath, addEnt.StorageDirSep);
@@ -286,7 +288,7 @@ namespace AppCommon {
         ///   conventions.</param>
         /// <returns>Adjusted partial path, or null if the path is longer than the archive format
         ///   supports.</returns>
-        private static string? AdjustArchivePath(IArchive archive, string storageDir, char dirSep,
+        internal static string? AdjustArchivePath(IArchive archive, string storageDir, char dirSep,
                 string storageName) {
             char sepChar = archive.Characteristics.DefaultDirSep;
             StringBuilder sb = new StringBuilder(storageDir.Length + storageName.Length + 1);

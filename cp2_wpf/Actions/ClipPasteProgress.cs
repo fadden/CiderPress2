@@ -32,7 +32,7 @@ namespace cp2_wpf.Actions {
         private DiskArcNode mLeafNode;
         private IFileEntry mTargetDir;
         private ClipInfo mClipInfo;
-        ClipPasteWorker.ClipStreamGenerator mStreamGen;
+        private ClipPasteWorker.ClipStreamGenerator mStreamGen;
         private AppHook mAppHook;
 
         public bool DoCompress { get; set; }

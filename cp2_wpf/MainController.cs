@@ -1106,6 +1106,28 @@ namespace cp2_wpf {
             AppHook.LogI("Paste from clipboard; found " + clipInfo.ClipEntries.Count +
                 " files/forks");
 
+            // Move us to the front of the application window stack.  This is useful when we're
+            // receiving a drop: if we're overlapping with the source window and put up an error
+            // dialog, it might be hidden.
+            mMainWin.Activate();
+
+            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
+                    out IFileEntry targetDir)) {
+                // We don't have an archive and (optionally) directory target selected.
+                return;
+            }
+            if (dropTarget != IFileEntry.NO_ENTRY && dropTarget.IsDirectory) {
+                targetDir = dropTarget;
+            }
+            if (clipInfo.ProcessId == Process.GetCurrentProcess().Id &&
+                    archiveOrFileSystem is IArchive) {
+                // This isn't going to work, unless we extract everything to temp files first.
+                MessageBox.Show(mMainWin,
+                    "Files cannot be copied and pasted from a file archive to itself.",
+                    "Conflict", MessageBoxButton.OK, MessageBoxImage.Stop);
+                return;
+            }
+
             // Define a delegate that provides a read-only non-seekable stream for the contents
             // of a given entry.
             ClipPasteWorker.ClipStreamGenerator streamGen = delegate (ClipFileEntry clipEntry) {
@@ -1120,15 +1142,6 @@ namespace cp2_wpf {
                     return ClipHelper.GetFileContents(dropObj, index, ClipInfo.XFER_STREAMS);
                 }
             };
-
-            if (!GetSelectedArcDir(out object? archiveOrFileSystem, out DiskArcNode? daNode,
-                    out IFileEntry targetDir)) {
-                // We don't have an archive and (optionally) directory target selected.
-                return;
-            }
-            if (dropTarget != IFileEntry.NO_ENTRY && dropTarget.IsDirectory) {
-                targetDir = dropTarget;
-            }
 
             SettingsHolder settings = AppSettings.Global;
             ClipPasteProgress prog =
