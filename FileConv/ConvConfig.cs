@@ -54,12 +54,12 @@ namespace FileConv {
             /// <summary>
             /// Merges the options from another FileConvSpec object into this one.
             /// </summary>
-            /// <param name="other">Object to merge from.</param>
-            public void MergeSpec(FileConvSpec other) {
+            /// <param name="from">Object to merge from.</param>
+            public void MergeSpec(FileConvSpec from) {
                 // Not problematic, but it suggests there's a bug.
-                Debug.Assert(Tag == other.Tag, "merging mismatched specs");
+                Debug.Assert(Tag == from.Tag, "merging mismatched specs");
 
-                foreach (KeyValuePair<string, string> kvp in other.Options) {
+                foreach (KeyValuePair<string, string> kvp in from.Options) {
                     Options[kvp.Key] = kvp.Value;
                 }
             }

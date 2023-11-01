@@ -582,9 +582,9 @@ namespace cp2 {
 
         #region Import/Export
 
-        internal Dictionary<string, ConvConfig.FileConvSpec> sImportSpecs =
+        internal static Dictionary<string, ConvConfig.FileConvSpec> sImportSpecs =
             new Dictionary<string, ConvConfig.FileConvSpec>();
-        internal Dictionary<string, ConvConfig.FileConvSpec> sExportSpecs =
+        internal static Dictionary<string, ConvConfig.FileConvSpec> sExportSpecs =
             new Dictionary<string, ConvConfig.FileConvSpec>();
 
         /// <summary>

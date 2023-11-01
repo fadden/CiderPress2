@@ -50,6 +50,7 @@ namespace AppCommon {
             private FileAttribs mAttribs;
             private ExtractFileWorker.PreserveMode mPreserve;
             private ConvConfig.FileConvSpec? mExportSpec;
+            Dictionary<string, ConvConfig.FileConvSpec>? mDefaultSpecs;
             private Type? mExpectedType;
             private AppHook mAppHook;
 
@@ -69,7 +70,9 @@ namespace AppCommon {
             public StreamGenerator(object archiveOrFileSystem, IFileEntry entry,
                     IFileEntry adfEntry, FilePart part, FileAttribs attribs,
                     ExtractFileWorker.PreserveMode preserveMode,
-                    ConvConfig.FileConvSpec? exportSpec, Type? expectedType, AppHook appHook) {
+                    ConvConfig.FileConvSpec? exportSpec,
+                    Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs,
+                    Type? expectedType, AppHook appHook) {
                 Debug.Assert(adfEntry == IFileEntry.NO_ENTRY || archiveOrFileSystem is Zip);
 
                 mArchiveOrFileSystem = archiveOrFileSystem;
@@ -79,6 +82,7 @@ namespace AppCommon {
                 mAttribs = attribs;
                 mPreserve = preserveMode;
                 mExportSpec = exportSpec;
+                mDefaultSpecs = defaultSpecs;
                 mExpectedType = expectedType;
                 mAppHook = appHook;
             }
@@ -147,8 +151,8 @@ namespace AppCommon {
 
                 if (mExportSpec != null) {
                     Type? exportType = ClipFileSet.DoClipExport(mArchiveOrFileSystem, mEntry,
-                        mAdfEntry, mAttribs, mPart == FilePart.RawData, mExportSpec, outStream,
-                        mAppHook);
+                        mAdfEntry, mAttribs, mPart == FilePart.RawData, mExportSpec,
+                        mDefaultSpecs, outStream, mAppHook);
                     if (exportType != mExpectedType) {
                         // This isn't terrible, but it means we probably have a file with the
                         // wrong file extension.  This should only be possible if the converter
@@ -428,17 +432,21 @@ namespace AppCommon {
         /// <param name="preserveMode">File attribute preservation mode used when generating
         ///   the data.</param>
         /// <param name="exportSpec">Export conversion specification (only for "export").</param>
+        /// <param name="defaultSpecs">Default export specs for "best" mode (only for
+        ///   "export").</param>
         /// <param name="expectedType">Expected output from export conversion (only for
         ///   "export").</param>
         /// <param name="appHook">Application hook reference.</param>
         public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, IFileEntry adfEntry,
                 FilePart part, FileAttribs attribs, string extractPath,
                 ExtractFileWorker.PreserveMode preserveMode,
-                ConvConfig.FileConvSpec? exportSpec, Type? expectedType, AppHook appHook) {
+                ConvConfig.FileConvSpec? exportSpec,
+                Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs,
+                Type? expectedType, AppHook appHook) {
             Debug.Assert(!string.IsNullOrEmpty(attribs.FileNameOnly));
             Debug.Assert(!string.IsNullOrEmpty(attribs.FullPathName));
             mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, adfEntry, part, attribs,
-                preserveMode, exportSpec, expectedType, appHook);
+                preserveMode, exportSpec, defaultSpecs, expectedType, appHook);
 
             IFileSystem? fs = entry.GetFileSystem();
             if (fs != null) {
@@ -467,7 +475,7 @@ namespace AppCommon {
         public ClipFileEntry(object archiveOrFileSystem, IFileEntry entry, IFileEntry adfEntry,
                 FilePart part, FileAttribs attribs, AppHook appHook) :
             this(archiveOrFileSystem, entry, adfEntry, part, attribs, attribs.FullPathName,
-                ExtractFileWorker.PreserveMode.Unknown, null, null, appHook) {
+                ExtractFileWorker.PreserveMode.Unknown, null, null, null, appHook) {
         }
 
         public override string ToString() {

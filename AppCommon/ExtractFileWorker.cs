@@ -46,7 +46,7 @@ namespace AppCommon {
         /// If set, files added to a ZIP archive that have resource forks or HFS types will
         /// be stored as AppleDouble with a "__MACOSX" prefix.
         /// </summary>
-        public bool IsMacZipEnabled { get; set; } = false;
+        public bool IsMacZipEnabled { get; set; }
 
         /// <summary>
         /// File preservation mode to use when extracting.
@@ -56,13 +56,18 @@ namespace AppCommon {
         /// <summary>
         /// If set, use raw mode when adding files to filesystems (notably DOS 3.x).
         /// </summary>
-        public bool RawMode { get; set; } = false;
+        public bool RawMode { get; set; }
 
         /// <summary>
         /// If set, strip pathnames off of files before adding them.  For a filesystem, all
         /// files will be added to the target directory.
         /// </summary>
-        public bool StripPaths { get; set; } = false;
+        public bool StripPaths { get; set; }
+
+        /// <summary>
+        /// Default export specifications, for "best" export mode.
+        /// </summary>
+        Dictionary<string, ConvConfig.FileConvSpec>? DefaultSpecs;
 
         private CallbackFunc mFunc;
         private AppHook mAppHook;
@@ -73,14 +78,21 @@ namespace AppCommon {
         /// </summary>
         /// <param name="func">Callback function, for progress messages and file overwrite
         ///   queries.</param>
+        /// <param name="macZip">True if MacZip is enabled.</param>
+        /// <param name="preserve">Attribute preservation mode to use during extract.</param>
+        /// <param name="rawMode">True if data forks should be opened in "raw" mode.</param>
+        /// <param name="stripPaths">True if pathnames should be stripped down to filenames.</param>
+        /// <param name="defaultSpecs">Default export specs, for "best" mode.</param>
         /// <param name="appHook">Application hook reference.</param>
         public ExtractFileWorker(CallbackFunc func, bool macZip, PreserveMode preserve,
-                bool rawMode, bool stripPaths, AppHook appHook) {
+                bool rawMode, bool stripPaths,
+                Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs, AppHook appHook) {
             mFunc = func;
             IsMacZipEnabled = macZip;
             Preserve = preserve;
             RawMode = rawMode;
             StripPaths = stripPaths;
+            DefaultSpecs = defaultSpecs;
             mAppHook = appHook;
         }
 
@@ -620,7 +632,12 @@ namespace AppCommon {
                     List<Converter> applics = ExportFoundry.GetApplicableConverters(attrs,
                         dataCopy, rsrcCopy, mAppHook);
                     conv = applics[0];
-                    // Should we clear the options from exportSpec?
+                    // Apply default options, if any.
+                    exportSpec = new ConvConfig.FileConvSpec(conv.Tag);
+                    if (DefaultSpecs!.TryGetValue(conv.Tag,
+                            out ConvConfig.FileConvSpec? defaults)) {
+                        exportSpec.MergeSpec(defaults);
+                    }
                 } else {
                     conv = ExportFoundry.GetConverter(exportSpec.Tag, attrs, dataCopy, rsrcCopy,
                         mAppHook);

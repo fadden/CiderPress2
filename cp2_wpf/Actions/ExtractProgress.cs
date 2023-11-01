@@ -40,6 +40,7 @@ namespace cp2_wpf.Actions {
         public bool EnableMacOSZip { get; set; }
         public bool StripPaths { get; set; }
         public bool RawMode { get; set; }
+        public Dictionary<string, ConvConfig.FileConvSpec>? DefaultSpecs { get; set; }
 
 
         public ExtractProgress(object archiveOrFileSystem, IFileEntry selectionDir,
@@ -68,7 +69,8 @@ namespace cp2_wpf.Actions {
                     return ProgressUtil.HandleCallback(what, "extract", null, bkWorker);
                 };
                 ExtractFileWorker extWorker = new ExtractFileWorker(cbFunc, macZip: EnableMacOSZip,
-                    preserve: Preserve, rawMode: RawMode, stripPaths: StripPaths, mAppHook);
+                    preserve: Preserve, rawMode: RawMode, stripPaths: StripPaths, DefaultSpecs,
+                    mAppHook);
 
                 // Switch to output directory.
                 Environment.CurrentDirectory = mOutputDir;

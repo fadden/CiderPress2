@@ -51,7 +51,17 @@ namespace AppCommon {
         private bool mStripPaths;
         private bool mEnableMacZip;
         private ExtractFileWorker.PreserveMode mPreserveMode;
+
+        /// <summary>
+        /// Export specification, or null for extract.
+        /// </summary>
         private ConvConfig.FileConvSpec? mExportSpec;
+
+        /// <summary>
+        /// Default export specifications, for "best" export mode.
+        /// </summary>
+        private Dictionary<string, ConvConfig.FileConvSpec>? mDefaultSpecs;
+
         private AppHook mAppHook;
 
         //
@@ -95,7 +105,8 @@ namespace AppCommon {
         public ClipFileSet(object archiveOrFileSystem, List<IFileEntry> entries,
                 IFileEntry baseDir, ExtractFileWorker.PreserveMode preserveMode,
                 bool useRawData, bool stripPaths, bool enableMacZip,
-                ConvConfig.FileConvSpec? exportSpec, AppHook appHook) {
+                ConvConfig.FileConvSpec? exportSpec,
+                Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs, AppHook appHook) {
 
             // Stuff the simple items into the object so we don't have to pass them around.
             mBaseDir = baseDir;
@@ -104,6 +115,7 @@ namespace AppCommon {
             mStripPaths = stripPaths;
             mEnableMacZip = enableMacZip;
             mExportSpec = exportSpec;
+            mDefaultSpecs = defaultSpecs;
             mAppHook = appHook;
 
             if (archiveOrFileSystem is IArchive) {
@@ -243,7 +255,8 @@ namespace AppCommon {
                 string extractPath = PathName.AdjustPathName(dirName, dirSep,
                     PathName.DEFAULT_REPL_CHAR);
                 ForeignEntries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
-                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, mAppHook));
+                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, null,
+                    mAppHook));
                 XferEntries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
                     FilePart.DataFork, attrs, mAppHook));
                 mSynthDirs.Add(dirName, dirName);
@@ -375,7 +388,8 @@ namespace AppCommon {
                 string extractPath = ExtractFileWorker.GetAdjPathName(entry, aboveRootEntry,
                     Path.DirectorySeparatorChar);
                 ForeignEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
-                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, mAppHook));
+                    FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, null,
+                    mAppHook));
                 XferEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
                     FilePart.DataFork, attrs, mAppHook));
                 mAddedDirs.Add(entry, entry);
@@ -449,21 +463,23 @@ namespace AppCommon {
                 case ExtractFileWorker.PreserveMode.None:
                     if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, null,
+                            mAppHook));
                     }
                     // Ignore resource fork.
                     break;
                 case ExtractFileWorker.PreserveMode.ADF:
                     if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, null,
+                            mAppHook));
                     }
                     if (hasRsrcFork || attrs.HasTypeInfo) {
                         // Form ADF header file name.  Tag it as "resource fork".
                         string adfPath = Path.Combine(Path.GetDirectoryName(extractPath)!,
                             AppleSingle.ADF_PREFIX + Path.GetFileName(extractPath));
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            FilePart.RsrcFork, attrs, adfPath, mPreserveMode, null, null,
+                            FilePart.RsrcFork, attrs, adfPath, mPreserveMode, null, null, null,
                             mAppHook));
                     }
                     break;
@@ -471,20 +487,21 @@ namespace AppCommon {
                     // Form AppleSingle file name.  Output single file for both forks.
                     string asPath = extractPath + AppleSingle.AS_EXT;
                     ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                        dataPart, attrs, asPath, mPreserveMode, null, null, mAppHook));
+                        dataPart, attrs, asPath, mPreserveMode, null, null, null, mAppHook));
                     break;
                 case ExtractFileWorker.PreserveMode.Host:
                     // Output separate files for each fork.
                     if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            dataPart, attrs, extractPath, mPreserveMode, null, null, mAppHook));
+                            dataPart, attrs, extractPath, mPreserveMode, null, null, null,
+                            mAppHook));
                     }
                     if (hasRsrcFork) {
                         // Generate name for filesystem resource fork (assume Mac OS naming).
                         string rsrcPath = Path.Combine(extractPath, "..namedfork");
                         rsrcPath = Path.Combine(rsrcPath, "rsrc");
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
-                            FilePart.RsrcFork, attrs, rsrcPath, mPreserveMode, null, null,
+                            FilePart.RsrcFork, attrs, rsrcPath, mPreserveMode, null, null, null,
                             mAppHook));
                     }
                     break;
@@ -493,12 +510,12 @@ namespace AppCommon {
                     if (dataPart != FilePart.Unknown) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             dataPart, attrs, extractPath + napsExt, mPreserveMode,
-                            null, null, mAppHook));
+                            null, null, null, mAppHook));
                     }
                     if (hasRsrcFork) {
                         ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                             FilePart.RsrcFork, attrs, extractPath + napsExt + "r", mPreserveMode,
-                            null, null, mAppHook));
+                            null, null, null, mAppHook));
                     }
                     break;
                 default:
@@ -527,7 +544,7 @@ namespace AppCommon {
             Debug.Assert(mExportSpec != null);
 
             Type? expectedType = DoClipExport(archiveOrFileSystem, entry, adfEntry, attrs,
-                mUseRawData, mExportSpec, null, mAppHook);
+                mUseRawData, mExportSpec, mDefaultSpecs, null, mAppHook);
             if (expectedType == null) {
                 return;
             }
@@ -554,7 +571,7 @@ namespace AppCommon {
             // incorrect.
             ForeignEntries.Add(new ClipFileEntry(archiveOrFileSystem, entry, adfEntry,
                 FilePart.DataFork, attrs, extractPath + ext, mPreserveMode,
-                mExportSpec, expectedType, mAppHook));
+                mExportSpec, mDefaultSpecs, expectedType, mAppHook));
         }
 
         /// <summary>
@@ -567,7 +584,9 @@ namespace AppCommon {
         /// <returns>Type of Converter subclass that will be used.</returns>
         public static Type? DoClipExport(object archiveOrFileSystem, IFileEntry entry,
                 IFileEntry adfEntry, FileAttribs attrs, bool useRawData,
-                ConvConfig.FileConvSpec exportSpec, Stream? outStream, AppHook appHook) {
+                ConvConfig.FileConvSpec exportSpec,
+                Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs,
+                Stream? outStream, AppHook appHook) {
             FilePart dataPart = useRawData ? FilePart.RawData : FilePart.DataFork;
             bool hasRsrcFork = HasRsrcFork(entry, adfEntry, attrs);
 
@@ -631,6 +650,12 @@ namespace AppCommon {
                     List<Converter> applics = ExportFoundry.GetApplicableConverters(attrs,
                         dataCopy, rsrcCopy, appHook);
                     conv = applics[0];
+                    // Apply default options, if any.
+                    exportSpec = new ConvConfig.FileConvSpec(conv.Tag);
+                    if (defaultSpecs!.TryGetValue(conv.Tag,
+                            out ConvConfig.FileConvSpec? defaults)) {
+                        exportSpec.MergeSpec(defaults);
+                    }
                 } else {
                     // One specific converter.
                     conv = ExportFoundry.GetConverter(exportSpec.Tag, attrs, dataCopy, rsrcCopy,

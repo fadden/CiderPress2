@@ -1632,7 +1632,10 @@ namespace cp2_wpf {
             HandleExtractExport(GetExportSpec());
         }
 
-        private ConvConfig.FileConvSpec? GetImportSpec() {
+        /// <summary>
+        /// Returns the import specification for the current import mode.
+        /// </summary>
+        private ConvConfig.FileConvSpec GetImportSpec() {
             string convTag = mMainWin.ImportConvTag;
             string settingKey = AppSettings.IMPORT_SETTING_PREFIX + convTag;
             string convSettings = AppSettings.Global.GetString(settingKey, string.Empty);
@@ -1651,13 +1654,19 @@ namespace cp2_wpf {
                 spec = ConvConfig.CreateSpec(convTag);
                 Debug.Assert(spec != null);
             }
-            Debug.WriteLine("Import spec: " + spec);
+            //Debug.WriteLine("Import spec: " + spec);
             return spec;
         }
 
-        private ConvConfig.FileConvSpec? GetExportSpec() {
-            string convTag =
-                mMainWin.IsExportBestChecked ? ConvConfig.BEST : mMainWin.ExportConvTag;
+        /// <summary>
+        /// Returns the export specification for the current export mode.
+        /// </summary>
+        /// <param name="convTag">If non-null, the method returns the export specification for
+        ///   the specified tag instead of the current mode.</param>
+        private ConvConfig.FileConvSpec GetExportSpec(string? convTag = null) {
+            if (convTag == null) {
+                convTag = mMainWin.IsExportBestChecked ? ConvConfig.BEST : mMainWin.ExportConvTag;
+            }
             string settingKey = AppSettings.EXPORT_SETTING_PREFIX + convTag;
             string convSettings = AppSettings.Global.GetString(settingKey, string.Empty);
 
@@ -1675,8 +1684,21 @@ namespace cp2_wpf {
                 spec = ConvConfig.CreateSpec(convTag);
                 Debug.Assert(spec != null);
             }
-            Debug.WriteLine("Export spec: " + spec);
+            //Debug.WriteLine("Export spec: " + spec);
             return spec;
+        }
+
+        /// <summary>
+        /// Returns a dictionary with default export specifications for all known tags.
+        /// </summary>
+        private Dictionary<string, ConvConfig.FileConvSpec>? GetDefaultExportSpecs() {
+            Dictionary<string, ConvConfig.FileConvSpec> defaults =
+                new Dictionary<string, ConvConfig.FileConvSpec>();
+            List<string>? tags = ExportFoundry.GetConverterTags();
+            foreach (string tag in tags) {
+                defaults[tag] = GetExportSpec(tag);
+            }
+            return defaults;
         }
 
         /// <summary>
@@ -1732,8 +1754,10 @@ namespace cp2_wpf {
             bool doStrip = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false);
             bool doMacZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
             ConvConfig.FileConvSpec? exportSpec = null;
+            Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs = null;
             if (mMainWin.IsChecked_ImportExport) {
                 exportSpec = GetExportSpec();
+                defaultSpecs = GetDefaultExportSpecs();
             }
 
             // Prepare the file set according to the current options.
@@ -1744,7 +1768,7 @@ namespace cp2_wpf {
                 Mouse.OverrideCursor = Cursors.Wait;
                 clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
                     preserve, useRawData: rawMode, stripPaths: doStrip, enableMacZip: doMacZip,
-                    exportSpec, AppHook);
+                    exportSpec, defaultSpecs, AppHook);
             } finally {
                 Mouse.OverrideCursor = null;
             }
@@ -1850,6 +1874,7 @@ namespace cp2_wpf {
                 EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
                 StripPaths = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false),
                 RawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false),
+                DefaultSpecs = GetDefaultExportSpecs()
             };
             Debug.WriteLine("Extract: outputDir='" + outputDir +
                 "', selectionDir='" + selectionDir + "'");
