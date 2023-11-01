@@ -479,7 +479,11 @@ namespace AppCommon {
         }
 
         public override string ToString() {
-            return "[ClipFileEntry " + ExtractPath + " - " + Part + "]";
+            if (Attribs.IsDirectory) {
+                return "[ClipFileEntry " + ExtractPath + " - directory]";
+            } else {
+                return "[ClipFileEntry " + ExtractPath + " - " + Part + "]";
+            }
         }
     }
 }

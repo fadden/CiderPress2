@@ -75,6 +75,7 @@ namespace cp2.Tests {
                 TestMetadata.RunTest(parms);
                 TestPrint.RunTest(parms);
                 TestTest.RunTest(parms);
+                TestClip.RunTest(parms);
                 TestMisc.RunTest(parms);
             } catch (Exception ex) {
                 Stderr.WriteLine("Test failed: " + ex.Message);

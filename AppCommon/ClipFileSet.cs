@@ -62,6 +62,9 @@ namespace AppCommon {
         /// </summary>
         private Dictionary<string, ConvConfig.FileConvSpec>? mDefaultSpecs;
 
+        /// <summary>
+        /// Application hook reference.
+        /// </summary>
         private AppHook mAppHook;
 
         //

@@ -23,6 +23,9 @@ using static AppCommon.WorkTree;
 
 namespace cp2.Tests {
     public static class DebugWorkTree {
+        /// <summary>
+        /// Handles "debug-wtree" command.
+        /// </summary>
         public static bool HandleDumpTree(string cmdName, string[] args, ParamsBag parms) {
             if (args.Length != 1) {
                 CP2Main.ShowUsage(cmdName);
