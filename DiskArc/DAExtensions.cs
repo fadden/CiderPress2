@@ -157,7 +157,8 @@ namespace DiskArc {
         /// <summary>
         /// Formats an IDiskImage.  This should only be used on a newly-created IDiskImage,
         /// when the ChunkAccess property is non-null and the FileSystem property is null.
-        /// Query the FileSystem out of the IDiskImage when this returns.
+        /// The disk will be analyzed, so the caller can access the filesystem object via
+        /// <see cref="IDiskImage.Contents"/>.
         /// </summary>
         /// <remarks>
         /// <para>The chunks will be zeroed out before the new filesystem is written.</para>
@@ -568,6 +569,50 @@ namespace DiskArc {
             }
             entry.SaveChanges();
             return entry;
+        }
+
+        /// <summary>
+        /// Ensures that all of the directories in the path exist.  If they don't exist, they
+        /// will be created.
+        /// </summary>
+        /// <param name="baseDir">Base directory.</param>
+        /// <param name="partialPath">Partial pathname, with directories only.</param>
+        /// <param name="dirSep">Directory separator character used in storage dir.</param>
+        /// <returns>File entry for destination directory.</returns>
+        /// <exception cref="IOException">I/O failure, or part of the path existed but was not
+        ///   a regular file.</exception>
+        public static IFileEntry CreateSubdirectories(this IFileSystem fs,
+                IFileEntry baseDir, string partialPath, char dirSep) {
+            if (string.IsNullOrEmpty(partialPath)) {
+                return baseDir;
+            }
+            Debug.Assert(fs.Characteristics.IsHierarchical);
+            IFileEntry subDirEnt = baseDir;
+            string[] dirStrings = partialPath.Split(dirSep);
+            foreach (string dirName in dirStrings) {
+                // Adjust this directory name to be compatible with the target filesystem.
+                string adjDirName = fs.AdjustFileName(dirName);
+
+                // See if it exists.  If it does, and it's not a directory, is very bad.
+                if (fs.TryFindFileEntry(subDirEnt, adjDirName,
+                        out IFileEntry nextDirEnt)) {
+                    if (!nextDirEnt.IsDirectory) {
+                        throw new IOException("Error: path component '" + adjDirName +
+                            "' (" + dirName + ") is not a directory");
+                    }
+                    subDirEnt = nextDirEnt;
+                } else {
+                    // Not found, create new.
+                    try {
+                        subDirEnt = fs.CreateFile(subDirEnt, adjDirName,
+                            IFileSystem.CreateMode.Directory);
+                    } catch (IOException ex) {
+                        throw new IOException("Error: unable to create directory '" +
+                            adjDirName + "': " + ex.Message);
+                    }
+                }
+            }
+            return subDirEnt;
         }
 
         //public static DiskFileStream OpenDataForkRO(this IFileSystem fs, IFileEntry entry) {

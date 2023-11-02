@@ -85,6 +85,10 @@ namespace cp2.Tests {
                 ResetConsole();
             }
 
+            // Give any finalizer-based checks a chance to run.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             Console.WriteLine("Success");
             return true;
         }

@@ -409,7 +409,7 @@ namespace AppCommon {
                 string storageName = PathName.GetFileName(clipEntry.Attribs.FullPathName,
                         clipEntry.Attribs.FullPathSep);
                 IFileEntry subDirEnt;
-                subDirEnt = AddFileWorker.CreateSubdirectories(fileSystem, targetDirEnt, storageDir,
+                subDirEnt = fileSystem.CreateSubdirectories(targetDirEnt, storageDir,
                     clipEntry.Attribs.FullPathSep);
 
                 // Add the new file to subDirEnt.  See if it already exists.

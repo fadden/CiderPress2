@@ -409,7 +409,7 @@ namespace AppCommon {
                 // directory if we remembered the path / entry from the previous iteration.
                 string storageDir = doStripPaths ? string.Empty : addEnt.StorageDir;
                 IFileEntry subDirEnt;
-                subDirEnt = CreateSubdirectories(fileSystem, targetDirEnt, storageDir,
+                subDirEnt = fileSystem.CreateSubdirectories(targetDirEnt, storageDir,
                     addEnt.StorageDirSep);
 
                 // Add the new file to subDirEnt.  See if it already exists.
@@ -522,49 +522,6 @@ namespace AppCommon {
             }
 
             isCancelled = false;
-        }
-
-        /// <summary>
-        /// Ensures that all of the directories in the path exist.  If they don't exist, they
-        /// will be created.
-        /// </summary>
-        /// <param name="fileSystem">Filesystem to modify.</param>
-        /// <param name="targetDirEnt">Base directory.</param>
-        /// <param name="storageDir">Partial pathname, directories only.</param>
-        /// <param name="storageDirSep">Directory separator character used in storage dir.</param>
-        /// <returns>File entry for destination directory.</returns>
-        /// <exception cref="IOException">Something failed.</exception>
-        internal static IFileEntry CreateSubdirectories(IFileSystem fileSystem,
-                IFileEntry targetDirEnt, string storageDir, char storageDirSep) {
-            if (string.IsNullOrEmpty(storageDir)) {
-                return targetDirEnt;
-            }
-            IFileEntry subDirEnt = targetDirEnt;
-            string[] dirStrings = storageDir.Split(storageDirSep);
-            foreach (string dirName in dirStrings) {
-                // Adjust this directory name to be compatible with the target filesystem.
-                string adjDirName = fileSystem.AdjustFileName(dirName);
-
-                // See if it exists.  If it does, and it's not a directory, is very bad.
-                if (fileSystem.TryFindFileEntry(subDirEnt, adjDirName,
-                        out IFileEntry nextDirEnt)) {
-                    if (!nextDirEnt.IsDirectory) {
-                        throw new IOException("Error: path component '" + adjDirName +
-                            "' (" + dirName + ") is not a directory");
-                    }
-                    subDirEnt = nextDirEnt;
-                } else {
-                    // Not found, create new.
-                    try {
-                        subDirEnt = fileSystem.CreateFile(subDirEnt, adjDirName,
-                            CreateMode.Directory);
-                    } catch (IOException ex) {
-                        throw new IOException("Error: unable to create directory '" +
-                            adjDirName + "': " + ex.Message);
-                    }
-                }
-            }
-            return subDirEnt;
         }
 
         /// <summary>

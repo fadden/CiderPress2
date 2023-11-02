@@ -81,7 +81,7 @@ namespace AppCommon {
         private bool mUseRawData;
 
         // Keep track of directories we've already added to the output.
-        private Dictionary<IFileEntry, IFileEntry> mAddedDirs =
+        private Dictionary<IFileEntry, IFileEntry> mAddedFiles =
             new Dictionary<IFileEntry, IFileEntry>();
 
 
@@ -316,8 +316,13 @@ namespace AppCommon {
         /// Generates an entry in the ClipFileEntry set for the specified entry.  If the entry is
         /// a directory, we recursively generate clip objects for the entry's children.
         /// </summary>
+        /// <remarks>
+        /// <para>We need to avoid creating two entries for the same file.  This can happen if
+        /// the entry list includes "dir1" and "dir1/foo.txt"; note either of these could
+        /// appear first.</para>
+        /// </remarks>
         /// <param name="fs">Filesystem reference.</param>
-        /// <param name="entry">File entry to process.</param>
+        /// <param name="entry">File entry to process.  May be a file or directory.</param>
         /// <param name="aboveRootEntry">Entry above the root, used to limit the partial path
         ///   prefix.</param>
         private void GenerateDiskEntries(IFileSystem fs, IFileEntry entry,
@@ -329,7 +334,9 @@ namespace AppCommon {
                 // create empty directories, and a way to pass the directory file dates along.
                 AddMissingDirectories(fs, entry, aboveRootEntry);
             }
-            if (entry.IsDirectory) {
+            if (mAddedFiles.ContainsKey(entry)) {
+                // Already added.
+            } else if (entry.IsDirectory) {
                 // Current directory, if not stripped, was added above.
                 foreach (IFileEntry child in entry) {
                     GenerateDiskEntries(fs, child, aboveRootEntry);
@@ -350,6 +357,10 @@ namespace AppCommon {
                 // Generate file attributes.  The same object will be used for both forks.
                 FileAttribs attrs = new FileAttribs(entry);
                 attrs.FullPathName = ReRootedPathName(entry, aboveRootEntry);
+                if (string.IsNullOrEmpty(attrs.FullPathName)) {
+                    mAppHook.LogW("Not adding below-root entry: " + entry);
+                    return;
+                }
                 if (mStripPaths) {
                     extractPath = Path.GetFileName(extractPath);
                     attrs.FullPathName =
@@ -361,9 +372,9 @@ namespace AppCommon {
                 } else {
                     CreateForExport(fs, entry, IFileEntry.NO_ENTRY, attrs, extractPath);
                 }
+                mAddedFiles.Add(entry, entry);
             }
         }
-
 
         /// <summary>
         /// Adds entries for the directory hierarchy that contains the specified entry, if
@@ -381,10 +392,12 @@ namespace AppCommon {
             }
             // Recursively check parents.
             AddMissingDirectories(fs, entry.ContainingDir, aboveRootEntry);
-            if (entry.IsDirectory && !mAddedDirs.ContainsKey(entry)) {
+            // Add this one if it's not already present.
+            if (entry.IsDirectory && !mAddedFiles.ContainsKey(entry)) {
                 // Add this directory to the output list.
                 FileAttribs attrs = new FileAttribs(entry);
                 attrs.FullPathName = ReRootedPathName(entry, aboveRootEntry);
+                Debug.Assert(!string.IsNullOrEmpty(attrs.FullPathName));
                 attrs.FullPathSep = entry.DirectorySeparatorChar;
                 attrs.FileNameOnly = PathName.GetFileName(attrs.FullPathName, attrs.FullPathSep);
                 Debug.Assert(attrs.IsDirectory);
@@ -395,7 +408,7 @@ namespace AppCommon {
                     mAppHook));
                 XferEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
                     FilePart.DataFork, attrs, mAppHook));
-                mAddedDirs.Add(entry, entry);
+                mAddedFiles.Add(entry, entry);
             }
         }
 
@@ -407,7 +420,23 @@ namespace AppCommon {
         /// <param name="entry">File entry.</param>
         /// <param name="aboveRootEntry">Entry above the root directory.  For the volume dir,
         ///   or non-hierarchical filesystems, this will be NO_ENTRY.</param>
+        /// <returns>Partial pathname, or the empty string if the above-root entry is not actually
+        ///   above the entry.</returns>
         private static string ReRootedPathName(IFileEntry entry, IFileEntry aboveRootEntry) {
+            // Test to see if entry is at or above the root.  If it's at the same level as the
+            // root, or above it, it shouldn't be part of the set.
+            if (entry.ContainingDir == aboveRootEntry) {
+                return string.Empty;
+            }
+            IFileEntry scanEntry = entry;
+            while (scanEntry.ContainingDir != aboveRootEntry) {
+                scanEntry = scanEntry.ContainingDir;
+                if (scanEntry == IFileEntry.NO_ENTRY) {
+                    // Walked to the top without finding it.
+                    return string.Empty;
+                }
+            }
+
             StringBuilder sb = new StringBuilder();
             ReRootedPathName(entry, aboveRootEntry, sb);
             return sb.ToString();

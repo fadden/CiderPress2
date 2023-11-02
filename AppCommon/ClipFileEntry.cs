@@ -445,6 +445,7 @@ namespace AppCommon {
                 Type? expectedType, AppHook appHook) {
             Debug.Assert(!string.IsNullOrEmpty(attribs.FileNameOnly));
             Debug.Assert(!string.IsNullOrEmpty(attribs.FullPathName));
+
             mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, adfEntry, part, attribs,
                 preserveMode, exportSpec, defaultSpecs, expectedType, appHook);
 
