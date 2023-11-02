@@ -44,7 +44,7 @@ namespace FileConv.Gfx {
                     OptionDefinition.OptType.Boolean, "false"),
             };
 
-        private const int EXPECTED_LEN = 8192;
+        public const int EXPECTED_LEN = 8192;
         private const int MIN_LEN = EXPECTED_LEN - 8;
         private const int MAX_LEN = EXPECTED_LEN + 1;
 

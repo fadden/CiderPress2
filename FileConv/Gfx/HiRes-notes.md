@@ -105,24 +105,31 @@ ends up having a stair-step effect:
       orange
 ```
 
+The transition between colors will be filled with black or white pixels.  For
+example, a byte of purple followed by a byte of orange, with the purple in an
+even column, is 1010101-1010101.  Because there are two adjacent '1' bits, the
+transition will be white.  Because orange has its high bit set, the white
+transition area is half a pixel wider.  If the purple had started in an odd
+column, the values would be 0101010-0101010, yielding a black transition.
+
+To make things even more complicated, the transitions can show unexpected
+colors.  For example, the IIgs RGB monitor generates some odd colors in the
+borders between solid colors with different high bits:
+```
+                     observed                 generated
+    d5 2a:    blue   [dk blue] purple       ... black ...
+    aa 55:    orange [yellow]  green        ... white ...
+    55 aa:    purple [lt blue] blue         ... black ...
+    2a d5:    green  [brown]   orange       ... black ...
+```
+Some emulators (e.g. AppleWin) will model this behavior.
+
 The IIgs monochrome mode is not enabled on the RGB output unless you
 turn off AN3 by hitting $c05e (it can be re-enabled by hitting $c05f).
 This register turns off the half-pixel shift, so it doesn't appear to
 be possible to view hi-res output on an RGB monitor with the half-pixel
 shift intact.  On the composite output, the presence of the half-pixel
 shift is quite visible.
-
-To make things even more complicated, fringe color effects can change how
-things look.  For example, the IIgs RGB monitor generates some odd colors
-in the borders between solid colors with different high bits:
-
-                     observed                 generated
-    d5 2a:    blue   [dk blue] purple       ... black ...
-    aa 55:    orange [yellow]  green        ... white ...
-    55 aa:    purple [lt blue] blue         ... black ...
-    2a d5:    green  [brown]   orange       ... black ...
-
-Some emulators (e.g. AppleWin) will model this behavior.
 
 ## Color Palette ##
 

@@ -52,13 +52,14 @@ namespace FileConv {
             new ConverterEntry(typeof(Doc.RandomText)),
             new ConverterEntry(typeof(Doc.Teach)),
 
-            new ConverterEntry(typeof(Gfx.DoubleHiRes)),
             new ConverterEntry(typeof(Gfx.HiRes)),
-            new ConverterEntry(typeof(Gfx.HostImage)),
+            new ConverterEntry(typeof(Gfx.HiRes_LZ4FH)),
+            new ConverterEntry(typeof(Gfx.DoubleHiRes)),
             new ConverterEntry(typeof(Gfx.SuperHiRes)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Brooks)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Packed)),
             new ConverterEntry(typeof(Gfx.PrintShopClip)),
+            new ConverterEntry(typeof(Gfx.HostImage)),
         };
 
         private static readonly Dictionary<string, ConverterEntry> sTagList = GenerateTagList();
