@@ -166,6 +166,7 @@ namespace AppCommon {
                 // Generate file attributes.  The same object will be used for both forks.
                 FileAttribs attrs = new FileAttribs(entry);
                 if (mStripPaths) {
+                    // Configure extract path and attribute path.
                     extractPath = Path.GetFileName(extractPath);
                     attrs.FullPathName = PathName.GetFileName(attrs.FullPathName,
                         attrs.FullPathSep);
@@ -207,7 +208,10 @@ namespace AppCommon {
                 using Stream adfStream = ArcTemp.ExtractToTemp(arc, adfEntry, FilePart.DataFork);
                 using AppleSingle adfArchive = AppleSingle.OpenArchive(adfStream, appHook);
                 IFileEntry adfArchiveEntry = adfArchive.GetFirstEntry();
+                // Get the attributes from AppleSingle, but don't replace the filename.
+                string fileName = attrs.FileNameOnly;
                 attrs.GetFromAppleSingle(adfArchiveEntry);
+                attrs.FileNameOnly = fileName;
             } catch (Exception ex) {
                 // Never mind.
                 appHook.LogW("Failed to get attributes from ADF header (" + adfEntry +
@@ -253,6 +257,7 @@ namespace AppCommon {
                 // Generate an entry for the directory.
                 FileAttribs attrs = new FileAttribs();
                 attrs.FullPathName = dirName;
+                attrs.FullPathSep = dirSep;
                 attrs.FileNameOnly = PathName.GetFileName(dirName, dirSep);
                 attrs.IsDirectory = true;
                 string extractPath = PathName.AdjustPathName(dirName, dirSep,
@@ -397,10 +402,10 @@ namespace AppCommon {
                 // Add this directory to the output list.
                 FileAttribs attrs = new FileAttribs(entry);
                 attrs.FullPathName = ReRootedPathName(entry, aboveRootEntry);
-                Debug.Assert(!string.IsNullOrEmpty(attrs.FullPathName));
                 attrs.FullPathSep = entry.DirectorySeparatorChar;
                 attrs.FileNameOnly = PathName.GetFileName(attrs.FullPathName, attrs.FullPathSep);
                 Debug.Assert(attrs.IsDirectory);
+                Debug.Assert(!string.IsNullOrEmpty(attrs.FullPathName));
                 string extractPath = ExtractFileWorker.GetAdjPathName(entry, aboveRootEntry,
                     Path.DirectorySeparatorChar);
                 ForeignEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
@@ -580,6 +585,7 @@ namespace AppCommon {
             if (expectedType == null) {
                 return;
             }
+            Debug.Assert(!string.IsNullOrEmpty(attrs.FileNameOnly));
             string ext;
             if (expectedType == typeof(SimpleText)) {
                 ext = TXTGenerator.FILE_EXT;
@@ -645,7 +651,10 @@ namespace AppCommon {
                         adfStream = ArcTemp.ExtractToTemp(arc, adfEntry, dataPart);
                         adfArchive = AppleSingle.OpenArchive(adfStream, appHook);
                         IFileEntry adfArchiveEntry = adfArchive.GetFirstEntry();
+                        // Copy the ADF attributes out, but retain the original filename.
+                        string fileName = attrs.FileNameOnly;
                         attrs.GetFromAppleSingle(adfArchiveEntry);
+                        attrs.FileNameOnly = fileName;
                         if (adfArchiveEntry.HasRsrcFork && adfArchiveEntry.RsrcLength > 0) {
                             rsrcStream = adfArchive.OpenPart(adfArchiveEntry, FilePart.RsrcFork);
                         }

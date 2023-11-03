@@ -39,8 +39,8 @@ namespace AppCommon {
         /// opening the archive or filesystem entry and just copying data out.
         /// </summary>
         /// <remarks>
-        /// <para>This class is NOT serializable.  It only exists on the local side, and is
-        /// invoked when the remote side requests file contents.</para>
+        /// <para>This class is NOT serializable.  It only exists on the sending side, and is
+        /// invoked when the remote receiver requests file contents.</para>
         /// </remarks>
         public class StreamGenerator {
             private object mArchiveOrFileSystem;
@@ -203,6 +203,8 @@ namespace AppCommon {
             /// Opens one fork of a file entry, in a disk image or file archive.
             /// </summary>
             /// <returns>Opened stream.</returns>
+            /// <exception cref="InvalidOperationException">Archive or filesystem is invalid,
+            ///   probably because the remote side closed.</exception>
             private Stream OpenPart(FilePart part = FilePart.Unknown) {
                 if (part == FilePart.Unknown) {
                     part = mPart;       // "default" part
@@ -365,7 +367,8 @@ namespace AppCommon {
         }
 
         /// <summary>
-        /// Stream generator.
+        /// Stream generator.  Copies data from the source archive to a stream connected to the
+        /// remote receiver.
         /// </summary>
         /// <remarks>
         /// The NonSerialized attribute can only be applied to fields, not properties.
@@ -445,6 +448,9 @@ namespace AppCommon {
                 Type? expectedType, AppHook appHook) {
             Debug.Assert(!string.IsNullOrEmpty(attribs.FileNameOnly));
             Debug.Assert(!string.IsNullOrEmpty(attribs.FullPathName));
+            if (entry != IFileEntry.NO_ENTRY) {
+                Debug.Assert(attribs.FullPathSep == entry.DirectorySeparatorChar);
+            }
 
             mStreamGen = new StreamGenerator(archiveOrFileSystem, entry, adfEntry, part, attribs,
                 preserveMode, exportSpec, defaultSpecs, expectedType, appHook);

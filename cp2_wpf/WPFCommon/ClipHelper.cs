@@ -72,6 +72,11 @@ namespace cp2_wpf.WPFCommon {
                 Debug.WriteLine("GetData throw a COMException for index=" + index +
                     ": " + ex.Message);
                 return null;
+            } catch (Exception ex) {
+                // Unexpected.
+                Debug.WriteLine("GetFileContents failed: " + ex);
+                Debug.Assert(false);
+                return null;
             }
 
             // TYpe of MEDium - https://learn.microsoft.com/en-us/windows/win32/api/objidl/ne-objidl-tymed

@@ -226,8 +226,9 @@ namespace cp2_wpf.Tools {
                     } else {
                         for (int index = 0; index < clipInfo.ClipEntries.Count; index++) {
                             ClipFileEntry clipEntry = clipInfo.ClipEntries[index];
-                            sb.AppendFormat("    {0}: '{1}' len={2}: ",
-                                index, clipEntry.Attribs.FullPathName, clipEntry.OutputLength);
+                            sb.AppendFormat("    {0}: '{1}' part={2} len={3}: ",
+                                index, clipEntry.Attribs.FullPathName, clipEntry.Part,
+                                clipEntry.OutputLength);
                             if (clipEntry.Attribs.IsDirectory) {
                                 sb.AppendLine("is directory");
                                 continue;

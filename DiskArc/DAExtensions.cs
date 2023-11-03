@@ -167,14 +167,14 @@ namespace DiskArc {
         /// <param name="fsType">Filesystem to format the disk with.</param>
         /// <param name="volumeName">IFileSystem.Format() argument.</param>
         /// <param name="volumeNum">IFileSystem.Format() argument.</param>
-        /// <param name="makeBootable">IFileSystem.Format() argument.</param>
+        /// <param name="reserveBoot">IFileSystem.Format() argument.</param>
         /// <param name="appHook">Application hook reference.</param>
         /// <exception cref="InvalidOperationException">ChunkAccess is null, or FileSystem is
         ///   not null.</exception>
         /// <exception cref="NotSupportedException">Filesystem not supported by this
         ///   function.</exception>
         public static void FormatDisk(this IDiskImage diskImage, Defs.FileSystemType fsType,
-                string volumeName, int volumeNum, bool makeBootable, AppHook appHook) {
+                string volumeName, int volumeNum, bool reserveBoot, AppHook appHook) {
             if (diskImage.ChunkAccess == null || diskImage.Contents != null) {
                 throw new InvalidOperationException(
                     "Disk image must have non-null ChunkAccess and no Contents");
@@ -208,7 +208,7 @@ namespace DiskArc {
             diskImage.ChunkAccess.Initialize();
 
             // Format the filesystem.
-            fs.Format(volumeName, volumeNum, makeBootable);
+            fs.Format(volumeName, volumeNum, reserveBoot);
 
             // Dispose of the IFileSystem object to ensure everything has been written.
             fs.Dispose();
@@ -486,6 +486,7 @@ namespace DiskArc {
         ///   directory.</exception>
         public static bool TryFindFileEntry(this IFileSystem fs, IFileEntry dirEntry,
                 string fileName, out IFileEntry entry) {
+            Debug.Assert(dirEntry.GetFileSystem() == fs);
             if (!dirEntry.IsDirectory) {
                 throw new ArgumentException("Argument is not a directory");
             }

@@ -152,7 +152,9 @@ Windows Explorer.
 Data is read from the virtual streams at the time the files are dropped or pasted.  Because of
 this, files copied onto the clipboard cannot be pasted after the source archive or disk image is
 closed.  Similarly, files copied to the clipboard cannot be pasted if they are deleted from a
-disk image or file archive after being copied.
+disk image or file archive after being copied.  This means you can't copy files between disk
+images by opening the first image, copying the data, closing it, and then opening the second image
+to do the paste.
 
 The application has no ability to influence how Windows Explorer handles the clipboard data
 prepared for "foreign" transfers, so the file data must be arranged in the clipboard in a way that

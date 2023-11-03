@@ -1137,8 +1137,10 @@ namespace cp2_wpf {
                     return null;
                 }
                 if (dropObj == null) {
+                    // From clipboard.
                     return ClipHelper.GetClipboardContentsSTA(index, ClipInfo.XFER_STREAMS);
                 } else {
+                    // From drag & drop object.
                     return ClipHelper.GetFileContents(dropObj, index, ClipInfo.XFER_STREAMS);
                 }
             };

@@ -274,7 +274,9 @@ namespace Delay
             // that's what we want.  The current ClipHelper implementation doesn't need this.
             //
             // We can also get here after an exception on the stream opener.
-            throw new NotImplementedException();
+            //
+            // ThrowExceptionForHR seems like the right answer.  E_FAIL turns into a COMException.
+            Marshal.ThrowExceptionForHR(NativeMethods.E_FAIL);
         }
 
         /// <summary>

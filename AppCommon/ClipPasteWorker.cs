@@ -38,10 +38,11 @@ namespace AppCommon {
         public delegate CallbackFacts.Results CallbackFunc(CallbackFacts what);
 
         /// <summary>
-        /// Stream generator function interface definition.
+        /// Input stream generator function interface definition.  This is invoked on the
+        /// receiving side to receive input from the sender.
         /// </summary>
         /// <param name="clipEntry">Entry to generate a stream for.</param>
-        /// <returns>Write-only, non-seekable output stream, or null if no stream is
+        /// <returns>Read-only, non-seekable output stream, or null if no stream is
         ///   available for the specified entry.</returns>
         public delegate Stream? ClipStreamGenerator(ClipFileEntry clipEntry);
 
@@ -581,7 +582,8 @@ namespace AppCommon {
 
             using (Stream? inStream = mClipStreamGen(clipEntry)) {
                 if (inStream == null) {
-                    throw new IOException("Unable to open source stream");
+                    throw new IOException("Unable to open source stream.  " +
+                        "Make sure source archive is open and files have not been deleted.");
                 }
                 while (true) {
                     int actual = inStream.Read(mCopyBuf, 0, mCopyBuf.Length);

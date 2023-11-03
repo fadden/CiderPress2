@@ -188,6 +188,7 @@ namespace DiskArc {
         /// <summary>
         /// Overwrites attributes with values from an AppleSingle/AppleDouble file.  Notably,
         /// the FileNameOnly and RsrcLength fields are replaced with the value from the archive.
+        /// FullPathName and FullPathSep are not altered.
         /// </summary>
         /// <param name="entry">Entry from AppleSingle/AppleDouble archive.</param>
         public void GetFromAppleSingle(IFileEntry entry) {
