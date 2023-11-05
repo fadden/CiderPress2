@@ -81,7 +81,8 @@ namespace DiskArc.Disk {
                 // so we can test mod BLOCK_SIZE rather than SECTOR_SIZE.
                 return true;
             } else {
-                return stream.Length >= MIN_BLOCK_IMG_LEN && stream.Length % BLOCK_SIZE == 0;
+                // Don't test vs. MIN_BLOCK_IMG_LEN, as there might not be a filesystem on it.
+                return stream.Length >= 0 && stream.Length % BLOCK_SIZE == 0;
             }
         }
 

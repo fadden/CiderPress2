@@ -151,8 +151,25 @@ namespace cp2 {
                         (hasFs ? ", " + ThingString.FileSystemType(fsType) : ""));
                 }
                 try {
-                    CreateDiskImage(imgStream, createKind, orderHint, byteSize, trackSize, fsType,
-                        DEFAULT_525_VOLUME_NUM, parms.MakeBootable, parms.AppHook);
+                    using IDiskImage diskImage = CreateDiskImage(imgStream, createKind, orderHint,
+                        byteSize, trackSize, fsType, DEFAULT_525_VOLUME_NUM,
+                        parms.MakeBootable, parms.AppHook, out Stream? streamForArc);
+
+                    // Handle NuFX ".SDK" disk image creation.  (This doesn't strictly belong here,
+                    // but it's nicer for the user if we handle it.)
+                    if (createKind == FileKind.NuFX) {
+                        Debug.Assert(streamForArc != null);
+
+                        NuFX archive = NuFX.CreateArchive(parms.AppHook);
+                        archive.StartTransaction();
+                        IFileEntry entry = archive.CreateRecord();
+                        entry.FileName = Defs.DEFAULT_VOL_NAME;
+                        SimplePartSource source = new SimplePartSource(streamForArc);
+                        CompressionFormat fmt = parms.Compress ?
+                            CompressionFormat.Default : CompressionFormat.Uncompressed;
+                        archive.AddPart(entry, FilePart.DiskImage, source, fmt);
+                        archive.CommitTransaction(imgStream);
+                    }
                     keepFile = true;
                 } catch (Exception ex) {
                     Console.Error.WriteLine("Error: " + ex.Message);
@@ -181,15 +198,18 @@ namespace cp2 {
         ///   initialization and DOS filesystem formatting.</param>
         /// <param name="doMakeBootable">If set, format the filesystem with boot tracks.</param>
         /// <param name="appHook">Application hook reference.</param>
+        /// <param name="streamForArc">Result: if we're creating a disk image in a NuFX archive,
+        ///   this holds the disk image stream.</param>
+        /// <returns>New disk image.  Caller must dispose.</returns>
         /// <exception cref="DAException">Internal error.</exception>
-        private static void CreateDiskImage(Stream imgStream, FileKind fileKind,
+        private static IDiskImage CreateDiskImage(Stream imgStream, FileKind fileKind,
                 SectorOrder sectorOrder, long byteSize, int trackSize, FileSystemType fsType,
-                byte volumeNum, bool doMakeBootable, AppHook appHook) {
+                byte volumeNum, bool doMakeBootable, AppHook appHook, out Stream? streamForArc) {
             //Console.WriteLine("kind=" + fileKind + " order=" + sectorOrder +
             //    " size=" + byteSize + " trackSize=" + trackSize + " fsType=" + fsType);
             Debug.Assert(trackSize % SECTOR_SIZE == 0);
 
-            MemoryStream? tmpStream = null;
+            streamForArc = null;
             bool is13Sector = (trackSize == 13 * SECTOR_SIZE);
             IDiskImage image;
 
@@ -224,7 +244,7 @@ namespace cp2 {
                             }
                             if (sectorOrder != SectorOrder.ProDOS_Block) {
                                 throw new DAException("unadorned disks of this size must use " +
-                                    "ProDOS/block order (not " + sectorOrder + ")");
+                                    "ProDOS block order (not " + sectorOrder + ")");
                             }
                             uint numBlocks = (uint)(byteSize / BLOCK_SIZE);
                             image = UnadornedSector.CreateBlockImage(imgStream, numBlocks, appHook);
@@ -325,12 +345,12 @@ namespace cp2 {
                         // Handle like UnadornedSector, but only allow 140K / 800K images, since
                         // that's what Apple II utilities expect.  Create in a temp stream and
                         // compress after formatting.
-                        tmpStream = new MemoryStream();
+                        streamForArc = new MemoryStream();
                         if (byteSize == 140 * 1024) {
-                            image = UnadornedSector.CreateSectorImage(tmpStream, 35, 16,
+                            image = UnadornedSector.CreateSectorImage(streamForArc, 35, 16,
                                 SectorOrder.ProDOS_Block, appHook);
                         } else if (byteSize == 800 * 1024) {
-                            image = UnadornedSector.CreateBlockImage(tmpStream, 1600, appHook);
+                            image = UnadornedSector.CreateBlockImage(streamForArc, 1600, appHook);
                         } else {
                             throw new DAException("Size not supported for NuFX disks");
                         }
@@ -356,37 +376,24 @@ namespace cp2 {
                     throw new DAException("File kind not implemented: " + fileKind);
             }
 
-            using (image) {
-                if (fsType != FileSystemType.Unknown) {
-                    // Map a filesystem instance on top of the disk image chunks.
-                    FileAnalyzer.CreateInstance(fsType, image.ChunkAccess!, appHook,
-                        out IDiskContents? contents);
-                    if (contents is not IFileSystem) {
-                        throw new DAException("Unable to create filesystem");
-                    }
-                    IFileSystem fs = (IFileSystem)contents;
-
-                    // New stream, no need to initialize chunks.  Format the filesystem.
-                    fs.Format(Defs.DEFAULT_VOL_NAME, volumeNum, doMakeBootable);
-
-                    // Dispose of the object to ensure everything has been flushed to the chunks.
-                    fs.Dispose();
+            if (fsType != FileSystemType.Unknown) {
+                // Map a filesystem instance on top of the disk image chunks.
+                FileAnalyzer.CreateInstance(fsType, image.ChunkAccess!, appHook,
+                    out IDiskContents? contents);
+                if (contents is not IFileSystem) {
+                    throw new DAException("Unable to create filesystem");
                 }
-            }
+                IFileSystem fs = (IFileSystem)contents;
 
-            // Handle NuFX ".SDK" disk image creation.  (This doesn't strictly belong here, but
-            // it's nicer for the user if we handle it.)
-            if (fileKind == FileKind.NuFX) {
-                Debug.Assert(tmpStream != null);
+                // New stream, no need to initialize chunks.  Format the filesystem.
+                fs.Format(Defs.DEFAULT_VOL_NAME, volumeNum, doMakeBootable);
 
-                NuFX archive = NuFX.CreateArchive(appHook);
-                archive.StartTransaction();
-                IFileEntry entry = archive.CreateRecord();
-                entry.FileName = Defs.DEFAULT_VOL_NAME;
-                SimplePartSource source = new SimplePartSource(tmpStream);
-                archive.AddPart(entry, FilePart.DiskImage, source, CompressionFormat.Default);
-                archive.CommitTransaction(imgStream);
+                // Dispose of the object to ensure everything has been flushed to the chunks.
+                fs.Dispose();
             }
+            image.Flush();
+
+            return image;
         }
 
         #endregion Create Disk Image
@@ -477,7 +484,11 @@ namespace cp2 {
                 return false;
             }
             Debug.Assert(dstChunks.NumSectorsPerTrack == srcChunks.NumSectorsPerTrack);
+            return CopyAllSectors(srcChunks, dstChunks, parms);
+        }
 
+        private static bool CopyAllSectors(IChunkAccess srcChunks, IChunkAccess dstChunks,
+                ParamsBag parms) {
             int errorCount = 0;
             byte[] copyBuf = new byte[SECTOR_SIZE];
             for (uint trk = 0; trk < srcChunks.NumTracks; trk++) {
@@ -682,6 +693,253 @@ namespace cp2 {
         }
 
         #endregion Copy Blocks
+
+        #region Extract Partition
+
+        /// <summary>
+        /// Handles the "extract-partition" command.
+        /// </summary>
+        public static bool HandleExtractPartition(string cmdName, string[] args, ParamsBag parms) {
+            if (args.Length != 2) {
+                CP2Main.ShowUsage(cmdName);
+                return false;
+            }
+            string extArchive = args[0];
+            string outFileName = args[1];
+
+            if (Directory.Exists(outFileName)) {
+                Console.Error.WriteLine("Cannot create archive: is a directory: '" +
+                    outFileName + "'");
+                return false;
+            }
+
+            // Convert the extension to a format.
+            string ext = Path.GetExtension(outFileName).ToLowerInvariant();
+            if (!FileAnalyzer.ExtensionToKind(ext, out FileKind createKind,
+                    out SectorOrder orderHint, out FileKind unused, out bool okayForCreate)) {
+                Console.Error.WriteLine("Disk image file extension not recognized");
+                return false;
+            }
+            if (!okayForCreate) {
+                Console.Error.WriteLine("Filename extension (" + ext +
+                    ") is ambiguous or not supported for file creation");
+                return false;
+            }
+            if (ext == ".d13") {
+                Console.Error.WriteLine("Cannot copy a partition to a 13-sector disk image.");
+                return false;
+            }
+            if (createKind == FileKind.NuFX) {
+                // This is currently awkward because we're sharing code with create-disk-image.
+                // We'd need to keep the NuFX archive open, or re-open it, to access the blocks.
+            }
+
+            // Only disk images; need special handling for NuFX ".SDK".
+            if (!Defs.IsDiskImageFile(createKind) && ext != ".sdk") {
+                Console.Error.WriteLine("File extension is not a disk image type");
+                return false;
+            }
+
+            DiskArcNode? rootNode = null;
+            try {
+                if (!ExtArchive.OpenExtArc(extArchive, false, true, parms, out rootNode,
+                        out DiskArcNode? srcLeafNode, out object? srcLeaf,
+                        out IFileEntry srcDirEntry)) {
+                    return false;
+                }
+                if (srcLeaf is not Partition) {
+                    Console.Error.WriteLine(
+                        "Error: this only works with disk images and partitions");
+                    return false;
+                }
+
+                IChunkAccess? srcChunks = GetChunkAccess((Partition)srcLeaf);
+                if (srcChunks == null) {
+                    return false;
+                }
+
+                // Determine size of source partition.
+                long byteSize = srcChunks.FormattedLength;
+                int trackSize = parms.Sectors * SECTOR_SIZE;
+
+                // Create the output file.
+                if (Directory.Exists(outFileName)) {
+                    Console.Error.WriteLine("Output file is a directory");
+                    return false;
+                } else if (File.Exists(outFileName)) {
+                    if (parms.Overwrite) {
+                        try {
+                            File.Delete(outFileName);
+                        } catch (Exception ex) {
+                            Console.Error.WriteLine("Unable to delete existing file: " + ex.Message);
+                            return false;
+                        }
+                    } else {
+                        Console.Error.WriteLine("Output file already exists (add --overwrite?)");
+                        return false;
+                    }
+                }
+                FileStream imgStream;
+                bool keepFile = false;
+                try {
+                    imgStream = new FileStream(outFileName, FileMode.CreateNew);
+                } catch (IOException ex) {
+                    Console.Error.WriteLine("Unable to create disk image: " + ex.Message);
+                    return false;
+                }
+                using (imgStream) {
+                    try {
+                        using IDiskImage diskImage = CreateDiskImage(imgStream, createKind,
+                            orderHint, byteSize, trackSize, FileSystemType.Unknown,
+                            DEFAULT_525_VOLUME_NUM, false, parms.AppHook, out Stream? streamForArc);
+
+                        IChunkAccess dstChunks = diskImage.ChunkAccess!;
+                        bool copyOk;
+                        if (srcChunks.HasBlocks && dstChunks.HasBlocks) {
+                            uint copyCount = (uint)(byteSize / BLOCK_SIZE);
+                            copyOk = DoCopyBlocks(srcChunks, 0, dstChunks, 0, copyCount, parms);
+                        } else if (srcChunks.HasSectors && dstChunks.HasSectors) {
+                            copyOk = CopyAllSectors(srcChunks, dstChunks, parms);
+                        } else {
+                            Debug.Assert(false);
+                            Console.Error.WriteLine("Error: internal failure (blocks vs. sectors)");
+                            copyOk = false;
+                        }
+                        if (copyOk) {
+                            if (createKind == FileKind.NuFX) {
+                                Debug.Assert(streamForArc != null);
+
+                                NuFX archive = NuFX.CreateArchive(parms.AppHook);
+                                archive.StartTransaction();
+                                IFileEntry entry = archive.CreateRecord();
+                                entry.FileName = Defs.DEFAULT_VOL_NAME;
+                                SimplePartSource source = new SimplePartSource(streamForArc);
+                                CompressionFormat fmt = parms.Compress ?
+                                    CompressionFormat.Default : CompressionFormat.Uncompressed;
+                                archive.AddPart(entry, FilePart.DiskImage, source, fmt);
+                                archive.CommitTransaction(imgStream);
+                            }
+                            keepFile = true;
+                        }
+                    } catch (Exception ex) {
+                        Console.Error.WriteLine("Error: " + ex.Message);
+                        // fall through to delete file
+                    }
+                }
+                if (!keepFile) {
+                    File.Delete(outFileName);
+                    return false;
+                }
+            } finally {
+                rootNode?.Dispose();
+            }
+            return true;
+        }
+
+        #endregion
+
+        #region Replace Partition
+
+        public static bool HandleReplacePartition(string cmdName, string[] args, ParamsBag parms) {
+            if (args.Length != 2) {
+                CP2Main.ShowUsage(cmdName);
+                return false;
+            }
+            string srcExtArchive = args[0];
+            string dstExtArchive = args[1];
+
+            if (!ExtArchive.CheckSameHostFile(srcExtArchive, dstExtArchive, out bool isSame)) {
+                Console.Error.WriteLine("Error: source or destination file does not exist");
+                return false;
+            }
+            if (isSame) {
+                Console.Error.WriteLine("Error: source and destination must not be the same file");
+                return false;
+            }
+
+            DiskArcNode? srcRootNode = null;
+            DiskArcNode? dstRootNode = null;
+            try {
+                if (!ExtArchive.OpenExtArc(dstExtArchive, false, false, parms, out dstRootNode,
+                        out DiskArcNode? dstLeafNode, out object? dstLeaf,
+                        out IFileEntry dstDirEntry)) {
+                    return false;
+                }
+                if (!ExtArchive.OpenExtArc(srcExtArchive, false, true, parms, out srcRootNode,
+                        out DiskArcNode? srcLeafNode, out object? srcLeaf,
+                        out IFileEntry srcDirEntry)) {
+                    return false;
+                }
+                if (srcLeaf is not IDiskImage) {
+                    // TODO: support NuFX .SDK?
+                    Console.Error.WriteLine("Error: source must be a simple disk image");
+                    return false;
+                }
+                if (dstLeaf is not Partition) {
+                    Console.Error.WriteLine("Error: destination must be a partition");
+                    return false;
+                }
+
+                IChunkAccess? dstChunks = GetChunkAccess((Partition)dstLeaf);
+                if (dstChunks == null) {
+                    return false;
+                }
+                if (((GatedChunkAccess)dstChunks).AccessLevel != GatedChunkAccess.AccessLvl.Open) {
+                    Console.Error.WriteLine("Error: unable to open destination chunks as writable");
+                    return false;
+                }
+
+                IDiskImage srcDisk = (IDiskImage)srcLeaf;
+                if (!Misc.StdChecks(srcDisk, needWrite: false)) {
+                    return false;
+                }
+                IChunkAccess? srcChunks = GetChunkAccess(srcDisk);
+                if (srcChunks == null) {
+                    return false;
+                }
+
+                if (srcChunks.FormattedLength > dstChunks.FormattedLength) {
+                    Console.Error.WriteLine("Error: source is larger than destination");
+                    return false;
+                } else if (srcChunks.FormattedLength < dstChunks.FormattedLength) {
+                    if (parms.Overwrite) {
+                        Console.WriteLine("Note: source is smaller than destination");
+                    } else {
+                        Console.Error.WriteLine("Error: source is smaller than destination " +
+                            "(add --overwrite to proceed anyway)");
+                        return false;
+                    }
+                }
+
+                bool success;
+                if (srcChunks.HasBlocks && dstChunks.HasBlocks) {
+                    uint copyCount = (uint)(srcChunks.FormattedLength / BLOCK_SIZE);
+                    success = DoCopyBlocks(srcChunks, 0, dstChunks, 0, copyCount, parms);
+                } else if (srcChunks.HasSectors && dstChunks.HasSectors) {
+                    success = CopyAllSectors(srcChunks, dstChunks, parms);
+                } else {
+                    Debug.Assert(false);
+                    Console.Error.WriteLine("Error: internal failure (blocks vs. sectors)");
+                    success = false;
+                }
+
+                try {
+                    dstLeafNode.SaveUpdates(parms.Compress);
+                } catch (Exception ex) {
+                    Console.Error.WriteLine("Error: update failed: " + ex.Message);
+                    return false;
+                }
+                if (!success) {
+                    return false;
+                }
+            } finally {
+                srcRootNode?.Dispose();
+                dstRootNode?.Dispose();
+            }
+            return true;
+        }
+
+        #endregion Replace Partition
 
         #region Defragment
 

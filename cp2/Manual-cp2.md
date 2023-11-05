@@ -507,6 +507,9 @@ filesystems.
 If an unreadable or unwritable sector is encountered, a warning will be
 printed on stdout, but the process will continue to completion.
 
+When operating on partitions within a multi-partition image, the
+`extract-partition` and `replace-partition` operations may be convenient.
+
 Options: (none)
 
 Examples:
@@ -667,6 +670,7 @@ If a file is not compatible with the export specification, the command will
 fail.
 
 Options:
+ - `--overwrite`, `--no-overwrite`
  - `--raw`, `--no-raw`
  - `--recurse`, `--no-recurse`
  - `--strip-paths`, `--no-strip-paths`
@@ -701,6 +705,7 @@ file extraction for certain 'B' files and for random-access text files.
 Use the "--raw" flag to get all sectors of the file.
 
 Options:
+ - `--overwrite`, `--no-overwrite`
  - `--mac-zip`, `--no-mac-zip`
  - `--preserve=<mode>`
  - `--raw`
@@ -710,6 +715,27 @@ Options:
 Examples:
  - `cp2 extract archive.shk FILE1 FILE2`
  - `cp2 x disk.po:DIR1:DIR2 AFILE DIR3:BFILE`
+
+----
+#### `extract-partition`|`expart`
+
+Extracts a disk partition to a file.
+
+Usage: `cp2 extract-partition [options] <ext-archive> <output-file>`
+
+This can only be used with multi-partition images, like APF or CFFA.  A
+single partition must be identified on the command line.
+
+To extract an arbitrary range of blocks, see `copy-blocks`.
+
+To replace the contents of a partition with the contents of a disk image, see
+`replace-partition`.
+
+Options:
+ - `--overwrite`, `--no-overwrite`
+
+Examples:
+ - `cp2 extract-partition multi-part.hdv:2 mydisk.po`
 
 ----
 #### `get-metadata`|`gm`
@@ -982,6 +1008,32 @@ Options:
 Examples:
  - `cp2 read-track file.nib 17`
  - `cp2 rt file.woz 22.25`
+
+----
+#### `replace-partition`|`repart`
+
+Replaces the contents of a disk partition with blocks from a file.
+
+Usage: `cp2 replace-partition [options] <src-ext-archive> <dst-ext-archive>`
+
+This can only be used with multi-partition images, like APF or CFFA.  The
+source archive must be a plain disk image file, and the target archive must be
+a single partition.
+
+The source image must be the same size or smaller than the destination
+partition.  If the source image is smaller, the operation will fail unless the
+`--overwrite` option is given on the command line.
+
+To copy an arbitrary range of blocks, see `copy-blocks`.
+
+To extract the contents of a partition to a disk image, see
+`extract-partition`.
+
+Options:
+ - `--overwrite`, `--no-overwrite`
+
+Examples:
+ - `cp2 extract-partition multi-part.hdv:2 mydisk.po`
 
 ----
 #### `set-attr`|`sa`

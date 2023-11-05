@@ -298,7 +298,12 @@ namespace DiskArc.Multi {
         public void ReadBlock(uint block, byte[] data, int offset, SectorOrder order) {
             CheckBlockArgs(block, false);
             if (mBase.HasBlocks) {
-                Debug.Assert(FileOrder == order);
+                if (FileOrder != order) {
+                    // In normal operation this shouldn't be the case.  However, this can happen
+                    // if the filesystem test code is probing (e.g. for CP/M).
+                    Debug.WriteLine("NOTE: ChunkSubset with FileOrder=" + FileOrder +
+                        " called with order=" + order);
+                }
                 mBase.ReadBlock(StartBlock + block, data, offset, order);
             } else {
                 throw new InvalidOperationException("No blocks");

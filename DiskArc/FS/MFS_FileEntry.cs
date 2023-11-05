@@ -407,7 +407,7 @@ namespace DiskArc.FS {
 
             byte nameLen = rawFileName[0];
             if (nameLen < 1 || nameLen > maxNameLen || nameLen >= rawFileName.Length) {
-                Debug.WriteLine("Invalid raw MFS filename");
+                //Debug.WriteLine("Invalid raw MFS filename");
                 return string.Empty;
             }
 
