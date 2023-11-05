@@ -144,6 +144,10 @@ namespace cp2_wpf.WPFCommon {
         /// Single Thread Apartment (STA) threads, and while the GUI thread qualifies, the
         /// BackgroundWorker pool threads do not.
         /// </summary>
+        /// <remarks>
+        /// <para>This is not generally needed for IDataObject, e.g. the object received from
+        /// a drag &amp; drop operation can be accessed on a background worker thread.</para>
+        /// </remarks>
         /// <param name="index">Stream index.</param>
         /// <param name="formatId">Clipboard format identifier.</param>
         /// <returns>Readable stream, or null if there was an error on the remote side.</returns>

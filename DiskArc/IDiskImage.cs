@@ -128,6 +128,9 @@ namespace DiskArc {
         /// filesystem was found, an IMultiPart if a multi-partition format was found, or null
         /// if the analysis failed or hasn't been performed.</para>
         /// </summary>
+        /// <remarks>
+        /// <para>The returned object is owned by the disk image, and should not be disposed.</para>
+        /// </remarks>
         IDiskContents? Contents { get; }
 
         /// <summary>

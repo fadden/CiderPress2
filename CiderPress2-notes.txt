@@ -279,3 +279,15 @@ physical media, you may not be able to drag files in and out.
 
 If no archive is open in the application, dropping a file from Windows Explorer into the main
 application window will cause CiderPress II to try to open that file.
+
+
+# Other Notes #
+
+It's possible to explore some ".iso" files with Windows Explorer.  Such files
+may be opened (read-only) by the system process (pid 4) and presented as a
+drive letter, which means they can be opened as read-only by other processes
+but can't be opened read-write.  This can be verified with Process Explorer
+(https://serverfault.com/a/1980/268812): run as administrator, then
+Find > Find Handle or DLL, and enter a unique part of the filename.
+
+Ejecting the virtual DVD will remove the restrictions on the file.

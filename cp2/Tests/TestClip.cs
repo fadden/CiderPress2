@@ -74,12 +74,17 @@ namespace cp2.Tests {
             TestBasicXfer(proFs, parms);
             TestRerootXfer(proFs, parms);
             TestZipToProDOS(zipSrc, parms);
+            parms.MacZip = false;
+            TestProDOSToZip(proFs, parms);
+            parms.MacZip = true;
+            TestProDOSToZip(proFs, parms);
+            TestDOSConversion(parms);
 
             Controller.RemoveTestTmp(parms);
         }
 
         private static void TestForeignExtract(IArchive arc, ParamsBag parms) {
-            List<IFileEntry> entries = GatherArchiveEntries(arc, parms);
+            List<IFileEntry> entries = GatherArchiveEntries(arc, false, parms);
             ClipFileSet clipSet = new ClipFileSet(arc, entries, IFileEntry.NO_ENTRY,
                 parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
@@ -127,7 +132,7 @@ namespace cp2.Tests {
 
         private static void TestZipToProDOS(Zip zip, ParamsBag parms) {
             parms.MacZip = true;
-            List<IFileEntry> entries = GatherArchiveEntries(zip, parms);
+            List<IFileEntry> entries = GatherArchiveEntries(zip, false, parms);
 
             ClipFileSet clipSet = new ClipFileSet(zip, entries, IFileEntry.NO_ENTRY,
                 parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
@@ -142,6 +147,122 @@ namespace cp2.Tests {
                 xferStreams, sOutputProDOS, parms);
         }
 
+        private static void TestProDOSToZip(IFileSystem srcFs, ParamsBag parms) {
+            List<IFileEntry> entries = GatherDiskEntries(srcFs, srcFs.GetVolDirEntry());
+
+            ClipFileSet clipSet = new ClipFileSet(srcFs, entries, IFileEntry.NO_ENTRY,
+                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                null, null, parms.AppHook);
+            List<MemoryStream?> xferStreams = GenerateXferStreams(srcFs, clipSet);
+            Debug.Assert(clipSet.XferEntries.Count == xferStreams.Count);
+
+            CheckXfer(clipSet, sXferFromProDOS, parms);
+
+            using IArchive arc = Zip.CreateArchive(parms.AppHook);
+            CheckOutput(entries, clipSet, arc, IFileEntry.NO_ENTRY, xferStreams,
+                parms.MacZip ? sOutputZipMZ : sOutputZipNoMZ, parms);
+        }
+
+        private static void TestDOSConversion(ParamsBag parms) {
+            parms.ConvertDOSText = true;
+
+            //
+            // Set up disk images.
+            //
+            using IDiskImage dosDisk = CreateTestDisk(FileSystemType.DOS33, parms);
+            DOS dosFs = (DOS)dosDisk.Contents!;
+            IFileEntry dosVolDir = dosFs.GetVolDirEntry();
+            IFileEntry dosText = dosFs.CreateFile(dosVolDir, "DOS-TEXT", CreateMode.File,
+                FileAttribs.FILE_TYPE_TXT);
+            byte[] dosData = Encoding.ASCII.GetBytes("Hello, DOS!\r");
+            using (Stream dosStream = dosFs.OpenFile(dosText, FileAccessMode.ReadWrite,
+                    FilePart.DataFork)) {
+                foreach (byte bval in dosData) {
+                    dosStream.WriteByte((byte)(bval | 0x80));
+                }
+            }
+
+            using IDiskImage proDisk = CreateTestDisk(FileSystemType.ProDOS, parms);
+            ProDOS proFs = (ProDOS)proDisk.Contents!;
+            IFileEntry proVolDir = proFs.GetVolDirEntry();
+            IFileEntry proText = proFs.CreateFile(proVolDir, "Pro.Text", CreateMode.File,
+                FileAttribs.FILE_TYPE_TXT);
+            byte[] proData = Encoding.ASCII.GetBytes("Hello, ProDOS!\r");
+            using (Stream proStream = proFs.OpenFile(proText, FileAccessMode.ReadWrite,
+                    FilePart.DataFork)) {
+                proStream.Write(proData);
+            }
+
+            ClipPasteWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                // Do nothing.
+                return CallbackFacts.Results.Unknown;
+            };
+
+            bool isCancelled;
+
+            //
+            // Copy DOS to ProDOS.
+            //
+            List<IFileEntry> dosSrcEntries = new List<IFileEntry>() { dosText };
+            ClipFileSet dosClipSet = new ClipFileSet(dosFs, dosSrcEntries, IFileEntry.NO_ENTRY,
+                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                null, null, parms.AppHook);
+
+            ClipPasteWorker.ClipStreamGenerator dosGen = delegate (ClipFileEntry clipEntry) {
+                // Only one possible file to open.
+                return dosFs.OpenFile(dosText, FileAccessMode.ReadOnly, FilePart.DataFork);
+            };
+
+            ClipPasteWorker dosWorker = new ClipPasteWorker(dosClipSet.XferEntries, dosGen,
+                cbFunc, parms.Compress, parms.MacZip, parms.ConvertDOSText, parms.StripPaths,
+                parms.Raw, true, parms.AppHook);
+            dosWorker.AddFilesToDisk(proFs, IFileEntry.NO_ENTRY, out isCancelled);
+            Debug.Assert(!isCancelled);
+
+            //
+            // Copy ProDOS to DOS.
+            //
+            List<IFileEntry> proSrcEntries = new List<IFileEntry>() { proText };
+            ClipFileSet proClipSet = new ClipFileSet(proFs, proSrcEntries, IFileEntry.NO_ENTRY,
+                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                null, null, parms.AppHook);
+
+            ClipPasteWorker.ClipStreamGenerator proGen = delegate (ClipFileEntry clipEntry) {
+                // Only one possible file to open.
+                return proFs.OpenFile(proText, FileAccessMode.ReadOnly, FilePart.DataFork);
+            };
+
+            ClipPasteWorker proWorker = new ClipPasteWorker(proClipSet.XferEntries, proGen,
+                cbFunc, parms.Compress, parms.MacZip, parms.ConvertDOSText, parms.StripPaths,
+                parms.Raw, true, parms.AppHook);
+            proWorker.AddFilesToDisk(dosFs, IFileEntry.NO_ENTRY, out isCancelled);
+            Debug.Assert(!isCancelled);
+
+            //
+            // Check file contents.
+            //
+            IFileEntry toDos = dosFs.FindFileEntry(dosVolDir, "PRO.TEXT");
+            using (Stream hiText = dosFs.OpenFile(toDos, FileAccessMode.ReadOnly,
+                    FilePart.DataFork)) {
+                int ich;
+                while ((ich = hiText.ReadByte()) >= 0) {
+                    if ((ich & 0x80) == 0) {
+                        throw new Exception("Text on DOS disk has high bit clear");
+                    }
+                }
+            }
+            IFileEntry toPro = proFs.FindFileEntry(proVolDir, "DOS.TEXT");
+            using (Stream loText = proFs.OpenFile(toPro, FileAccessMode.ReadOnly,
+                    FilePart.DataFork)) {
+                int ich;
+                while ((ich = loText.ReadByte()) >= 0) {
+                    if ((ich & 0x80) != 0) {
+                        throw new Exception("Text on ProDOS disk has high bit set");
+                    }
+                }
+            }
+        }
+
 
         private const string DATA_ONLY_NAME = "DataOnly";
         private const string RSRC_ONLY_NAME = "RsrcOnly";
@@ -154,6 +275,8 @@ namespace cp2.Tests {
         private const int DATA_RSRC_DLEN = 2345;
         private const int DATA_RSRC_RLEN = 5432;
         private const int ANOTHER_DLEN = 1122;
+        private const int ADF_MIN = 50;
+        private const int ADF_MAX = 200;
         private const byte ARC_DATA_VAL = 0x11;
         private const byte ARC_RSRC_VAL = 0x22;
         private const byte FS_DATA_VAL = 0x33;
@@ -448,6 +571,38 @@ namespace cp2.Tests {
             new ExpectedOutput(ANOTHER_NAME, ANOTHER_DLEN, -1, false),
         };
 
+        private static ExpectedOutput[] sOutputZipMZ = new ExpectedOutput[] {
+            new ExpectedOutput(DATA_ONLY_NAME, DATA_ONLY_DLEN, -1, false),
+            new ExpectedOutput(Zip.GenerateMacZipName(DATA_ONLY_NAME),
+                ADF_MIN, ADF_MAX, -1, false),
+            new ExpectedOutput(RSRC_ONLY_NAME, 0, -1, false),
+            new ExpectedOutput(Zip.GenerateMacZipName(RSRC_ONLY_NAME),
+                ADF_MIN + RSRC_ONLY_RLEN, ADF_MAX + RSRC_ONLY_RLEN, -1, false),
+            new ExpectedOutput(DATA_RSRC_NAME, DATA_RSRC_DLEN, -1, false),
+            new ExpectedOutput(Zip.GenerateMacZipName(DATA_RSRC_NAME),
+                ADF_MIN + DATA_RSRC_RLEN, ADF_MAX + DATA_RSRC_RLEN, -1, false),
+            new ExpectedOutput(SUBDIR1 + PRO_SEP + DATA_ONLY_NAME, DATA_ONLY_DLEN, -1, false),
+            new ExpectedOutput(Zip.GenerateMacZipName(SUBDIR1 + PRO_SEP + DATA_ONLY_NAME),
+                ADF_MIN, ADF_MAX, -1, false),
+            new ExpectedOutput(SUBDIR1 + PRO_SEP + SUBDIR2 + PRO_SEP + DATA_ONLY_NAME,
+                DATA_ONLY_DLEN, -1, false),
+            new ExpectedOutput(Zip.GenerateMacZipName(SUBDIR1 + PRO_SEP + SUBDIR2 + PRO_SEP + DATA_ONLY_NAME),
+                ADF_MIN, ADF_MAX, -1, false),
+            new ExpectedOutput(ANOTHER_NAME, ANOTHER_DLEN, -1, false),
+            new ExpectedOutput(Zip.GenerateMacZipName(ANOTHER_NAME),
+                ADF_MIN, ADF_MAX, -1, false),
+        };
+
+        private static ExpectedOutput[] sOutputZipNoMZ = new ExpectedOutput[] {
+            new ExpectedOutput(DATA_ONLY_NAME, DATA_ONLY_DLEN, -1, false),
+            new ExpectedOutput(RSRC_ONLY_NAME, 0, -1, false),   // data fork from ProDOS
+            new ExpectedOutput(DATA_RSRC_NAME, DATA_RSRC_DLEN, -1, false),
+            new ExpectedOutput(SUBDIR1 + PRO_SEP + DATA_ONLY_NAME, DATA_ONLY_DLEN, -1, false),
+            new ExpectedOutput(SUBDIR1 + PRO_SEP + SUBDIR2 + PRO_SEP + DATA_ONLY_NAME,
+                DATA_ONLY_DLEN, -1, false),
+            new ExpectedOutput(ANOTHER_NAME, ANOTHER_DLEN, -1, false),
+        };
+
         private static ExpectedXfer[] sXferFromProDOSReroot = new ExpectedXfer[] {
             new ExpectedXfer(DATA_ONLY_NAME, FilePart.DataFork, DATA_ONLY_DLEN),
             new ExpectedXfer(SUBDIR2, FilePart.Unknown, -1),
@@ -476,11 +631,17 @@ namespace cp2.Tests {
         };
 
 
-        private static List<IFileEntry> GatherArchiveEntries(IArchive arc, ParamsBag parms) {
+        private static List<IFileEntry> GatherArchiveEntries(IArchive arc, bool includeMacZip,
+                ParamsBag parms) {
             List<IFileEntry> entryList = new List<IFileEntry>();
             foreach (IFileEntry entry in arc) {
-                if (arc is Zip && parms.MacZip && entry.IsMacZipHeader()) {
-                    continue;
+                if (arc is Zip && parms.MacZip) {
+                    // Exclude ADF headers unless we want to see them.  (We don't want to see
+                    // them when gathering the source list, but we do want to see them when
+                    // checking the output list.)
+                    if (!includeMacZip && entry.IsMacZipHeader()) {
+                        continue;
+                    }
                 }
                 entryList.Add(entry);
             }
@@ -583,7 +744,7 @@ namespace cp2.Tests {
         }
 
         private static void CheckOutput(List<IFileEntry> srcEntries, ClipFileSet clipSet,
-                object archiveOrFileSystem, IFileEntry dstBaseDir, List<MemoryStream?> xferStreams,
+                object dstArcOrFs, IFileEntry dstBaseDir, List<MemoryStream?> xferStreams,
                 ExpectedOutput[] expected, ParamsBag parms) {
             ClipPasteWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
                 // Do nothing.
@@ -594,10 +755,10 @@ namespace cp2.Tests {
                 int index = clipSet.XferEntries.IndexOf(clipEntry);
                 Stream? stream = xferStreams[index];
                 if (stream == null) {
-                    Debug.WriteLine("StreamGen: returning null stream");
+                    //Debug.WriteLine("StreamGen: returning null stream");
                 } else {
                     Debug.Assert(stream.Position == 0);
-                    Debug.WriteLine("StreamGen: returning stream, length=" + stream.Length);
+                    //Debug.WriteLine("StreamGen: returning stream, length=" + stream.Length);
                 }
                 return xferStreams[index];
             };
@@ -607,20 +768,24 @@ namespace cp2.Tests {
                 parms.Raw, true, parms.AppHook);
 
             bool isCancelled;
-            if (archiveOrFileSystem is IArchive) {
-                worker.AddFilesToArchive((IArchive)archiveOrFileSystem, out isCancelled);
+            if (dstArcOrFs is IArchive) {
+                IArchive arc = (IArchive)dstArcOrFs;
+                arc.StartTransaction();
+                worker.AddFilesToArchive(arc, out isCancelled);
+                arc.CommitTransaction(new MemoryStream());
             } else {
-                worker.AddFilesToDisk((IFileSystem)archiveOrFileSystem, dstBaseDir, out isCancelled);
+                worker.AddFilesToDisk((IFileSystem)dstArcOrFs, dstBaseDir,
+                    out isCancelled);
             }
             Debug.Assert(!isCancelled);
 
             // Confirm contents match expectations.
             List<IFileEntry> dstEntries;
-            if (archiveOrFileSystem is IArchive) {
-                IArchive arc = (IArchive)archiveOrFileSystem;
-                dstEntries = GatherArchiveEntries(arc, parms);
+            if (dstArcOrFs is IArchive) {
+                IArchive arc = (IArchive)dstArcOrFs;
+                dstEntries = GatherArchiveEntries(arc, true, parms);
             } else {
-                IFileSystem fs = (IFileSystem)archiveOrFileSystem;
+                IFileSystem fs = (IFileSystem)dstArcOrFs;
                 if (dstBaseDir == IFileEntry.NO_ENTRY) {
                     dstBaseDir = fs.GetVolDirEntry();
                 }
@@ -644,11 +809,17 @@ namespace cp2.Tests {
                     dstEntry.FullPathName + " exp=" + exp.PathName);
             }
             if (!exp.IsDirectory) {
-                if (dstEntry.FileType != PRODOS_FILETYPE || dstEntry.AuxType != PRODOS_AUXTYPE) {
-                    throw new Exception(prefix + "lacks types");
+                if (dstEntry is not Zip_FileEntry) {
+                    if (dstEntry.FileType != PRODOS_FILETYPE ||
+                            dstEntry.AuxType != PRODOS_AUXTYPE) {
+                        throw new Exception(prefix + "lacks types");
+                    }
+                    if (dstEntry.CreateWhen != CREATE_WHEN) {
+                        throw new Exception(prefix + "create date not set");
+                    }
                 }
-                if (dstEntry.CreateWhen != CREATE_WHEN || dstEntry.ModWhen != MOD_WHEN) {
-                    throw new Exception(prefix + "lacks dates");
+                if (dstEntry.ModWhen != MOD_WHEN) {
+                    throw new Exception(prefix + "mod date not set");
                 }
 
                 // Confirm the file lengths.

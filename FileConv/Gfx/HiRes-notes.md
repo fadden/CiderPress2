@@ -180,4 +180,6 @@ For FOT files with an auxtype < $4000, a byte in the first screen hole
 at offset +120 determines how the file should be treated (e.g. as B&W or
 color).
 
-The LZ4FH format is defined [here](https://github.com/fadden/fhpack).
+LZ4FH files are created by [fhpack](https://github.com/fadden/fhpack).  The
+[compression sources](https://github.com/fadden/fhpack/blob/master/fhpack.cpp)
+describe the file format in detail.

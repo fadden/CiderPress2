@@ -90,6 +90,9 @@ namespace cp2.Tests {
             GC.WaitForPendingFinalizers();
 
             Console.WriteLine("Success");
+#if !DEBUG
+            Console.WriteLine("...but it's best to test with a DEBUG build");
+#endif
             return true;
         }
 

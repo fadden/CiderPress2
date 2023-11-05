@@ -159,6 +159,9 @@ namespace cp2.Tests {
             } else {
                 Console.WriteLine(successCount + " of " + numTests + " tests passed");
             }
+#if !DEBUG
+            Console.WriteLine("NOTE: it's best to test with a DEBUG build");
+#endif
 
             return (failureCount == 0);
         }
