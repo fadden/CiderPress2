@@ -71,6 +71,7 @@ namespace cp2.Tests {
                 TestSectorEdit.RunTest(parms);
                 TestCopySectors.RunTest(parms);
                 TestCopyBlocks.RunTest(parms);
+                TestCopyPartition.RunTest(parms);
                 TestDefrag.RunTest(parms);
                 TestMetadata.RunTest(parms);
                 TestPrint.RunTest(parms);
@@ -151,7 +152,9 @@ namespace cp2.Tests {
                 int index = 0;
                 string? readStr;
                 while ((readStr = sr.ReadLine()) != null) {
-                    if (readStr != expected[index]) {
+                    if (index >= expected.Length) {
+                        // Do nothing; will fail length check at the end.
+                    } else if (readStr != expected[index]) {
                         throw new Exception("String mismatch: expected '" + expected[index] +
                             "', got '" + readStr + "'");
                     }
