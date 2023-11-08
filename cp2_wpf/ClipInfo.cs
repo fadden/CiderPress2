@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
 
 using AppCommon;
@@ -80,6 +81,41 @@ namespace cp2_wpf {
             //    return false;
             //}
             return true;
+        }
+
+        /// <summary>
+        /// Extracts and deserializes the ClipInfo contents from the data object.
+        /// </summary>
+        /// <param name="dropObject">Data object from drop, or null to check clipboard.</param>
+        /// <returns>ClipInfo object, or null if it couldn't be found.</returns>
+        public static ClipInfo? GetClipInfo(IDataObject? dropObject) {
+            IDataObject dataObj = (dropObject == null) ? Clipboard.GetDataObject() : dropObject;
+            object? metaData = dataObj.GetData(XFER_METADATA_NAME);
+            if (metaData is null) {
+                Debug.WriteLine("Didn't find " + XFER_METADATA_NAME);
+                return null;
+            }
+            if (metaData is not MemoryStream) {
+                Debug.WriteLine("Found " + XFER_METADATA_NAME + " w/o MemoryStream");
+                return null;
+            }
+            ClipInfo clipInfo;
+            try {
+                object? parsed =
+                    JsonSerializer.Deserialize((MemoryStream)metaData, typeof(ClipInfo));
+                if (parsed == null) {
+                    return null;
+                }
+                clipInfo = (ClipInfo)parsed;
+                if (clipInfo.ClipEntries == null) {
+                    Debug.WriteLine("ClipInfo arrived without ClipEntries");
+                    return null;
+                }
+            } catch (JsonException ex) {
+                Debug.WriteLine("Clipboard deserialization failed: " + ex.Message);
+                return null;
+            }
+            return clipInfo;
         }
 
         /// <summary>

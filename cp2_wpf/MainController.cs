@@ -772,11 +772,18 @@ namespace cp2_wpf {
             ClearEntryCounts();
             mMainWin.ShowLaunchPanel = true;
 
+            // If the clipboard contents are ours, clear them.
+            ClipInfo? clipInfo = ClipInfo.GetClipInfo(null);
+            if (clipInfo != null && clipInfo.ProcessId == Process.GetCurrentProcess().Id) {
+                AppHook.LogI("Clearing clipboard");
+                Clipboard.Clear();
+            }
+
             // This seems like a good time to save our current settings, notably the Recents list.
             SaveAppSettings();
 
-            // Not necessary, but it lets us check the memory monitor to see if we got
-            // rid of everything.
+            // Not necessary to collect garbage, but it lets us check the memory monitor to see
+            // if we got rid of everything.
             GC.Collect();
             return true;
         }
@@ -1065,29 +1072,9 @@ namespace cp2_wpf {
         /// </summary>
         public void PasteOrDrop(IDataObject? dropObj, IFileEntry dropTarget) {
             IDataObject dataObj = (dropObj != null) ? dropObj : Clipboard.GetDataObject();
-            object? metaData = dataObj.GetData(ClipInfo.XFER_METADATA_NAME);
-            if (metaData is null) {
+            ClipInfo? clipInfo = ClipInfo.GetClipInfo(dropObj);
+            if (clipInfo == null || clipInfo.ClipEntries == null) {
                 // TODO? handle paste from Windows Explorer ZIP folder
-                Debug.WriteLine("Didn't find " + ClipInfo.XFER_METADATA_NAME);
-                return;
-            }
-            if (metaData is not MemoryStream) {
-                Debug.WriteLine("Found " + ClipInfo.XFER_METADATA_NAME + " w/o MemoryStream");
-                return;
-            }
-            ClipInfo clipInfo;
-            try {
-                object? parsed = JsonSerializer.Deserialize((MemoryStream)metaData, typeof(ClipInfo));
-                if (parsed == null) {
-                    return;
-                }
-                clipInfo = (ClipInfo)parsed;
-                if (clipInfo.ClipEntries == null) {
-                    Debug.WriteLine("ClipInfo arrived without ClipEntries");
-                    return;
-                }
-            } catch (JsonException ex) {
-                Debug.WriteLine("Clipboard deserialization failed: " + ex.Message);
                 return;
             }
 
@@ -1099,6 +1086,7 @@ namespace cp2_wpf {
                     "Version Mismatch", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+
             if (clipInfo.ClipEntries.Count == 0) {
                 Debug.WriteLine("Pasting empty file set");
                 return;
@@ -1711,8 +1699,11 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Creates a clipboard data object with the contents of the selected files.
+        /// Handles Edit : Copy
         /// </summary>
+        /// <remarks>
+        /// Creates a clipboard data object with the contents of the selected files.
+        /// </remarks>
         public void CopyToClipboard() {
             if (mMainWin.fileListDataGrid.SelectedItems.Count == 0) {
                 Debug.Assert(false);
@@ -1828,6 +1819,9 @@ namespace cp2_wpf {
             //    "This is a test (" + dataGrid.SelectedItems.Count + ")");
             //vfdo.SetData(DataFormats.Text,
             //    "This is plain text (" + dataGrid.SelectedItems.Count + ")");
+
+            AppHook.LogI("Generated VFDO with foreign=" + clipSet.ForeignEntries.Count +
+                " xfer=" + clipSet.XferEntries.Count);
 
             return vfdo;
         }
