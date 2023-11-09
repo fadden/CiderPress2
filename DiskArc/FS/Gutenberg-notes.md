@@ -100,10 +100,12 @@ but allocations seem to start at track 3.
 
 Document files use an extended ASCII character set, and end when the first $00 byte is encountered.
 The program supports custom character sets, so it's only possible to display the document
-correctly if the character set can be identified.  "Normal" characters have the high bit set,
+correctly if the character set can be identified.  "Standard" characters have the high bit set,
 "alternate" characters have the high bit clear.  Only 0x80-0x9f are considered control characters.
 Open the file `FONTS.TABLE` on the Gutenberg, Jr. program disk to see the full set of characters
 available.
+
+Carriage return ($8d) is used as the end-of-line character.
 
 The structure of "program" files is unknown.  Gutenberg executables generally begin with the bytes
 `00 01 02 03 04 05 06 07 d3`, while Gutenberg, Jr.'s start with `00 01 02 03 04 05 06 07 08 d3`.

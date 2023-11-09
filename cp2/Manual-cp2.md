@@ -1553,6 +1553,7 @@ Text documents:
    - `embed` (bool): true=display embedded formatting codes (default)
  - `awgswp`: AppleWorks GS Word Processor
    - `embed` (bool): true=display embedded formatting codes (default)
+ - `guten`: Gutenberg word processor
  - `rtext`: convert DOS/ProDOS random-access text to cell-grid
    - `len` (int): specify record length; default value from aux type if
      available (if zero, file is converted as sequential text)
@@ -1563,6 +1564,7 @@ Graphics:
    - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
  - `hgr`: Apple II hi-res screen
    - `bw` (bool): false=color (default), true=black & white
+ - `macpaint`: MacPaint graphics document
  - `psclip`: Print Shop clip art, monochrome and color
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
