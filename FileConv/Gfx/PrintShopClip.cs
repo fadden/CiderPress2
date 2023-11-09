@@ -20,6 +20,9 @@ using CommonUtil;
 using DiskArc;
 
 namespace FileConv.Gfx {
+    /// <summary>
+    /// Converts Print Shop clip art of various types.
+    /// </summary>
     public class PrintShopClip : Converter {
         public const string TAG = "psclip";
         public const string LABEL = "Print Shop Clip Art";

@@ -60,6 +60,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Gfx.SuperHiRes_Packed)),
             new ConverterEntry(typeof(Gfx.PrintShopClip)),
             new ConverterEntry(typeof(Gfx.HostImage)),
+            new ConverterEntry(typeof(Gfx.MacPaint)),
         };
 
         private static readonly Dictionary<string, ConverterEntry> sTagList = GenerateTagList();

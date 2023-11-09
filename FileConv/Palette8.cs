@@ -182,7 +182,7 @@ namespace FileConv {
             });
 
         /// <summary>
-        /// Monochrome black & white palette.
+        /// Monochrome black &amp; white palette, with 0=black.
         /// </summary>
         public static readonly Palette8 Palette_MonoBW = new Palette8("B&W",
             new int[] {

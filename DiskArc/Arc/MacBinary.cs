@@ -28,6 +28,9 @@ namespace DiskArc.Arc {
         public const int CHUNK_LEN = 128;
         public const int HEADER_LEN = CHUNK_LEN;
 
+        public const int TYPE_OFFSET = 0x41;
+        public const int CREATOR_OFFSET = 0x45;
+
         // The file format allows up to 63 characters, but that may have been a concession to
         // MFS, which allowed 255.  MacBinary III limits it to 31.
         private const string FILENAME_RULES = "1-31 characters.  Must not include ':'.";

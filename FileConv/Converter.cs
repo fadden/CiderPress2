@@ -272,6 +272,8 @@ namespace FileConv {
         /// immediately, but don't actually generate it until necessary.</para>
         /// <para>The actual output may depend on the current settings and the contents of the
         /// file itself.  In the latter case, examining the file may be necessary.</para>
+        /// <para>All Bitmap classes return IBitmap.  Document classes that return FancyText
+        /// with the "prefer simple" flag set should return SimpleText.</para>
         /// </remarks>
         public abstract Type GetExpectedType(Dictionary<string, string> options);
 

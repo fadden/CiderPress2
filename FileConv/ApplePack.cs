@@ -18,14 +18,13 @@ using System.Diagnostics;
 
 using CommonUtil;
 
-// also want PackBits:
-// http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html
-
 namespace FileConv {
     /// <summary>
     /// Functions for working with Apple's PackBytes and PackBits compression algorithms.
     /// </summary>
     public static class ApplePack {
+        #region PackBytes
+
         private const byte FLAG_NORUN = 0x00;
         private const byte FLAG_RUN8 = 0x40;
         private const byte FLAG_RUN32 = 0x80;
@@ -138,5 +137,82 @@ namespace FileConv {
 
             return dstOffset - origDstOffset;
         }
+
+        #endregion PackBytes
+
+        #region PackBits
+
+        /// <summary>
+        /// Unpacks a buffer of data compressed with Apple's PackBits run-length encoding format.
+        /// </summary>
+        /// <remarks>
+        /// <para>The data is regarded as a series of signed bytes, probably due to the
+        /// characteristics of the Pascal programming language used by Apple.  The data stream
+        /// is a code byte followed by zero or more data bytes:</para>
+        /// <list type="bullet">
+        ///   <item>N = -128: reserved, ignore (could be an end-of-stream indicator)</item>
+        ///   <item>N &lt; 0: repeat the next byte (1-N) times</item>
+        ///   <item>N &gt;= 0: copy the next (1+N) bytes</item>
+        /// </list>
+        /// <para>Example:</para>
+        /// <code>FE AA 02 80 00 2A FD AA 03 80 00 2A 22 F7 AA  unpacks to
+        /// AA AA AA 80 00 2A AA AA AA AA 80 00 2A 22 AA AA AA AA AA AA AA AA AA AA</code>
+        /// <para>The caller must specify either the source length or destination length.
+        /// We accept both here, and will stop when either one is reached.</para>
+        /// <para><see href="http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html"/></para>
+        /// </remarks>
+        /// <param name="src">Compressed data buffer.</param>
+        /// <param name="srcOffset">Initial offset in data buffer.  Updated to point past the
+        ///   last byte consumed.</param>
+        /// <param name="srcLen">Maximum amount of data that may be consumed.</param>
+        /// <param name="dst">Buffer for uncompressed data.</param>
+        /// <param name="dstOffset">Initial offset in output buffer.</param>
+        /// <param name="dstLen">Maximum length of output.</param>
+        public static bool UnpackBits(byte[] src, ref int srcOffset, int srcLen,
+                byte[] dst, int dstOffset, int dstLen) {
+            if (srcLen == 0) {
+                // Something failed earlier... file truncated?
+                RawData.MemSet(dst, dstOffset, dstLen, 0xaa);
+                return false;
+            }
+
+            int srcEnd = srcOffset + srcLen;
+            int dstEnd = dstOffset + dstLen;
+
+            while (srcOffset < srcEnd && dstOffset < dstEnd) {
+                sbyte flagCount = (sbyte)src[srcOffset++];
+                if (flagCount == -128) {
+                    // Ignore.
+                } else if (flagCount < 0) {
+                    // Run of single byte value.
+                    if (srcOffset == srcEnd) {
+                        Debug.WriteLine("UnpackBits: source ended mid-run");
+                        return false;
+                    }
+                    byte bval = src[srcOffset++];
+                    int count = 1 - flagCount;
+                    while (count-- != 0 && dstOffset != dstEnd) {
+                        dst[dstOffset++] = bval;
+                    }
+                } else {
+                    // Run of literals.
+                    int count = flagCount + 1;
+                    while (count-- != 0 && srcOffset != srcEnd && dstOffset != dstEnd) {
+                        dst[dstOffset++] = src[srcOffset++];
+                    }
+                }
+            }
+
+            if (dstOffset < dstEnd) {
+                Debug.WriteLine("UnpackBits: ran out of source material");
+                while (dstOffset < dstEnd) {
+                    dst[dstOffset++] = 0x55;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        #endregion PackBits
     }
 }

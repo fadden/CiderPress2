@@ -61,6 +61,8 @@ namespace DiskArc {
         public const int FILE_TYPE_SYS = 0xff;
 
         // Some HFS file and creator types.
+        // (We could switch to using MacChar.IntifyMacConstantString() here, though that would
+        // make them runtime variables rather than compiler constants.)
         public const uint CREATOR_CPII = 0x43504949;        // 'CPII' (CiderPress II)
         public const uint CREATOR_PDOS = 0x70646f73;        // 'pdos' (ProDOS)
         public const uint CREATOR_DCPY = 0x64437079;        // 'dCpy' (DiskCopy)
