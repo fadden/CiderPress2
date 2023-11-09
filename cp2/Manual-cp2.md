@@ -1554,6 +1554,7 @@ Text documents:
  - `awgswp`: AppleWorks GS Word Processor
    - `embed` (bool): true=display embedded formatting codes (default)
  - `guten`: Gutenberg word processor
+ - `magwin`: Magic Window word processor
  - `rtext`: convert DOS/ProDOS random-access text to cell-grid
    - `len` (int): specify record length; default value from aux type if
      available (if zero, file is converted as sequential text)
