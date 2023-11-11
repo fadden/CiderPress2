@@ -91,18 +91,8 @@ namespace FileConv.Gfx {
             DataStream.Position = 0;
             DataStream.ReadExactly(fullBuf, 0, Math.Min(EXPECTED_LEN, (int)DataStream.Length));
 
-            // Copy color tables out.  The palettes are stored in reverse order (color 15 first),
-            // so we want to reverse them as we extract.
-            int offset = NUM_ROWS * BYTE_WIDTH;     // 32000
-            int[,] colorTables = new int[NUM_ROWS, COLOR_TABLE_LEN];
-            for (int row = 0; row < NUM_ROWS; row++) {
-                for (int i = 0; i < COLOR_TABLE_LEN; i++) {
-                    colorTables[row, COLOR_TABLE_LEN - i - 1] =
-                        SuperHiRes.ARGBFromSHR(fullBuf[offset], fullBuf[offset + 1]);
-                    offset += 2;
-                }
-            }
-            Debug.Assert(offset == EXPECTED_LEN);
+            // Copy color tables out.
+            int[,] colorTables = ExtractColorTables(fullBuf, NUM_ROWS * BYTE_WIDTH);
 
             return Convert3200(fullBuf, 0, colorTables);
         }
@@ -118,6 +108,35 @@ namespace FileConv.Gfx {
         private const int NUM_ROWS = 200;               // source rows; will be doubled for output
         private const int COLOR_TABLE_LEN = 16;
 
+        /// <summary>
+        /// Copies the color tables out of the file data.
+        /// </summary>
+        /// <remarks>
+        /// <para>The palettes are stored in reverse order (color 15 first), so we want to reverse
+        /// them as we extract.</para>
+        /// </remarks>
+        /// <param name="buf">Buffer of file data.</param>
+        /// <param name="offset">Offset to start of color table data.</param>
+        /// <returns>Array of color tables.</returns>
+        internal static int[,] ExtractColorTables(byte[] buf, int offset) {
+            int[,] colorTables = new int[NUM_ROWS, COLOR_TABLE_LEN];    // 200x16, 2 bytes each
+            for (int row = 0; row < NUM_ROWS; row++) {
+                for (int i = 0; i < COLOR_TABLE_LEN; i++) {
+                    colorTables[row, COLOR_TABLE_LEN - i - 1] =
+                        SuperHiRes.ARGBFromSHR(buf[offset], buf[offset + 1]);
+                    offset += 2;
+                }
+            }
+            return colorTables;
+        }
+
+        /// <summary>
+        /// Converts a 3200-color image.
+        /// </summary>
+        /// <param name="buf">Buffer of pixel data (320x200, 2 pixels per byte).</param>
+        /// <param name="offset">Offset to start of pixel data.</param>
+        /// <param name="colorTables">Color tables, 16 entries per row.</param>
+        /// <returns>Direct-color bitmap.</returns>
         internal static Bitmap32 Convert3200(byte[] buf, int offset, int[,] colorTables) {
             Bitmap32 output = new Bitmap32(OUTPUT_WIDTH, OUTPUT_HEIGHT);
             output.IsDoubled = true;

@@ -20,6 +20,7 @@ Primary references:
  - Apple II File Type Note $c1/0001, "Apple IIGS QuickDraw II Picture File"
  - Apple II File Type Note $c1/0002, "Super Hi-Res 3200 color screen image"
  - IIgs TN #46, "DrawPicture Data Format"
+ - DreamGrafix decompression code, provided by co-author Jason Andersen
 
 The Super Hi-Resolution graphics mode was introduced on the Apple IIgs.  It allowed 320x200 or
 640x200 images from a palette of 4096 colors.  The pixel and color data require a total of
@@ -98,7 +99,7 @@ because 200*16=3200.  These images always use 320 mode.
 ## Image Formats ##
 
 The QuickDraw II PICT formats are meant to be drawn with the IIgs toolbox functions.  Rendering
-them is non-trivial.
+them is non-trivial.  The formats described here are for bitmaps.
 
 ### PIC/$0000: Uncompressed Image ###
 
@@ -149,11 +150,42 @@ The type string is case-sensitive ASCII; the use of uppercase characters is reco
 
 [ TODO ]
 
-### PNT/$8005: DreamGrafix Compressed Image ###
+### PNT/$8005 and PIC/$8003: DreamGrafix Image ###
 
-DreamGrafix was an Apple IIgs application that allowed editing of images in 256-color mode and
-3200-color mode.  The latter required overcoming some technical hurdles.
+DreamGrafix was an Apple IIgs application that allowed editing of super hi-res images in 256-color
+mode and 3200-color mode.  The latter required overcoming some technical hurdles.
 
-File data was compressed with LZW.
+DreamGrafix files end with a 17-byte footer (all multi-byte values are little-endian):
+```
++$00 / 2: color mode: 0=256 colors, 1=3200 colors
++$02 / 2: height, in pixels (expected to be 200)
++$04 / 2: width, in pixels (expected to be 320)
++$06 /11: signature string: "DreamWorld" in ASCII, preceded by length byte
+```
+The rest of the file contents depend on the color mode.  For a 256-color image it generally
+matches the super hi-res screen memory layout:
+```
++$0000/32000: pixel data (200 lines of 160 bytes, two pixels per byte)
++$7d00/  256: SCB (200 lines + 56 unused entries)
++$7e00/  512: palette (16 sets of 16 color entries, 2 bytes per entry)
++$8000/  512: optional / unused?
+```
+For a 3200-color image it changes to:
+```
++$0000/32000: pixel data (200 lines of 160 bytes, two pixels per byte)
++$7d00/ 6400: color table (200 lines * 16 color entries, 2 bytes per entry)
++$9600/  512: optional / unused?
+```
+The color table has the same layout as PIC/$0002 ("Brooks format").
 
-[ TODO ]
+For PNT/$8005, everything except the footer is compressed with 12-bit LZW.
+
+PIC/$8003 doesn't appear to be used.
+
+### Miscellaneous ###
+
+The IIgs version of "John Elway Quarterback" used a slightly customized format.  The 56-byte
+"reserved" section between the SCB and color palettes was omitted, and only one palette entry
+was stored (all rows use color palette zero).  This reduced the file size by 480 bytes.  The files
+have ProDOS type BIN/$0000, are 32288 bytes long, and have filenames ending in ".APP".  The format
+doesn't appear to have been used for anything else.

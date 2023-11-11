@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 using CommonUtil;
 using DiskArc.Arc;
@@ -158,6 +159,10 @@ namespace DiskArc {
                     instance = mCtorInfo.Invoke(new object[] { source, appHook });
                 } catch (TargetInvocationException ex) {
                     if (ex.InnerException != null) {
+                        // Re-throwing an inner exception loses the stack trace.  Do this instead.
+                        // https://stackoverflow.com/a/17091351/294248
+                        ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                        // This is not reached, but the compiler doesn't know that.
                         throw ex.InnerException;
                     } else {
                         throw ex;

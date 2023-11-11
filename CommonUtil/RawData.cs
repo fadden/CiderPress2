@@ -610,7 +610,7 @@ namespace CommonUtil {
         }
 
         /// <summary>
-        /// Compares two bytes arrays.
+        /// Compares two byte arrays.
         /// </summary>
         /// <returns>True if they match, false if they're different.</returns>
         public static bool CompareBytes(byte[] ar1, int offset1, byte[] ar2, int offset2,

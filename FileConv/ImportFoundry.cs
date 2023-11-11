@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 using CommonUtil;
 
@@ -93,6 +94,7 @@ namespace FileConv {
                     instance = mCtorInfo.Invoke(new object?[] { appHook });
                 } catch (TargetInvocationException ex) {
                     if (ex.InnerException != null) {
+                        ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                         throw ex.InnerException;
                     } else {
                         throw ex;

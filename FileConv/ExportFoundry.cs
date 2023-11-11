@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 using CommonUtil;
 using DiskArc;
@@ -59,6 +60,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Gfx.DoubleHiRes)),
             new ConverterEntry(typeof(Gfx.SuperHiRes)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Brooks)),
+            new ConverterEntry(typeof(Gfx.SuperHiRes_DreamGrafix)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Packed)),
             new ConverterEntry(typeof(Gfx.PrintShopClip)),
             new ConverterEntry(typeof(Gfx.HostImage)),
@@ -141,6 +143,9 @@ namespace FileConv {
                         attrs, dataStream, rsrcStream, resMgr, convFlags, appHook } );
                 } catch (TargetInvocationException ex) {
                     if (ex.InnerException != null) {
+                        // Re-throwing an inner exception loses the stack trace.  Do this instead.
+                        ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                        // This is not reached, but the compiler doesn't know that.
                         throw ex.InnerException;
                     } else {
                         throw ex;
