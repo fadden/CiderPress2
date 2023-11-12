@@ -1,7 +1,7 @@
 # Apple II Super Hi-Res Graphics #
 
 File types:
- - PNT ($c0) / $0000: PaintWorks packed image
+ - PNT ($c0) / $0000: Paintworks packed image
  - PNT ($c0) / $0001: compressed super hi-res image (PackBytes)
  - PNT ($c0) / $0002: structured picture file (Apple Preferred Format, or APF)
  - PNT ($c0) / $0003: packed QuickDraw II Picture File
@@ -117,22 +117,29 @@ value for color 15 is stored first.
 
 No SCB data is stored, because lines are always 320 mode, and each line has its own palette.
 
-### PNT/$0000: PaintWorks Packed ###
+### PNT/$0000: Paintworks Packed ###
 
-The PaintWorks format is briefly described in the file type note:
+The Paintworks format is briefly described in the file type note:
 ```
 +$000 / 32: color palette (16 entries, two bytes each)
 +$020 /  2: background color
 +$022 /512: 16 QuickDraw II patterns, each 32 bytes long
-+$222 /nnn: packed graphics data
++$222 /nnn: packed 320-mode graphics data
 ```
-The file type note says, "the unpacked data could be longer than one Super Hi-Res screen".  The
-height and length are not explicitly stored, so you're expected to just unpack data until there's
-nothing left to unpack.
+The pixel data is compressed with PackBytes.  The file type note says, "the unpacked data could
+be longer than one Super Hi-Res screen".  The image height is not explicitly stored, so you're
+expected to just unpack data until there's nothing left to unpack.
 
-There's a bit of strangeness around certain files that have 9 bytes left over at the end.
+Two sizes of image have been found.  The images on the Paintworks program and clip art disks are
+all 396 lines high (63360 bytes of pixel data).  Some images found elsewhere are 200 lines high
+(32000 bytes).
 
-[ TODO ]
+Some files have exactly 9 bytes left over at the end that appear to be PackBytes-compressed data
+for 4 blank lines, which would bring the total to exactly 400.  Decoders should allow the file to
+be slightly longer than necessary.
+
+If unpacking the file yields an unexpected value, it may be a PNT/$0001 file with the wrong
+auxtype.  Instances of truncated files have also been found.
 
 ### PNT/$0001: Simple Compressed Image ###
 

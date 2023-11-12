@@ -62,6 +62,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Gfx.SuperHiRes_Brooks)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_DreamGrafix)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Packed)),
+            new ConverterEntry(typeof(Gfx.SuperHiRes_Paintworks)),
             new ConverterEntry(typeof(Gfx.PrintShopClip)),
             new ConverterEntry(typeof(Gfx.HostImage)),
             new ConverterEntry(typeof(Gfx.MacPaint)),

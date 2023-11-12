@@ -27,7 +27,7 @@ namespace FileConv.Gfx {
         public const string TAG = "lz4fh";
         public const string LABEL = "LZ4FH Compressed Graphics";
         public const string DESCRIPTION = "Converts an LZ4FH-compressed hi-res screen to a bitmap.";
-        public const string DISCRIMINATOR = "ProDOS FOT with auxtype $8066.";
+        public const string DISCRIMINATOR = "ProDOS FOT/$8066.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;

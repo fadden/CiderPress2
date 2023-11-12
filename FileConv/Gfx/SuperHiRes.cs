@@ -23,6 +23,10 @@ namespace FileConv.Gfx {
     /// <summary>
     /// Apple IIgs super hi-res screen image.
     /// </summary>
+    /// <remarks>
+    /// <para>This handles the basic uncompressed screen dump file format, and provides some
+    /// general routines for use by other converters.</para>
+    /// </remarks>
     public class SuperHiRes : Converter {
         public const string TAG = "shr";
         public const string LABEL = "Super Hi-Res Screen Image";
@@ -143,6 +147,7 @@ namespace FileConv.Gfx {
                     } else {
                         colorIndex = colorBuf[col / 2];
                     }
+                    // Factor in the palette index, and set the pixels.
                     colorIndex = (byte)(colorIndex | colorOffset);
                     output.SetPixelIndex(col, row * 2, colorIndex);
                     output.SetPixelIndex(col, row * 2 + 1, colorIndex);
@@ -160,15 +165,15 @@ namespace FileConv.Gfx {
         /// </summary>
         /// <remarks>
         /// <para>This always takes a whole number of bytes, even if the source material has
-        /// an odd width.</para>
+        /// an odd width.  The output is a color table index, not a color value.</para>
         /// </remarks>
         /// <param name="pixelData">Pixel data buffer.</param>
         /// <param name="pdOffset">Offset to start of current row in pixel data buffer.</param>
-        /// <param name="byteCount">Number of bytes in this row.</param>
+        /// <param name="byteCount">Number of bytes in this row (usually 160).</param>
         /// <param name="isFill">True if fill mode is enabled.</param>
         /// <param name="is640">True if 640 mode is enabled.</param>
         /// <param name="colorBuf">Buffer that receives color index values (0-15).</param>
-        /// <param name="cbOffset">Offset of first entry in color buffer.</param>
+        /// <param name="cbOffset">Offset of first entry in color index output buffer.</param>
         public static void ConvertLine(byte[] pixelData, int pdOffset, int byteCount,
                 bool isFill, bool is640, byte[] colorBuf, int cbOffset) {
             int prevColor = 0;

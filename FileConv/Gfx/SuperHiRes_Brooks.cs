@@ -28,7 +28,8 @@ namespace FileConv.Gfx {
         public const string TAG = "shr3200";
         public const string LABEL = "Super Hi-Res 3200-Color Screen Image";
         public const string DESCRIPTION =
-            "Converts an Apple IIgs Brooks-format 3200-color super hi-res image to a bitmap.";
+            "Converts an Apple IIgs Brooks-format 3200-color super hi-res image to a " +
+            "640x400 direct-color bitmap.";
         public const string DISCRIMINATOR = "ProDOS PIC/$0002, 37.5KB. " +
             "May be BIN with extension \".3200\".";
         public override string Tag => TAG;

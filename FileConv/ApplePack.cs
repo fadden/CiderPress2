@@ -31,7 +31,7 @@ namespace FileConv {
         private const byte FLAG_RUN8_4 = 0xc0;
 
         /// <summary>
-        /// Unpacks bytes in Apple PackBytes format.
+        /// Unpacks bytes in Apple PackBytes format.  This runs until all input has been consumed.
         /// </summary>
         /// <remarks>
         /// <para>The general format for PackBytes is a flag+length byte, followed by an amount of
