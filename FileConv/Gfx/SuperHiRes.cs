@@ -225,17 +225,27 @@ namespace FileConv.Gfx {
         /// <summary>
         /// Converts a two-byte SHR color palette entry to a 32-bit ARGB value.
         /// </summary>
-        /// <remarks>
-        /// <para>Each color is a 4-bit value, which we want to convert to an 8-bit value.
-        /// For example, $7 becomes $77.  We can do this by masking/shifting/ORing, or by
-        /// multiplying the value by 17.</para>
-        /// </remarks>
         /// <param name="lo">Low (even) byte from palette.</param>
         /// <param name="hi">High (odd) byte from palette.</param>
         /// <returns>ARGB value.</returns>
         public static int ARGBFromSHR(byte lo, byte hi) {
-            // desired result is AARRGGBB; form 0A0R0G0B, shift, merge
-            int val = 0x0f000000 | ((hi & 0x0f) << 16) | ((lo & 0xf0) << 4) | (lo & 0x0f);
+            return ARGBFromSHR((ushort)(lo | (hi << 8)));
+        }
+
+        /// <summary>
+        /// Converts a 16-bit SHR color palette entry to a 32-bit ARGB value.
+        /// </summary>
+        /// <remarks>
+        /// <para>Each color is a 4-bit value, which we want to convert to an 8-bit value.
+        /// For example, $7 becomes $77.  We can do this by masking/shifting/ORing, or by
+        /// multiplying the value by 17.</para>
+        /// <para>The alpha channel will be set to opaque (0xff).</para>
+        /// </remarks>
+        /// <param name="gsc">16-bit value from palette.</param>
+        /// <returns>ARGB value.</returns>
+        public static int ARGBFromSHR(ushort gsc) {
+            // desired result is AARRGGBB; form 0A0R0G0B from 0RGB, shift, merge
+            int val = 0x0f000000 | ((gsc & 0x0f00) << 8) | ((gsc & 0xf0) << 4) | (gsc & 0x0f);
             val |= val << 4;
             return val;
         }

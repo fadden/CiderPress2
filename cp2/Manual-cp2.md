@@ -1570,6 +1570,7 @@ Graphics:
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
+ - `shrapf`: Apple IIgs super hi-res APF file ($C0/0002)
  - `shrdg`: Apple IIgs super hi-res DreamGrafix file ($C0/8005)
  - `shrpk`: Apple IIgs packed super hi-res screen ($C0/0001)
  - `shrpw`: Apple IIgs Paintworks super hi-res image ($C0/0000)

@@ -23,12 +23,14 @@ namespace FileConv.Doc {
     public class GutenbergWP : Converter {
         public const string TAG = "guten";
         public const string LABEL = "Gutenberg word processor";
-        public const string DESCRIPTION = "Converts a Gutenberg word processor document to text.";
+        public const string DESCRIPTION = "Converts a Gutenberg word processor document to text. " +
+            "Arbitrary characters are output for 'alternate' character values.";
         public const string DISCRIMINATOR = "Gutenberg filesystem TXT.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
         public override string Discriminator => DISCRIMINATOR;
+
 
         private GutenbergWP() { }
 

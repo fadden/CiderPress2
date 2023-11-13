@@ -84,6 +84,8 @@ namespace FileConv.Gfx {
             int unpackCount = ApplePack.UnpackBytes(fileBuf, PIXEL_DATA_OFFSET,
                 fileBuf.Length - PIXEL_DATA_OFFSET, unpackBuf, 0);
             bool isShort = false;
+            // TODO: I've seen a few 44800-byte files (280 lines).  We may want to handle
+            // anything that's a multiple of 160 bytes.
             if (unpackCount == SHORT_ROWS * BYTES_PER_ROW) {
                 isShort = true;
             } else if (unpackCount < TALL_ROWS * BYTES_PER_ROW) {

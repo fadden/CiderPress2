@@ -44,6 +44,7 @@ namespace FileConv {
         ///   10xxxxxx: 1 to 64 repeats of a 32-bit value (data length == 4)
         ///   11xxxxxx: 1 to 64 repeats of an 8-bit value repeated 4x (data length == 1)
         /// </code>
+        /// <para>See also IIgs Tech Note #94, "Packing It In (and Out)".</para>
         /// </remarks>
         /// <param name="src">Source buffer.</param>
         /// <param name="srcOffset">Offset in buffer of first byte of data.</param>

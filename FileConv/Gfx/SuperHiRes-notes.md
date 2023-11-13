@@ -112,7 +112,7 @@ probably an uncompressed SHR image.
 
 This is commonly known as "Brooks format", after the designer, John Brooks.  The file has
 32,000 bytes of pixel data (200 lines, 160 bytes per line) followed by 200 sets of 32-byte
-palette entries (one per line).  The color table is stored in reverse order, i.e. the color
+palette entries (one per line).  The color tables are stored in reverse order, i.e. the color
 value for color 15 is stored first.
 
 No SCB data is stored, because lines are always 320 mode, and each line has its own palette.
@@ -147,15 +147,89 @@ This is a simple 32KB SHR image that has been compressed with Apple's PackBytes 
 
 ### PNT/$0002: Apple Preferred Format ###
 
-The file format uses a "chunk" layout, where each chunk is:
+The file format uses a "block" layout, where each block is:
 ```
-+$00 / 4: length of block (including the length word)
++$00 / 4: total length of block (including the length word)
 +$04 /nn: block name string, preceded by a length byte
 +$xx /yy: variable amount of block-specific data
 ```
 The type string is case-sensitive ASCII; the use of uppercase characters is recommended.
 
-[ TODO ]
+The blocks specified by the file type note are MAIN, PATS, SCIB, PALETTES, MASK, and MULTIPAL.
+
+#### `MAIN` ####
+
+A file with a graphics image in it will have a MAIN block.  (A file with nothing but color
+palettes would not.)
+```
++$00 / 2: MasterMode: a ModeWord used to set the QuickDraw II MasterSCB
++$02 / 2: PixelsPerScanLine: usually 320 or 640; must not be zero
++$04 / 2: NumColorTables: should be 0-15; may be zero
++$06 /nn: ColorTableArray: array of ColorTable entries, number determined by NumColorTables
++$xx / 2: NumScanLines: often 200; must not be zero
++$xx+2/mm: ScanLineDirectory: array of 32-bit DirEntry, number determined by NumScanLines
++$yy /zz: PackedScanLines: array of packed pixel data, each line compressed individually;
+  number determined by NumScanLines
+```
+A ModeWord is a 16-bit value.  If the high byte is zero, the low byte is the "mode portion" of
+the SCB (unclear exactly what that excludes).  Other values are reserved.
+
+A DirEntry is a two-word structure that defines each packed line.  The first word is the length
+of the compressed data for the line, the second is the ModeWord for the line.
+
+ColorTableArrays hold ColorTable structs, which are 16 sets of ColorEntry values.  These are
+RGB444 values, $0RGB.
+
+The MAIN block includes everything needed to decode a standard 256-color image.  The PATS and
+SCIB blocks hold patterns for use by paint programs, and PALETTES is meant for files with color
+tables but no pixel data.  MASK is used to exclude transparent sections of images, and
+MULTIPAL is only needed for 3200-color images.
+
+The dimensions of the stored bitmap can vary widely, and can have odd values (i.e partial bytes).
+Limiting the maximum size to 1280x1024 is reasonable.
+
+Every line should decompress to the same length, though it's possible for each line to have
+a different value for pixels per byte (320 mode vs. 640 mode).  This makes the PixelsPerScanLine
+value somewhat ambiguous unless it's combined with the MasterMode.  (In practice, the per-line
+SCB 320/640 mode bit always seems to match the master mode.)
+
+Sometimes the data in PackedScanLines unpacks to be slightly larger than expected.  Over-allocating
+the output buffer is recommended.
+
+#### `MASK` ####
+
+The MASK block is similar to the MAIN block.  The structural similarity was a deliberate effort
+to allow the MAIN parsing code to be re-used.
+```
++$00 / 2: MasterMode: ModeWord
++$02 / 2: PixelsPerScanLine: must not be zero
++$04 / 2: NumColorTables: must be zero (there are no color tables here)
++$06 / 2: NumScanLines: must not be zero
++$08 /nn: ScanLineDirectory: array of 32-bit DirEntry, number determined by NumScanLines
++$xx /yy: PackedScanLines: array of packed pixel data, each line compressed individually;
+  number determined by NumScanLines
+```
+The packed scan lines "should only contain mask values of one and zero".  A '1' indicates opaque,
+while a '0' indicates transparent.  The file type note does not indicate whether the 0/1 value is a
+bit per pixel, a byte per pixel, or if it's 2 or 4 bits per pixel matching the 320/640 mode.
+
+These appear to be extremely rare.
+
+#### `MULTIPAL` ####
+
+This is only present in 3200-color images.  Such images are expected to be 320x200, but don't
+have to be.
+```
++$00 / 2: NumColorTables: usually 200
++$02 /nn: ColorTableArray: ColorTable entries, one per line
+```
+The file type note says the color table entries "are in the regular (0-15) order".  Presumably
+this was called out to contrast with Brooks format, which stores them in reverse order.
+
+#### Other Block Types ####
+
+Some files include a NOTE block.  This appears to hold ASCII text, preceded by a 16-bit length.
+
 
 ### PNT/$8005 and PIC/$8003: DreamGrafix Image ###
 
@@ -190,6 +264,9 @@ For PNT/$8005, everything except the footer is compressed with 12-bit LZW.
 PIC/$8003 doesn't appear to be used.
 
 ### Miscellaneous ###
+
+There files with the extension ".3201" that appear to be Brooks-format images compressed with
+PackBytes.
 
 The IIgs version of "John Elway Quarterback" used a slightly customized format.  The 56-byte
 "reserved" section between the SCB and color palettes was omitted, and only one palette entry
