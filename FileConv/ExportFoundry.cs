@@ -59,6 +59,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Gfx.HiRes_LZ4FH)),
             new ConverterEntry(typeof(Gfx.DoubleHiRes)),
             new ConverterEntry(typeof(Gfx.SuperHiRes)),
+            new ConverterEntry(typeof(Gfx.SuperHiRes_3201)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_APF)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Brooks)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_DreamGrafix)),

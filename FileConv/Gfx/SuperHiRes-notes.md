@@ -1,4 +1,4 @@
-# Apple II Super Hi-Res Graphics #
+# Apple IIgs Super Hi-Res Graphics #
 
 File types:
  - PNT ($c0) / $0000: Paintworks packed image
@@ -263,10 +263,17 @@ For PNT/$8005, everything except the footer is compressed with 12-bit LZW.
 
 PIC/$8003 doesn't appear to be used.
 
-### Miscellaneous ###
+### ".3201": Compressed 3200-Color Image ###
 
-There files with the extension ".3201" that appear to be Brooks-format images compressed with
-PackBytes.
+The origin of these files is uncertain.  The layout is:
+```
++$00  /   4: High-ASCII string "APP" followed by $00
++$04  /6400: 200 sets of color table entries (16 x 2 bytes), one per line
++$1904/  xx: PackBytes-compressed pixel data (160x200=32000 bytes when uncompressed)
+```
+The color table is in the same order as PIC/$0002 ("Brooks format").
+
+### Miscellaneous ###
 
 The IIgs version of "John Elway Quarterback" used a slightly customized format.  The 56-byte
 "reserved" section between the SCB and color palettes was omitted, and only one palette entry
