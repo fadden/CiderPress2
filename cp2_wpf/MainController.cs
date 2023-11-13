@@ -500,6 +500,7 @@ namespace cp2_wpf {
             } finally {
                 Mouse.OverrideCursor = null;
             }
+            AppHook.LogI("Load of '" + pathName + "' completed");
 
             mWorkPathName = pathName;
             UpdateTitle();
@@ -762,8 +763,8 @@ namespace cp2_wpf {
             }
             Debug.WriteLine("Closing " + mWorkPathName);
 
-            // Flush and close all disk images and file archives.
-            ClearArchiveTree();
+            // Flush and close all disk images and file archives.  Purge GUI elements.
+            mMainWin.ClearTreesAndLists();
             // Close the host file.
             mWorkTree.Dispose();
             mWorkTree = null;

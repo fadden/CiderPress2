@@ -661,7 +661,11 @@ namespace cp2_wpf {
         /// <summary>
         /// Data for archive tree TreeView control.  This is a list of items, not a single item.
         /// </summary>
-        public ObservableCollection<ArchiveTreeItem> ArchiveTreeRoot { get; private set; } =
+        public ObservableCollection<ArchiveTreeItem> ArchiveTreeRoot {
+            get { return mArchiveTreeRoot; }
+            private set { mArchiveTreeRoot = value; OnPropertyChanged(); }
+        }
+        private ObservableCollection<ArchiveTreeItem> mArchiveTreeRoot =
             new ObservableCollection<ArchiveTreeItem>();
 
         /// <summary>
@@ -680,6 +684,17 @@ namespace cp2_wpf {
             mMainCtrl.ArchiveTree_SelectionChanged(item);
         }
 
+        /// <summary>
+        /// Clears the contents of the trees and file list.
+        /// </summary>
+        internal void ClearTreesAndLists() {
+            ArchiveTreeRoot.Clear();
+            DirectoryTreeRoot.Clear();
+            FileList.Clear();
+
+            UpdateLayout();
+        }
+
         #endregion Archive Tree
 
         #region Directory Tree
@@ -687,7 +702,11 @@ namespace cp2_wpf {
         /// <summary>
         /// Data for directory tree TreeView control.
         /// </summary>
-        public ObservableCollection<DirectoryTreeItem> DirectoryTreeRoot { get; private set; } =
+        public ObservableCollection<DirectoryTreeItem> DirectoryTreeRoot {
+            get { return mDirectoryTreeRoot; }
+            private set { mDirectoryTreeRoot = value; OnPropertyChanged(); }
+        }
+        private ObservableCollection<DirectoryTreeItem> mDirectoryTreeRoot =
             new ObservableCollection<DirectoryTreeItem>();
 
         /// <summary>
@@ -883,7 +902,7 @@ namespace cp2_wpf {
 
         public ObservableCollection<FileListItem> FileList {
             get { return mFileList; }
-            internal set { mFileList = value; OnPropertyChanged(); }
+            private set { mFileList = value; OnPropertyChanged(); }
         }
         private ObservableCollection<FileListItem> mFileList =
             new ObservableCollection<FileListItem>();

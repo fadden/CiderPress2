@@ -244,13 +244,6 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Clears the contents of the archive tree.
-        /// </summary>
-        private void ClearArchiveTree() {
-            mMainWin.ArchiveTreeRoot.Clear();
-        }
-
-        /// <summary>
         /// Prepares a work file for use.
         /// </summary>
         /// <param name="pathName">File pathname.</param>
@@ -961,7 +954,8 @@ namespace cp2_wpf {
 
                     // Evalute this file to see if it could be a disk image or file archive.  If it
                     // is, add it to the work tree, and select it.
-                    WorkTree.Node? newNode = mWorkTree!.TryCreateSub(arcTreeSel.WorkTreeNode, entry);
+                    WorkTree.Node? newNode =
+                        mWorkTree!.TryCreateSub(arcTreeSel.WorkTreeNode, entry);
                     if (newNode != null) {
                         // Successfully opened.  Update the TreeView.
                         ArchiveTreeItem newItem =

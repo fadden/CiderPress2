@@ -133,7 +133,7 @@ namespace CommonUtil {
                 }
                 access <<= 1;
             }
-            return sb.ToString();
+            return string.Intern(sb.ToString());    // most entries will be similar
         }
 
         /// <summary>

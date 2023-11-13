@@ -45,7 +45,7 @@ namespace cp2_wpf {
         /// that isn't available in the Mac OS Roman character set, and that looks nicer than
         /// four NUL control picture glyphs.
         /// </summary>
-        private const string NO_TYPE = "\u23af\u23af\u23af\u23af";
+        private const string NO_TYPE = "\u23af\u23af\u23af\u23af";  // HORIZONTAL LINE EXTENSION
 
         private static readonly ControlTemplate sInvalidIcon =
             (ControlTemplate)Application.Current.FindResource("icon_StatusInvalid");

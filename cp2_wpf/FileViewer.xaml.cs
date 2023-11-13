@@ -525,6 +525,7 @@ namespace cp2_wpf {
             } else if (mCurDataOutput is IBitmap) {
                 IBitmap bitmap = (IBitmap)mCurDataOutput;
                 previewImage.Source = WinUtil.ConvertToBitmapSource(bitmap);
+                Debug.Assert(previewImage.Source.IsFrozen);
                 ConfigureMagnification();
                 SetDisplayType(DisplayItemType.Bitmap);
 
@@ -626,8 +627,8 @@ namespace cp2_wpf {
 
             previewImage.Width = Math.Floor(bitmap.Width * mult);
             previewImage.Height = Math.Floor(bitmap.Height * mult);
-            Debug.WriteLine("Gfx zoom " + mult + " --> " +
-                previewImage.Width + "x" + previewImage.Height);
+            //Debug.WriteLine("Gfx zoom " + mult + " --> " +
+            //    previewImage.Width + "x" + previewImage.Height);
         }
 
         #region Export and Clip
