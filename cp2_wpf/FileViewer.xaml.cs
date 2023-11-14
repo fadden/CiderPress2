@@ -24,6 +24,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 using CommonUtil;
 using DiskArc;
@@ -524,8 +525,9 @@ namespace cp2_wpf {
                 IsFindEnabled = IsExportEnabled = true;
             } else if (mCurDataOutput is IBitmap) {
                 IBitmap bitmap = (IBitmap)mCurDataOutput;
-                previewImage.Source = WinUtil.ConvertToBitmapSource(bitmap);
-                Debug.Assert(previewImage.Source.IsFrozen);
+                BitmapSource bsrc = WinUtil.ConvertToBitmapSource(bitmap);
+                Debug.Assert(bsrc.IsFrozen);
+                previewImage.Source = bsrc;
                 ConfigureMagnification();
                 SetDisplayType(DisplayItemType.Bitmap);
 
@@ -535,9 +537,22 @@ namespace cp2_wpf {
                 //}
                 IsExportEnabled = true;
             } else if (mCurDataOutput is HostConv) {
-                DataPlainText = "TODO: host-convert " + ((HostConv)mCurDataOutput).Kind;
-                SetDisplayType(DisplayItemType.SimpleText);
-                // enable export?
+                HostConv.FileKind kind = ((HostConv)mCurDataOutput).Kind;
+                BitmapSource? bsrc = PrepareHostImage(mDataFork, kind);
+                if (bsrc == null) {
+                    DataPlainText = "Unable to decode " + kind + " image.";
+                    SetDisplayType(DisplayItemType.SimpleText);
+                } else {
+                    previewImage.Source = bsrc;
+                    ConfigureMagnification();
+                    SetDisplayType(DisplayItemType.Bitmap);
+                }
+                // Exporting these is a little weird, and probably wrong.  It makes more sense to
+                // extract them in their native form.  Handling them requires a separate path in
+                // the export code because we don't have an IBitmap to pass to the PNG generator,
+                // so we'd want the export function to just do the extract, without altering
+                // the filename.
+                //IsExportEnabled = true;
             } else {
                 Debug.Assert(false, "unknown IConvOutput impl " + mCurDataOutput);
             }
@@ -598,6 +613,35 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// Prepares a host image (GIF, PNG, JPEG) for display.
+        /// </summary>
+        private static BitmapSource? PrepareHostImage(Stream? stream, HostConv.FileKind kind) {
+            if (stream == null) {
+                return null;
+            }
+            // Copy to memory stream in case bitmap code wants to own it.
+            stream.Position = 0;
+            MemoryStream tmpStream = new MemoryStream();
+            stream.CopyTo(tmpStream);
+            tmpStream.Position = 0;
+
+            try {
+                // This seems to handle GIF/JPEG/PNG, so we don't need to use the individual
+                // decoder classes like JpegBitmapDecoder.
+                BitmapSource bsrc = BitmapFrame.Create(tmpStream,
+                        BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
+                return bsrc;
+            } catch (Exception ex) {
+                if (ex is not FileFormatException && ex is not IOException) {
+                    // FileFormatException if it can't figure out what kind of file it is,
+                    // IOException if it starts well but got truncated.
+                    Debug.Assert(false, "unexpected exception: " + ex);
+                }
+                Debug.WriteLine("BitmapFrame.Create failed: " + ex);
+                return null;
+            }
+        }
 
         /// <summary>
         /// Handles movement on the graphics zoom slider.
@@ -620,13 +664,17 @@ namespace cp2_wpf {
             }
             GraphicsZoomStr = mult.ToString() + "X";
 
-            IBitmap? bitmap = mCurDataOutput as IBitmap;
-            if (bitmap == null) {
+            if (mCurDataOutput is not IBitmap && mCurDataOutput is not HostConv) {
+                return;
+            }
+            BitmapSource? bsrc = previewImage.Source as BitmapSource;
+            if (bsrc == null) {
+                Debug.Assert(false, "Unable to get BitmapSource for magnification");
                 return;
             }
 
-            previewImage.Width = Math.Floor(bitmap.Width * mult);
-            previewImage.Height = Math.Floor(bitmap.Height * mult);
+            previewImage.Width = Math.Floor(bsrc.PixelWidth * mult);
+            previewImage.Height = Math.Floor(bsrc.PixelHeight * mult);
             //Debug.WriteLine("Gfx zoom " + mult + " --> " +
             //    previewImage.Width + "x" + previewImage.Height);
         }

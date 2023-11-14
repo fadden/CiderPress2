@@ -20,9 +20,13 @@ using DiskArc;
 
 namespace FileConv.Gfx {
     /// <summary>
-    /// Detection of images that can be decoded directly by the host.  These are easily
+    /// <para>Detection of images that can be decoded directly by the host.  These are easily
     /// identified by filename extension and magic number.  GIF and JPEG are often found on
-    /// vintage systems.
+    /// vintage systems.</para>
+    /// <para>This class doesn't actually convert the image to a bitmap, because .NET Core
+    /// doesn't include the classes to do that.  GUI frameworks generally do, and CLI tools should
+    /// be extracting these as-is rather than converting them, so it's up to the application to
+    /// act appropriately when a HostImage is returned.</para>
     /// </summary>
     public class HostImage : Converter {
         public const string TAG = "host";
