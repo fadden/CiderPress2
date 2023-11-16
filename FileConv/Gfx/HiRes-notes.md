@@ -183,3 +183,44 @@ color).
 LZ4FH files are created by [fhpack](https://github.com/fadden/fhpack).  The
 [compression sources](https://github.com/fadden/fhpack/blob/master/fhpack.cpp)
 describe the file format in detail.
+
+# Hi-Res Fonts #
+
+Apple II fonts usually span the printable character range ($20-7f, inclusive),
+but sometimes include the control characters as well.  Each glyph is 7 pixels
+wide by 8 pixels high, with one bit per pixel, so each glyph is 8 bytes.  The
+high bit in each byte is usually zero, but can be set to 1 to cause a
+half-pixel shift.
+
+The glyphs are stored linearly: all 8 bytes for the first glyph, starting with
+the top row, then all 8 bytes for the second glyph.
+
+Apple /// fonts use a similar layout, but define a special purpose for the high
+bit of each byte.  The following explanation is from the file "APPENDIX.D" on
+the Washington Apple PI "CustomFONT Manual"
+[disk set](https://www.apple3.org/Software/wap/html/a3fonts.html).
+
+---
+Appendix D: Technical Reference
+
+How Character Sets are Stored
+
+Each character is stored as a 7-by-8 bit array.  Bits corresponding to
+pixels which are "ON" are set with a value of one;  background bits are set
+to zero.  The 7-by-8 bit array is stored as eight consecutive bytes - one byte
+for each row starting with the top row.  Within each of the eight bytes, bit 0
+corresponds to the lest-most pixel.
+
+Bit 7 determines how each row of the character is displayed in inverse
+mode. If bit 7 is set to zero, the foreground and background will be exchanged
+when inverse mode is on.  If all high bits are set to one, the character will
+flash when inverse mode is on.  For more information on making characters
+flash, see Chapter 8.
+
+Every character set fontfile is stored as a three block data file (two
+blocks for data and a third block for system information). The character set
+used as the "system character set" is defined in the file "SOS.DRIVER" on any
+boot disk.  The system character set can be changed using the Apple /// System
+Utilities as detailed in Chapter 9 of this manual.
+
+---

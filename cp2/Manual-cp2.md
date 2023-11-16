@@ -1565,6 +1565,8 @@ Graphics:
    - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
  - `hgr`: Apple II hi-res screen
    - `bw` (bool): false=color (default), true=black & white
+ - `hgrfont`: Apple II or /// hi-res screen font
+   - `flhi` (bool): true=show Apple /// flashing in color, false=no (default)
  - `macpaint`: MacPaint graphics document
  - `psclip`: Print Shop clip art, monochrome and color
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
