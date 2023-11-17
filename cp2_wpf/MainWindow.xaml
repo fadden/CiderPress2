@@ -586,6 +586,7 @@ limitations under the License.
                             <TreeView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Command="{StaticResource EditDirAttributesCmd}"/>
+                                    <MenuItem Command="Paste"/>
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                         </TreeView>
@@ -683,13 +684,16 @@ limitations under the License.
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Command="{StaticResource ViewFilesCmd}"/>
-                                <MenuItem Command="{StaticResource AddFilesCmd}"/>
-                                <MenuItem Command="{StaticResource ImportFilesCmd}"/>
+                                <MenuItem Command="{StaticResource EditAttributesCmd}"/>
                                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                                 <MenuItem Command="{StaticResource ExportFilesCmd}"/>
+                                <MenuItem Command="Copy"/>
                                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
                                 <MenuItem Command="{StaticResource TestFilesCmd}"/>
-                                <MenuItem Command="{StaticResource EditAttributesCmd}"/>
+                                <Separator/>
+                                <MenuItem Command="{StaticResource AddFilesCmd}"/>
+                                <MenuItem Command="{StaticResource ImportFilesCmd}"/>
+                                <!--<MenuItem Command="Paste"/>-->
                                 <MenuItem Command="{StaticResource CreateDirectoryCmd}"/>
                             </ContextMenu>
                         </DataGrid.ContextMenu>
@@ -858,6 +862,7 @@ limitations under the License.
                         </Grid>
                     </ScrollViewer>
 
+                    <!-- place-holder for semi-floating dialog -->
                     <Border Width="150" Height="70" Visibility="Collapsed"
                             HorizontalAlignment="Right" VerticalAlignment="Top">
                         <Button Content="Insert FIND dialog here"/>

@@ -568,6 +568,13 @@ namespace cp2_wpf {
             mMainCtrl.ReplacePartition();
         }
         private void PasteCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            // This directs paste to the selected item.  However, we won't be able to paste
+            // into the root directory if it's filled with directories.  We could change the
+            // behavior based on which window has focus, or on which menu the command was
+            // issued from, but that seems ugly.
+            //FileListItem? selItem = fileListDataGrid.SelectedItem as FileListItem;
+            //IFileEntry selEntry = selItem != null ? selItem.FileEntry : IFileEntry.NO_ENTRY;
+            //mMainCtrl.PasteOrDrop(null, selEntry);
             mMainCtrl.PasteOrDrop(null, IFileEntry.NO_ENTRY);
         }
         private void RecentFileCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
