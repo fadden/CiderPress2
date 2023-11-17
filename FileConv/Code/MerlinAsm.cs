@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
 
 using CommonUtil;
 using DiskArc;
@@ -86,7 +84,7 @@ namespace FileConv.Code {
             lineCount = spaceLineCount = commentLineCount = 0;
             bool isLineStart = true;
 
-            // Load the entire thing into memory.  It should be small,
+            // Load the entire thing into memory.  We confirmed that it's small.
             byte[] buf = new byte[stream.Length];
             stream.Position = 0;
             stream.ReadExactly(buf, 0, buf.Length);
@@ -163,8 +161,7 @@ namespace FileConv.Code {
         /// keep track of those things.</para>
         /// </remarks>
         public static void DoConvert(byte[] fileBuf, SimpleText output) {
-            StringBuilder lineBuf = new StringBuilder(80);
-
+            TabbedLine lineBuf = new TabbedLine(sTabStops);
             int curCol = -1;
             char quoteChar = '\0';
             int lineNum = 0;
@@ -179,7 +176,6 @@ namespace FileConv.Code {
                     lineNum++;
                     isLineStart = false;
                     curCol = COL_LABEL;
-                    lineBuf.Clear();
                     if (rawVal == ('*' | 0x80)) {
                         // Leading '*' makes entire line a comment.  Advance to the column
                         // without generating any spaces.
@@ -189,7 +185,7 @@ namespace FileConv.Code {
 
                 if (rawVal == ('\r' | 0x80)) {
                     // End of line found.  Copy line buffer to output.
-                    output.AppendLine(lineBuf.ToString());
+                    lineBuf.MoveLineTo(output);
                     isLineStart = true;
                     if (quoteChar != '\0') {
                         // Unterminated quote.
@@ -216,7 +212,7 @@ namespace FileConv.Code {
                     // High-ASCII space, this is a tab.
                     curCol++;
                     Debug.Assert(curCol <= COL_COMMENT);
-                    AppendTabs(lineBuf, curCol);
+                    lineBuf.Tab(curCol);
                 } else if (rawVal == (';' | 0x80) &&
                         (wasLineStart || fileBuf[offset - 1] == (' ' | 0x80))) {
                     // Found a high-ASCII semicolon at the start of the line, or right after
@@ -226,21 +222,15 @@ namespace FileConv.Code {
                     // This is a line with just a comment, or a comment on an opcode that
                     // doesn't have an operand.
                     curCol = COL_COMMENT;
-                    AppendTabs(lineBuf, curCol);
+                    lineBuf.Tab(curCol);
                     lineBuf.Append(ch);
                 } else {
                     lineBuf.Append(ch);
                 }
             }
-        }
 
-        private static void AppendTabs(StringBuilder lineBuf, int curCol) {
-            int spaceCount = sTabStops[curCol] - lineBuf.Length;
-            if (spaceCount <= 0) {
-                spaceCount = 1;
-            }
-            for (int i = 0; i < spaceCount; i++) {
-                lineBuf.Append(' ');
+            if (lineBuf.Length != 0) {
+                lineBuf.MoveLineTo(output);
             }
         }
     }

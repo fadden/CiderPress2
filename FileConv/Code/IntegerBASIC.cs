@@ -48,10 +48,9 @@ namespace FileConv.Code {
                 new OptionDefinition(OPT_PRINT, "Show ctrl chars",
                     OptionDefinition.OptType.Boolean, "true"),
             };
-        /// <summary>
-        /// Maximum conceivable length, assuming the program must fit in RAM.
-        /// </summary>
-        private const int MAX_LEN = 48 * 1024;
+
+        private const int MIN_LEN = 4;              // len+linenum+eol
+        private const int MAX_LEN = 48 * 1024;      // arbitrary cap (program must fit in RAM)
 
         /// <summary>
         /// Integer tokens, for values < 128.
@@ -120,19 +119,20 @@ namespace FileConv.Code {
         }
 
         protected override Applicability TestApplicability() {
-            // This is a little tricky because the S-C and LISA assemblers used DOS file type 'I'
-            // for their source code.  We need to rule those out.
             if (DataStream == null || IsRawDOS) {
                 return Applicability.Not;
             }
-            long length = DataStream.Length - (IsRawDOS ? 2 : 0);
-            if (FileAttrs.FileType != FileAttribs.FILE_TYPE_INT ||
-                    length < 2 || length > MAX_LEN) {
+            if (DataStream.Length < MIN_LEN || DataStream.Length > MAX_LEN) {
                 return Applicability.Not;
             }
-
-            // TODO: screen out S-C assembler and LISA
-
+            if (FileAttrs.FileType != FileAttribs.FILE_TYPE_INT) {
+                return Applicability.Not;
+            }
+            // This is a little tricky because the S-C and LISA assemblers used DOS file type 'I'
+            // for their source code.  We need to rule those out.
+            if (DetectContentType(DataStream) != ContentType.IntegerBASIC) {
+                return Applicability.Not;
+            }
             return Applicability.Probably;
         }
 
@@ -188,7 +188,7 @@ namespace FileConv.Code {
 
                 // Process the contents of the line.
                 bool trailingSpace = true;
-                while (dataBuf[offset] != TOK_EOL && offset < length) {
+                while (offset < length && dataBuf[offset] != TOK_EOL) {
                     byte curByte = dataBuf[offset++];
                     if (curByte == TOK_OPEN_QUOTE) {
                         // Start of quoted text.  Open and close quote are separate tokens, and
@@ -288,7 +288,7 @@ namespace FileConv.Code {
 
                 // Verify that we ended on the EOL token.  If we didn't, we probably hit something
                 // weird and halted early.
-                if (dataBuf[offset] != TOK_EOL && length - offset > 0) {
+                if (length - offset > 0 && dataBuf[offset] != TOK_EOL) {
                     output.Notes.AddE("Stopping at offset $" + offset.ToString("x4") +
                         " (length=$" + length.ToString("x4") + ")");
                     break;
@@ -301,6 +301,49 @@ namespace FileConv.Code {
             }
 
             return output;
+        }
+
+        internal enum ContentType { Unknown = 0, IntegerBASIC, SCAsm, LISA3, LISA4 };
+
+        /// <summary>
+        /// Examines the contents of a file with type INT (DOS 'I') to determine whether it looks
+        /// like Integer BASIC or S-C Assembler source code.
+        /// </summary>
+        /// <remarks>
+        /// <para>The test may not be thorough enough to prove what the file *is*, but it can
+        /// decisively say what it is *not*.  S-C and BASIC are mutually exclusive, but files
+        /// created by version 3+ of the LISA assembler start with a header that could look like
+        /// a valid BASIC program.  The LISA formats can be detected fairly reliably, so it's
+        /// best to test for that first.</para>
+        /// </remarks>
+        internal static ContentType DetectContentType(Stream stream) {
+            // TODO: test for LISA assembler
+
+            // S-C Assembler and Integer BASIC both start with a line-length byte and a line
+            // number, followed by byte data.  Check the length byte, which includes itself.
+            // For a non-empty file we must also have a line number and an end-of-line token, so
+            // the length must be at least 4.
+            stream.Position = 0;
+            int lineLen = stream.ReadByte();
+            if (lineLen < 4 || lineLen > stream.Length) {
+                return ContentType.Unknown;
+            }
+
+            // Check the end-of-line token.  S-C Assembler uses $00, Integer BASIC uses $01.
+            // Other types of files could happen to have the right bytes in the right place,
+            // so this isn't proof, but it's good enough to distinguish between common files.
+            byte[] lineBuf = new byte[lineLen];
+            stream.Position = 0;
+            stream.ReadExactly(lineBuf, 0, lineLen);
+            if (lineBuf[lineBuf.Length - 1] == 0x00) {
+                // Looks like S-C Assembler.
+                return ContentType.SCAsm;
+            } else if (lineBuf[lineBuf.Length - 1] == 0x01) {
+                // Looks like Integer BASIC.
+                return ContentType.IntegerBASIC;
+            } else {
+                return ContentType.Unknown;
+            }
         }
     }
 }

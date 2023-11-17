@@ -1526,24 +1526,25 @@ is used.  Unknown or invalid options are ignored.
 Default values for options may be stored in the cp2rc config file.
 
 Converters are available for code:
- - `ba3`: Business BASIC listing
+ - `ba3`: Business BASIC program
    - `hi` (bool): false=plain text listing (default), true=add colorful
      syntax highlighting
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
- - `bas`: Applesoft BASIC listing
+ - `bas`: Applesoft BASIC program
    - `hi` (bool): false=plain text listing (default), true=add colorful
      syntax highlighting
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
- - `int`: Integer BASIC listing
+ - `int`: Integer BASIC program
    - `hi` (bool): false=plain text listing (default), true=add colorful
      syntax highlighting
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
- - `merlin` - Merlin assembler (also works for ED/ASM)
+ - `merlin` - Merlin assembler source file (also works for ED/ASM)
  - `pcd` - Apple Pascal codefile
  - `ptx` - Apple Pascal textfile
+ - `scasm` - S-C Assembler source file
 
 Text documents:
  - `adb`: AppleWorks "Classic" Data Base
