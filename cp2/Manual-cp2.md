@@ -1541,6 +1541,7 @@ Converters are available for code:
      syntax highlighting
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
+ - `merlin` - Merlin assembler (also works for ED/ASM)
  - `pcd` - Apple Pascal codefile
  - `ptx` - Apple Pascal textfile
 

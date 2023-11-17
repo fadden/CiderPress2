@@ -27,7 +27,7 @@ namespace FileConv.Doc {
         public const string TAG = "magwin";
         public const string LABEL = "Magic Window document";
         public const string DESCRIPTION = "Converts a Magic Window document to text.";
-        public const string DISCRIMINATOR = "DOS 'B' with extension \".MW\".";
+        public const string DISCRIMINATOR = "DOS B with extension \".MW\".";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
@@ -47,9 +47,10 @@ namespace FileConv.Doc {
         }
 
         protected override Applicability TestApplicability() {
-            if (DataStream == null) {
+            if (DataStream == null || IsRawDOS) {
                 return Applicability.Not;
             }
+            // Should we insist on DataStream == DOS_FileDesc?  Don't think there's a ProDOS vers.
             if (FileAttrs.FileType != FileAttribs.FILE_TYPE_BIN) {
                 return Applicability.Not;
             }
