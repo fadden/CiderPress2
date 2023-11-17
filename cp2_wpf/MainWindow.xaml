@@ -183,6 +183,8 @@ limitations under the License.
                         CanExecute="AreFileEntriesSelected" Executed="ExportFilesCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExtractFilesCmd}"
                         CanExecute="AreFileEntriesSelected" Executed="ExtractFilesCmd_Executed"/>
+        <CommandBinding Command="Find"
+                        CanExecute="IsFileOpen" Executed="FindCmd_Executed"/>
         <CommandBinding Command="Help"
                         Executed="HelpCmd_Executed"/>
         <CommandBinding Command="{StaticResource ImportFilesCmd}"

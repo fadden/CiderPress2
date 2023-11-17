@@ -540,6 +540,9 @@ namespace cp2_wpf {
         private void ExtractFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.ExtractFiles();
         }
+        private void FindCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.FindFiles();
+        }
         private void HelpCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.HelpHelp();
         }

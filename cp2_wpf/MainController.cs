@@ -1890,6 +1890,19 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Handles Edit : Find Files
+        /// </summary>
+        public void FindFiles() {
+            FindFile dialog = new FindFile(mMainWin);
+            dialog.FindRequested += DoFindFiles;        // request arrives through this
+            dialog.ShowDialog();
+        }
+
+        private void DoFindFiles(FindFile.FindFileReq req) {
+            Debug.WriteLine("Find Files: " + req);
+        }
+
+        /// <summary>
         /// Handles Actions : Export Files
         /// </summary>
         public void ImportFiles() {
