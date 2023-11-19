@@ -547,5 +547,9 @@ namespace DiskArc {
 
         public IEnumerator<IFileEntry> GetEnumerator() { throw new NotImplementedException(); }
         IEnumerator IEnumerable.GetEnumerator() { throw new NotImplementedException(); }
+
+        public override string ToString() {
+            return "NO ENTRY";
+        }
     }
 }

@@ -34,9 +34,13 @@ namespace cp2_wpf {
         /// Find file request details.
         /// </summary>
         public class FindFileReq {
+            public string FileName { get; private set; }
+            public bool CurrentArchiveOnly { get; private set; }
             public bool Forward { get; private set; }
 
-            public FindFileReq(bool forward) {
+            public FindFileReq(string fileName, bool currentArchiveOnly, bool forward) {
+                FileName = fileName;
+                CurrentArchiveOnly = currentArchiveOnly;
                 Forward = forward;
             }
 
@@ -52,25 +56,71 @@ namespace cp2_wpf {
         /// </summary>
         public string FileName {
             get { return mFileName; }
-            set { mFileName = value; OnPropertyChanged(); }
+            set { mFileName = value; OnPropertyChanged(); UpdateControls(); }
         }
-        private string mFileName = string.Empty;
+        private string mFileName = sLastSearch;
+
+        public bool IsCurrentArchiveOnlyChecked {
+            get { return mIsCurrentArchiveOnlyChecked; }
+            set { mIsCurrentArchiveOnlyChecked = value; OnPropertyChanged(); }
+        }
+        private bool mIsCurrentArchiveOnlyChecked = sCurrentArchiveOnly;
+
+        public bool IsEnabled_PrevNext {
+            get { return mIsEnabled_PrevNext; }
+            set { mIsEnabled_PrevNext = value; OnPropertyChanged(); }
+        }
+        private bool mIsEnabled_PrevNext;
+
+        // Keep track of the last configuration.
+        private static string sLastSearch = string.Empty;
+        private static bool sCurrentArchiveOnly = false;
 
 
         public FindFile(MainWindow owner) {
             InitializeComponent();
             Owner = owner;
             DataContext = this;
+
+            UpdateControls();
+        }
+
+        /// <summary>
+        /// When window finishes rendering, put the focus on the filename text box, with all
+        /// of the text selected.
+        /// </summary>
+        private void Window_ContentRendered(object sender, EventArgs e) {
+            fileNameTextBox.SelectAll();
+            fileNameTextBox.Focus();
+        }
+
+        /// <summary>
+        /// Saves current configuration in static variables, for use in the current session.
+        /// </summary>
+        private void SaveConfig() {
+            sLastSearch = mFileName;
+            sCurrentArchiveOnly = mIsCurrentArchiveOnlyChecked;
+        }
+
+        /// <summary>
+        /// Updates controls after user input.
+        /// </summary>
+        private void UpdateControls() {
+            IsEnabled_PrevNext = !string.IsNullOrEmpty(mFileName);
         }
 
         private void FindPrev_Click(object sender, RoutedEventArgs e) {
-            FindFileReq req = new FindFileReq(false);
+            FindFileReq req = new FindFileReq(mFileName, mIsCurrentArchiveOnlyChecked, false);
             FindRequested!(req);
+
+            SaveConfig();
         }
 
         private void FindNext_Click(object sender, RoutedEventArgs e) {
-            FindFileReq req = new FindFileReq(true);
+            FindFileReq req = new FindFileReq(mFileName, mIsCurrentArchiveOnlyChecked, true);
             FindRequested!(req);
+
+            SaveConfig();
         }
     }
 }

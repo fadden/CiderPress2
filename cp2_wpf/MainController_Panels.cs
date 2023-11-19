@@ -654,6 +654,12 @@ namespace cp2_wpf {
             }
         }
 
+        /// <summary>
+        /// Populates the file list, setting a specific item as selected.
+        /// </summary>
+        /// <param name="selEntry">Previously-selected entry.</param>
+        /// <param name="focusOnFileList">If true, set focus on the file list.  (This can
+        ///   have strange effects.)</param>
         internal void PopulateFileList(IFileEntry selEntry, bool focusOnFileList) {
             if (selEntry != IFileEntry.NO_ENTRY) {
                 Debug.WriteLine("Populate: current item is " + selEntry.FileName);

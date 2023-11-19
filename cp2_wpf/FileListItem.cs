@@ -266,6 +266,15 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Select the specified item in the file list and move it into view.
+        /// </summary>
+        /// <param name="mainWin"></param>
+        /// <param name="selEntry"></param>
+        public static void SelectAndView(MainWindow mainWin, IFileEntry selEntry) {
+            SetSelectionFocusByEntry(mainWin.FileList, mainWin.fileListDataGrid, selEntry);
+        }
+
+        /// <summary>
         /// Sets the current file list selection to the item with a matching IFileEntry.  If
         /// no item matches, the selection is set to the first item in the list.
         /// </summary>
@@ -273,7 +282,7 @@ namespace cp2_wpf {
         /// <para>Somehow the focus shift this does ends up being particularly forceful, and
         /// can cause some really strange behavior in WPF.</para>
         /// </remarks>
-        public static void SetSelectionFocusByEntry(ObservableCollection<FileListItem> tvRoot,
+        internal static void SetSelectionFocusByEntry(ObservableCollection<FileListItem> tvRoot,
                 DataGrid dataGrid, IFileEntry selEntry) {
             FileListItem? reselItem = null;
             if (selEntry != IFileEntry.NO_ENTRY) {
@@ -282,6 +291,7 @@ namespace cp2_wpf {
             if (reselItem != null) {
                 dataGrid.SelectedItem = reselItem;                  // item -> index
                 dataGrid.SelectRowByIndex(dataGrid.SelectedIndex);  // set focus as well
+                dataGrid.ScrollIntoView(reselItem);
             } else {
                 // Not found (e.g. we changed directories and the selected entry is no longer
                 // part of the file list), or selEntry is NO_ENTRY.

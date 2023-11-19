@@ -211,7 +211,7 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="tvRoot">Root of tree to search.</param>
         /// <param name="matchObj">Object to search for.</param>
-        /// <returns></returns>
+        /// <returns>Item found, or null if not found.</returns>
         public static ArchiveTreeItem? FindItemByDAObject(
                 ObservableCollection<ArchiveTreeItem> tvRoot, object matchObj) {
             foreach (ArchiveTreeItem treeItem in tvRoot) {
@@ -263,6 +263,16 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Selects the specified item and ensures that it is visible.
+        /// </summary>
+        /// <param name="mainWin">Reference to main window object.</param>
+        /// <param name="item">Item to select.</param>
+        public static void SelectItem(MainWindow mainWin, ArchiveTreeItem item) {
+            BringItemIntoView(mainWin.archiveTree, item);
+            item.IsSelected = true;
+        }
+
+        /// <summary>
         /// Selects the "best" thing in the specified tree.  For example, we prefer to select
         /// filesystems rather than the disk image that contains them.  If nothing interesting
         /// is found, the root will be selected.
@@ -279,6 +289,7 @@ namespace cp2_wpf {
             }
             //Debug.WriteLine("GOT: arc=" + CountSelections(root));
         }
+        // Recursive traversal.
         private static ArchiveTreeItem? SelectBestFromR(ArchiveTreeItem root) {
             ArchiveTreeItem? result;
 

@@ -23,10 +23,12 @@ limitations under the License.
         mc:Ignorable="d"
         Title="Find File"
         Width="400" SizeToContent="Height" ResizeMode="NoResize"
-        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        ContentRendered="Window_ContentRendered">
 
     <Grid Margin="8">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -38,16 +40,19 @@ limitations under the License.
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0" Text="Filename:"/>
-            <TextBox Grid.Column="1" Margin="4,0,0,0"
-                     Text="{Binding FileName, FallbackValue=FileName_Here}"
+            <TextBox Name="fileNameTextBox" Grid.Column="1" Margin="4,1,0,0"
+                     Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged, FallbackValue=FileName_Here}"
                      FontFamily="{StaticResource GeneralMonoFont}"/>
         </Grid>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+        <CheckBox Grid.Row="1" Content="Current archive only" Margin="0,6,0,0"
+                  IsChecked="{Binding IsCurrentArchiveOnlyChecked}"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button Name="findPrev" Content="Find Previous" Width="100"
-                    Click="FindPrev_Click"/>
+                    IsEnabled="{Binding IsEnabled_PrevNext}" Click="FindPrev_Click"/>
             <Button Name="findNext" Content="Find Next" Width="100" Margin="4,0,0,0"
-                    Click="FindNext_Click"/>
+                    IsEnabled="{Binding IsEnabled_PrevNext}" Click="FindNext_Click" IsDefault="True"/>
             <Button Name="cancelButton" Content="Cancel" IsCancel="True"
                     Width="70" Margin="4,0,0,0"/>
         </StackPanel>

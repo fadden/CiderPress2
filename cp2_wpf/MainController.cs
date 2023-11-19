@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -860,7 +861,7 @@ namespace cp2_wpf {
         /// <param name="archiveOrFileSystem">Result: IArchive or IFileSystem object selected
         ///   in the archive tree, or null if no such object is selected.</param>
         /// <param name="daNode">Result: DiskArcNode from this node, or nearest parent with a
-        ///   non-null node.</param>
+        ///   non-null node, or null if not IArchive or IFileSystem.</param>
         /// <param name="selectionDir">Result: directory file entry selected in the directory
         ///   tree, or NO_ENTRY if no directory is selected (e.g. IArchive).</param>
         /// <returns>True if an IArchive or IFileSystem was selected.</returns>
@@ -939,8 +940,8 @@ namespace cp2_wpf {
             // the top (unless your selection was at the very bottom).  Everything else will be
             // in the expected order.
             DataGrid dg = mMainWin.fileListDataGrid;
-            IList treeSel = dg.SelectedItems;
-            if (treeSel.Count == 0) {
+            IList listSel = dg.SelectedItems;
+            if (listSel.Count == 0) {
                 return false;
             }
 
@@ -949,7 +950,7 @@ namespace cp2_wpf {
             // view files from the Actions menu.
             object? selItem = null;
             if (oneMeansAll && dg.SelectedItems.Count == 1) {
-                treeSel = dg.Items;
+                listSel = dg.Items;
                 selItem = dg.SelectedItem;
             }
 
@@ -958,12 +959,12 @@ namespace cp2_wpf {
             // which will be wrong if we don't descend into subdirs.  The various workers can
             // do the recursion themselves if enabled, but there are advantages to doing it here,
             // and very little performance cost.
-            selected = new List<IFileEntry>(treeSel.Count);
+            selected = new List<IFileEntry>(listSel.Count);
             if (archiveOrFileSystem is IArchive) {
                 // For file archives, it's valid to delete "directory entries" without deleting
                 // their contents, and the order in which we remove things doesn't matter.  So
                 // we just copy everything in, skipping directories if this is e.g. a "view" op.
-                foreach (FileListItem listItem in treeSel) {
+                foreach (FileListItem listItem in listSel) {
                     if (omitDir && listItem.FileEntry.IsDirectory) {
                         continue;
                     }
@@ -980,12 +981,12 @@ namespace cp2_wpf {
                 // during the subdir descent with O(1) lookups.
                 Dictionary<IFileEntry, IFileEntry> knownItems =
                     new Dictionary<IFileEntry, IFileEntry>();
-                foreach (FileListItem listItem in treeSel) {
+                foreach (FileListItem listItem in listSel) {
                     knownItems.Add(listItem.FileEntry, listItem.FileEntry);
                 }
 
                 // Add items to the "selected" list.  Descend into subdirectories.
-                foreach (FileListItem listItem in treeSel) {
+                foreach (FileListItem listItem in listSel) {
                     IFileEntry entry = listItem.FileEntry;
                     if (entry.IsDirectory) {
                         if (!omitDir) {
@@ -1898,10 +1899,6 @@ namespace cp2_wpf {
             dialog.ShowDialog();
         }
 
-        private void DoFindFiles(FindFile.FindFileReq req) {
-            Debug.WriteLine("Find Files: " + req);
-        }
-
         /// <summary>
         /// Handles Actions : Export Files
         /// </summary>
@@ -2318,6 +2315,237 @@ namespace cp2_wpf {
         private static void ShowFileError(string msg) {
             MessageBox.Show(msg, FILE_ERR_CAPTION, MessageBoxButton.OK, MessageBoxImage.Error);
         }
+
+        #region Find Files
+
+        /// <summary>
+        /// This keeps track of state while we're traversing the tree, trying to find matching
+        /// entries.
+        /// </summary>
+        private class FindFileState {
+            // Plan: walk through the entire tree, looking for entries that match and for the
+            // currently-selected entry.  We need to save four things: the very first match, the
+            // very last match, the match before the selected entry, and the match after the
+            // selected entry.
+            //
+            // - If we're searching forward: select the match after the selected entry.  If we
+            //   didn't find one, select the very first match in the tree.
+            // - If we're searching backward: select the match before the selected entry.  If we
+            //   didn't find one, select the very last match in the tree.
+            // - Either way, if we come up empty, report failure.
+            //
+            // We search all of a given archive before descending into contained volumes.
+            // Subdirectories are traversed inline; this is necessary to get the correct
+            // behavior when the full file list is being displayed for a filesystem.
+
+            public ArchiveTreeItem mCurrentArchive;
+            public IFileEntry mCurrentEntry;
+
+            public bool mFoundCurrent;
+
+            public ArchiveTreeItem? mFirstArchive;
+            public IFileEntry mFirstEntry = IFileEntry.NO_ENTRY;
+            public ArchiveTreeItem? mPrevArchive;
+            public IFileEntry mPrevEntry = IFileEntry.NO_ENTRY;
+            public ArchiveTreeItem? mNextArchive;
+            public IFileEntry mNextEntry = IFileEntry.NO_ENTRY;
+            public ArchiveTreeItem? mLastArchive;
+            public IFileEntry mLastEntry = IFileEntry.NO_ENTRY;
+
+            public FindFileState(ArchiveTreeItem currentArchive, IFileEntry currentEntry) {
+                mCurrentArchive = currentArchive;
+                mCurrentEntry = currentEntry;
+            }
+
+            public override string ToString() {
+                return "[FindRes: current=" + mCurrentEntry +
+                    "\r\n  first=" + mFirstEntry +
+                    "\r\n  prev=" + mPrevEntry +
+                    "\r\n  next=" + mNextEntry +
+                    "\r\n  last=" + mLastEntry +
+                    "\r\n]";
+            }
+        }
+
+        /// <summary>
+        /// Does the actual work of finding matching files.
+        /// </summary>
+        /// <param name="req">Request, from FindFile dialog.</param>
+        private void DoFindFiles(FindFile.FindFileReq req) {
+            Debug.WriteLine("Find Files: " + req);
+
+            // Determine which archive is selected.
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
+            if (arcTreeSel == null) {
+                Debug.WriteLine("No archive entry selected");
+                return;
+            }
+
+            // If it's not an IArchive or IFileSystem then we won't have a valid file list and
+            // hence no starting point.  We currently fail.  It might be better to just scan for
+            // the first one in the tree; currently we just disable Find when this is the case.
+            object? arcObj = arcTreeSel.WorkTreeNode.DAObject;
+            if (arcObj is not IArchive && arcObj is not IFileSystem) {
+                Debug.WriteLine("Can't start with this archive object: " + arcObj);
+                return;
+            }
+
+            // Determine which file entry is selected.  The Find command should be disabled if
+            // no files are selected.
+            IFileEntry selEntry;
+            DataGrid dg = mMainWin.fileListDataGrid;
+            IList listSel = dg.SelectedItems;
+            if (listSel.Count == 0) {
+                // Use the first item in the list.  If there are no items, we fail.  It would
+                // be better to scan for the next viable archive.
+                IList allItems = dg.Items;
+                if (allItems.Count == 0) {
+                    // TODO: this ought to be fixed
+                    Debug.WriteLine("Empty IArchive / IFileSystem selected, can't search");
+                    return;
+                }
+                selEntry = ((FileListItem)allItems[0]!).FileEntry;
+            } else {
+                // Use the first item in the selection.  This is the item that was selected
+                // first, which is not necessarily the item that is at the top of the selection.
+                selEntry = ((FileListItem)listSel[0]!).FileEntry;
+            }
+
+            Debug.WriteLine("FIND starting from " + arcTreeSel + " / " + selEntry);
+            FindFileState results = new FindFileState(arcTreeSel, selEntry);
+            DateTime startWhen = DateTime.Now;
+            FindInTree(mMainWin.ArchiveTreeRoot, req, results);
+            DateTime endWhen = DateTime.Now;
+
+            Debug.WriteLine("FIND results (" + (endWhen - startWhen).TotalMilliseconds + " ms): " +
+                results);
+            if (results.mFirstArchive == null) {
+                mMainWin.PostNotification("No matches found", false);
+                return;
+            }
+
+            // Select the matching item.
+            ArchiveTreeItem newTreeItem;
+            IFileEntry newEntry;
+            if (req.Forward) {
+                if (results.mNextArchive != null) {
+                    newTreeItem = results.mNextArchive;
+                    newEntry = results.mNextEntry;
+                } else {
+                    Debug.Assert(results.mFirstArchive != null);
+                    newTreeItem = results.mFirstArchive;
+                    newEntry = results.mFirstEntry;
+                }
+            } else {
+                if (results.mPrevArchive != null) {
+                    newTreeItem = results.mPrevArchive;
+                    newEntry = results.mPrevEntry;
+                } else {
+                    Debug.Assert(results.mLastArchive != null);
+                    newTreeItem = results.mLastArchive;
+                    newEntry = results.mLastEntry;
+                }
+            }
+
+            // Move the selection in the three windows to the appropriate place.
+            ArchiveTreeItem.SelectItem(mMainWin, newTreeItem);
+            if (newEntry.ContainingDir != IFileEntry.NO_ENTRY) {
+                DirectoryTreeItem.SelectItemByEntry(mMainWin, newEntry.ContainingDir);
+            }
+            FileListItem.SelectAndView(mMainWin, newEntry);
+        }
+
+        /// <summary>
+        /// Recursively searches the archive tree.
+        /// </summary>
+        private static void FindInTree(ObservableCollection<ArchiveTreeItem> tvRoot,
+                FindFile.FindFileReq req, FindFileState results) {
+            foreach (ArchiveTreeItem treeItem in tvRoot) {
+                object daObject = treeItem.WorkTreeNode.DAObject;
+                // If the "current archive only" flag is set, only look for matches if this
+                // is the current archive.  (This is less efficient than it could be, but it
+                // makes the code simpler, and the data set isn't very large.)
+                if (!req.CurrentArchiveOnly || treeItem == results.mCurrentArchive) {
+                    if (daObject is IArchive) {
+                        FindInArchive(treeItem, req, results);
+                    } else if (daObject is IFileSystem) {
+                        IFileSystem fs = (IFileSystem)daObject;
+                        FindInFileSystem(treeItem, fs.GetVolDirEntry(), req, results);
+                    }
+                }
+                FindInTree(treeItem.Items, req, results);
+            }
+        }
+
+        private static void FindInArchive(ArchiveTreeItem treeItem, FindFile.FindFileReq req,
+                FindFileState results) {
+            // TODO? respect file list sort order
+            bool macZipEnabled = AppSettings.Global.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
+            IArchive arc = (IArchive)treeItem.WorkTreeNode.DAObject;
+            foreach (IFileEntry entry in arc) {
+                if (macZipEnabled && entry.IsMacZipHeader()) {
+                    // Don't include MacZip header entries in search.
+                    continue;
+                }
+                if (entry == results.mCurrentEntry) {
+                    results.mFoundCurrent = true;
+                }
+                if (EntryMatches(entry, req)) {
+                    UpdateFindState(treeItem, entry, results);
+                }
+            }
+        }
+
+        private static void FindInFileSystem(ArchiveTreeItem treeItem, IFileEntry dir,
+                FindFile.FindFileReq req, FindFileState results) {
+            // TODO? respect file list sort order
+            IFileSystem fs = (IFileSystem)treeItem.WorkTreeNode.DAObject;
+            foreach (IFileEntry entry in dir) {
+                if (entry == results.mCurrentEntry) {
+                    results.mFoundCurrent = true;
+                }
+                if (EntryMatches(entry, req)) {
+                    UpdateFindState(treeItem, entry, results);
+                }
+                if (entry.IsDirectory) {
+                    FindInFileSystem(treeItem, entry, req, results);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified entry matches the request parameters.
+        /// </summary>
+        private static bool EntryMatches(IFileEntry entry, FindFile.FindFileReq req) {
+            return entry.FileName.Contains(req.FileName,
+                    StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        /// <summary>
+        /// Updates the state object after a match is found.
+        /// </summary>
+        private static void UpdateFindState(ArchiveTreeItem treeItem, IFileEntry matchEntry,
+                FindFileState results) {
+            results.mLastArchive = treeItem;
+            results.mLastEntry = matchEntry;
+            if (results.mFirstArchive == null) {
+                // First match found.
+                results.mFirstArchive = treeItem;
+                results.mFirstEntry = matchEntry;
+            }
+            // Only update the before/after stuff if this isn't the current entry.
+            if (matchEntry != results.mCurrentEntry) {
+                if (!results.mFoundCurrent) {
+                    results.mPrevArchive = treeItem;
+                    results.mPrevEntry = matchEntry;
+                } else if (results.mNextArchive == null) {
+                    results.mNextArchive = treeItem;
+                    results.mNextEntry = matchEntry;
+                }
+            }
+        }
+
+        #endregion Find Files
 
         #region Debug
 
