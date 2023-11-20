@@ -1,4 +1,4 @@
-# S-C Assembler #
+# S-C Assembler Source File #
 
 File types:
  - DOS I

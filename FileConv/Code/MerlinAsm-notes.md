@@ -1,4 +1,4 @@
-# Merlin Assembler #
+# Merlin Assembler Source File #
 
 File types:
  - ProDOS TXT or DOS T, with filename extension ".S"

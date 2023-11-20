@@ -129,7 +129,7 @@ namespace FileConv {
         }
 
         public SimpleText AppendPrintable(char val) {
-            Text.Append(ASCIIUtil.MakePrintable((char)val));
+            Text.Append(ASCIIUtil.MakePrintable(val));
             return this;
         }
     }

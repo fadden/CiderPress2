@@ -17,6 +17,8 @@ using System;
 using System.Diagnostics;
 using System.Text;
 
+using CommonUtil;
+
 namespace FileConv.Code {
     /// <summary>
     /// Helper class for assembly sources.  This holds a line of output in a buffer, so that
@@ -39,11 +41,34 @@ namespace FileConv.Code {
         }
 
         /// <summary>
+        /// Clears the contents of the line buffer.
+        /// </summary>
+        public void Clear() {
+            mLineBuf.Clear();
+        }
+
+        /// <summary>
         /// Appends a single character to the line buffer.
         /// </summary>
         /// <param name="ch">Character to add.</param>
         public void Append(char ch) {
             mLineBuf.Append(ch);
+        }
+
+        /// <summary>
+        /// Appends a single character to the line buffer, converting it to printable form.
+        /// </summary>
+        /// <param name="ch">Character to add.</param>
+        public void AppendPrintable(char ch) {
+            mLineBuf.Append(ASCIIUtil.MakePrintable(ch));
+        }
+
+        /// <summary>
+        /// Appends a string to the line buffer.
+        /// </summary>
+        /// <param name="str">String to add.</param>
+        public void Append(string str) {
+            mLineBuf.Append(str);
         }
 
         /// <summary>
