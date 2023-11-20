@@ -265,8 +265,10 @@ namespace AppCommon {
                 ForeignEntries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
                     FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, null,
                     mAppHook));
-                XferEntries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
-                    FilePart.DataFork, attrs, mAppHook));
+                if (mExportSpec == null) {
+                    XferEntries.Add(new ClipFileEntry(arc, IFileEntry.NO_ENTRY, IFileEntry.NO_ENTRY,
+                        FilePart.DataFork, attrs, mAppHook));
+                }
                 mSynthDirs.Add(dirName, dirName);
             }
         }
@@ -411,8 +413,10 @@ namespace AppCommon {
                 ForeignEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
                     FilePart.DataFork, attrs, extractPath, mPreserveMode, null, null, null,
                     mAppHook));
-                XferEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
-                    FilePart.DataFork, attrs, mAppHook));
+                if (mExportSpec == null) {
+                    XferEntries.Add(new ClipFileEntry(fs, entry, IFileEntry.NO_ENTRY,
+                        FilePart.DataFork, attrs, mAppHook));
+                }
                 mAddedFiles.Add(entry, entry);
             }
         }

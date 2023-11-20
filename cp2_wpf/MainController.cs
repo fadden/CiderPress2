@@ -1802,6 +1802,7 @@ namespace cp2_wpf {
 
             // Serialize direct transfer data.  There won't be any for "export" mode.
             if (clipSet.XferEntries.Count > 0) {
+                Debug.Assert(exportSpec == null);
                 ClipInfo clipInfo = new ClipInfo(clipSet.XferEntries, GlobalAppVersion.AppVersion);
                 string cereal = JsonSerializer.Serialize(clipInfo,
                     new JsonSerializerOptions() { WriteIndented = true });
