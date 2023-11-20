@@ -306,9 +306,12 @@ namespace DiskArc.Disk {
                 hdr.mDataOffset = LENGTH;
                 if (format == ImageFormat.ProDOS_Disk) {
                     Debug.Assert(dataLen % BLOCK_SIZE == 0);
-                    hdr.mNumBlocks = (uint)(dataLen / BLOCK_SIZE);
+                    hdr.mNumBlocks = dataLen / BLOCK_SIZE;
                 } else if (format == ImageFormat.DOS_Floppy) {
                     Debug.Assert(dataLen % SECTOR_SIZE == 0);
+                    // The num_blocks field shouldn't really be set for DOS-ordered images, but
+                    // the original CiderPress gets upset if it isn't.
+                    hdr.mNumBlocks = dataLen / BLOCK_SIZE;
                 } else if (format == ImageFormat.Nibble_Floppy) {
                     Debug.Assert(dataLen % TwoIMG_Nibble.NIB_TRACK_LENGTH == 0);
                 }
@@ -432,8 +435,8 @@ namespace DiskArc.Disk {
                 } else {
                     // The num_blocks field isn't required to be valid for anything but ProDOS.
                     // It should be zero for other formats, but isn't always, e.g. for nibble
-                    // images it may be set to 280.  We could set it to zero here if we wanted
-                    // to "clean" the image.
+                    // images it may be set to 280.  The original CiderPress expects a valid
+                    // value here for non-nibble images.
                     appHook.LogI("TwoIMG: num_blocks field doesn't match data_len on non-ProDOS");
                 }
             }
