@@ -367,6 +367,16 @@ namespace cp2_wpf.WPFCommon {
                 }
             }
         }
+
+        public static void ScrollToTop(this DataGrid dg) {
+            VirtualizingStackPanel? virtPanel =
+                VisualHelper.GetVisualChild<VirtualizingStackPanel>(dg);
+            if (virtPanel != null) {
+                virtPanel.SetVerticalOffset(0);
+            } else {
+                Debug.Assert(false, "Unable to find datagrid VSP");
+            }
+        }
     }
 
     /// <summary>
@@ -434,6 +444,7 @@ namespace cp2_wpf.WPFCommon {
     /// VirtualizingPanel extensions.
     /// </summary>
     public static class VirtualizingPanelExtensions {
+        // Use reflection to get at internal method.
         private static readonly MethodInfo BringIndexIntoViewMethodInfo =
             typeof(VirtualizingPanel).GetMethod("BringIndexIntoView",
                 BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -444,6 +455,21 @@ namespace cp2_wpf.WPFCommon {
         public static void BringIndexIntoView_Public(this VirtualizingPanel virtPanel, int index) {
             Debug.Assert(virtPanel != null);
             BringIndexIntoViewMethodInfo.Invoke(virtPanel, new object[] { index });
+        }
+    }
+
+    /// <summary>
+    /// TreeView extensions.
+    /// </summary>
+    public static class TreeViewExtensions {
+        public static void ScrollToTop(this TreeView tv) {
+            VirtualizingStackPanel? virtPanel =
+                VisualHelper.GetVisualChild<VirtualizingStackPanel>(tv);
+            if (virtPanel != null) {
+                virtPanel.SetVerticalOffset(0);
+            } else {
+                Debug.Assert(false, "Unable to find treeview VSP");
+            }
         }
     }
 }

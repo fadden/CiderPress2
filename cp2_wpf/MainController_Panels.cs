@@ -294,6 +294,8 @@ namespace cp2_wpf {
                 Debug.Assert(fs.GetVolDirEntry() != IFileEntry.NO_ENTRY);
                 PopulateDirectoryTree(null, tvRoot, fs.GetVolDirEntry());
                 tvRoot[0].IsSelected = true;
+                // Calling DirectoryTreeItem.BringItemIntoView here will cause a crash
+                mMainWin.DirectoryTree_ScrollToTop();
                 mMainWin.SetNotesList(fs.Notes);
             } else {
                 string title = "Information";
@@ -326,6 +328,8 @@ namespace cp2_wpf {
                 mMainWin.DirectoryTreeRoot.Add(newItem);
                 newItem.IsSelected = true;
             }
+
+            mMainWin.FileList_ScrollToTop();
         }
 
         /// <summary>
@@ -479,6 +483,7 @@ namespace cp2_wpf {
                         mMainWin.fileListDataGrid.ScrollIntoView(dirItem);
                     }
                 }
+                // Calling DirectoryTreeItem.BringItemIntoView here will cause a crash.
             } else {
                 mMainWin.ConfigureCenterPanel(isInfoOnly:true, isArchive:false,
                     isHierarchic:false, hasRsrc:false, hasRaw:false);

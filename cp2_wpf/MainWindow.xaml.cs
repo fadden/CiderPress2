@@ -735,6 +735,13 @@ namespace cp2_wpf {
             mMainCtrl.DirectoryTree_SelectionChanged(item);
         }
 
+        /// <summary>
+        /// Scrolls the directory tree to the top.
+        /// </summary>
+        public void DirectoryTree_ScrollToTop() {
+            directoryTree.ScrollToTop();
+        }
+
         #endregion Directory Tree
 
         #region Center Panel
@@ -1209,6 +1216,13 @@ namespace cp2_wpf {
             toastMessage.BeginAnimation(UIElement.OpacityProperty, doubAnim);
 
             mMainCtrl.AppHook.LogI("Show notification: '" + msg + "' success=" + success);
+        }
+
+        /// <summary>
+        /// Moves the file list scroll position to the top.
+        /// </summary>
+        public void FileList_ScrollToTop() {
+            fileListDataGrid.ScrollToTop();
         }
 
         /// <summary>
