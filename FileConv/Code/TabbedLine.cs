@@ -72,6 +72,15 @@ namespace FileConv.Code {
         }
 
         /// <summary>
+        /// Appends a formatted string to the line buffer.
+        /// </summary>
+        /// <param name="format">Format descriptor.</param>
+        /// <param name="args">Arguments.</param>
+        public void AppendFormat(string format, params object[] args) {
+            mLineBuf.AppendFormat(format, args);
+        }
+
+        /// <summary>
         /// Appends spaces so that the next character will be output at the position specified
         /// by the specified tab stop.
         /// </summary>

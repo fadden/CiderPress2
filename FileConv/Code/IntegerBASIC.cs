@@ -130,7 +130,7 @@ namespace FileConv.Code {
             }
             // This is a little tricky because the S-C and LISA assemblers used DOS file type 'I'
             // for their source code.  We need to rule those out.
-            if (DetectContentType(DataStream) != ContentType.IntegerBASIC) {
+            if (DetectContentType(DataStream, FileAttrs.AuxType) != ContentType.IntegerBASIC) {
                 return Applicability.Not;
             }
             return Applicability.Probably;
@@ -316,8 +316,12 @@ namespace FileConv.Code {
         /// a valid BASIC program.  The LISA formats can be detected fairly reliably, so it's
         /// best to test for that first.</para>
         /// </remarks>
-        internal static ContentType DetectContentType(Stream stream) {
-            // TODO: test for LISA assembler
+        internal static ContentType DetectContentType(Stream stream, int auxType) {
+            if (LisaAsm.LooksLikeLisa3(stream, auxType)) {
+                return ContentType.LISA3;
+            } else if (LisaAsm.LooksLikeLisa4(stream, auxType)) {
+                return ContentType.LISA4;
+            }
 
             // S-C Assembler and Integer BASIC both start with a line-length byte and a line
             // number, followed by byte data.  Check the length byte, which includes itself.

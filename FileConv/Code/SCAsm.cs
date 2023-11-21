@@ -52,7 +52,8 @@ namespace FileConv.Code {
             if (FileAttrs.FileType != FileAttribs.FILE_TYPE_INT) {
                 return Applicability.Not;
             }
-            if (IntegerBASIC.DetectContentType(DataStream) != IntegerBASIC.ContentType.SCAsm) {
+            if (IntegerBASIC.DetectContentType(DataStream, FileAttrs.AuxType) !=
+                    IntegerBASIC.ContentType.SCAsm) {
                 return Applicability.Not;
             }
             return Applicability.Probably;

@@ -3,11 +3,12 @@
 File types:
  - v2: DOS alternate B
  - v3: ProDOS INT with aux type in range [$1000,$3fff]
- - v4/v5: ProDOS INT with aux type in range [$4000,$7fff]
+ - v4/v5: ProDOS INT with aux type in range [$4000,$5fff]
 
 Primary references:
  - v2: reverse engineering, primarily by Andy McFadden
- - v3+: LISA source code, from A2ROMulan CD-ROM
+ - v3: LISA v3.1 source code, from A2ROMulan CD-ROM
+ - v4/v5: LISA 8/16 source code, from A2ROMulan CD-ROM
 
 ## General ##
 
@@ -61,8 +62,30 @@ converting lines to text.  Lines without comments will follow the operand with $
 
 ## v3 Format ##
 
-TODO
+Auxtypes $17fc, $1800, $1ffc, $2000, and $27fc have been seen.
+
+The file format looks like this:
+```
++$00 / 2: length of code section, in bytes
++$02 / 2: length of symbol table, in bytes
++$04 /nn: symbol table, 0-512 entries, 8 bytes each
++$xx /yy: code section
+```
+Symbol table entries are 8 bytes each:
+```
++$00 / 6: 8-character label, packed into 6 bytes
++$06 / 2: value?
+```
+The structure of the code section is fairly complex.
+
+Some files appear to have used a different table of opcode mnemonics.  For example, the file
+"anix.equates" appears in a few places, and has the same filetype and auxtype as other source
+files.  However, even though it appears to decode successfully, all of the opcodes are incorrect.
+Curiously, the ANIX 2.1 command "LPRINT" can successfully convert "anix.equates" to text, but
+generates incorrect output for LISA v3.1 source files.
 
 ## v4/v5 Format ##
+
+Auxtypes $40e8, $40e9, and $50e1 have been seen.  A filename suffix of ".A" is commonly used.
 
 TODO
