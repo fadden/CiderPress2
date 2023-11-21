@@ -8,7 +8,7 @@ File types:
 Primary references:
  - v2: reverse engineering, primarily by Andy McFadden
  - v3: LISA v3.1 source code, from A2ROMulan CD-ROM
- - v4/v5: LISA 8/16 source code, from A2ROMulan CD-ROM
+ - v4/v5: Lisa816 v5.0a (433) source code, from A2ROMulan CD-ROM
 
 ## General ##
 
@@ -62,30 +62,46 @@ converting lines to text.  Lines without comments will follow the operand with $
 
 ## v3 Format ##
 
-Auxtypes $17fc, $1800, $1ffc, $2000, and $27fc have been seen.
+Auxtypes $17fc, $1800, $1ffc, $2000, $26fc, and $27fc have been seen.
 
 The file format looks like this:
 ```
 +$00 / 2: length of code section, in bytes
 +$02 / 2: length of symbol table, in bytes
 +$04 /nn: symbol table, 0-512 entries, 8 bytes each
-+$xx /yy: code section
++$xx /yy: code
 ```
 Symbol table entries are 8 bytes each:
 ```
 +$00 / 6: 8-character label, packed into 6 bytes
-+$06 / 2: value?
++$06 / 2: value? (usually zero)
 ```
-The structure of the code section is fairly complex.
+The code section is a series of lines with a complex encoding.
 
-Some files appear to have used a different table of opcode mnemonics.  For example, the file
-"anix.equates" appears in a few places, and has the same filetype and auxtype as other source
-files.  However, even though it appears to decode successfully, all of the opcodes are incorrect.
-Curiously, the ANIX 2.1 command "LPRINT" can successfully convert "anix.equates" to text, but
-generates incorrect output for LISA v3.1 source files.
+At least one file has been found that appears to use a different table of opcode mnemonics.  The
+file "anix.equates" appears in some ANIX distributions, and has the same filetype and auxtype as
+other source files.  However, even though it appears to decode successfully, all of the opcodes
+are incorrect.  Curiously, the ANIX 2.1 command "LPRINT" can successfully convert "anix.equates"
+to text, but generates incorrect output for LISA v3.1 source files.
 
 ## v4/v5 Format ##
 
 Auxtypes $40e8, $40e9, and $50e1 have been seen.  A filename suffix of ".A" is commonly used.
 
-TODO
+The file format looks like this:
+```
++$00 / 2: version number
++$02 / 2: offset of first byte past end of symbol table
++$04 / 2: symbol count
++$06 / 1: tab position for opcodes
++$07 / 1: tab position for operands
++$08 / 1: tab position for comments
++$09 / 1: CPU type
++$0a / 6: (reserved)
++$10 /nn: symbol table
++$xx /yy: code
+```
+The symbol table is a series of strings that have a preceding length and are null terminated.  The
+length byte includes the null termination and the length byte itself.
+
+The code section is a series of lines with a complex encoding.

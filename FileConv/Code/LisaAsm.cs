@@ -37,6 +37,7 @@ namespace FileConv.Code {
 
         private const int MIN_LEN_V2 = 4 + 3;       // header + file end marker
         private const int MIN_LEN_V3 = 4 + 2;       // header + trivial source
+        private const int MIN_LEN_V4 = 16 + 2;      // header + trivial source
         private const int MAX_LEN = 64 * 1024;      // arbitrary cap, should apply to all versions
 
         // LISA v2 used the "alternate B" type.  Get the ProDOS type mapping for it.
@@ -84,6 +85,9 @@ namespace FileConv.Code {
             }
         }
 
+        /// <summary>
+        /// Returns true if this looks like a LISA v3 source file.
+        /// </summary>
         public static bool LooksLikeLisa3(Stream stream, int auxType) {
             // Check aux type.
             if (auxType < 0x1000 || auxType >= 0x4000) {
@@ -112,11 +116,39 @@ namespace FileConv.Code {
             return true;
         }
 
+        /// <summary>
+        /// Returns true if this looks like a LISA v4/v5 source file.
+        /// </summary>
         public static bool LooksLikeLisa4(Stream stream, int auxType) {
             if (auxType < 0x4000 || auxType >= 0x6000) {
                 return false;
             }
-            return false;       // TODO
+            if (stream.Length < MIN_LEN_V4 || stream.Length > MAX_LEN) {
+                return false;
+            }
+            stream.Position = 0;
+            ushort version = RawData.ReadU16LE(stream, out bool ok);
+            ushort symEnd = RawData.ReadU16LE(stream, out ok);
+            ushort symCount = RawData.ReadU16LE(stream, out ok);
+            if (!ok) {
+                return false;       // unexpected
+            }
+
+            if (symEnd == 0 || symEnd > stream.Length) {
+                return false;
+            }
+            if (symCount * 2 > symEnd) {
+                return false;
+            }
+            byte opTab = (byte)stream.ReadByte();
+            byte adTab = (byte)stream.ReadByte();
+            byte comTab = (byte)stream.ReadByte();
+            if (opTab < 1 || opTab >= 128 ||
+                    adTab < 2 || adTab >= 128 ||
+                    comTab < 3 || comTab >= 128) {
+                return false;
+            }
+            return true;
         }
 
         public override Type GetExpectedType(Dictionary<string, string> options) {
@@ -143,7 +175,8 @@ namespace FileConv.Code {
                 Lisa3 converter = new Lisa3(fileBuf, output);
                 converter.Convert();
             } else {
-                Debug.Assert(false);
+                Lisa4 converter = new Lisa4(fileBuf, output);
+                converter.Convert();
             }
             return output;
         }
@@ -828,7 +861,7 @@ namespace FileConv.Code {
 
         private void PrintSymLabel(int index) {
             if (index < 0 || index >= mSymbols.Length) {
-                mLineBuf.Append("!BADSYM!");
+                mLineBuf.Append("!BAD SYM!");
                 mOutput.Notes.AddW("Bad symbol index " + index);
                 return;
             }
@@ -913,4 +946,825 @@ namespace FileConv.Code {
     }
 
     #endregion LISA v3
+
+    #region LISA v4/v5
+
+    /// <summary>
+    /// LISA v4/v5 converter.
+    /// </summary>
+    /// <remarks>
+    /// This is a direct port from the original CiderPress implementation, which was a conversion
+    /// of the assembly routines in the Lisa816 v5.0a source file "DETOKEN.A".
+    /// </remarks>
+    class Lisa4 {
+        private static readonly int[] sDefaultTabStops = new int[] { 0, 9, 18, 40 };
+        private const int COL_LABEL = 0;
+        private const int COL_OPCODE = 1;
+        private const int COL_OPERAND = 2;
+        private const int COL_COMMENT = 3;
+
+        /// <summary>
+        /// <para>Table of mnemonics, from v5.0a editor sources.</para>
+        /// <para>Some entries were not present in the editor sources, but were used
+        /// by sample source code, and have been added here:</para>
+        /// <list type="bullet">
+        ///   <item>0x6c .assume</item>
+        ///   <item>0x7f .table</item>
+        /// </list>
+        /// </summary>
+        private static readonly string?[] sMnemonics = new string?[256] {
+            // 00 - 0f
+            "???", "add", "adc", "and", "cmp", "eor", "lda", "ora",
+            "sbc", "sta", "sub", "xor", "asl", "dec", "inc", "lsr",
+            // 10 - 1f
+            "rol", "ror", ".if", "whl", ".go", "bra", "bcc", "bcs",
+            "beq", "bfl", "bge", "blt", "bmi", "bne", "bpl", "btr",
+            // 20 - 2f
+            "bvc", "bvs", "obj", "org", "phs", ".db", "pea", "per",
+            "brl", ".md", "far", "fdr", "fzr", "inp", "lcl", "rls",
+            // 30 - 3f
+            "bit", "cpx", "cpy", "ldx", "ldy", "stx", "sty", "trb",
+            "tsb", "stz", "pei", "rep", "sep", "jmp", "jsr", "jml",
+            // 40 - 4f
+            "jsl", "mvn", "mvp", "= ", "con", "epd", "epz", "eql",
+            "equ", "set", ".da", "adr", "byt", "csp", "dby", "hby",
+            // 50 - 5f
+            "bby", "anx", "chn", "icl", "lib", "lnk", "msg", "psm",
+            "rlb", "sbt", "ttl", "dci", "rvs", "str", "zro", "dfs",
+            // 60 - 6f
+            "hex", "usr", "sav", ".tf", "seg", "cpu", ".entry", ".ref",
+            ".group", ".deref", "long", null, ".assume", null, null, null,
+            // 70 - 7f
+            null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, ".table",
+            // 80 - 8f
+            null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null,
+            // 90 - 9f
+            ".el", ".fi", ".me", ".we", ".la", ".lx", ".sa", ".sx",
+            "dph", "if1", "if2", "end", "exp", "gen", "lst", "nls",
+            // a0 - af
+            "nog", "nox", "pag", "pau", "nlc", "cnd", "asl", "lsr",
+            "rol", "ror", "dec", "inc", "mvn", "mvp", "brk", "clc",
+            // b0 - bf
+            "cld", "cli", "clv", "dex", "dey", "inx", "iny", "nop",
+            "pha", "php", "pla", "plp", "rti", "rts", "sec", "sed",
+            // c0 - cf
+            "sei", "tax", "tay", "tsx", "txa", "txs", "tya", "phx",
+            "phy", "plx", "ply", "cop", "phb", "phd", "phk", "plb",
+            // d0 - df
+            "pld", "rtl", "stp", "swa", "tad", "tas", "tcd", "tcs",
+            "tda", "tdc", "tsa", "tsc", "txy", "tyx", "wai", "xba",
+            // e0 - ef
+            "xce", ".proc", ".endp", ".table", ".endt", null, null, null,
+            null, null, null, null, null, null, null, null,
+            // f0 - ff
+            null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null,
+        };
+
+        private const char MacroChar = '_';
+
+        //
+        // Token constants, from MNEMONICS.A.
+        //
+
+        private const int Bigndec4_tkn = 0x00;
+        private const int Bignhex4_tkn = 0x01;
+        private const int Bignbin4_tkn = 0x02;
+        private const int Bignhexs_tkn = 0x03;
+        private const int Bignstring_tkn = 0x04;
+        private const int Dec1_tkn = 0x1a;
+        private const int Dec2_tkn = 0x1b;
+        private const int Hex1_tkn = 0x1c;
+        private const int Hex2_tkn = 0x1d;
+        private const int Bin1_tkn = 0x1e;
+        private const int Bin2_tkn = 0x1f;
+        private const int Bign_tkn = 0x33;
+        private const int Dec3_tkn = 0x34;
+        private const int Hex3_tkn = 0x35;
+        private const int Bin3_tkn = 0x36;
+        private const int cABS_tkn = 0x37;
+        private const int cLONG_tkn = 0x38;
+        private const int MVN_tkn = 0x41;
+        private const int MVP_tkn = 0x42;
+        private const int MacE_tkn = 0x5e;
+        private const int Str31_tkn = 0x7f;
+
+        private const int SS = 0x90;
+
+        private const int GROUP1_tkns = 0x01;
+        private const int GROUP2_tkns = 0x0c;
+        private const int GROUP3_tkns = 0x12;
+        private const int GROUP4_tkns = 0x29;
+        private const int GROUP5_tkns = 0x30;
+        private const int GROUP6_tkns = 0x43;
+        private const int GROUP7_tkns = 0x4a;
+        private const int GROUP8_tkns = 0x51;
+        private const int GROUP9_tkns = 0x5f;
+
+        private const int LocalTKN = 0xf0;
+        private const int LabelTKN = 0xfa;
+        private const int MacroTKN = 0xfc;
+        private const int ErrlnTKN = 0xfd;       // "is BlankTKN by itself"
+        private const int BlankTKN = 0xfd;
+        private const int CommentTKN = 0xfe;
+        private const int ComntStarTKN = 0xfe;
+        private const int ComntSemiTKN = 0xff;
+
+        //
+        // Operand conversion tables.
+        //
+
+        // Address header char.
+        private static readonly char[] sAdrsModeHeader = new char[16] {
+            '\0', '\0', '\0', '\0',         // 0-8 are null
+            '\0', '\0', '\0', '\0', '\0',
+            '(', '(', '(', '(',             // 9-12
+            '[', '[',                       // 13-14
+            '\0'                            // 15
+        };
+
+        private static readonly string?[] sAdrsModeTrailer = new string?[16] {
+            null, null, null, ",X",
+            ",X", ",X", null, ",S",
+            ",Y", "),Y", ",X)", ")",
+            ",S),Y", "]", "],Y", null,
+        };
+
+        // operand lookup table - 1st char
+        //     0 : not simple operand
+        //  b7=1 : 1st char of simple operand
+        private const string sOperandTbl1 =
+            "+-*/&|^=" +            // 0-7
+            "<>%<><~-" +            // 8-F
+            "01234567" +            //10-17
+            "89\0\0\0\0\0\0" +      //18-1F
+            "++++++++" +            //20-27
+            "++\0\0\0\0\0\0" +      //28-2F
+            "\0<>\0\0\0\0\0" +      //30-37
+            "\0*@#/^|\\" +          //38-3F
+            "<<<<<<<<" +            //40-47
+            "<<??????" +            //48-4F
+            ">>>>>>>>" +            //50-57
+            ">>????\0?" +           //58-5F
+            "\0\0\0\0\0\0\0\0" +    //60-67
+            "\0\0\0\0\0\0\0\0" +    //68-6f
+            "\0\0\0\0\0\0\0\0" +    //70-77
+            "\0\0\0\0\0\0\0\0";     //78-7f
+
+        // operand lookup table - 2nd char
+        //     0 : only 1 char
+        //     1 : was unary op
+        //  b7=1 : 2nd char of simple operand
+        //
+        // (Changed numeric 1 to '!'.  Bit 7 never set.  Normally it's set
+        // for anything that isn't numeric 0 or 1.)
+        private const string sOperandTbl2 =
+            "\0\0\0\0\0\0\0\0" +    // 0-7
+            "\0\0\0==>!!" +         // 8-F      note: 1's mark unaries
+            "\0\0\0\0\0\0\0\0" +    //10-17
+            "\0\0\0\0\0\0\0\0" +    //18-1F
+            "01234567" +            //20-27
+            "89\0\0\0\0\0\0" +      //28-2F
+            "\0<>\0\0\0\0\0" +      //30-37
+            "\0\0!!!!!!" +          //38-3F     note: 1's mark unaries
+            "01234567" +            //40-47
+            "89012345" +            //48-4F
+            "01234567" +            //50-57
+            "896789\0#" +           //58-5F
+            "\0\0\0\0\0\0\0\0" +    //60-67
+            "\0\0\0\0\0\0\0\0" +    //68-6f
+            "\0\0\0\0\0\0\0\0" +    //70-77
+            "\0\0\0\0\0\0\0\0";     //78-7f
+
+        // operator lookup table
+        //     0 : not operator
+        //     1 : complex operator
+        //  b7=1 : 1st char of simple operator
+        //
+        // (Changed numeric 1 to '!'.  Bit 7 never set.)
+        private const string sOperatorTbl1 =
+            "+-*/&|^=" +            // 0-7
+            "<>%<><\0\0" +          // 8-F
+            "\0\0\0\0\0\0\0\0" +    //10-17
+            "\0\0\0\0\0\0\0\0" +    //18-1F
+            "!!!!!!!!" +            //20-27
+            "!!!!!!!!" +            //28-2F
+            "\0<>\0\0\0\0\0" +      //30-37
+            "\0\0\0\0\0\0\0\0" +    //38-3F
+            "\0\0\0\0\0\0\0\0" +    //40-47
+            "\0\0\0\0\0\0\0\0" +    //48-4F
+            "\0\0\0\0\0\0\0\0" +    //50-57
+            "\0\0\0\0\0\0\0\0" +    //58-5F
+            "\0\0\0\0\0\0\0\0" +    //60-67
+            "\0\0\0\0\0\0\0\0" +    //68-6f
+            "\0\0\0\0\0\0\0\0" +    //70-77
+            "\0\0\0\0\0\0\0\0";     //78-7f
+
+        private const string sOperatorTbl2 = sOperandTbl2;
+
+        private enum OperandResult {
+            Unknown = 0, Failed, GotoOutOprtr, GotoOutOprnd
+        }
+
+        private char[] mBinBuf = new char[8];
+        private string[] mSymbols = new string[0];
+
+        private byte[] mBuf;
+        private SimpleText mOutput;
+        private TabbedLine mLineBuf = new TabbedLine(sDefaultTabStops);
+
+
+        public Lisa4(byte[] buf, SimpleText output) {
+            mBuf = buf;
+            mOutput = output;
+
+            Debug.Assert(sOperandTbl1.Length == 128);
+            Debug.Assert(sOperandTbl2.Length == 128);
+            Debug.Assert(sOperatorTbl1.Length == 128);
+        }
+
+        public void Convert() {
+            int[] tabStops = new int[4];
+            ushort version = RawData.GetU16LE(mBuf, 0x00);
+            ushort symEnd = RawData.GetU16LE(mBuf, 0x02);
+            ushort symCount = RawData.GetU16LE(mBuf, 0x04);
+            tabStops[0] = 0;
+            tabStops[1] = mBuf[0x06];
+            tabStops[2] = mBuf[0x07];
+            tabStops[3] = mBuf[0x08];
+            byte cpuType = mBuf[0x09];
+
+            mLineBuf = new TabbedLine(tabStops);
+
+            Debug.Assert(symEnd < mBuf.Length);
+            mSymbols = ExtractSymbols(mBuf, 16, symEnd, symCount, mOutput.Notes);
+
+            int offset = symEnd;
+            int lineNum = 0;
+            while (offset < mBuf.Length) {
+                lineNum++;
+                int lineLen;
+                byte flagByte = mBuf[offset++];
+                if (flagByte < 0x80) {
+                    if (flagByte == 0) {
+                        // End-of-file indicator.
+                        break;
+                    } else {
+                        // Explicit length, complex line.
+                        lineLen = flagByte;
+                        // Subtract one from flagByte, because it's included in the length.
+                        ProcessLine(offset, flagByte - 1);
+                    }
+                } else {
+                    // SpecMnem - locals, labels, comments.
+                    if (flagByte >= LocalTKN) {
+                        lineLen = 1;
+                        if (flagByte == ComntSemiTKN) {
+                            mLineBuf.Append(';');
+                        } else if (flagByte == CommentTKN) {
+                            mLineBuf.Append('*');
+                        } else if (flagByte == BlankTKN) {
+                            // Just a blank line.
+                        } else if (flagByte < LabelTKN) {
+                            // 0xf0 - 0xf9 - local numeric labels, e.g. "^1".
+                            mLineBuf.Append('^');
+                            mLineBuf.Append((char)('0' + flagByte - 0xf0));
+                        } else if (flagByte < MacroTKN) {
+                            // 0xfa - 0xfb
+                            if (flagByte == 0xfa) {
+                                // Label.
+                                int index = mBuf[offset] | (mBuf[offset + 1] << 8);
+                                PrintSymEntry(index);
+                                lineLen = 3;
+                            } else {
+                                // Not used?
+                                mOutput.Notes.AddI("Found rare code 0xfb");
+                                mLineBuf.Append("??? ");
+                            }
+                        } else {
+                            // Macro (only object on line).
+                            Debug.Assert(flagByte == MacroTKN);
+                            mLineBuf.Tab(COL_OPCODE);
+                            mLineBuf.Append('_');
+                            int index = mBuf[offset] | (mBuf[offset + 1] << 8);
+                            PrintSymEntry(index);
+                            lineLen = 3;
+                        }
+                    } else {
+                        // OutMnem - simple, standard mnemonic.
+                        lineLen = 1;
+                        mLineBuf.Tab(COL_OPCODE);
+                        string? str = sMnemonics[flagByte];
+                        if (str != null) {
+                            mLineBuf.Append(str);
+                        } else {
+                            mOutput.Notes.AddW("Found bad mnemonic: $" + flagByte.ToString("x2"));
+                            mLineBuf.Append("!BAD MNEMONIC!");
+                        }
+                    }
+                }
+
+                mLineBuf.MoveLineTo(mOutput);
+
+                offset += lineLen - 1;
+            }
+        }
+
+        private void ProcessLine(int offset, int len) {
+            byte mnemonic = 0;
+
+            byte firstByte = mBuf[offset];
+            if (firstByte == ComntSemiTKN || firstByte == ComntStarTKN || firstByte == ErrlnTKN) {
+                switch (firstByte) {
+                    case ComntSemiTKN: mLineBuf.Append(';'); break;
+                    case ComntStarTKN: mLineBuf.Append('*'); break;
+                    case ErrlnTKN: mLineBuf.Append('!'); break;
+                }
+                offset++;
+                while (--len != 0) {
+                    mLineBuf.AppendPrintable((char)(mBuf[offset++] & 0x7f));
+                }
+                return;
+            } else if (firstByte == MacroTKN) {
+                // Handle macro.
+                int idx = mBuf[++offset];
+                idx |= mBuf[++offset] << 8;
+                mLineBuf.Tab(COL_OPCODE);
+                mLineBuf.Append(MacroChar);
+                PrintSymEntry(idx);
+                offset++;
+                len -= 3;
+                mnemonic = MacroTKN;
+                goto ConvtOperand;
+            } else if (firstByte == LabelTKN) {
+                // Handle label at start of line.
+                int idx = mBuf[++offset];
+                idx |= mBuf[++offset] << 8;
+                PrintSymEntry(idx);
+                offset++;
+                len -= 3;
+                // goto ConvtMnem
+            } else if (firstByte >= LocalTKN) {
+                // Handle local label (^).
+                mLineBuf.Append('^');
+                mLineBuf.Append((char)(firstByte - 0xc0));
+                offset++;
+                len--;
+                // goto ConvtMnem
+            } else {
+                // No label; current value is the mnemonic; continue w/o advancing.
+                // goto ConvtMnem
+            }
+
+            // ConvtMnem
+            mnemonic = mBuf[offset++];
+            len--;
+            if (mnemonic >= MacroTKN) {
+                // OutMacro
+                Debug.Assert(mnemonic == MacroTKN);
+                mLineBuf.Tab(COL_OPCODE);
+                int idx = mBuf[offset++];
+                idx |= mBuf[offset++] << 8;
+                mLineBuf.Append(MacroChar);
+                PrintSymEntry(idx);
+                len -= 2;
+            } else {
+                mLineBuf.Tab(COL_OPCODE);
+                string? str = sMnemonics[mnemonic];
+                if (str != null) {
+                    mLineBuf.Append(str);
+                } else {
+                    mLineBuf.Append("!BAD MNEMONIC!");
+                    mOutput.Notes.AddW("Found bad mnemonic $" + mnemonic.ToString("x2"));
+                }
+                if (mnemonic >= SS) {
+                    // CnvMnem2 - mnemonic has no associated operand.
+                    // Need to fall into ConvertOperand to show comment.
+                    if (len > 0) {
+                        // Can only be comment here; skip comment token.
+                        if (mBuf[offset] != ComntSemiTKN) {
+                            mOutput.Notes.AddI("Skipped SS offset=+$" + offset.ToString("x4"));
+                        }
+                        offset++;
+                        len--;
+                    }
+                }
+            }
+
+        ConvtOperand:
+            ConvertOperand(mnemonic, ref offset, ref len);
+            if (len > 0) {
+                mOutput.Notes.AddI("Note: leftover line bytes: " + len);
+            }
+        }
+
+        private void ConvertOperand(byte mnemonic, ref int offset, ref int len) {
+            int adrsMode = 0;
+
+            if (mnemonic == MacroTKN || mnemonic < SS) {
+                // ConvtOperand
+                mLineBuf.Tab(COL_OPERAND);
+                if (mnemonic != MacroTKN) {
+                    if (mnemonic < GROUP3_tkns ||
+                            !(mnemonic < GROUP5_tkns || mnemonic == MVN_tkn ||
+                              mnemonic == MVP_tkn || mnemonic >= GROUP6_tkns)) {
+                        if (len <= 0) {
+                            mLineBuf.Append("!BAD ADRS!");
+                            mOutput.Notes.AddW("Bad len in ConvtOperand MacroTKN case");
+                        } else {
+                            adrsMode = mBuf[offset++];
+                            len--;
+                        }
+                    }
+                    if (adrsMode < sAdrsModeHeader.Length) {
+                        char ch = sAdrsModeHeader[adrsMode];
+                        if (ch != '\0') {
+                            mLineBuf.Append(ch);
+                        }
+                    } else {
+                        mLineBuf.Append("!BAD ADRSMODE!");
+                        mOutput.Notes.AddW("Bad adrsMode in ConvtOperand");
+                    }
+                }
+
+                // OutOprnd
+                while (len > 0) {
+                    bool doOutOprtr = false;
+                    byte val = mBuf[offset++];
+                    len--;
+
+                    if (val >= 0x80) {
+                        if (val == LabelTKN) {
+                            // OutLabel
+                            int idx = mBuf[offset++];
+                            idx |= mBuf[offset++] << 8;
+                            len -= 2;
+                            PrintSymEntry(idx);
+                            doOutOprtr = true;
+                        } else if (val == ComntSemiTKN) {
+                            break;      // out of while, to OutOprndDone
+                        } else {
+                            // Illegal token.
+                            mLineBuf.Append("!,");
+                            // Keep looping in OutOprnd.
+                        }
+                    } else {
+                        // OutOpr2
+                        char ch = sOperandTbl1[val];
+                        if (ch != '\0') {
+                            // Simple operand.
+                            mLineBuf.Append(ch);
+                            ch = sOperandTbl2[val];
+                            if (ch == '!') {
+                                continue;       // unary, no operator, go to OutOprnd
+                            } else if (ch != '\0') {
+                                mLineBuf.Append(ch);
+                            }
+                            doOutOprtr = true;
+                        } else {
+                            // OutOprComp - complex operand.
+                            OperandResult result = PrintComplexOperand(val, ref offset, ref len);
+                            if (result == OperandResult.GotoOutOprtr) {
+                                doOutOprtr = true;
+                                goto OutOprtr;
+                            }
+                            // else continue around in OutOprnd
+                        }
+                    }
+
+                OutOprtr:
+                    if (doOutOprtr) {
+                        if (len == 0) {
+                            break;
+                        }
+                        byte opr = mBuf[offset++];
+                        len--;
+
+                        if (opr >= 0x80) {
+                            if (opr == ComntSemiTKN) {
+                                break;      // goto OutOprndDone
+                            } else {
+                                // Must be two sequential operands.
+                                mLineBuf.Append(',');
+                                offset--;       // back up
+                                len++;
+                                // continue around to OutOprnd
+                            }
+                        } else {
+                            char opch = sOperatorTbl1[opr];
+                            if (opch == '\0') {
+                                //goto not_operator;  <-- C# limitation on goto scope, copy in
+                                mLineBuf.Append(',');
+                                offset--;       // back up
+                                len++;
+                                // continue around to OutOprnd
+                            } else if (opch == '!') {
+                                // Complex.
+                                mLineBuf.Append('+');
+                                opch = sOperatorTbl2[opr];
+                                if (opch != '\0') {
+                                    mLineBuf.Append(opch);
+                                    goto OutOprtr;      // look for another
+                                } else {
+                                    byte num = (byte)(opr - 0x10);
+                                    OperandResult result = PrintNum(num, ref offset, ref len);
+                                    if (result == OperandResult.GotoOutOprtr) {
+                                        goto OutOprtr;
+                                    }
+                                }
+                            } else {
+                                // Simple.
+                                mLineBuf.Append(' ');
+                                mLineBuf.Append(opch);
+                                opch = sOperatorTbl2[opr];
+                                if (opch != '\0') {
+                                    mLineBuf.Append(opch);
+                                }
+                                mLineBuf.Append(' ');
+                                // continue to OutOprnd
+                            }
+                        }
+                    }
+                }
+            }
+
+            // OutOprndDone
+            if (adrsMode != 0) {
+                if (adrsMode < sAdrsModeHeader.Length) {
+                    string? str = sAdrsModeTrailer[adrsMode];
+                    if (str != null) {
+                        mLineBuf.Append(str);
+                    }
+                } else {
+                    mLineBuf.Append("!BAD ADRSMODE!");
+                    mOutput.Notes.AddW("Bad adrsMode in OutOprndDone");
+                }
+            }
+
+            if (len > 0) {
+                mLineBuf.Tab(COL_COMMENT);
+                mLineBuf.Append(';');
+                while (len-- != 0) {
+                    mLineBuf.AppendPrintable((char)(mBuf[offset++] & 0x7f));
+                }
+            }
+        }
+
+        private static readonly char[] sHexDigit = new char[16] {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+        };
+
+        private OperandResult PrintComplexOperand(byte opr, ref int offset, ref int len) {
+            if (opr != Bign_tkn) {
+                return PrintNum(opr, ref offset, ref len);
+            }
+
+            // OutOprComp
+            byte subClass = mBuf[offset++];
+            len--;
+            if (subClass == Bigndec4_tkn) {
+                PrintDec(4, ref offset, ref len);
+            } else if (subClass == Bignhex4_tkn) {
+                PrintHex(4, ref offset, ref len);
+            } else if (subClass == Bignbin4_tkn) {
+                PrintBin(4, ref offset, ref len);
+            } else if (subClass == Bignhexs_tkn) {
+                // Hex string, for HEX pseudo-op.
+                byte hexLen = mBuf[offset++];
+                len--;
+                if (hexLen > len) {
+                    mLineBuf.Append("!BAD HEX!");
+                    mOutput.Notes.AddW("Found bad HEX string");
+                    return OperandResult.Failed;
+                }
+                while (hexLen-- != 0) {
+                    byte val = mBuf[offset++];
+                    len--;
+                    mLineBuf.Append(sHexDigit[(val & 0xf0) >> 4]);
+                    mLineBuf.Append(sHexDigit[val & 0x0f]);
+                }
+            } else if (subClass == Bignstring_tkn) {
+                // Un-delimited string.
+                byte strLen = mBuf[offset++];
+                len--;
+                if (strLen > len) {
+                    mLineBuf.Append("!BAD USTR!");
+                    mOutput.Notes.AddW("Bad un-delimited string");
+                    return OperandResult.Failed;
+                }
+                while (strLen-- != 0) {
+                    byte val = mBuf[offset++];
+                    len--;
+                    mLineBuf.AppendPrintable((char)(val & 0x7f));
+                }
+            } else {
+                mLineBuf.Append("!BAD CPLX OPRND!");
+                mOutput.Notes.AddW("Bad complex operand");
+                return OperandResult.Failed;
+            }
+
+            return OperandResult.GotoOutOprtr;
+        }
+
+        /// <summary>
+        /// OUTNUM
+        /// </summary>
+        private OperandResult PrintNum(byte opr, ref int offset, ref int len) {
+            OperandResult result = OperandResult.GotoOutOprtr;
+            int index;
+            switch (opr) {
+                case Dec3_tkn:
+                    PrintDec(3, ref offset, ref len);
+                    break;
+                case Dec2_tkn:
+                    PrintDec(2, ref offset, ref len);
+                    break;
+                case Dec1_tkn:
+                    PrintDec(1, ref offset, ref len);
+                    break;
+                case Hex3_tkn:
+                    PrintHex(3, ref offset, ref len);
+                    break;
+                case Hex2_tkn:
+                    PrintHex(2, ref offset, ref len);
+                    break;
+                case Hex1_tkn:
+                    PrintHex(1, ref offset, ref len);
+                    break;
+                case Bin3_tkn:
+                    PrintBin(3, ref offset, ref len);
+                    break;
+                case Bin2_tkn:
+                    PrintBin(2, ref offset, ref len);
+                    break;
+                case Bin1_tkn:
+                    PrintBin(1, ref offset, ref len);
+                    break;
+                case cABS_tkn:
+                    // Coerce absolute address.
+                    if (mBuf[offset] == LabelTKN) {
+                        offset++;
+                        len--;
+                    }
+                    index = mBuf[offset++];
+                    index |= mBuf[offset++] << 8;
+                    PrintSymEntry(index);
+                    len -= 2;
+                    mLineBuf.Append(":A");
+                    break;
+                case cLONG_tkn:
+                    // Coerce long address.
+                    if (mBuf[offset] == LabelTKN) {
+                        offset++;
+                        len--;
+                    }
+                    index = mBuf[offset++];
+                    index |= mBuf[offset++] << 8;
+                    PrintSymEntry(index);
+                    len -= 2;
+                    mLineBuf.Append(":L");
+                    break;
+                case MacE_tkn:
+                    // macro expression.
+                    mLineBuf.Append("?:");
+                    result = OperandResult.GotoOutOprnd;
+                    break;
+                default:
+                    if (opr >= Str31_tkn + 1) {
+                        // CheckMoreOprnd - none currently.
+                        // (not expected, but not much we can do)
+                        mLineBuf.Append("{CheckMoreOprnd}");
+                    } else {
+                        // CheckStrings
+                        int strLen;
+                        if ((opr & 0x1f) == 0) {
+                            strLen = mBuf[offset++];
+                            len--;
+                        } else {
+                            strLen = opr & 0x1f;
+                        }
+                        if (strLen > len) {
+                            mLineBuf.Append("!BAD STR!");
+                            mOutput.Notes.AddW("Found bad string");
+                            return OperandResult.Failed;
+                        }
+                        byte val = mBuf[offset];
+                        char delimit;
+                        if (val < 0x80) {
+                            // ISAPOST
+                            delimit = '\'';
+                        } else {
+                            // DETKNSTR
+                            delimit = '"';
+                        }
+                        mLineBuf.Append(delimit);
+                        while (strLen-- != 0) {
+                            char chval = (char)(mBuf[offset++] & 0x7f);
+                            len--;
+
+                            mLineBuf.Append(chval);
+                            if (chval == delimit) {
+                                mLineBuf.Append(chval);     // escape delimiters by doubling
+                            }
+                        }
+                        mLineBuf.Append(delimit);
+                    }
+                    break;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// CnvrtDec - output decimal value.
+        /// </summary>
+        private void PrintDec(int count, ref int offset, ref int len) {
+            int val = 0;
+            for (int i = 0; i < count; i++) {
+                val |= mBuf[offset++] << (8 * i);
+                len--;
+            }
+            mLineBuf.Append(val.ToString("D"));
+        }
+
+        /// <summary>
+        /// ConvrtHex - output hexadecimal value.
+        /// </summary>
+        private void PrintHex(int count, ref int offset, ref int len) {
+            mLineBuf.Append('$');
+            for (int i = count - 1; i >= 0; i--) {
+                byte val = mBuf[offset + i];
+                mLineBuf.Append(sHexDigit[(val & 0xf0) >> 4]);
+                mLineBuf.Append(sHexDigit[val & 0x0f]);
+            }
+            offset += count;
+            len -= count;
+        }
+
+        /// <summary>
+        /// ConvrtBin - output binary value.
+        /// </summary>
+        private void PrintBin(int count, ref int offset, ref int len) {
+            mLineBuf.Append('%');
+            for (int i = count - 1; i >= 0; i--) {
+                byte val = mBuf[offset + i];
+                for (int bit = 0; bit < 8; bit++) {
+                    mBinBuf[bit] = (char)('0' + ((val >> (7 - bit)) & 0x01));
+                }
+                mLineBuf.Append(new string(mBinBuf));
+            }
+            offset += count;
+            len -= count;
+        }
+
+        private void PrintSymEntry(int index) {
+            if (index < 0 || index >= mSymbols.Length) {
+                mLineBuf.Append("!BAD SYM!");
+                mOutput.Notes.AddW("Bad symbol index: " + index);
+                return;
+            }
+            mLineBuf.Append(mSymbols[index]);
+        }
+
+        /// <summary>
+        /// Extracts the labels from the symbol table.
+        /// </summary>
+        private static string[] ExtractSymbols(byte[] buf, int startOffset, int endOffset,
+                int symCount, Notes notes) {
+            StringBuilder sb = new StringBuilder(32);
+            string[] symbols = new string[symCount];
+            int offset = startOffset;
+            for (int i = 0; i < symCount; i++) {
+                if (offset == endOffset) {
+                    symbols[i] = "!FAIL!";
+                    notes.AddW("Failed reading symbol table entry " + i);
+                    continue;
+                }
+                sb.Clear();
+                byte bch;
+                bool first = true;
+                while (offset < endOffset && (bch = buf[offset++]) != 0) {
+                    if (first) {
+                        // First byte is length of string + 2.  Ignore it.
+                        first = false;
+                        continue;
+                    }
+                    if (bch < 0x80) {
+                        bch |= 0x20;
+                    }
+                    sb.Append((char)(bch & 0x7f));
+                }
+                symbols[i] = sb.ToString();
+                //Debug.WriteLine("SYM " + i + ": " + symbols[i]);
+            }
+            if (offset != endOffset) {
+                notes.AddW("Symbol table ended early: offset=" + offset + ", end=" + endOffset);
+            }
+            return symbols;
+        }
+    }
+
+    #endregion LISA v4/v5
 }
