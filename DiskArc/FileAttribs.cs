@@ -45,6 +45,8 @@ namespace DiskArc {
         public const int FILE_TYPE_ADB = 0x19;
         public const int FILE_TYPE_AWP = 0x1a;
         public const int FILE_TYPE_ASP = 0x1b;
+        public const int FILE_TYPE_8OB = 0x2b;
+        public const int FILE_TYPE_P8C = 0x2e;
         public const int FILE_TYPE_GWP = 0x50;
         public const int FILE_TYPE_S16 = 0xb3;
         public const int FILE_TYPE_PNT = 0xc0;
@@ -52,10 +54,12 @@ namespace DiskArc {
         public const int FILE_TYPE_MDI = 0xd7;
         public const int FILE_TYPE_SND = 0xd8;
         public const int FILE_TYPE_LBR = 0xe0;
+        public const int FILE_TYPE_CMD = 0xf0;
         public const int FILE_TYPE_F2 = 0xf2;
         public const int FILE_TYPE_F3 = 0xf3;
         public const int FILE_TYPE_F4 = 0xf4;
         public const int FILE_TYPE_F5 = 0xf5;
+        public const int FILE_TYPE_OS = 0xf9;
         public const int FILE_TYPE_INT = 0xfa;
         public const int FILE_TYPE_BAS = 0xfc;
         public const int FILE_TYPE_REL = 0xfe;

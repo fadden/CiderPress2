@@ -119,6 +119,10 @@ namespace FileConv {
             Text.AppendLine(text);
             return this;
         }
+        public SimpleText AppendLine(StringBuilder sb) {
+            Text.AppendLine(sb.ToString());
+            return this;
+        }
         public SimpleText AppendLine() {
             Text.AppendLine();
             return this;

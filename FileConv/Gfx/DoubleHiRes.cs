@@ -117,7 +117,7 @@ namespace FileConv.Gfx {
         }
 
         // Converts a "conv=xyz" option value to an enumerated value.
-        private ColorConvMode OptToEnum(string opt) {
+        private static ColorConvMode OptToEnum(string opt) {
             switch (opt) {
                 case CONV_MODE_BW:
                     return ColorConvMode.BlackWhite;

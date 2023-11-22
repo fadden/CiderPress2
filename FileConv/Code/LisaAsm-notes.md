@@ -16,8 +16,8 @@ Primary references:
 for Apple II code written by Randall Hyde.  The name is pronounced "LE ZA" rather than "LI SA".
 
 The program kept the source file in tokenized form, which reduced the memory footprint and
-the time required to assemble code.  This is true for all versions, even though the file format
-changed significantly over time.
+the time required to assemble code.  This is true for all versions, although the file format
+evolved significantly over time.
 
 Version 3.x was the last for 8-bit computers.  Versions 4 and 5 were branded "LISA 8/16", and
 added support for the Apple IIgs.
@@ -39,7 +39,8 @@ Each line is:
 The last line in the file has a length of 255 ($ff).  The last length byte is followed by two
 more $ff bytes.
 
-The line data is a mix of plain text and tokenized bytes.
+The line data is a mix of plain text and tokens.  The tokenization was primarily applied to the
+instruction mnemonics.
 
 Lines starting with '*' or ';' are full-line comments.  Lines starting with an upper-case letter
 are code lines that start with a label, lines starting with a caret (^) have a local (numeric)
@@ -56,9 +57,10 @@ if there is no operand, $01 for absolute addressing, $02 for immediate, $05 for 
 indirect indexed Y), and so on. Operands that should be taken literally, e.g.
 `ASC "HELLO, WORLD!"`, use $20.  The text of the operand follows.
 
-If the line has a comment, the operand will be followed by $bb (high-ASCII semicolon).  Because
-this cannot appear in a valid operand, it's not necessary to track open/close quotes when
-converting lines to text.  Lines without comments will follow the operand with $0d.
+If the line has a comment, it will be preceded by $bb (high-ASCII semicolon).  Because that value
+cannot appear in a valid operand, the end of the operand can be identified unambiguously, and thus
+it's not necessary to track open/close quotes when converting lines to text.  Lines without
+comments will follow the operand with $0d.
 
 ## v3 Format ##
 
@@ -76,7 +78,9 @@ Symbol table entries are 8 bytes each:
 +$00 / 6: 8-character label, packed into 6 bytes
 +$06 / 2: value? (usually zero)
 ```
-The code section is a series of lines with a complex encoding.
+The code section is a series of lines with a complex encoding.  All symbols are encoded as
+references to the symbol table, so the text of each symbol is only stored once.  Numeric values
+and operators used in operands are encoded.
 
 At least one file has been found that appears to use a different table of opcode mnemonics.  The
 file "anix.equates" appears in some ANIX distributions, and has the same filetype and auxtype as
@@ -104,4 +108,5 @@ The file format looks like this:
 The symbol table is a series of strings that have a preceding length and are null terminated.  The
 length byte includes the null termination and the length byte itself.
 
-The code section is a series of lines with a complex encoding.
+The code section is a series of lines with a complex encoding, similar in overall structure to v3
+but extended.

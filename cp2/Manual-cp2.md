@@ -1536,6 +1536,11 @@ Converters are available for code:
      syntax highlighting
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
+ - `disasm` - disassemble 6502, 65C02, or 65816 code
+   - `cpu` (multi): CPU type: `6502`, `6502u`, `65c02`, `65816` (default is
+     `65c02` for 8-bit code, 65816 for 16-bit code)
+   - `long` (bool): for 65816, true=start with long A/X/Y regs (default)
+   - `follow` (bool): for 65816, true=try to follow SEP/REP/XCE (default)
  - `int`: Integer BASIC program
    - `hi` (bool): false=plain text listing (default), true=add colorful
      syntax highlighting
@@ -1566,6 +1571,7 @@ Text documents:
 Graphics:
  - `dhgr`: Apple II double-hi-res screen
    - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
+     (default is `latch`)
  - `hgr`: Apple II hi-res screen
    - `bw` (bool): false=color (default), true=black & white
  - `hgrfont`: Apple II or /// hi-res screen font
