@@ -15,7 +15,6 @@
  */
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using Asm65;
@@ -118,7 +117,7 @@ namespace FileConv.Code {
 
             bool doFollow = GetBoolOption(options, OPT_FOLLOW, true);
             bool doStartLong = GetBoolOption(options, OPT_START_LONG, true);
-            bool doTwoBrk = GetBoolOption(options, OPT_TWO_BRK, true);
+            bool doTwoBrk = GetBoolOption(options, OPT_TWO_BRK, false);
 
             Convert65 conv;
             if (cpuType == CpuDef.CpuType.Cpu65816) {
@@ -266,7 +265,10 @@ namespace FileConv.Code {
                         mLineBuf);
                 } else if (IsProDOS8Call(mBuf, offset, endOffset - offset)) {
                     // Print and skip P8 inline call stuff.
-                    string callName = "(Unknown P8 MLI)";       // NiftyList TODO
+                    string callName = NiftyList.LookupP8MLI(mBuf[offset + 3]);
+                    if (string.IsNullOrEmpty(callName)) {
+                        callName = "(Unknown P8 MLI)";
+                    }
                     PrintMonitor8Line(op, mStatusFlags, mBuf, offset, mAddr + offset, callName,
                         mLineBuf);
                     output.AppendLine(mLineBuf);
@@ -274,9 +276,9 @@ namespace FileConv.Code {
                     byte callNum = mBuf[offset + 3];
                     byte addrLo = mBuf[offset + 4];
                     byte addrHi = mBuf[offset + 5];
-                    output.AppendLine(string.Format("{0:X4}-   {1:X2}          ${1:X2}",
+                    output.AppendLine(string.Format("{0:X4}-   {1:X2}                ${1:X2}",
                         mAddr + offset + 3, callNum));
-                    mLineBuf.AppendFormat("{0:X4}-   {1:X2} {2:X2}       ${2:X2}{1:X2}",
+                    mLineBuf.AppendFormat("{0:X4}-   {1:X2} {2:X2}             ${2:X2}{1:X2}",
                         mAddr + offset + 4, addrLo, addrHi);
                     opLen += 3;
                 } else {
@@ -290,6 +292,16 @@ namespace FileConv.Code {
             }
         }
 
+        /// <summary>
+        /// Prints one line of 8-bit code, in //e monitor style.
+        /// </summary>
+        /// <param name="op">Opcode reference.</param>
+        /// <param name="flags">Current status flags.</param>
+        /// <param name="buf">Data buffer.</param>
+        /// <param name="offset">Offset of opcode in data buffer.</param>
+        /// <param name="addr">Address of opcode in memory.</param>
+        /// <param name="comment">Additional comment; may be empty.</param>
+        /// <param name="sb">StringBuilder that receives output.</param>
         public static void PrintMonitor8Line(OpDef op, StatusFlags flags, byte[] buf, int offset,
                 int addr, string comment, StringBuilder sb) {
             byte byte0, byte1, byte2;
@@ -298,21 +310,21 @@ namespace FileConv.Code {
                 case 1:
                     byte0 = buf[offset];
                     byte1 = byte2 = 0xcc;
-                    sb.AppendFormat("{0:X4}-   {1:X2}          {2,-6}",
+                    sb.AppendFormat("{0:X4}-   {1:X2}          {2,-3}",
                         addr, byte0, op.Mnemonic.ToUpper());
                     break;
                 case 2:
                     byte0 = buf[offset];
                     byte1 = buf[offset + 1];
                     byte2 = 0xcc;
-                    sb.AppendFormat("{0:X4}-   {1:X2} {2:X2}       {3,-6}",
+                    sb.AppendFormat("{0:X4}-   {1:X2} {2:X2}       {3,-3}",
                         addr, byte0, byte1, op.Mnemonic.ToUpper());
                     break;
                 case 3:
                     byte0 = buf[offset];
                     byte1 = buf[offset + 1];
                     byte2 = buf[offset + 2];
-                    sb.AppendFormat("{0:X4}-   {1:X2} {2:X2} {3:X2}    {4,-6}",
+                    sb.AppendFormat("{0:X4}-   {1:X2} {2:X2} {3:X2}    {4,-3}",
                         addr, byte0, byte1, byte2, op.Mnemonic.ToUpper());
                     break;
                 default:
@@ -329,50 +341,50 @@ namespace FileConv.Code {
                 case OpDef.AddressMode.Acc:
                     break;
                 case OpDef.AddressMode.DP:
-                    sb.AppendFormat("${0:X2}", byte1);
+                    sb.AppendFormat("   ${0:X2}", byte1);
                     break;
                 case OpDef.AddressMode.DPIndexX:
-                    sb.AppendFormat("${0:X2},X", byte1);
+                    sb.AppendFormat("   ${0:X2},X", byte1);
                     break;
                 case OpDef.AddressMode.DPIndexY:
-                    sb.AppendFormat("${0:X2},Y", byte1);
+                    sb.AppendFormat("   ${0:X2},Y", byte1);
                     break;
                 case OpDef.AddressMode.DPIndexXInd:
-                    sb.AppendFormat("(${0:X2},X)", byte1);
+                    sb.AppendFormat("   (${0:X2},X)", byte1);
                     break;
                 case OpDef.AddressMode.DPInd:
-                    sb.AppendFormat("(${0:X2})", byte1);
+                    sb.AppendFormat("   (${0:X2})", byte1);
                     break;
                 case OpDef.AddressMode.DPIndIndexY:
-                    sb.AppendFormat("(${0:X2}),Y", byte1);
+                    sb.AppendFormat("   (${0:X2}),Y", byte1);
                     break;
                 case OpDef.AddressMode.Imm:
-                    sb.AppendFormat("#${0:X2}", byte1);
+                    sb.AppendFormat("   #${0:X2}", byte1);
                     break;
                 case OpDef.AddressMode.PCRel:
-                    sb.AppendFormat("#${0:X4}", RelOffset(addr, byte1));
+                    sb.AppendFormat("   ${0:X4}", RelOffset(addr, byte1));
                     break;
                 case OpDef.AddressMode.Abs:
-                    sb.AppendFormat("${0:X2}{1:X2}", byte2, byte1);
+                    sb.AppendFormat("   ${0:X2}{1:X2}", byte2, byte1);
                     if (string.IsNullOrEmpty(comment)) {
-                        // TODO: NiftyList lookup
+                        comment = NiftyList.Lookup00Addr((ushort)(byte1 | (byte2 << 8)));
                     }
                     break;
                 case OpDef.AddressMode.AbsIndexX:
-                    sb.AppendFormat("${0:X2}{1:X2},X", byte2, byte1);
+                    sb.AppendFormat("   ${0:X2}{1:X2},X", byte2, byte1);
                     break;
                 case OpDef.AddressMode.AbsIndexY:
-                    sb.AppendFormat("${0:X2}{1:X2},Y", byte2, byte1);
+                    sb.AppendFormat("   ${0:X2}{1:X2},Y", byte2, byte1);
                     break;
                 case OpDef.AddressMode.AbsIndexXInd:
-                    sb.AppendFormat("(${0:X2}{1:X2},X)", byte2, byte1);
+                    sb.AppendFormat("   (${0:X2}{1:X2},X)", byte2, byte1);
                     break;
                 case OpDef.AddressMode.AbsInd:
-                    sb.AppendFormat("(${0:X2}{1:X2})", byte2, byte1);
+                    sb.AppendFormat("   (${0:X2}{1:X2})", byte2, byte1);
                     break;
                 case OpDef.AddressMode.StackInt:
                     if (opLen != 1) {       // BRK/COP can be 1 or 2 bytes
-                        sb.AppendFormat("${0:X2}", byte1);
+                        sb.AppendFormat("   ${0:X2}", byte1);
                     }
                     break;
 

@@ -41,6 +41,7 @@ namespace FileConv {
             // Apple IIgs resource type name definitions.
             //
             // The most complete list appears to be the System 6.0.1 NList.Data from NiftyList.
+            // This list comes from there.
             private const string UNKNOWN_SYS_RSRC = "system resource";
             private const string APP_RSRC = "application-defined resource";
             private static readonly string[] sRsrc8000 = new string[0x30] {
