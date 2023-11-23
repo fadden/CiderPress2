@@ -1540,7 +1540,7 @@ Converters are available for code:
    - `cpu` (multi): CPU type: `6502`, `6502u`, `65c02`, `65816` (default is
      `65c02` for 8-bit code, 65816 for 16-bit code)
    - `long` (bool): for 65816, true=start with long A/X/Y regs (default)
-   - `follow` (bool): for 65816, true=try to follow SEP/REP/XCE (default)
+   - `follow` (bool): for 65816, true=try to follow SEP/REP (default)
  - `int`: Integer BASIC program
    - `hi` (bool): false=plain text listing (default), true=add colorful
      syntax highlighting

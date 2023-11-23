@@ -136,6 +136,9 @@ namespace FileConv.Code {
             Debug.Assert(mSet_RsrcTypeNames.mEntries[0x8001] == "rIcon");
         }
 
+        /// <summary>
+        /// Reads one section of the NiftyList data file.
+        /// </summary>
         private DataSet ReadSection(StreamReader sr) {
             DataSet set = new DataSet();
             while (true) {
@@ -159,10 +162,10 @@ namespace FileConv.Code {
 
         #region Raw Data
 
-        // This exists to keep Visual Studio from freezing up every time you type anything at
+        // Uncomment this to keep Visual Studio from freezing up every time you type anything at
         // the method level above this point in the source file.  Apparently the byte data below
         // takes some effort to parse.
-        private int foo;
+        //private int foo;
 
         /*
          * The NList.Data file is divided into several sections, separated by lines
