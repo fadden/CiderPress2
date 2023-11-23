@@ -15,7 +15,6 @@
  */
 using System;
 using System.Diagnostics;
-using System.Text;
 
 using CommonUtil;
 using DiskArc;
@@ -27,7 +26,7 @@ namespace FileConv.Code {
         public const string DESCRIPTION =
             "Formats the contents of the segment headers of an OMF file.";
         public const string DISCRIMINATOR =
-            "ProDOS S16, EXE, PIF, TIF, NDA, CDA, TOL, DVR, LDF, FST.";
+            "ProDOS OBJ, LIB, S16, RTL, EXE, PIF, TIF, NDA, CDA, TOL, DVR, LDF, FST.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;

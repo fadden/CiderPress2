@@ -21,7 +21,7 @@ using DiskArc;
 namespace FileConv.Generic {
     public class Resources : Converter {
         public const string TAG = "rsrc";
-        public const string LABEL = "Resource listing";
+        public const string LABEL = "Resource Listing";
         public const string DESCRIPTION = "Generates a listing of the file's resource fork.";
         public const string DISCRIMINATOR = "any file with a resource fork.";
         public override string Tag => TAG;

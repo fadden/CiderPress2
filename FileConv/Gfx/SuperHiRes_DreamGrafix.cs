@@ -29,7 +29,7 @@ namespace FileConv.Gfx {
     /// </remarks>
     public class SuperHiRes_DreamGrafix : Converter {
         public const string TAG = "shrdg";
-        public const string LABEL = "DreamGrafix graphics document";
+        public const string LABEL = "DreamGrafix Graphics Document";
         public const string DESCRIPTION =
             "Converts a DreamGrafix image file to a 640x400 index-color or direct-color bitmap.";
         public const string DISCRIMINATOR = "ProDOS PNT/$8005.";

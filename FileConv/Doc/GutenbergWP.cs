@@ -22,7 +22,7 @@ using DiskArc;
 namespace FileConv.Doc {
     public class GutenbergWP : Converter {
         public const string TAG = "guten";
-        public const string LABEL = "Gutenberg word processor";
+        public const string LABEL = "Gutenberg Word Processor";
         public const string DESCRIPTION = "Converts a Gutenberg word processor document to text. " +
             "Arbitrary characters are output for 'alternate' character values.";
         public const string DISCRIMINATOR = "Gutenberg filesystem TXT.";

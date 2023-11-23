@@ -27,7 +27,7 @@ namespace FileConv.Code {
     /// </summary>
     public class LisaAsm : Converter {
         public const string TAG = "lisasm";
-        public const string LABEL = "LISA assembler";
+        public const string LABEL = "LISA Assembler";
         public const string DESCRIPTION = "Converts LISA v2-v5 source code to plain text.";
         public const string DISCRIMINATOR = "DOS BB, or ProDOS INT with specific auxtypes.";
         public override string Tag => TAG;
@@ -543,7 +543,10 @@ namespace FileConv.Code {
                         // SHRTMNM2 - simple, standard mnemonic.
                         lineLen = 1;
                         mLineBuf.Tab(COL_OPCODE);
-                        PrintMnemonic(flagByte);
+                        if (!PrintMnemonic(flagByte)) {
+                            mOutput.Notes.AddW("Found unknown mnemonic $" +
+                                flagByte.ToString("x2"));
+                        }
                     }
                 }
 
@@ -620,7 +623,9 @@ namespace FileConv.Code {
                 lineLen--;
             } else {
                 mLineBuf.Tab(COL_OPCODE);
-                PrintMnemonic(mnemonic);
+                if (!PrintMnemonic(mnemonic)) {
+                    mOutput.Notes.AddW("Found unknown mnemonic $" + mnemonic.ToString("x2"));
+                }
             }
 
         CNVOPRND:
@@ -854,9 +859,10 @@ namespace FileConv.Code {
             return result;
         }
 
-        private void PrintMnemonic(byte val) {
+        private bool PrintMnemonic(byte val) {
             string mnem = sMnemonics.Substring(val * 3, 3);
             mLineBuf.Append(mnem);
+            return mnem != "???";
         }
 
         private void PrintSymLabel(int index) {

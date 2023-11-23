@@ -25,7 +25,7 @@ namespace FileConv.Doc {
     /// </summary>
     public class MagicWindow : Converter {
         public const string TAG = "magwin";
-        public const string LABEL = "Magic Window document";
+        public const string LABEL = "Magic Window Document";
         public const string DESCRIPTION = "Converts a Magic Window document to text.";
         public const string DISCRIMINATOR = "DOS B with extension \".MW\".";
         public override string Tag => TAG;

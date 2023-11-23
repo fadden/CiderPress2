@@ -22,7 +22,7 @@ using DiskArc;
 namespace FileConv.Gfx {
     public class SuperHiRes_Paintworks : Converter {
         public const string TAG = "shrpw";
-        public const string LABEL = "Paintworks graphics image";
+        public const string LABEL = "Paintworks Graphics Image";
         public const string DESCRIPTION =
             "Converts a Paintworks super hi-res image file to a 640x400 or 640x792 " +
             "indexed-color bitmap.";

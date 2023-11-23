@@ -56,6 +56,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Doc.AppleWorksSS)),
             new ConverterEntry(typeof(Doc.AppleWorksWP)),
             new ConverterEntry(typeof(Doc.AWGS_WP)),
+            new ConverterEntry(typeof(Doc.CPMText)),
             new ConverterEntry(typeof(Doc.GutenbergWP)),
             new ConverterEntry(typeof(Doc.MagicWindow)),
             new ConverterEntry(typeof(Doc.RandomText)),

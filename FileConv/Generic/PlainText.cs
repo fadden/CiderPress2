@@ -79,7 +79,7 @@ namespace FileConv.Generic {
             bool printableOnly = GetBoolOption(options, OPT_PRINT, true);
 
             if (DataStream != null) {
-                ConvertStream(DataStream, charMode, printableOnly, output.Text);
+                ConvertStream(DataStream, charMode, printableOnly, -1, output.Text);
             } else {
                 output.Notes.AddI("File has no data fork");
             }
@@ -89,8 +89,14 @@ namespace FileConv.Generic {
         /// <summary>
         /// Converts a single stream (data or resource fork).
         /// </summary>
+        /// <param name="stream">Stream to convert.</param>
+        /// <param name="charMode">How to convert bytes to characters.</param>
+        /// <param name="printableOnly">If true, convert characters to printable form; if false,
+        ///   output raw control characters.</param>
+        /// <param name="stopAtByte">Byte to stop at (e.g. Ctrl+Z), or -1 if not needed.</param>
+        /// <param name="sb">StringBuilder that receives the output.</param>
         internal static void ConvertStream(Stream stream, ConvUtil.ExportCharSrc charMode,
-                bool printableOnly, StringBuilder sb) {
+                bool printableOnly, int stopAtByte, StringBuilder sb) {
             string newline = Environment.NewLine;
             byte[] dataBuf = new byte[32768];
 
@@ -104,6 +110,9 @@ namespace FileConv.Generic {
 
                 for (int i = 0; i < actual; i++) {
                     byte val = dataBuf[i];
+                    if (val == stopAtByte) {
+                        return;
+                    }
                     char ch;
                     switch (charMode) {
                         case ConvUtil.ExportCharSrc.HighASCII:

@@ -79,7 +79,7 @@ namespace FileConv.Doc {
             }
             if (styleBlock == null) {
                 output.Notes.AddE("Unable to find rStyleBlock resource");
-                PlainText.ConvertStream(DataStream, ConvUtil.ExportCharSrc.MacOSRoman, true,
+                PlainText.ConvertStream(DataStream, ConvUtil.ExportCharSrc.MacOSRoman, true, -1,
                     output.Text);
                 return output;
             }
@@ -87,7 +87,7 @@ namespace FileConv.Doc {
             int offset = 0;
             if (!teFormat.Load(styleBlock, ref offset)) {
                 output.Notes.AddE("Failed to parse rStyleBlock resource");
-                PlainText.ConvertStream(DataStream, ConvUtil.ExportCharSrc.MacOSRoman, true,
+                PlainText.ConvertStream(DataStream, ConvUtil.ExportCharSrc.MacOSRoman, true, -1,
                     output.Text);
                 return output;
             }

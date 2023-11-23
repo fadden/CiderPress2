@@ -27,10 +27,11 @@ namespace FileConv.Code {
     /// </summary>
     public class Disasm65 : Converter {
         public const string TAG = "disasm";
-        public const string LABEL = "65xx disassembler";
+        public const string LABEL = "65xx Code Disassembly";
         public const string DESCRIPTION =
             "Disassembles 6502, 65C02, and 65816 code to a text listing.  The output " +
-            "resembles Apple II monitor output.";
+            "resembles Apple II monitor output.  The CPU setting will be switched to 65816 " +
+            "when disassembling 65816 code regardless of the default.";
         public const string DISCRIMINATOR = "DOS B, and various ProDOS types.";
         public override string Tag => TAG;
         public override string Label => LABEL;
@@ -174,7 +175,8 @@ namespace FileConv.Code {
                 applic = Applicability.ProbablyNot;
                 startAddr = 0x1000;
             } else if (fileType == FileAttribs.FILE_TYPE_NON) {
-                // Usually data, sometimes code.
+                // Usually data, sometimes code.  We might want to exclude CP/M disks, but it's
+                // possible they have some code that calls out to a 6502.
                 applic = Applicability.ProbablyNot;
                 startAddr = 0x1000;
             } else {

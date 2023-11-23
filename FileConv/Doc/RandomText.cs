@@ -109,7 +109,7 @@ namespace FileConv.Doc {
                 output.Text.AppendLine("[ record length is zero, formatting as plain text ]");
                 output.Text.AppendLine();
                 PlainText.ConvertStream(DataStream, ConvUtil.ExportCharSrc.HighASCII,
-                    true, output.Text);
+                    true, -1, output.Text);
                 AddDOSRawNote(DataStream, output);
                 return output;
             } else {

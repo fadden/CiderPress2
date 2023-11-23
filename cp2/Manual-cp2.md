@@ -1562,6 +1562,7 @@ Text documents:
    - `embed` (bool): true=display embedded formatting codes (default)
  - `awgswp`: AppleWorks GS Word Processor
    - `embed` (bool): true=display embedded formatting codes (default)
+ - `cpmtext`: convert CP/M text, which stops at first Ctrl+Z
  - `guten`: Gutenberg word processor
  - `magwin`: Magic Window word processor
  - `rtext`: convert DOS/ProDOS random-access text to cell-grid
