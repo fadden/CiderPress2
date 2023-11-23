@@ -39,6 +39,7 @@ namespace FileConv {
         private static readonly ConverterEntry[] sConverters = {
             new ConverterEntry(typeof(Generic.HexDump)),
             new ConverterEntry(typeof(Generic.PlainText)),
+            new ConverterEntry(typeof(Generic.Resources)),
 
             new ConverterEntry(typeof(Code.Applesoft)),
             new ConverterEntry(typeof(Code.BusinessBASIC)),

@@ -68,6 +68,7 @@ namespace FileConv {
         public enum Applicability {
             Unknown = 0,
             Not,            // this converter is not compatible with the data
+            NotSelectable,  // it applies, but shouldn't be shown as an option
             ProbablyNot,    // unlikely to be relevant, but put it on the list anyway
             Always_Hex,     // generic converter, always applicable
             Always_Text,    // generic converter, always applicable

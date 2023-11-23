@@ -1594,6 +1594,7 @@ General:
    - `char` (multi): specify source character set
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
+ - `rsrc`: ignore data fork contents and just format the resource fork
 
 The `char` character set options are `hiascii` for low/high ASCII (default),
 `mor` for Mac OS Roman, and `latin` for ISO 8859-1.  Unprintable characters
@@ -1616,8 +1617,8 @@ the config file sample for a description of the syntax.
 
 Formats that involve the resource fork will make use of it.  If the format
 doesn't require the resource fork, e.g. a hex dump, the resource fork will be
-ignored.  (If you want to get a hex dump of the resource fork, extract it and
-use a tool like `xxd`.)
+ignored.  The only exception to this is the `rsrc` converter, which just
+formats the resource fork.
 
 
 Import specifications work the same as export specifications, though there is

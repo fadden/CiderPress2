@@ -25,6 +25,9 @@ namespace FileConv {
     /// Helper functions for file conversion.
     /// </summary>
     public static class ConvConfig {
+        /// <summary>
+        /// Special tag used to indicate that the exporter should choose which conversion to use.
+        /// </summary>
         public const string BEST = "best";
 
         /// <summary>

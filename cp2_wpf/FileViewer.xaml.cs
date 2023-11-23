@@ -359,6 +359,9 @@ namespace cp2_wpf {
                 int newIndex = 0;
                 for (int i = 0; i < applics.Count; i++) {
                     Converter conv = applics[i];
+                    if (conv.Applic == Converter.Applicability.NotSelectable) {
+                        continue;
+                    }
                     ConverterComboItem item = new ConverterComboItem(conv.Label, conv);
                     convComboBox.Items.Add(item);
                     if (!fileChanged && conv.Label == oldName) {
