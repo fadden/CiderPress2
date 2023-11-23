@@ -97,6 +97,9 @@ namespace FileConv.Gfx {
             }
 
             // There's no ProDOS type for it, so if it's not BIN or NON, give up.
+            // TODO: we can get a positive indication by attempting to decompress 720 lines.  If
+            //   it works out exactly, we have a match.  Relatively expensive but not terribly
+            //   so on modern hardware.
             if (FileAttrs.FileType != FileAttribs.FILE_TYPE_NON &&
                     FileAttrs.FileType != FileAttribs.FILE_TYPE_BIN) {
                 return Applicability.Not;

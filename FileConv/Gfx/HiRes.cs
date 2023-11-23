@@ -48,6 +48,7 @@ namespace FileConv.Gfx {
         private const int MIN_LEN = EXPECTED_LEN - 8;
         private const int MAX_LEN = EXPECTED_LEN + 1;
 
+
         private HiRes() { }
 
         public HiRes(FileAttribs attrs, Stream? dataStream, Stream? rsrcStream,
@@ -60,10 +61,12 @@ namespace FileConv.Gfx {
             if (DataStream == null || IsRawDOS) {
                 return Applicability.Not;
             }
+            // Primary indicator is file length.  $1ffc, $1ff8, $2000 are most common.
             if (DataStream.Length < MIN_LEN || DataStream.Length > MAX_LEN) {
                 return Applicability.Not;
             }
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN) {
+                // Could also check the aux type, which is usually $2000 or $4000.
                 return Applicability.Probably;
             } else if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FOT) {
                 if (FileAttrs.AuxType < 0x4000) {      // 0x0000-3fff is uncompressed hgr/dhgr

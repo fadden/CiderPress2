@@ -1547,6 +1547,7 @@ Converters are available for code:
    - `print` (bool): false=include raw control codes, true=make
      printable (default)
  - `lisasm` - LISA assembler source file (v2, v3, v4/v5)
+ - `omf` - Apple IIgs Object Module Format - displays segment headers
  - `merlin` - Merlin assembler source file (also works for ED/ASM)
  - `pcd` - Apple Pascal codefile
  - `ptx` - Apple Pascal textfile

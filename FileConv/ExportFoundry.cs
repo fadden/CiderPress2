@@ -50,6 +50,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Code.MerlinAsm)),
             new ConverterEntry(typeof(Code.SCAsm)),
             new ConverterEntry(typeof(Code.Disasm65)),
+            new ConverterEntry(typeof(Code.OMF)),
 
             new ConverterEntry(typeof(Doc.AppleWorksDB)),
             new ConverterEntry(typeof(Doc.AppleWorksSS)),

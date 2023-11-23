@@ -24,7 +24,7 @@ implemented by the built-in "PackBits" function.
 On HFS filesystems, these documents used the file type 'PNTG'.  On other systems, the filename
 extension ".pntg" or simply ".mac" were sometimes used.  Images uploaded to online services were
 often prefixed with a MacBinary header.  Without one of these, it's very difficult to identify
-a MacPaint document as such.
+a MacPaint document as such, except by attempting to fully decode it.
 
 The source code for MacPaint is available from the
 [Computer History Museum](https://computerhistory.org/blog/macpaint-and-quickdraw-source-code/).

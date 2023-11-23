@@ -23,8 +23,8 @@ namespace FileConv.Code {
     /// </summary>
     /// <remarks>
     /// <para>There's no real need to load this from the filesystem; nothing has changed in
-    /// quite some time.  We expect the file to be in the correct format.  If it isn't, crashing
-    /// is a reasonable response.</para>
+    /// quite some time.  We expect the data file to be in the correct format.  If it isn't,
+    /// crashing is a reasonable response.</para>
     /// </remarks>
     public class NiftyList {
         public static string LookupP8MLI(byte code) {
@@ -58,6 +58,9 @@ namespace FileConv.Code {
 
         private static NiftyList? sNiftyList = null;
 
+        /// <summary>
+        /// Returns the singleton instance, creating it if necessary.
+        /// </summary>
         private static NiftyList GetGlobal() {
             if (sNiftyList == null) {
                 Debug.WriteLine("Constructing NiftyList tables from compressed data");
@@ -131,6 +134,7 @@ namespace FileConv.Code {
                 mSet_01Vectors = ReadSection(sr);
                 /*mSet_NLService =*/ ReadSection(sr);
                 mSet_RsrcTypeNames = ReadSection(sr);
+                /* ignore remaining items */
             }
             // Confirm we're not out of sync section-wise.
             Debug.Assert(mSet_RsrcTypeNames.mEntries[0x8001] == "rIcon");

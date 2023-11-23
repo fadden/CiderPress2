@@ -80,12 +80,6 @@ namespace FileConv.Code {
         }
 
         protected override Applicability TestApplicability() {
-            if (DataStream == null) {
-                return Applicability.Not;
-            }
-            if (DataStream.Length == 0 || DataStream.Length > MAX_LEN) {
-                return Applicability.Not;
-            }
             return EvaluateApplicability(out CpuDef.CpuType unused1, out int unused2);
         }
 
@@ -139,6 +133,11 @@ namespace FileConv.Code {
         /// <returns>Applicability level.</returns>
         private Applicability EvaluateApplicability(out CpuDef.CpuType cpuType, out int startAddr) {
             cpuType = CpuDef.CpuType.Cpu65C02;      // assume 8-bit
+            startAddr = -1;
+
+            if (DataStream == null || DataStream.Length == 0 || DataStream.Length > MAX_LEN) {
+                return Applicability.Not;
+            }
 
             Applicability applic;
             byte fileType = FileAttrs.FileType;

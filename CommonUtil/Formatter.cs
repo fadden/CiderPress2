@@ -71,6 +71,12 @@ namespace CommonUtil {
         /// </summary>
         public FormatConfig Config { get { return new FormatConfig(mConfig); } }
 
+        // Format character to use when formatting hex digits ('x' or 'X').
+        private char mHexFmtChar;
+
+        // Generated format strings for hex values ("X2", "X4", "X6", "X8").
+        private string[] mHexValueFormats = new string[4];
+
         // Buffer to use when generating hex dump lines.
         private char[] mHexDumpBuffer;
 
@@ -81,6 +87,16 @@ namespace CommonUtil {
         /// <param name="config">Format configuration.</param>
         public Formatter(FormatConfig config) {
             mConfig = new FormatConfig(config);     // make a copy
+
+            if (config.UpperHexDigits) {
+                mHexFmtChar = 'X';
+            } else {
+                mHexFmtChar = 'x';
+            }
+            for (int index = 0; index < 4; index++) {
+                int width = (index + 1) * 2;
+                mHexValueFormats[index] = mHexFmtChar + width.ToString();
+            }
 
             // Prep the static parts of the hex dump buffer.
             mHexDumpBuffer = new char[HEX_DUMP_WIDTH];
@@ -101,6 +117,26 @@ namespace CommonUtil {
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
         };
 
+        /// <summary>
+        /// Formats a value in hexadecimal.  The width is padded with zeroes to make the
+        /// length even (so it'll be $00, $0100, $010000, etc.)  If minDigits is nonzero,
+        /// additional zeroes may be added.
+        /// </summary>
+        /// <param name="value">Value to format, up to 32 bits.</param>
+        /// <param name="minDigits">Minimum width, in printed digits (e.g. 4 is "0000").</param>
+        /// <returns>Formatted string.</returns>
+        public string FormatHexValue(int value, int minDigits) {
+            int width = minDigits > 2 ? minDigits : 2;
+            if (width < 8 && value > 0xffffff) {
+                width = 8;
+            } else if (width < 6 && value > 0xffff) {
+                width = 6;
+            } else if (width < 4 && value > 0xff) {
+                width = 4;
+            }
+            int index = (width / 2) - 1;
+            return '$' + value.ToString(mHexValueFormats[index]);
+        }
 
         /// <summary>
         /// Generates a 15-char ProDOS-style date/time string, or a string that identifies the
