@@ -16,25 +16,25 @@ set metadata, copy blocks or sectors, edit blocks or sectors, and view raw track
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
- - The command-line tool is alpha quality.  The command set is feature-complete for v1.0, though
-   support for some key formats is missing.  See [the manual](cp2/Manual-cp2.md) for a thorough
+ - The command-line tool is alpha quality.  See [the manual](cp2/Manual-cp2.md) for a thorough
    description of commands and features.
- - The GUI tool is functional but incomplete.  It's only available for  Windows at this time;
+ - The GUI tool is functional but unpolished.  It's only available for Windows at this time;
    see notes in [GUI Tool Development](#gui-tool-development).
  - Video demos:
+   - v0.4 drag & drop: https://youtu.be/P2kss3aOEvs
    - v0.3 disk handling: https://youtu.be/5tE07owhcCc
    - v0.2 new GUI: https://www.youtube.com/watch?v=esEHP6Bo8GI
    - v0.1 CLI/GUI: https://www.youtube.com/watch?v=_jDVdC6-eoA
 
 ## Features ##
 
-The goal is to have all features available from both the command line and the GUI.
+The goal is to have a similar set of features available from both the command line and the GUI.
 
 File archive support:
 
 Type                | Filename Extensions      | Status
 ------------------- | ------------------------ | ------
-AppleLink Conv Util | .acu                     | not yet
+AppleLink PE        | .acu                     | read
 AppleDouble         | ("._" prefix pair)       | read/add/extract
 AppleSingle         | .as                      | read/add/extract
 Binary ][           | .bny .bqy                | full support
@@ -99,26 +99,44 @@ DOS.MASTER embedded volumes | read/write
 FocusDrive partitions       | read/write
 MicroDrive partitions       | read/write
 Early Mac 'TS' Format       | read/write
+Pascal ProFile Manager      | read/write
 
 Creation of multi-volume disk images is not yet supported.  Extracting and replacing individual
-partitions is supported in the GUI.  (It's possible in the CLI, but very awkward.)
+partitions within a multi-volume image is supported.
 
 File conversion (export):
 
 Type                         | Status
 ---------------------------- | ------
-Plain text                   | convert EOL, character set
+Plain text                   | convert EOL and character set from DOS, ProDOS, etc.
 Random-access text           | record length configurable; output to CSV
 Hex dump                     | character portion has selectable character set
+Resource Listing             | plain text, from IIgs or Macintosh resource forks
+Disassembly                  | 6502 (with undocumented instructions), 65C02, 65816 + NiftyList
+Object Module Format         | file structure output as plain text
 Applesoft BASIC              | plain text or syntax-highlighted
-AppleWorks Database          | not yet
-AppleWorks Spreadsheet       | not yet
-AppleWorks Word Processor    | not yet
-Apple II Hi-Res              | 560x384 color or B&W, with half-pixel shifts
-Apple IIgs Super Hi-Res      | 640x400 color; unpacked ($C1/0000)
-Apple IIgs Super Hi-Res 3200 | 640x400 color; unpacked ($C1/0002)
+Integer BASIC                | plain text or syntax-highlighted
+Business BASIC               | plain text or syntax-highlighted
+LISA Assembler               | plain text (v2, v3, v4/v5)
+Merlin Assembler             | plain text
+S-C Assembler                | plain text
+Apple Pascal codefile        | file structure output as plain text
+Apple Pascal textfile        | plain text
+AppleWorks Database          | output to CSV
+AppleWorks Spreadsheet       | output to CSV, some functions translated
+AppleWorks Word Processor    | most formatting supported
+AppleWorks GS Word Processor | most formatting supported
+Gutenberg Word Processor     | plain text
+Magic Window Document        | plain text
 Teach Document               | most formatting supported
-*more to come*               | *goal is parity with original CiderPress*
+Apple II Hi-Res              | 560x384 color or B&W, with half-pixel shifts
+Apple II & /// Hi-Res Font   | bitmap with grid of 96 or 128 glyphs
+LZ4FH Hi-Res                 | 560x384 color or B&W
+Apple II Double Hi-Res       | 560x384 color or B&W
+Apple IIgs Super Hi-Res      | 640x400 color; unpacked ($C1/0000), Paintworks ($C0/0000), packed ($C0/0001), APF ($C0/0002)
+Apple IIgs Super Hi-Res 3200 | 640x400 color; unpacked ($C1/0002), DreamGrafix ($C0/8005), ".3201"
+MacPaint                     | 576x720 B&W
+Print Shop Clip Art          | color and monochrome
 
 Text conversions can treat the source as low/high ASCII, Mac OS Roman, or ISO Latin-1.
 Hex dump skips over sparse sections of files.
@@ -128,7 +146,7 @@ Hex dump skips over sparse sections of files.
  - Bitmap graphics are output as .PNG (Portable Network Graphic).
  - Cell grid data is output as .CSV (Comma-Separated Value).
 
- File conversion (import):
+File conversion (import):
 
 Type                         | Status
 ---------------------------- | ------
@@ -145,8 +163,8 @@ libraries that were shared with other applications.
 CiderPress II is written in C#, targeted at .NET Core 6.  It gives equal importance to GUI and
 command-line interfaces, and can run on a variety of Windows, Mac OS, and Linux systems.
 
-Besides new features like a command-line interface and WOZ disk image support, there are a
-few more subtle changes:
+Besides new features like a command-line interface, drag & drop file management, and WOZ disk
+image support, there are a few more subtle changes:
 
  - File archives and disk images nested inside other file archives and disk images can be accessed
    directly.
@@ -166,7 +184,7 @@ few more subtle changes:
  - Errors and warnings generated by lower-level code, such as filesystem implementations, is now
    visible to the user.
 
-A few things have been removed:
+A few things have been removed and are not expected to return:
 
  - NuFX archives with deflate, bzip2, and LZC compression are no longer supported.
  - The FDI disk image format has been dropped.
