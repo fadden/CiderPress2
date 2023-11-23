@@ -269,6 +269,7 @@ items suited for conversion will be exported.
 
 When transferring files between CiderPress II instances, the mode must be set to "extract".  If
 the mode is set to "export", the "direct transfer" data will not be placed on the clipboard.
+Attempting to paste exported data into CiderPress II will result an error message.
 
 ## Misc ##
 

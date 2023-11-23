@@ -41,6 +41,11 @@ namespace cp2_wpf {
         /// </summary>
         public List<ClipFileEntry>? ClipEntries { get; set; } = null;
 
+        /// <summary>
+        /// True if this was created by an "export" operation.
+        /// </summary>
+        public bool IsExport { get; set; }
+
         // Fields split out of a CommonUtil.Version object.
         public int AppVersionMajor { get; set; }
         public int AppVersionMinor { get; set; }
@@ -55,8 +60,8 @@ namespace cp2_wpf {
         public ClipInfo() { }
 
         /// <summary>
-        /// Constructor.  Most of the goodies are in the ClipFileSet, but we want to add some
-        /// application-level stuff like the version number.
+        /// Constructor.  Most of what we care about is in the ClipFileEntry list, but we want
+        /// to add some application-level stuff like the version number.
         /// </summary>
         public ClipInfo(List<ClipFileEntry> clipEntries, CommonUtil.Version appVersion) {
             ClipEntries = clipEntries;
@@ -64,6 +69,16 @@ namespace cp2_wpf {
             AppVersionMinor = appVersion.Minor;
             AppVersionPatch = appVersion.Patch;
             ProcessId = Process.GetCurrentProcess().Id;
+        }
+
+        /// <summary>
+        /// Constructor for ClipInfo without entries.  This is only used when we want to let
+        /// the remote side know that we were unable to prepare entries for it, e.g. we did
+        /// an "export" instead of "extract".
+        /// </summary>
+        /// <param name="appVersion"></param>
+        public ClipInfo(CommonUtil.Version appVersion)
+                : this(new List<ClipFileEntry>(0), appVersion) {
         }
 
         /// <summary>

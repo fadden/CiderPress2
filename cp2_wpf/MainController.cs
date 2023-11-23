@@ -1079,6 +1079,13 @@ namespace cp2_wpf {
                 // TODO? handle paste from Windows Explorer ZIP folder
                 return;
             }
+            if (clipInfo.IsExport) {
+                MessageBox.Show(mMainWin,
+                    "The file copy was performed in \"export\" mode.  Please use \"extract\" " +
+                    "mode when copying files between instances of CiderPress II.",
+                    "Can't Paste Exports", MessageBoxButton.OK, MessageBoxImage.Stop);
+                return;
+            }
 
             if (clipInfo.AppVersionMajor != GlobalAppVersion.AppVersion.Major ||
                     clipInfo.AppVersionMinor != GlobalAppVersion.AppVersion.Minor ||
@@ -1816,6 +1823,16 @@ namespace cp2_wpf {
                         });
                     }
                 }
+            } else if (exportSpec != null) {
+                // Create an empty set.  This allows the remote side to see that it was created
+                // by us, but there was nothing to do.
+                ClipInfo clipInfo = new ClipInfo(GlobalAppVersion.AppVersion);
+                clipInfo.IsExport = true;
+                string cereal = JsonSerializer.Serialize(clipInfo,
+                    new JsonSerializerOptions() { WriteIndented = true });
+                vfdo.SetData(ClipInfo.XFER_METADATA, Encoding.UTF8.GetBytes(cereal));
+            } else {
+                // Not export, but nothing to copy.  Don't create a ClipInfo.
             }
 
             //vfdo.SetData(DataFormats.UnicodeText,
