@@ -20,6 +20,7 @@ limitations under the License.
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:cp2_wpf"
+        xmlns:common="clr-namespace:cp2_wpf.WPFCommon"
         mc:Ignorable="d"
         Title="CiderPress II"
         Width="1200" Height="800" MinWidth="640" MinHeight="680" ResizeMode="CanResizeWithGrip"
@@ -598,10 +599,6 @@ limitations under the License.
                                   HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
                 </Grid>
 
-                <!-- dummy element, a hack used to access DataContext from DataGrid columns when
-                configuring visibility; https://stackoverflow.com/a/22074985/294248 -->
-                <FrameworkElement x:Name="dummyElement" Visibility="Collapsed"/>
-
                 <Grid Name="centerPanelGrid" Grid.Column="2">
                     <!-- center panel, option #1: file list -->
                     <DataGrid Name="fileListDataGrid" d:IsHidden="False"
@@ -634,6 +631,9 @@ limitations under the License.
                                              Color="{x:Static SystemColors.HighlightColor}"/>
                             <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
                                              Color="{x:Static SystemColors.HighlightTextColor}"/>-->
+
+                            <!-- https://stackoverflow.com/a/22074985/294248 -->
+                            <common:BindingProxy x:Key="proxy" Data="{Binding}"/>
                         </DataGrid.Resources>
                         <DataGrid.CommandBindings>
                             <!-- DataGrid provides its own behavior for Ctrl+C and Del; override -->
@@ -651,7 +651,7 @@ limitations under the License.
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTemplateColumn Header="Filename" SortMemberPath="FileName" Width="240"
-                                    Visibility="{Binding DataContext.ShowCol_FileName, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}">
+                                    Visibility="{Binding Data.ShowCol_FileName, Converter={StaticResource BoolToVis}, Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis"/>
@@ -660,7 +660,7 @@ limitations under the License.
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTemplateColumn Header="Pathname" SortMemberPath="PathName" Width="300"
-                                    Visibility="{Binding DataContext.ShowCol_PathName, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}">
+                                    Visibility="{Binding Data.ShowCol_PathName, Converter={StaticResource BoolToVis}, Source={StaticResource proxy}}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding PathName}" TextTrimming="CharacterEllipsis"/>
@@ -672,15 +672,15 @@ limitations under the License.
                             <DataGridTextColumn Header="Mod Date" Width="106" Binding="{Binding ModDate}"/>
                             <DataGridTextColumn Header="Data Len" Width="65" Binding="{Binding DataLength}"/>
                             <DataGridTextColumn Header="Raw Len" Width="65" Binding="{Binding RawDataLength}"
-                                Visibility="{Binding DataContext.ShowCol_RawLen, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding Data.ShowCol_RawLen, Converter={StaticResource BoolToVis}, Source={StaticResource proxy}}"/>
                             <DataGridTextColumn Header="Format" Width="54" Binding="{Binding DataFormat}"
-                                Visibility="{Binding DataContext.ShowCol_Format, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding Data.ShowCol_Format, Converter={StaticResource BoolToVis}, Source={StaticResource proxy}}"/>
                             <DataGridTextColumn Header="Rsrc Len" Width="65" Binding="{Binding RsrcLength}"
-                                Visibility="{Binding DataContext.ShowCol_RsrcLen, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding Data.ShowCol_RsrcLen, Converter={StaticResource BoolToVis}, Source={StaticResource proxy}}"/>
                             <DataGridTextColumn Header="Format" Width="54" Binding="{Binding RsrcFormat}"
-                                Visibility="{Binding DataContext.ShowCol_Format, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding Data.ShowCol_Format, Converter={StaticResource BoolToVis}, Source={StaticResource proxy}}"/>
                             <DataGridTextColumn Header="Total Size" Width="76" Binding="{Binding TotalSize}"
-                                Visibility="{Binding DataContext.ShowCol_TotalSize, Converter={StaticResource BoolToVis}, Source={x:Reference dummyElement}}"/>
+                                Visibility="{Binding Data.ShowCol_TotalSize, Converter={StaticResource BoolToVis}, Source={StaticResource proxy}}"/>
                             <DataGridTextColumn Header="Access" Width="50" Binding="{Binding Access}"/>
                         </DataGrid.Columns>
                         <DataGrid.ContextMenu>
