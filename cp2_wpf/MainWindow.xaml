@@ -340,7 +340,7 @@ limitations under the License.
 
                 <Separator/>
 
-                <Button Command="{StaticResource ResetSortCmd}"
+                <Button Command="{StaticResource ResetSortCmd}" IsEnabled="{Binding IsResetSortEnabled}"
                         ToolTip="Reset the sort order in the file list">
                     <ContentControl Template="{StaticResource icon_ClearSort}"/>
                 </Button>
@@ -616,6 +616,7 @@ limitations under the License.
                               Background="{DynamicResource {x:Static SystemColors.WindowBrush}}"
                               EnableRowVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
+                              Sorting="FileList_Sorting"
                               MouseDoubleClick="FileList_MouseDoubleClick"
                               ContextMenuOpening="FileListContextMenu_ContextMenuOpening"
                               AllowDrop="True"
@@ -642,6 +643,7 @@ limitations under the License.
                             <CommandBinding Command="{StaticResource DeleteFilesCmd}"
                                             CanExecute="CanDeleteFiles" Executed="DeleteFilesCmd_Executed"/>
                         </DataGrid.CommandBindings>
+                        <!-- If the columns change, update the custom sort function in FileListItem. -->
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Header="?" Width="SizeToCells">
                                 <DataGridTemplateColumn.CellTemplate>

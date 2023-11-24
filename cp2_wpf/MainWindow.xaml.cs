@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -26,6 +27,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -597,9 +599,18 @@ namespace cp2_wpf {
             mMainCtrl.OpenRecentFile(recentIndex);
         }
         private void ResetSortCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            fileListDataGrid.ResetSort();
+            // Clear our custom sort.
+            ListCollectionView lcv = (ListCollectionView)
+                CollectionViewSource.GetDefaultView(fileListDataGrid.ItemsSource);
+            using (lcv.DeferRefresh()) {
+                lcv.CustomSort = null;
+
+                // Clear the arrows in the column headers.
+                fileListDataGrid.ResetSort();
+            }
+            IsResetSortEnabled = false;
         }
-        private void SaveAsDiskImageCmd_Executed(Object sender, ExecutedRoutedEventArgs e) {
+        private void SaveAsDiskImageCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.SaveAsDiskImage();
         }
         private void ScanForBadBlocksCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
@@ -794,6 +805,11 @@ namespace cp2_wpf {
             set { mIsDirListEnabled = value; OnPropertyChanged(); }
         }
         private bool mIsDirListEnabled;
+        public bool IsResetSortEnabled {
+            get { return mIsResetSortEnabled; }
+            set { mIsResetSortEnabled = value; OnPropertyChanged(); }
+        }
+        private bool mIsResetSortEnabled;
 
         // Highlights for the toolbar buttons
         private static Brush ToolbarHighlightBrush = Brushes.Green;
@@ -1167,6 +1183,31 @@ namespace cp2_wpf {
                 return;
             }
             mMainCtrl.HandleFileListDoubleClick(fli, row, col, arcTreeSel, dirTreeSel);
+        }
+
+        /// <summary>
+        /// Handles a Sorting event.  The DataGrid handles basic sorting just fine, but we
+        /// want to specify the secondary sorting criteria, e.g. if they sort on filetype we
+        /// want a secondary sort on auxtype.
+        /// </summary>
+        private void FileList_Sorting(object sender, DataGridSortingEventArgs e) {
+            DataGridColumn col = e.Column;
+
+            // Set the SortDirection to a specific value.  If we don't do this, SortDirection
+            // remains un-set, and the column header doesn't show up/down arrows or change
+            // direction when clicked twice.
+            ListSortDirection direction = (col.SortDirection != ListSortDirection.Ascending) ?
+                ListSortDirection.Ascending : ListSortDirection.Descending;
+            col.SortDirection = direction;
+
+            bool isAscending = direction != ListSortDirection.Descending;
+
+            IComparer comparer = new FileListItem.ItemComparer(col, isAscending);
+            ListCollectionView lcv = (ListCollectionView)
+                CollectionViewSource.GetDefaultView(fileListDataGrid.ItemsSource);
+            lcv.CustomSort = comparer;
+            IsResetSortEnabled = true;
+            e.Handled = true;
         }
 
         private void PartitionLayout_MouseDoubleClick(object sender, MouseButtonEventArgs e) {

@@ -621,7 +621,7 @@ namespace cp2_wpf.WPFCommon {
                         tmpList.Add(newItem);
                     }
                 }
-                tmpList.Sort(new SymbolsListComparer((int)SymbolsListComparer.SortField.Name, true));
+                tmpList.Sort(new FileListComparer((int)FileListComparer.SortField.Name, true));
 
                 foreach (ListItem item in tmpList) {
                     FileList.Add(item);
@@ -654,14 +654,14 @@ namespace cp2_wpf.WPFCommon {
 
             bool isAscending = direction != ListSortDirection.Descending;
 
-            IComparer comparer = new SymbolsListComparer(col.DisplayIndex, isAscending);
+            IComparer comparer = new FileListComparer(col.DisplayIndex, isAscending);
             ListCollectionView lcv = (ListCollectionView)
                 CollectionViewSource.GetDefaultView(fileListDataGrid.ItemsSource);
             lcv.CustomSort = comparer;
             e.Handled = true;
         }
 
-        private class SymbolsListComparer : IComparer, IComparer<ListItem> {
+        private class FileListComparer : IComparer, IComparer<ListItem> {
             // Must match order of items in DataGrid.  DataGrid must not allow columns to be
             // reordered.  We could check col.Header instead, but then we have to assume that
             // the Header is a string that doesn't get renamed.
@@ -672,7 +672,7 @@ namespace cp2_wpf.WPFCommon {
             private SortField mSortField;
             private bool mIsAscending;
 
-            public SymbolsListComparer(int displayIndex, bool isAscending) {
+            public FileListComparer(int displayIndex, bool isAscending) {
                 Debug.Assert(displayIndex >= 0 && displayIndex < NUM_COLS);
                 mIsAscending = isAscending;
                 mSortField = (SortField)displayIndex;

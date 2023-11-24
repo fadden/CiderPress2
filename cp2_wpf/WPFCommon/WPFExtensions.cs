@@ -360,8 +360,10 @@ namespace cp2_wpf.WPFCommon {
         /// </remarks>
         public static void ResetSort(this DataGrid grid) {
             ICollectionView view = CollectionViewSource.GetDefaultView(grid.ItemsSource);
-            if (view != null && view.SortDescriptions.Count > 0) {
-                view.SortDescriptions.Clear();
+            if (view != null) {
+                if (view.SortDescriptions.Count > 0) {
+                    view.SortDescriptions.Clear();
+                }
                 foreach (DataGridColumn column in grid.Columns) {
                     column.SortDirection = null;
                 }

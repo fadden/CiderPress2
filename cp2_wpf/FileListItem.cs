@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
@@ -25,14 +27,6 @@ using DiskArc.FS;
 using DiskArc;
 using static DiskArc.Defs;
 using cp2_wpf.WPFCommon;
-
-//
-// TODO (maybe): we might be able to improve latency when switching between large file lists by
-// caching FileListItem objects, perhaps in a Dictionary<IFileEntry, FileListItem>.  The cache
-// would be attached to the ArchiveTreeItem.
-//
-// Data virtualization would be better, but that's hard to do in WPF.
-//
 
 namespace cp2_wpf {
     /// <summary>
@@ -74,6 +68,10 @@ namespace cp2_wpf {
         public string RsrcSize { get; private set; }
         public string RsrcFormat { get; private set; }
         public string TotalSize { get; private set; }
+
+        // Simplify sorting.
+        private long mRawDataLen;
+        private long mTotalSize;
 
 
         /// <summary>
@@ -188,6 +186,7 @@ namespace cp2_wpf {
                 if (entry.GetPartInfo(FilePart.RawData, out long rawLength, out long un1,
                         out CompressionFormat un2)) {
                     RawDataLength = rawLength.ToString();
+                    mRawDataLen = rawLength;
                 }
                 DataLength = length.ToString();
                 DataSize = storageSize.ToString();
@@ -239,6 +238,7 @@ namespace cp2_wpf {
             } else {
                 TotalSize = totalSize.ToString();
             }
+            mTotalSize = totalSize;
         }
 
         /// <summary>
@@ -299,6 +299,112 @@ namespace cp2_wpf {
                     //Debug.WriteLine("Selecting row 0");
                     dataGrid.SelectRowByIndex(0);
                 }
+            }
+        }
+
+        internal class ItemComparer : IComparer, IComparer<FileListItem> {
+            // List of columns.  This must match the fileListDataGrid definition in MainWindow.xaml.
+            private enum ColumnId {
+                StatusIcon = 0,
+                FileName,
+                PathName,
+                Type,
+                Auxtype,
+                ModWhen,
+                DataLen,
+                RawDataLen,
+                DataFormat,
+                RsrcLen,
+                RsrcFormat,
+                TotalSize,
+                Access
+            }
+            private ColumnId mSortField;
+            private bool mIsAscending;
+
+            public ItemComparer(DataGridColumn col, bool isAscending) {
+                mIsAscending = isAscending;
+                mSortField = (ColumnId)col.DisplayIndex;
+                Debug.WriteLine("SORT on " + mSortField + " '" + col.Header + "'");
+            }
+
+            // IComparer interface
+            public int Compare(object? x, object? y) {
+                return Compare((FileListItem?)x, (FileListItem?)y);
+            }
+
+            // IComparer<FileListItem> interface
+            public int Compare(FileListItem? item1, FileListItem? item2) {
+                Debug.Assert(item1 != null && item2 != null);
+
+                int cmp;
+                switch (mSortField) {
+                    case ColumnId.StatusIcon:       // shouldn't happen
+                        cmp = 0;
+                        break;
+                    case ColumnId.FileName:         // expected to be unique
+                        cmp = string.Compare(item1.FileName, item2.FileName);
+                        break;
+                    case ColumnId.PathName:
+                        cmp = string.Compare(item1.PathName, item2.PathName);
+                        break;
+                    case ColumnId.Type:
+                        // Sort by string, not numeric value.
+                        cmp = string.Compare(item1.Type, item2.Type);
+                        if (cmp == 0) {
+                            cmp = string.Compare(item1.AuxType, item2.AuxType);
+                        }
+                        break;
+                    case ColumnId.Auxtype:
+                        cmp = string.Compare(item1.AuxType, item2.AuxType);
+                        if (cmp == 0) {
+                            cmp = string.Compare(item1.Type, item2.Type);
+                        }
+                        break;
+                    case ColumnId.ModWhen:
+                        if (item1.FileEntry.ModWhen < item2.FileEntry.ModWhen) {
+                            cmp = -1;
+                        } else if (item1.FileEntry.ModWhen > item2.FileEntry.ModWhen) {
+                            cmp = 1;
+                        } else {
+                            cmp = 0;
+                        }
+                        break;
+                    case ColumnId.DataLen:
+                        cmp = (int)(item1.FileEntry.DataLength - item2.FileEntry.DataLength);
+                        break;
+                    case ColumnId.RawDataLen:
+                        cmp = (int)(item1.mRawDataLen - item2.mRawDataLen);
+                        break;
+                    case ColumnId.DataFormat:
+                        cmp = string.Compare(item1.DataFormat, item2.DataFormat);
+                        break;
+                    case ColumnId.RsrcLen:
+                        cmp = (int)(item1.FileEntry.RsrcLength - item2.FileEntry.RsrcLength);
+                        break;
+                    case ColumnId.RsrcFormat:
+                        cmp = string.Compare(item1.RsrcFormat, item2.RsrcFormat);
+                        break;
+                    case ColumnId.TotalSize:
+                        cmp = (int)(item1.mTotalSize - item2.mTotalSize);
+                        break;
+                    case ColumnId.Access:
+                        cmp = string.Compare(item1.Access, item2.Access);
+                        break;
+                    default:
+                        Debug.Assert(false, "Unhandled column ID " + mSortField);
+                        cmp = 0;
+                        break;
+                }
+
+                if (cmp == 0) {
+                    // Primary sort is equal, resolve by path name.
+                    cmp = string.Compare(item1.PathName, item2.PathName);
+                }
+                if (!mIsAscending) {
+                    cmp = -cmp;
+                }
+                return cmp;
             }
         }
 
