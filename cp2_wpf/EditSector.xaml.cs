@@ -380,6 +380,12 @@ namespace cp2_wpf {
 
         private bool InTextArea { get { return mCurCol == NUM_COLS; } }
 
+        // Keep track of the integer base used for track, sector, and block numbers.  Store it in
+        // a static so it persists for the session.
+        private static int sTrackNumBase = 10;
+        private static int sSectorNumBase = 10;
+        private static int sBlockNumBase = 10;
+
 
         /// <summary>
         /// Constructor.
@@ -617,8 +623,23 @@ namespace cp2_wpf {
         }
 
         private void CopyNumToTextFields() {
-            TrackBlockNumString = mCurBlockOrTrack.ToString();
-            SectorNumString = mCurSector.ToString();
+            string fmtStr = "{0:D}";
+            if (mEditMode == SectorEditMode.Sectors) {
+                if (sTrackNumBase == 16) {
+                    fmtStr = "${0:X2}";
+                }
+            } else {
+                if (sBlockNumBase == 16) {
+                    fmtStr = "${0:X4}";
+                }
+            }
+            TrackBlockNumString = string.Format(fmtStr, mCurBlockOrTrack);
+
+            fmtStr = "{0:D}";
+            if (sSectorNumBase == 16) {
+                fmtStr = "${0:X2}";
+            }
+            SectorNumString = string.Format(fmtStr, mCurSector);
         }
 
         private void UpdateTxtConv() {
@@ -642,11 +663,17 @@ namespace cp2_wpf {
 
             if (StringToValue.TryParseInt(TrackBlockNumString, out val, out intBase)) {
                 mEnteredBlockOrTrack = val;
+                if (mEditMode == SectorEditMode.Sectors) {
+                    sTrackNumBase = intBase;
+                } else {
+                    sBlockNumBase = intBase;
+                }
             } else {
                 mEnteredBlockOrTrack = -1;
             }
             if (StringToValue.TryParseInt(SectorNumString, out val, out intBase)) {
                 mEnteredSector = val;
+                sSectorNumBase = intBase;
             } else {
                 mEnteredSector = -1;
             }
