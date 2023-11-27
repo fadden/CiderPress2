@@ -16,7 +16,7 @@ set metadata, copy blocks or sectors, edit blocks or sectors, and view raw track
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
- - The command-line tool is alpha quality.  See [the manual](docs/Manual-cp2.md) for a thorough
+ - The command-line tool is alpha quality.  See [the manual](cp2/Manual-cp2.md) for a thorough
    description of commands and features.
  - The GUI tool is functional but unpolished.  It's only available for Windows at this time;
    see notes in [GUI Tool Development](#gui-tool-development).
@@ -243,7 +243,7 @@ overall package.
 The GUI application is usable but incomplete.  There are some significant differences from the
 original CiderPress, noted in the [release notes](CiderPress2-notes.txt).
 
-See [the manual](docs/Manual-cp2.md) for instructions on using the command-line "cp2" tool.
+See [the manual](cp2/Manual-cp2.md) for instructions on using the command-line "cp2" tool.
 You will need a command shell for your system, such as Terminal for the Mac, or PowerShell
 for Windows.
 

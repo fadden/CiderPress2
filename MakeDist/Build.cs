@@ -32,7 +32,7 @@ namespace MakeDist {
         private static string[] sDistFiles = new string[] {
             "README.md",
             "LegalStuff.txt",
-            "cp2/Manual-cp2.md",
+            "docs/Manual-cp2.md",
             "CiderPress2-notes.txt",
         };
 
