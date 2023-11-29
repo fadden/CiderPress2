@@ -16,3 +16,6 @@ manage updates.
 Many of the pages share common elements: masthead, top nav bar, side nav bar,
 and footer.  These are inserted by a Python script (block-repl.py) that must
 be run whenever one of the "-incl" files changes.
+
+Some text variable substitutions can be performed on HTML and Markdown files,
+e.g. the app version is ${VERSION}.
