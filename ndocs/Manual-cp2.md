@@ -20,9 +20,12 @@ Contents:
    - [Finding Resource Forks](#finding-resource-forks)
    - [Access Flags](#access-flags)
  - [Metadata](#metadata)
+   - [DiskCopy 4.2](#diskcopy-4.2)
+   - [Trackstar](#trackstar)
    - [2IMG](#2img)
    - [WOZ](#woz)
  - [Appendix](#appendix)
+   - [Mac ZIP](#mac-zip)
    - [AppleWorks Filename Formatting](#appleworks-filename-formatting)
    - ["TO DO" List](#to-do-list)
 
@@ -1922,7 +1925,6 @@ This extension is fully supported.
 
 Some ideas for the future:
  - Add creation tool for multi-part images (APM, CFFA, etc).
- - Add whole-partition manipulation, e.g. add-partition / extract-partition.
  - Add tools to assist physical media access.
  - Add file "fingerprint" feature: print CRC-32 or other hash for data/rsrc
    next to each filename.

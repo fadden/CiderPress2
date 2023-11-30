@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <style>
+        img {
+            /* add a border so image thumbnails look clickable */
+            border: 2px solid;
+        }
+    </style>
+
+    <title>CiderPress Format Documentation Index</title>
+</head>
+
+<body class="no-sidenav">
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-home -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" class="active" href="./">HOME</a>
+        <a id="topnav-tutorial-gui" href="gui-tutorial">Desktop GUI Tutorial</a>
+        <a id="topnav-tutorial-cli" href="cli-tutorial">Command-Line Tutorial</a>
+        <a id="topnav-manual-gui" href="gui-manual">GUI Manual</a>
+        <a id="topnav-manual-cli" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<div id="main">
+
+<h1>CiderPress Format Documentation Index</h1>
+
+<p>This is an index of the file format documentation found in the
+CiderPress II source tree.  The documents describe the layout of
+disk images, file archives, and "vintage" graphic and document formats.</p>
+
+<p>Each document starts with a list of authoritative references, when such are
+available, and continues with a low-level description of the format.  Put
+simply, it contains the sorts of things you'd want to have on hand when
+writing code to process files that used the format.  Some are simple
+"cheat sheets", others have detailed explanations.  Most also contain notes
+on how the "real world" use of the formats differs from what the specification
+asserts, as well as my attempts to reconcile conflicting information from
+authoritative sources.</p>
+<p>The material was developed while writing the code that processes the files,
+so it should be reasonably accurate, and may provide some insight for
+programmers trying to understand why the code works the way it does.  The
+code lives in the same directory as the documentation.</p>
+
+<p>All documentation in the CiderPress II source tree is copyright faddenSoft,
+distributed under the terms of the
+<a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons ShareAlike 4.0 International</a>
+license.</p>
+
+<h3>File Archives</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/AppleLink-notes.md">
+      AppleLink-PE Package Format (.acu)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/AppleSingle-notes.md">
+      AppleSingle (.as) and AppleDouble (._*)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/Binary2-notes.md">
+      Binary ][ (.bny .bqy)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/GZip-notes.md">
+      gzip (.gz)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/MacBinary-notes.md">
+      MacBinary (.bin .macbin)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/NuFX-notes.md">
+      NuFX (ShrinkIt) (.shk .sdk .bxy .sea .bse)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/Zip-notes.md">
+      ZIP (.zip)</a></li>
+</ul>
+
+<h3>Compression</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/NuLZW-notes.md">
+      NuFX (ShrinkIt) LZW/1 and LZW/2</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/Squeeze-notes.md">
+      Squeeze (Huffman)</a></li>
+</ul>
+
+<h3>Disk Images</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Nibble-notes.md">
+      General notes on nibble data storage</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/DiskCopy-notes.md">
+      DiskCopy 4.2 (.image)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Trackstar-notes.md">
+      Trackstar (.app)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/TwoIMG-notes.md">
+      2IMG (.2mg .2img)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Unadorned-notes.md">
+      Unadorned sector and nibble files (.do .po .dsk .img .d13 .iso .hdv .nib .nb2)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Woz-notes.md">
+      WOZ (.woz)</a></li>
+</ul>
+
+<h3>Multi-Part Disk Formats</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/APM-notes.md">
+      APM (Apple Partition Map)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/CFFA-notes.md">
+      CFFA</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/DOS800-notes.md">
+      800K DOS: AmDOS, UniDOS, OzDOS</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/FocusDrive-notes.md">
+      FocusDrive</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/MacTS-notes.md">
+      Early Apple 'TS' partition map</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/MicroDrive-notes.md">
+      MicroDrive</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Multi/PPM-notes.md">
+      PPM (Pascal ProFile&trade; Manager)</a></li>
+</ul>
+
+<h3>Filesystems</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/Hybrid-notes.md">
+      Hybrid (DOS + ProDOS / Pascal / CP/M) disks, and embedded volumes</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/CPM-notes.md">
+      CP/M for Apple II 5.25" and 3.5" disks</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/DOS-notes.md">
+      DOS (Disk Operating System) 3.2 / 3.3</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/Gutenberg-notes.md">
+      Gutenberg word processor filesystem</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/HFS-notes.md">
+      HFS (Hierarchical File System)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/MFS-notes.md">
+      MFS (Macintosh File System)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/Pascal-notes.md">
+      Pascal (filesystem developed for Apple Pascal)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/ProDOS-notes.md">
+      ProDOS (Professional Disk Operating System) and SOS (Sophisticated Operating System)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/FS/RDOS-notes.md">
+      SSI RDOS</a></li>
+</ul>
+
+<h3>Vintage File Formats</h3>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Generic/ResourceFork-notes.md">
+      General notes on Apple IIgs and Macintosh resource forks</a></li>
+</ul>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/ApplePascal-notes.md">
+      Apple Pascal Textfile and Codefile</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/BASIC-notes.md">
+      Applesoft, Integer, and Business BASIC</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/LisaAsm-notes.md">
+      Lazer's Interactive Symbolic Assembler (LISA) source file</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/MerlinAsm-notes.md">
+      Merlin assembler source file</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/SCAsm-notes.md">
+      S-C Assembler source file</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/OMF-notes.md">
+      Apple IIgs Object Module Format (OMF)</a></li>
+</ul>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Doc/AppleWorks-notes.md">
+      AppleWorks "Classic" documents (Data Base, Word Processor, and Spreadsheet)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Doc/AWGS-notes.md">
+      AppleWorks GS Word Processor document</a></li>
+  <!-- <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Doc/GutenbergWP-notes.md">
+      Gutenberg document</a></li> -->
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Doc/MagicWindow-notes.md">
+      Magic Window document</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Doc/Teach-notes.md">
+      Apple IIgs Teach Document</a></li>
+</ul>
+<ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/HiRes-notes.md">
+      Apple II hi-res image, and hi-res screen font</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/DoubleHiRes-notes.md">
+      Apple II double-hi-res image</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/SuperHiRes-notes.md">
+      Apple IIgs super-hi-res image (various formats, including APF and DreamGrafix)</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/MacPaint-notes.md">
+      MacPaint graphics document</a></li>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/PrintShop-notes.md">
+      Print Shop and Print Shop GS graphics (clip art)</a></li>
+</ul>
+
+</div>
+
+</body>
+</html>
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+    <!-- <p id="screen-size"></p>
+    <script>
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var x = document.getElementById("screen-size");
+        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
+    </script> -->
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II Feature List</title>
+</head>
+
+<body class="no-sidenav">
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-home -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" class="active" href="./">HOME</a>
+        <a id="topnav-tutorial-gui" href="gui-tutorial">Desktop GUI Tutorial</a>
+        <a id="topnav-tutorial-cli" href="cli-tutorial">Command-Line Tutorial</a>
+        <a id="topnav-manual-gui" href="gui-manual">GUI Manual</a>
+        <a id="topnav-manual-cli" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<div id="main">
+
+<h2>CiderPress II Features</h2>
+
+<p>The application supports a wide variety of file archives, disk images,
+and filesystems.  These may be nested inside each other, e.g. a ShrinkIt
+archive in a ProDOS volume in a WOZ disk stored in a ZIP archive.</p>
+
+<h4>File Archives</h4>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Filename Extensions</th>
+        <th>Status</th>
+    </tr>
+    <tr> <td>AppleLink PE</td> <td>.acu</td> <td>read</td> </tr>
+    <tr> <td>AppleDouble</td> <td>("._" prefix pair)</td> <td>read/add/extract</td> </tr>
+    <tr> <td>AppleSingle</td> <td>.as</td> <td>read/add/extract</td> </tr>
+    <tr> <td>Binary ][</td> <td>.bny .bqy</td> <td>full</td> </tr>
+    <tr> <td>gzip</td> <td>.gz</td> <td>full</td> </tr>
+    <tr> <td>MacBinary</td> <td>.bin .macbin</td> <td>read</td> </tr>
+    <tr> <td>NuFX (ShrinkIt)</td> <td>.shk .sdk .bxy .sea .bse</td> <td>full</td> </tr>
+    <tr> <td>ZIP</td> <td>.zip</td> <td>full (include __MACOSX handling)</td> </tr>
+</table>
+
+<p><b>Read</b> indicates the archives can be read, but not written.
+<b>Full</b> means archives can be created, read, and written.</p>
+<p><b>Add/extract</b> means that you can extract files from the format, but
+you can only create them by extracting files <i>to</i> them.
+AppleSingle and AppleDouble are designed to preserve attributes
+and resource forks for a single file, not hold a collection, so it makes sense
+to handle them this way.</p>
+
+<p>The __MACOSX support allows files in ZIP archives to be stored with resource
+forks and MFS/HFS file attributes.</p>
+
+<p>Compression modes supported are LZW/1 and LZW/2 for NuFX,
+Squeeze for Binary ][, and deflate for ZIP/gzip.</p>
+
+
+<h4>Disk Images</h4>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Filename Extensions</th>
+        <th>Status</th>
+    </tr>
+    <tr> <td>2IMG</td> <td>.2mg .2img</td> <td>full</td> </tr>
+    <tr> <td>DiskCopy 4.2</td> <td>.dc .image</td> <td>full</td> </tr>
+    <tr> <td>Trackstar</td> <td>.app</td> <td>full</td> </tr>
+    <tr> <td>Unadorned Block</td> <td>.do .po .dsk .d13 .iso .hdv .img</td> <td>full</td> </tr>
+    <tr> <td>Unadorned Nibble</td> <td>.nib .nb2</td> <td>full</td> </tr>
+    <tr> <td>WOZ</td> <td>.woz</td> <td>full (FLUX is read-only)</td> </tr>
+</table>
+
+<p>Disk images may be from 5.25" floppy disks, 3.5" floppy disks, hard drives,
+CD-ROMs, and other block-addressable media.</p>
+
+<p>The original CiderPress had support for FDI and DDD.  These are not
+currently supported.</p>
+
+<h4>Filesystems</h4>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Status</th>
+    </tr>
+    <tr> <td>CP/M</td> <td>full (140KB and 800KB floppies)</td> </tr>
+    <tr> <td>DOS 3.2/3.3</td> <td>full (including 40/80 track disks)</td> </tr>
+    <tr> <td>Gutenberg</td> <td>read</td> </tr>
+    <tr> <td>HFS</td> <td>full (up to 4GB volumes)</td> </tr>
+    <tr> <td>MFS</td> <td>read</td> </tr>
+    <tr> <td>Apple Pascal</td> <td>full (includes defragmenter)</td> </tr>
+    <tr> <td>ProDOS</td> <td>full</td> </tr>
+    <tr> <td>RDOS</td> <td>read (all three variants)</td> </tr>
+</table>
+
+<h4>Multi-Volume Layouts</h4>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Status</th>
+    </tr>
+    <tr> <td>AmDOS, OzDOS, UniDOS</td> <td>read/write</td> </tr>
+    <tr> <td>Apple Partition Map (APM)</td> <td>read/write</td> </tr>
+    <tr> <td>CFFA</td> <td>read/write (4/6/8 partitions)</td> </tr>
+    <tr> <td>DOS hybrids</td> <td>read/write (+DOS, ProDOS, and CP/M)</td> </tr>
+    <tr> <td>DOS.MASTER volumes</td> <td>read/write</td> </tr>
+    <tr> <td>FocusDrive</td> <td>read/write</td> </tr>
+    <tr> <td>MicroDrive</td> <td>read/write</td> </tr>
+    <tr> <td>Mac 'TS' format</td> <td>read/write</td> </tr>
+    <tr> <td>Pascal ProFile Manager</td> <td>read/write</td> </tr>
+</table>
+
+<p>Creation of multi-volume disk images is not yet supported.
+Extracting and replacing individual partitions within a multi-volume
+image is supported.</p>
+
+<h4>File Conversion - Export</h4>
+
+<p>There are four kinds of output:</p>
+<ul>
+    <li>Simple text is output as .TXT, using UTF-8 with host-specific end-of-line markers.</li>
+    <li>Formatted text is output as .RTF (Rich Text Format).</li>
+    <li>Bitmap graphics are output as .PNG (Portable Network Graphic).</li>
+    <li>Cell grid data is output as .CSV (Comma-Separated Value).</li>
+</ul>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Status</th>
+    </tr>
+    <tr> <td>Plain text</td> <td>convert EOL and character set from DOS, ProDOS, etc.</td> </tr>
+    <tr> <td>Random-access text</td> <td>configurable record length; output to CSV</td> </tr>
+    <tr> <td>Hex dump</td> <td>character portion has selectable character set</td> </tr>
+    <tr> <td>Resource listing</td> <td>plain text; from IIgs or Macintosh resource forks</td> </tr>
+    <tr> <td>Disassembly</td> <td>6502 (+undoc), 65C02, 65816; includes NiftyList annotations</td> </tr>
+    <tr> <td>Object Module Format (OMF)</td> <td>file structure output as plain text</td> </tr>
+    <tr> <td>Applesoft BASIC</td> <td>plain text or syntax-highlighted</td> </tr>
+    <tr> <td>Integer BASIC</td> <td>plain text or syntax-highlighted</td> </tr>
+    <tr> <td>Business BASIC</td> <td>plain text or syntax-highlighted</td> </tr>
+    <tr> <td>LISA assembler</td> <td>plain text (v2, v3, v4/v5)</td> </tr>
+    <tr> <td>Merlin assembler</td> <td>plain text</td> </tr>
+    <tr> <td>S-C assemblerr</td> <td>plain text</td> </tr>
+    <tr> <td>Apple Pascal codefile</td> <td>file structure output as plain text</td> </tr>
+    <tr> <td>Apple Pascal textfile</td> <td>plain text</td> </tr>
+    <tr> <td>AppleWorks "Classic" Database</td> <td>output to CSV</td> </tr>
+    <tr> <td>AppleWorks "Classic" Spreadsheet</td> <td>output to CSV, some functions translated</td> </tr>
+    <tr> <td>AppleWorks "Classic" Word Processor</td> <td>most formatting supported</td> </tr>
+    <tr> <td>AppleWorks GS Word Processor</td> <td>most formatting supported</td> </tr>
+    <tr> <td>Gutenberg word processor</td> <td>plain text</td> </tr>
+    <tr> <td>Magic Window document</td> <td>plain text</td> </tr>
+    <tr> <td>Teach Document</td> <td>most formatting supported</td> </tr>
+    <tr> <td>Apple II hi-res</td> <td>560x384 color or B&amp;W bitmap, with half-pixel shifts</td> </tr>
+    <tr> <td>Apple II &amp; Apple /// hi-res font</td> <td>bitmap grid with 96 or 128 glyphs</td> </tr>
+    <tr> <td>LZ4FH hi-res</td> <td>560x384 color or B&amp;W</td> </tr>
+    <tr> <td>Apple II double hi-res</td> <td>560x384 color or B&amp;W</td> </tr>
+    <tr> <td>Apple IIgs super hi-res</td> <td>640x400 color; unpacked ($C1/0000),
+        Paintworks ($C0/0000), packed ($C0/0001), APF ($C0/0002)</td> </tr>
+    <tr> <td>Apple IIgs super hi-res 3200</td> <td>640x400 color; unpacked ($C1/0002),
+        DreamGrafix ($C0/8005), ".3201"</td> </tr>
+    <tr> <td>MacPaint</td> <td>576x720 B&amp;W</td> </tr>
+    <tr> <td>Print Shop / GS clip art</td> <td>color and monochrome</td> </tr>
+</table>
+
+<p>Text conversions can treat the source as low/high ASCII, Mac OS Roman,
+or ISO Latin-1.  The hex dump skips over sparse sections of files.</p>
+
+<h4>File Conversion - Import</h4>
+
+<p>A limited set of files can be converted from a "host" file to something
+directly usable on a vintage system.</p>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Status</th>
+    </tr>
+    <tr> <td>Plain text</td> <td>convert EOL and character set</td> </tr>
+    <tr> <td>Applesoft BASIC</td> <td>plain text to executable form</td> </tr>
+</table>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+    <!-- <p id="screen-size"></p>
+    <script>
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var x = document.getElementById("screen-size");
+        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
+    </script> -->
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

@@ -31,7 +31,7 @@ namespace DiskArc.Disk {
     /// <remarks>
     /// <para>Very similar to <see cref="UnadornedNibble525"/>, but with variable-length track
     /// data and a short header on each track.</para>
-    /// <para>A short ASCII description is included at the start of every track.  We can provide
+    /// <para>A short ASCII description is included at the start of every track.  We provide
     /// access to this through the metadata interface.</para>
     /// </remarks>
     public class Trackstar : IDiskImage, INibbleDataAccess, IMetadata {
