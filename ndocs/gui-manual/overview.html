@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Overview</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-manual-gui -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-tutorial-gui" href="../gui-tutorial">Desktop GUI Tutorial</a>
+        <a id="topnav-tutorial-cli" href="../cli-tutorial">Command-Line Tutorial</a>
+        <a id="topnav-manual-gui" class="active" href="../gui-manual">GUI Manual</a>
+        <a id="topnav-manual-cli" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-overview -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview" class="active"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Disk Images and File Archives</h2>
+
+<p>A "disk image" is a file containing the contents of a floppy disk, hard drive,
+CD-ROM or other physical storage medium.  Disk images were typically created on vintage
+systems so that the disk contents could be sent electronically.  The images often, but
+not always, have files arranged in a filesystem such as ProDOS or HFS.</p>
+<p>A "file archive" is a file that contains a collection of other files.  Minimizing
+the size of the archive is often important, so the contents of file archives are
+usually packed tightly.</p>
+
+<p>(Sometimes this documentation will refer to disk images and file archives
+collectively as "archives" for the sake of brevity.)</p>
+
+<p>The nature of a filesystem allows changes, such as adding or deleting a file, to be
+made with little to no disruption to existing data.  In contrast, file archives may
+require a significant amount of data to be reshuffled for something as simple as
+renaming a file.</p>
+
+<p>CiderPress II handles disk images and archives differently.  Changes to disk images
+are made directly, as if the image were a mounted filesystem.  Changes to file archives
+are made by creating an entirely new archive file, and renaming it in place of the
+original when all changes have been completed.  This changes how things behave when
+errors are encountered.  For example, if you try to add three files to a disk image,
+and cancel the process before adding the third file, the first two files will be
+present afterward.  For a file archive, canceling the operation partway through would
+leave the archive entirely untouched.</p>
+
+<p>One important consequence of this structure is that, while killing the application
+mid-operation on a file archive will at worst leave you with a stray temporary file,
+doing so mid-operation on a disk image could result in disk corruption (just as it
+would if you turned off a computer mid-write to a disk).</p>
+
+<p>It's possible to store disk images and file archives inside other disk images and
+file archives (a "turducken").  For example, a ShrinkIt archive could be stored on a
+ProDOS filesystem in a WOZ disk image in a ZIP archive.  CiderPress II fully supports
+nested archives, allowing direct access to the files at any level.</p>
+
+
+<h2>Add/Extract vs. Import/Export</h2>
+
+<p>There are four distinct operations for adding and extracting files:</p>
+
+<ul>
+  <li>Add: add a file to an archive without modification.
+    Attempt to restore file attributes from saved metadata.</li>
+  <li>Extract: extract a file from an archive without modification.
+    Attempt to preserve file attributes.</li>
+  <li>Import: add a file to an archive, converting its format.</li>
+    For example, the end-of-line markers in a text file might be changed from CRLF to CR,
+    or an Applesoft BASIC program could be converted from a text file to tokenized form.</li>
+  <li>Export: extract a file from an archive, converting it to something new.
+    This could be a simple adjustment to a text file, or a conversion from Apple II hi-res
+    to PNG.</li>
+</ul>
+
+<p>Utilities such as NuLib2 and the original CiderPress blend the operations together,
+which can lead to some ambiguous behavior.  In CiderPress II, add/extract are always
+distinctly different commands from import/export.</p>
+
+
+<h2>Changes from CiderPress</h2>
+
+<p>The original CiderPress, first published in 2003, is a Windows-only application that can be
+run on other platforms with the use of the WINE emulation wrapper.  The code was written in C++,
+using the Windows MFC toolkit.  Some of the lower-level functions were implemented in portable
+libraries that were shared with other applications.</p>
+
+<p>CiderPress II is written in C#, targeted at .NET Core 6.  It gives equal importance to
+GUI and command-line interfaces, and can run on a variety of systems, including
+Windows, Mac OS, and Linux.</p>
+
+<p>In addition to significant new features like a command-line interface, drag &amp; drop
+file management, and WOZ disk image support, there are a few more subtle changes:</p>
+
+<ul>
+  <li>File archives and disk images nested inside other file archives and disk images can be
+    accessed directly.</li>
+  <li>When files are extracted, the resource fork and extended attributes can be preserved in
+    multiple ways: AppleSingle, AppleDouble, NAPS (NuLib Attribute Preservation Strings), or
+    using host filesystem features (Mac OS / HFS+ only).  These are handled transparently when
+    adding files.</li>
+  <li>DOS T/I/A/B files can be opened in "raw" mode.</li>
+  <li>Files may be copied directly between volumes.  For DOS files this can preserve the sparse
+    structure of random-access text files.</li>
+  <li>AppleSingle and AppleDouble are integrated into add/extract.  In the original,
+    AppleSingle was treated as a read-only archive.</li>
+  <li>DOS hybrid (e.g. DOS + ProDOS on a single disk) support has been added, and the handling of
+    DOS.MASTER embedded volumes has been greatly improved.</li>
+  <li>HFS file type support has been generalized.  ProDOS and HFS types can be set
+    independently in places where both are present (NuFX archives, ProDOS extended files).</li>
+  <li>Errors and warnings generated by lower-level code, such as filesystem implementations,
+    are now presented to the user as "notes".</li>
+</ul>
+
+<p>A few things have been removed and are not expected to return:</p>
+
+<ul>
+  <li>NuFX archives with deflate, bzip2, and LZC compression are no longer supported.</li>
+  <li>The FDI disk image format has been dropped.</li>
+  <li>SST file combining has been dropped.</li>
+</ul>
+
+<p>Under the hood there are many significant changes, such as:</p>
+
+<ul>
+  <li>NufxLib and libhfs have been replaced.</li>
+  <li>The CiderPress disk image library had some file update limitations, notably that files
+    had to be written all at once.  The new library returns a Stream object that can be used
+    the same way it would for a file on the host filesystem.</li>
+  <li>Compression code uses the same API as the standard System.IO.Compression classes,
+    making it easy to integrate NuFX LZW or Squeeze compression into code that doesn't want
+    the rest of the NuFX archive handling.</li>
+  <li>The file conversion library returns platform-agnostic objects that can be converted to
+    TXT/RTF/PNG/CSV, rather than returning Windows-specific bitmaps and pre-formatted RTF.</li>
+</ul>
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+    <!-- <p id="screen-size"></p>
+    <script>
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var x = document.getElementById("screen-size");
+        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
+    </script> -->
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

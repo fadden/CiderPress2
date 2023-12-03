@@ -25,14 +25,14 @@
 </div>
 <!-- END: /incl-masthead.html -->
 
-<!-- START: /incl-topnav.html active:#topnav-home -->
+<!-- START: /incl-topnav.html active:#topnav-manual-gui -->
 <div id="topnav">
     <!-- top navigation bar contents -->
     <nav>
-        <a id="topnav-home" class="active" href=".././">HOME</a>
+        <a id="topnav-home" href=".././">HOME</a>
         <a id="topnav-tutorial-gui" href="../gui-tutorial">Desktop GUI Tutorial</a>
         <a id="topnav-tutorial-cli" href="../cli-tutorial">Command-Line Tutorial</a>
-        <a id="topnav-manual-gui" href="../gui-manual">GUI Manual</a>
+        <a id="topnav-manual-gui" class="active" href="../gui-manual">GUI Manual</a>
         <a id="topnav-manual-cli" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
         <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
             <i class="fa fa-bars"></i>
@@ -55,34 +55,57 @@
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Introduction</a></li>
-        <li id="sidenav-part1"><a href="part1.html">Part1 TBD</a></li>
+        <li id="sidenav-index" class="active"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
 
 <div id="main">
-<h1>CiderPress II Graphical User Interface Manual</h1>
+<h1>CiderPress II GUI Reference Manual</h1>
 
-<p>TODO manual</p>
+<p>CiderPress II is a utility for managing disk images and file archives, with
+a focus on the Apple II and early Macintosh.  Disk images of floppies, hard drives,
+CD-ROMs, and other formats are supported, as are popular archive formats like
+ShrinkIt.  For easier interaction with modern storage formats, ZIP and gzip are
+also supported.</p>
+
+<p>If you're new to CiderPress, it may be better to start with the
+<a href="../gui-tutorial">tutorial</a>.</p>
+
+<h2>Contents</h2>
 <ul>
-    <li>introduction</li>
-    <li>basic concepts: disk image vs. archive, add/extract/import/export,
-      nested archives; note differences from original</li>
+    <li><a href="overview.html">Overview</a>
+        <ul>
+            <li>Disk Images and File Archives</li>
+            <li>Add/Extract vs. Import/Export</li>
+            <li>Changes from CiderPress</li>
+        </ul></li>
+    <li><a href="working.html">Working With Archives</a>
+        <ul>
+            <li>Opening Archives</li>
+            <li>Getting Around</li>
+        </ul></li>
+
     <li>opening files, selecting parts, moving around</li>
-    <li>archive info and metadata edits</li>
+
     <li>file viewer, notes on specific converters</li>
-    <li>creating disk images and archives; converting disk images</li>
+      <li>standard converters: text, hex, "best"</li>
     <li>add/extract/import/export</li>
+      <li>settings sidebar</li>
+      <li>naps, AS, ADF, Host</li>
     <li>copy + paste, drag + drop</li>
+    <li>editing file attributes; change volume name</li>
+    <li>creating disk images and archives; converting disk images</li>
     <li>opening physical media; admin privs + effects</li>
-    <li>editing file attributes</li>
-    <li>multi-volume extract and replace</li>
+    <li>disk ops: partition extract and replace</li>
     <li>sector editing</li>
+        <li>nibbles vs. blocks</li>
     <li>application settings</li>
     <li>FAQ</li>
-    <li>DOS 3.2/3.3 files: raw, random access, etc.</li>
-    <li>pointers for developers</li>
+    <li>Appendix: DOS 3.2/3.3 files: raw, random access, etc.</li>
+    <li>Appendix: pointers for developers</li>
 </ul>
 
 </div>
