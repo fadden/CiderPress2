@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II Manual (GUI)</title>
+    <title>CiderPress II GUI Manual</title>
 </head>
 
 <body>
@@ -58,12 +58,15 @@
         <li id="sidenav-index" class="active"><a href="./">Contents</a></li>
         <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
         <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
 
 <div id="main">
-<h1>CiderPress II GUI Reference Manual</h1>
+<h1>CiderPress II GUI Manual</h1>
 
 <p>CiderPress II is a utility for managing disk images and file archives, with
 a focus on the Apple II and early Macintosh.  Disk images of floppies, hard drives,
@@ -87,26 +90,59 @@ also supported.</p>
             <li>Opening Archives</li>
             <li>Getting Around</li>
         </ul></li>
+    <li><a href="viewing.html">Viewing Files</a>
+        <ul>
+            <li>File Viewer</li>
+            <li>Conversions</li>
+            <li>Copy and Export</li>
+        </ul></li>
 
-    <li>opening files, selecting parts, moving around</li>
+    <li><a href="aeie.html">Add/Extract Import/Export</a>
+        <ul>
+            <li>Attribute Preservation</li>
+            <li>Configuration Options</li>
+            <li>Adding and Extracting Files</li>
+            <li>Importing and Exporting Files</li>
+        </ul></li>
 
-    <li>file viewer, notes on specific converters</li>
-      <li>standard converters: text, hex, "best"</li>
-    <li>add/extract/import/export</li>
-      <li>settings sidebar</li>
-      <li>naps, AS, ADF, Host</li>
-    <li>copy + paste, drag + drop</li>
+    <li><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a>
+        <ul>
+            <li>Drag &amp; Drop to Move Files</li>
+            <li>Drag / Copy Between Applications</li>
+            <li>Add/Extract vs. Import/Export</li>
+            <li>Miscellaneous</li>
+        </ul></li>
+
     <li>editing file attributes; change volume name</li>
     <li>creating disk images and archives; converting disk images</li>
     <li>opening physical media; admin privs + effects</li>
-    <li>disk ops: partition extract and replace</li>
+    <li>disk / filesystem ops</li>
+        <li>partition extract and replace</li>
+        <li>defrag, bad block scan</li>
     <li>sector editing</li>
         <li>nibbles vs. blocks</li>
+        <li>disks, partition layouts, partitions, ... not filesystems</li>
+        <li>filesystem interaction</li>
     <li>application settings</li>
+        <li>app settings file location</li>
+    <li>reporting bugs and crashes</li>
     <li>FAQ</li>
-    <li>Appendix: DOS 3.2/3.3 files: raw, random access, etc.</li>
+    <li>Appendix: DOS 3.2/3.3 files: raw, random access (file viewer), etc.</li>
     <li>Appendix: pointers for developers</li>
 </ul>
+
+<!--
+# Other Notes #
+
+It's possible to explore some ".iso" files with Windows Explorer.  Such files
+may be opened (read-only) by the system process (pid 4) and presented as a
+drive letter, which means they can be opened as read-only by other processes
+but can't be opened read-write.  This can be verified with Process Explorer
+(https://serverfault.com/a/1980/268812): run as administrator, then
+Find > Find Handle or DLL, and enter a unique part of the filename.
+
+Ejecting the virtual DVD will remove the restrictions on the file.
+-->
 
 </div>
 

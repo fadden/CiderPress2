@@ -58,6 +58,9 @@
         <li id="sidenav-index"><a href="./">Contents</a></li>
         <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
         <li id="sidenav-working" class="active"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
@@ -178,7 +181,8 @@ on what is being displayed:</p>
   <li>Pathname or Filename - file archives always show Pathname, non-hierarchical
     filesystems always show Filename.  Hierarchical filesytems will show one or
     the other depending on the display mode (see below).</li>
-  <li>Type - ProDOS or HFS file type.</li>
+  <li>Type - ProDOS or HFS file type.  The most appropriate type is shown,
+    based on the archive type and the file characteristics.</li>
   <li>Auxtype - ProDOS auxiliary type or HFS creator.</li>
   <li>Mod Date - date when file was last modified.  Shown in local time.</li>
   <li>Data Len - length of the data fork.</li>
@@ -198,7 +202,8 @@ on what is being displayed:</p>
 </ul>
 
 <p>For file archives and filesystems, the file list display mode can be changed
-with buttons in the toolbar.  There are three possible modes:</p>
+with buttons in the toolbar or items in the <samp>View</samp> menu.  There are three
+possible modes:</p>
 <ol>
   <li>Full-file: show all files in the archive, with full pathnames.</li>
   <li>Single-directory: show only the filenames of the files in a single directory.</li>
@@ -211,6 +216,8 @@ contents of a hierarchical filesystem all at once, or focus in on a single direc
 File archives are always full-file, and non-hierarchical filesystems are always
 single-directory.</p>
 
+<p>Columns may be resized by clicking and dragging on the separators in the
+column headers.  The column widths are saved in the application settings file.</p>
 <p>The entries in the file list can be sorted by clicking on the column header.
 Click again to reverse the direction of the sort.  To return to the original
 order, i.e. the order in which the files are stored in the archive, use the reset
@@ -235,6 +242,18 @@ selecting <samp>Close File Source</samp>.</p>
 importing, or exporting files.  These are explained in detail in a later section
 of the manual.</p>
 <p>The window can be hidden with the <samp>Show/Hide Settings</samp> button.</p>
+
+
+<h2>Additional Navigation</h2>
+
+<p>The <samp>Navigate</samp> menu items allow you to navigate upward in the
+tree.  Selecting the <samp>Go To Parent Directory</samp> item will change the
+Directory tree selection to be one entry higher, stopping when it reaches the
+volume directory.
+The <samp>Go To Parent</samp> item performs the same action, but will continue
+the upward movement in the Archive Contents tree if the Directory tree is at the top.</p>
+<p>The toolbar button with the up-arrow icon performs the <samp>Go To Parent</samp>
+action.</p>
 
 
 </div>

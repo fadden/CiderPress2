@@ -62,8 +62,8 @@ The commands are:
 
 The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
 of viewing in a terminal window.  The file is in "markdown" format, which is perfectly readable
-as a plain text file.  The download also includes release notes for CiderPress2,
-`CiderPress2-notes.txt`, which can be opened in a web browser by hitting F1 from the GUI.
+as a plain text file.  The manual for the GUI, and tutorials for both applications, can
+be found on the [web site](https://ciderpress2.com/).
 
 ## Tested Systems ##
 

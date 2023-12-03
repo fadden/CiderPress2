@@ -33,7 +33,6 @@ namespace MakeDist {
             "README.md",
             "LegalStuff.txt",
             "docs/Manual-cp2.md",
-            "CiderPress2-notes.txt",
         };
 
         private const string DIST_DIR = "DIST";

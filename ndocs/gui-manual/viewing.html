@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Viewing Files</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-manual-gui -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-tutorial-gui" href="../gui-tutorial">Desktop GUI Tutorial</a>
+        <a id="topnav-tutorial-cli" href="../cli-tutorial">Command-Line Tutorial</a>
+        <a id="topnav-manual-gui" class="active" href="../gui-manual">GUI Manual</a>
+        <a id="topnav-manual-cli" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-viewing -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing" class="active"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Viewing Files</h2>
+
+<p>The file viewer can display the contents of a file read from a file archive or
+disk image in various forms.  The most basic, plain text and hex dumps, are available
+for all types of files.  The conversion usually appears in the <samp>Data Fork</samp> tab.</p>
+<p>The Plain Text converter does its best to display the contents of the file as text.
+Control characters can be converted to Unicode "control pictures" or dumped in their
+raw state (which is reasonable when exporting to a file but not recommended for the
+file viewer).  Some control characters, such as carriage return and newline, are
+converted to the local end-of-line character.  You can specify the character set to
+use with the radio buttons, choosing whether the source is high/low ASCII (e.g. DOS 3.3),
+Mac OS Roman (HFS), or ISO Latin-1 (documentation in a ZIP archive).</p>
+<p>The Hex Dump converter displays the contents as hex values, 16 per line, with
+printable values shown in a column on the right.  Control characters are replaced with
+a dot glyph.  The character set can be chosen from the usual set.</p>
+
+<p>Files with a resource fork will have a text dump of the contents available in
+the <samp>Resource Fork</samp> tab.
+
+<p>The <samp>Notes</samp> tab will be enabled if the file converter found something
+of interest.  This could be comments embedded in the file, information about the file
+format, or complaints about errors found during processing.</p>
+
+<p>The arrow buttons at the left and right sides of the window can be used to move
+to adjacent files.  If you selected multiple files before opening the file viewer,
+only those files will be available to view.</p>
+
+
+<h2>Conversions</h2>
+
+<p>Many files will have a more specific conversion available.  Word processor documents,
+spreadsheets, and graphical images can be converted to a more modern format.  There are
+four types of output:</p>
+<ol>
+  <li>Simple text.  Exports as .TXT.</li>
+  <li>Fancy text.  Text with formatting, such as changes to font size, style, and color.
+    Exports as .RTF.</li>
+  <li>Cell grid.  Used for spreadsheets and some database files, including random-access
+    text files on DOS 3.3 disks.  Exports as .CSV.</li>
+  <li>Bitmap.  Used for anything graphical.  Exports as .PNG.</li>
+</ol>
+<p>Technically there is a fifth type, "host image", which is used for GIF, JPEG, and
+PNG files.  These can be displayed directly by the host system, so there's no need to
+convert them first.</p>
+
+<p>The set of conversions that can be applied to a file are determined automatically,
+and placed in the <samp>Conversion</samp> pop-up menu.  They will be sorted by
+applicability, with the best option at the top (clicking the <samp>Best</samp> button selects
+the top item in the list).  Selecting a new conversion causes
+the contents to be reformatted and displayed.</p>
+<p>A conversion may have options associated with it.  For example, Plain Text allows you
+to select the character encoding, while Apple II Hi-Res Image has a checkbox that
+selects black &amp; white or color.  The options you select are temporary, unless you
+click the <samp>Save As Default Configuration</samp> button, which will save them in
+the settings file as the file viewer default.</p>
+
+<p>When viewing a text file, the <samp>Find</samp> box will be available.  This allows
+you to search forward or backward through the text for a simple text string.</p>
+
+<p>When viewing a bitmap, the <samp>Graphics Zoom</samp> slider will be available.  This
+scales the image in the viewer, allowing you to zoom in on part of an image.</p>
+
+<p>The <samp>Open Raw</samp> button only affects DOS 3.3 files.  It allows files with
+types T, I, A, and B to be opened as a series of 256-byte sectors, so you can see the headers
+and data stored past the declared end of file.  Selecting this is usually required for
+random-access text files, which will ordinarily appear truncated or empty.  When this is
+checked, some of the standard file viewers won't work, e.g. you won't be able to get a
+formatted listing of an Applesoft BASIC program.</p>
+
+
+<h2>Copy and Export</h2>
+
+<p>Converted files can be exported directly from the file viewer.  There are two ways
+to do this.</p>
+
+<p>Clicking the <samp>Export</samp> button opens a file save dialog.  A filename, based
+on the file being viewed and the conversion type, will be filled in as the default value.
+Select a location for the file and click <samp>Save</samp>.</p>
+<p>Clicking the <samp>Copy</samp> button copies the file to the system clipboard.  It
+can be pasted directly into other applications.  For fancy text documents, the
+conversion will be available as both plain text and formatted text, allowing the
+receiving program to pick whichever is best suited.</p>
+<p>It's also possible to select a range of text in the viewer window and copy that
+to the clipboard with <kbd>Ctrl+C</kbd>.</p>
+
+<p>The export will reflect the current state of the file viewer.  Whichever converter
+and options you have chosen will be used when generating the output file.  If you
+have selected the <samp>Resource Fork</samp> or <samp>Notes</samp> tab, the contents
+of that tab will be exported.</p>
+<p>The only exception to this is that the <samp>Graphics Zoom</samp> setting is ignored.
+Graphics are always exported at the base resolution.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+    <!-- <p id="screen-size"></p>
+    <script>
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var x = document.getElementById("screen-size");
+        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
+    </script> -->
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

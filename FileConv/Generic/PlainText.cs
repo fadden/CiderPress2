@@ -121,6 +121,7 @@ namespace FileConv.Generic {
                         case ConvUtil.ExportCharSrc.Latin:
                             ch = (char)val;     // this appears to be sufficient
                             if (ch >= 0x80 && ch <= 0x9f) {
+                                // Merge into single character.  Do this even if !printableOnly.
                                 ch = ASCIIUtil.CTRL_PIC_C1;
                             }
                             break;
@@ -133,7 +134,7 @@ namespace FileConv.Generic {
                             break;
                     }
                     if (ch < 0x20 || ch == 0x7f) {
-                        // Non-printable control code.
+                        // Non-printable C0 control code.
                         if (ch == '\r') {
                             sb.Append(newline);
                         } else if (ch == '\n') {
@@ -141,7 +142,7 @@ namespace FileConv.Generic {
                                 sb.Append(newline);
                             }
                         } else if (ch == '\t') {
-                            // Output tabs as tab characters.
+                            // Always output tabs as tab characters.
                             sb.Append(ch);
                         } else if (!printableOnly) {
                             sb.Append(ch);      // output raw control code

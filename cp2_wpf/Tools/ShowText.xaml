@@ -25,6 +25,7 @@ limitations under the License.
         Width="708" Height="500" MinWidth="100" MinHeight="100" ResizeMode="CanResizeWithGrip"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
         PreviewKeyDown="Window_KeyEventHandler">
+
     <Grid Margin="8">
         <TextBox Name="textBox"
                  VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto"

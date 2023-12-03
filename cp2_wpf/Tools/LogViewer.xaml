@@ -35,7 +35,7 @@ limitations under the License.
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0"
-                           Text="{Binding When, StringFormat='{}{0:yyyy/MM/dd HH:mm:ss.ff}'}"/>
+                           Text="{Binding When, StringFormat='{}{0:yyyy/MM/dd HH:mm:ss.fff}'}"/>
 
                 <TextBlock Grid.Column="1" Margin="8,0,0,0"
                            Text="{Binding Priority}" FontWeight="Bold"/>
@@ -46,7 +46,7 @@ limitations under the License.
         </DataTemplate>
     </Window.Resources>
 
-    <DockPanel>
+    <DockPanel Margin="2">
         <ItemsControl ItemsSource="{Binding LogEntries}">
             <!-- Style="{StaticResource LogViewerStyle}" -->
             <ItemsControl.Template>

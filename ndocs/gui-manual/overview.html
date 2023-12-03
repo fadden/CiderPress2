@@ -58,6 +58,9 @@
         <li id="sidenav-index"><a href="./">Contents</a></li>
         <li id="sidenav-overview" class="active"><a href="overview.html">Overview</a></li>
         <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
@@ -94,7 +97,11 @@ leave the archive entirely untouched.</p>
 <p>One important consequence of this structure is that, while killing the application
 mid-operation on a file archive will at worst leave you with a stray temporary file,
 doing so mid-operation on a disk image could result in disk corruption (just as it
-would if you turned off a computer mid-write to a disk).</p>
+would if you turned off a computer mid-write to a disk).  The application flushes
+all changes before returning to an idle state, so everything is safe once an operation
+has completed.  Additional steps are taken to ensure that all data is in a safe
+state whenever an operation is paused to ask for input, e.g. when obtaining permission
+to overwrite a file.</p>
 
 <p>It's possible to store disk images and file archives inside other disk images and
 file archives (a "turducken").  For example, a ShrinkIt archive could be stored on a
@@ -142,7 +149,7 @@ file management, and WOZ disk image support, there are a few more subtle changes
   <li>File archives and disk images nested inside other file archives and disk images can be
     accessed directly.</li>
   <li>When files are extracted, the resource fork and extended attributes can be preserved in
-    multiple ways: AppleSingle, AppleDouble, NAPS (NuLib Attribute Preservation Strings), or
+    multiple ways: AppleSingle, AppleDouble, NAPS (NuLib2 Attribute Preservation Strings), or
     using host filesystem features (Mac OS / HFS+ only).  These are handled transparently when
     adding files.</li>
   <li>DOS T/I/A/B files can be opened in "raw" mode.</li>

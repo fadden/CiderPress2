@@ -144,7 +144,7 @@ namespace cp2_wpf {
         /// to this point so we can report fatal errors directly to the user.
         /// </summary>
         public void WindowLoaded() {
-            Debug.WriteLine("--- running unit tests ---");
+            AppHook.LogI("--- running unit tests ---");
             Debug.Assert(RangeSet.Test());
             Debug.Assert(CommonUtil.Version.Test());
             Debug.Assert(CircularBitBuffer.DebugTest());
@@ -153,7 +153,7 @@ namespace cp2_wpf {
             Debug.Assert(TimeStamp.DebugTestDates());
             Debug.Assert(DiskArc.Disk.TrackInit.DebugCheckInterleave());
             Debug.Assert(DiskArc.Disk.Woz_Meta.DebugTest());
-            Debug.WriteLine("--- unit tests complete ---");
+            AppHook.LogI("--- unit tests complete ---");
 
             ApplyAppSettings();
 
@@ -467,6 +467,7 @@ namespace cp2_wpf {
                 MessageBox.Show(msg, FILE_ERR_CAPTION, MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+            AppHook.LogI("Opening work file '" + pathName + "' readOnly=" + asReadOnly);
 
             AutoOpenDepth depth =
                 AppSettings.Global.GetEnum(AppSettings.AUTO_OPEN_DEPTH, AutoOpenDepth.SubVol);
@@ -2325,8 +2326,9 @@ namespace cp2_wpf {
         /// Handles Help : Help.
         /// </summary>
         public void HelpHelp() {
-            string pathName = Path.Combine(WinUtil.GetRuntimeDataDir(), "CiderPress2-notes.txt");
-            string url = "file://" + pathName;
+            //string pathName = Path.Combine(WinUtil.GetRuntimeDataDir(), "CiderPress2-notes.txt");
+            //string url = "file://" + pathName;
+            string url = "https://ciderpress2.com/";
             CommonUtil.ShellCommand.OpenUrl(url);
         }
 

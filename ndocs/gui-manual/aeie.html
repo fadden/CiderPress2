@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Add/Extract Import/Export</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-manual-gui -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-tutorial-gui" href="../gui-tutorial">Desktop GUI Tutorial</a>
+        <a id="topnav-tutorial-cli" href="../cli-tutorial">Command-Line Tutorial</a>
+        <a id="topnav-manual-gui" class="active" href="../gui-manual">GUI Manual</a>
+        <a id="topnav-manual-cli" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-aeie -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie" class="active"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Attribute Preservation</h2>
+
+<p>Files stored in disk images and file archives have a number of attributes,
+such as file types, dates, and access flags, that should be preserved when files
+are extracted, and restored when files are added.  In some cases, the host filesystem
+might not support all possible filenames, e.g. HFS allows a file called "Face/Off"
+but Windows, Linux, and modern Mac OS systems won't allow it.</p>
+<p>In addition, files used on the Apple IIgs and Macintosh may have resource forks. These
+can be tricky to deal with because it means a single file entry can have two sets of
+file data.</p>
+
+<p>Five strategies are supported:</p>
+<ol>
+  <li>None (default) - do nothing.  Resource forks, file types, and access flags
+    are discarded when files are extracted.  File dates will be preserved if the
+    host filesystem has something equivalent.  (Most filesystems record modification
+    dates, but not all store creation dates.)</li>
+  <li>AppleSingle (AS) - files are stored as a single ".as" file.  This format
+    defines a way to store the data fork, resource fork, original filename,
+    and all file attributes in a single file.</li>
+  <li>AppleDouble (ADF) - file are stored as a pair of files.  The data fork
+    is stored in a file with the original name, while the resource fork and
+    any attributes are stored in an optional "header" file whose name starts with
+    "<code>._</code>".  This can be convenient to work with, because anything
+    that is only interested in the contents of the data fork can just read the
+    file as it normally would.  The header file format is structurally identical
+    to AppleSingle.</li>
+  <li>NuLib2 Attribute Preservation Strings (NAPS) - this scheme encodes the file type
+    and auxiliary type in the filename by appending a string like "#062000".
+    Invalid characters are replaced with '%' escapes.  Data and resource forks
+    are stored in different files; for resource forks, the appended string ends
+    with "r".  This approach is fairly convenient, and was used to good effect
+    by NuLib2 and the original CiderPress, but it can lose file dates and most
+    of the access flags.</li>
+  <li>Host-specific - for operating systems that natively support resource forks
+    and extended file attributes, the values can be stored in the host filesystem.
+    This is currently only available for Mac OS.  (Since the GUI app was written
+    for Windows, this feature is only available from the CLI tool.)</li>
+</ol>
+
+
+<h2>Configuration Options</h2>
+
+<p>The panel on the right side of the screen has a collection of configuration options
+that affect add/extract and import/export operations.  These are displayed here so that
+they can be applied equally to operations started with menu items, copy &amp; paste
+operations, and drag &amp; drop.</p>
+<p>Options you can set when adding or importing files:</p>
+<ul>
+  <li><samp>Recurse Into Directories</samp> - determines whether files will be
+    added from the current directory only, or from that directory and all
+    subdirectories.</li>
+  <li><samp>Use Compression</samp> - determines whether files added will be
+    compressed.  Only meaningful for file archives that support compression.</li>
+  <li><samp>Strip Paths</samp> - if set, files will not be added with subdirectory
+    names.  Only matters if directory recursion is enabled.</li>
+  <li><samp>Raw</samp> - if set, file data forks will be opened in "raw" mode.
+    This is only meaningful for DOS 3.2/3.3 files, and should only be used for
+    files that were generated or extracted as "raw" data.</li>
+  <li><samp>Preservation Handling</samp> - check the boxes to specify which file
+    attribute preservation systems should be handled when adding files.  Normally all
+    three should be checked, but if you wanted to, say, add an AppleSingle file as
+    a ".as" file instead of adding its contents, you would uncheck the AppleSingle
+    box.</li>
+  <li><samp>Strip Redundant Extensions</samp> - if set, imported files will have
+    any extraneous file extensions removed.  For example, when adding a ".txt" file,
+    the file's type would be set to TXT or TEXT, and the ".txt" dropped from the
+    filename.</li>
+  <li>Conversion Mode</samp> - when importing files, this determines which converter
+    will be applied.  (Converters are not auto-selected for imports.)</li>
+</ul>
+<p>In addition, the <samp>Conversion Settings</samp> button will open a configuration
+window that lets you set the default parameters for importers.  For example, you can
+specify which character set to use when importing text files.</p>
+
+<p>Options you can set when extracting or exporting files:</p>
+<ul>
+  <li><samp>Strip Paths</samp> - if set, files will not be added with subdirectory
+    names.  Only matters for archives that store full pathnames, such as ProDOS
+    and HFS filesystems.</li>
+  <li><samp>Raw</samp> - if set, file data forks will be opened in "raw" mode.
+    This is only meaningful for DOS 3.2/3.3 files, and should be used when attempting
+    to preserve the full file contents.</li>
+  <li><samp>Preservation Mode</samp> - select one preservation mode to use when
+    extracting files.</li>
+  <li><samp>Conversion Mode</samp> - when exporting files, this determines which
+    converter will be applied.  You can choose one specific converter, or select
+    <samp>Best</samp> to have the program choose one for you.</li>
+</ul>
+<p>In addition, the <samp>Conversion Settings</samp> button will open a configuration
+window that lets you set the default parameters for exporters.  For example, you can
+specify the color mode for Apple II hi-res images.</p>
+
+<p>The settings panel can be toggled out of sight with the <samp>Show/Hide Settings</samp>
+button at the bottom right.</p>
+
+
+<h2>Adding and Extracting Files</h2>
+
+<p>To add files, select the <samp>Actions &gt; Add Files</samp> menu item.  Select
+the set of files and directories to add, and click <samp>Select</samp>.  The
+files will be added to the directory that is currently selected in the directory tree.</p>
+
+<p>To extract files, select the files and directories you want to extract in the
+file list, and select the <samp>Actions &gt; Extract Files</samp> menu item.  Navigate
+to the directory where you want to extract the files, and click
+<samp>Select Here</samp>.</p>
+
+<p>If a file already exists, you will be prompted for permission to overwrite the file,
+or skip add/extract of that one file.</p>
+
+
+<h2>Importing and Exporting files</h2>
+
+<p>To import files, choose the desired conversion mode from the options panel.
+Select the <samp>Actions &gt; Import Files</samp> menu item.  Select
+the set of files and directories to import, and click <samp>Select</samp>.  The
+files will be added to the directory that is currently selected in the directory tree.</p>
+
+<p>To export files, choose the desired conversion mode from the options panel.
+select the files and directories you want to export in the
+file list, and select the <samp>Actions &gt; Export Files</samp> menu item.  Navigate
+to the directory where you want to extract the files, and click
+<samp>Select Here</samp>.</p>
+
+<p>If a file already exists, you will be prompted for permission to overwrite the file,
+or skip import/export of that one file.</p>
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+    <!-- <p id="screen-size"></p>
+    <script>
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var x = document.getElementById("screen-size");
+        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
+    </script> -->
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>
