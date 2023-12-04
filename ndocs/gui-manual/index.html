@@ -61,6 +61,7 @@
         <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
         <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Edit Attributes</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
@@ -89,6 +90,7 @@ also supported.</p>
         <ul>
             <li>Opening Archives</li>
             <li>Getting Around</li>
+            <li>Additional Navigation</li>
         </ul></li>
     <li><a href="viewing.html">Viewing Files</a>
         <ul>
@@ -113,36 +115,65 @@ also supported.</p>
             <li>Miscellaneous</li>
         </ul></li>
 
-    <li>editing file attributes; change volume name</li>
-    <li>creating disk images and archives; converting disk images</li>
-    <li>opening physical media; admin privs + effects</li>
-    <li>disk / filesystem ops</li>
-        <li>partition extract and replace</li>
-        <li>defrag, bad block scan</li>
-    <li>sector editing</li>
-        <li>nibbles vs. blocks</li>
-        <li>disks, partition layouts, partitions, ... not filesystems</li>
-        <li>filesystem interaction</li>
-    <li>application settings</li>
-        <li>app settings file location</li>
-    <li>reporting bugs and crashes</li>
-    <li>FAQ</li>
-    <li>Appendix: DOS 3.2/3.3 files: raw, random access (file viewer), etc.</li>
-    <li>Appendix: pointers for developers</li>
+    <li><a href="editattrs.html">Edit Attributes</a>
+        <ul>
+            <li>File Attributes</li>
+            <li>Volume Attributes</li>
+        </ul></li>
+
+<hr/>
+
+    <li><a href="media.html">Physical Media</a>
+        <ul>
+            <li>Opening Media</li>
+            <!-- admin privs + effects on drag & drop -->
+        </ul></li>
+
+    <li><a href="creating.html">Creating Archives</a>
+        <ul>
+            <li>File Archives</li>
+            <li>Disk Images</li>
+        </ul></li>
+
+    <li><a href="diskops.html">Disk Operations</a>
+        <ul>
+            <li>Save As Disk Image</li>
+            <li>Replace Partition Contents</li>
+            <li>Scan For Bad Blocks</li>
+            <li>Defragment Filesystem</li>
+        </ul></li>
+
+    <li><a href="editsector.html">Sector Editing</a>
+        <ul>
+            <li>Editing Filesystems</li>
+            <li>Sectors vs. Blocks</li>
+            <li>Nibble Formats</li>
+        </ul></li>
+
+    <li><a href="appsettings.html">Application Settings</a>
+        <ul>
+            <li>Settings</li>
+            <!-- settings file location -->
+        </ul></li>
+
+    <li><a href="bugs.html">Reporting Bugs</a>
+        <ul>
+            <li>Bugs and Crashes</li>
+        </ul></li>
+
+    <li><a href="faq.html">Frequently Asked Questions</a>
+        <ul>
+            <li>Q &amp; A</li>
+        </ul></li>
+
+    <li><a href="dosnotes.html">DOS 3.2/3.3 Notes</a>
+        <ul>
+            <li>Raw Files</li>
+            <!-- file type map to ProDOS types -->
+            <!-- random-access text in file viewer -->
+        </ul></li>
 </ul>
 
-<!--
-# Other Notes #
-
-It's possible to explore some ".iso" files with Windows Explorer.  Such files
-may be opened (read-only) by the system process (pid 4) and presented as a
-drive letter, which means they can be opened as read-only by other processes
-but can't be opened read-write.  This can be verified with Process Explorer
-(https://serverfault.com/a/1980/268812): run as administrator, then
-Find > Find Handle or DLL, and enter a unique part of the filename.
-
-Ejecting the virtual DVD will remove the restrictions on the file.
--->
 
 </div>
 

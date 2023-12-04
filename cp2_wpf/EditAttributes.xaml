@@ -162,6 +162,7 @@ limitations under the License.
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,4,0,0"
@@ -194,6 +195,12 @@ limitations under the License.
                            Text="&#x2022; Dates are in local format."/>
                 <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
                            Text="&#x2022; Times are in 24-hour format, HH:MM or HH:MM:SS."/>
+                <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="&#x2022; Date range: "/>
+                    <TextBlock Text="{Binding TimestampStart, FallbackValue=START}"/>
+                    <TextBlock Text=" - "/>
+                    <TextBlock Text="{Binding TimestampEnd, FallbackValue=END}"/>
+                </StackPanel>
             </Grid>
         </GroupBox>
 

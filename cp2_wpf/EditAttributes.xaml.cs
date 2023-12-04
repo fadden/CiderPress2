@@ -674,12 +674,13 @@ namespace cp2_wpf {
         /// <param name="timeStr">String from time input field.</param>
         /// <param name="isValid">Result: true if inputs are valid.</param>
         /// <returns>Combined date/time.</returns>
-        private static DateTime DateTimeUpdated(DateTime? ndt, string timeStr, out bool isValid) {
+        private DateTime DateTimeUpdated(DateTime? ndt, string timeStr, out bool isValid) {
             isValid = true;
             if (ndt == null) {
                 return TimeStamp.NO_DATE;
             }
             DateTime dt = (DateTime)ndt;
+            DateTime newWhen;
             if (!string.IsNullOrEmpty(timeStr)) {
                 MatchCollection matches = sTimeRegex.Matches(timeStr);
                 if (matches.Count != 1) {
@@ -697,13 +698,15 @@ namespace cp2_wpf {
                     return TimeStamp.NO_DATE;
                 }
 
-                DateTime full = new DateTime(dt.Year, dt.Month, dt.Day, hours, minutes, seconds,
+                newWhen = new DateTime(dt.Year, dt.Month, dt.Day, hours, minutes, seconds,
                     DateTimeKind.Local);
-                return full;
             } else {
                 DateTime newDt = new DateTime(dt.Year, dt.Month, dt.Day);
-                return DateTime.SpecifyKind(newDt, DateTimeKind.Local);
+                newWhen = DateTime.SpecifyKind(newDt, DateTimeKind.Local);
             }
+
+            isValid = newWhen >= TimestampStart && newWhen <= TimestampEnd;
+            return newWhen;
         }
 
         /// <summary>

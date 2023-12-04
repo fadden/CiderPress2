@@ -61,6 +61,7 @@
         <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
         <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Edit Attributes</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
@@ -254,6 +255,18 @@ The <samp>Go To Parent</samp> item performs the same action, but will continue
 the upward movement in the Archive Contents tree if the Directory tree is at the top.</p>
 <p>The toolbar button with the up-arrow icon performs the <samp>Go To Parent</samp>
 action.</p>
+
+
+<h2>Windows Notes</h2>
+
+<p>It's possible to explore some ".iso" files with Windows Explorer.  Such files
+may be opened (read-only) by the system process (pid 4) and presented as a
+drive letter, which means they can be opened as read-only by other processes
+but can't be opened read-write.  This can be verified with Process Explorer
+(<a href="https://serverfault.com/a/1980/268812">notes</a>): run as administrator, then
+<samp>Find &gt; Find Handle or DLL</samp>, and enter a unique part of the filename.</p>
+
+<p>Ejecting the virtual DVD will remove the restrictions on the file.</p>
 
 
 </div>
