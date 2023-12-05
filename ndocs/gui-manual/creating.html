@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Creating Archives</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-manual-gui -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-tutorial-gui" href="../gui-tutorial">Desktop GUI Tutorial</a>
+        <a id="topnav-tutorial-cli" href="../cli-tutorial">Command-Line Tutorial</a>
+        <a id="topnav-manual-gui" class="active" href="../gui-manual">GUI Manual</a>
+        <a id="topnav-manual-cli" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-creating -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Edit Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating" class="active"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>File Archives</h2>
+
+<p>To create a new file archive, select the <samp>File &gt; New File Archive</samp> menu item.
+Choose the desired archive from the list, and click <samp>OK</samp>.  Use the file dialog
+to choose a location and name for the new file.  The empty archive will be opened
+automatically.</p>
+<p>Some utilities may be confused by completely empty file archives, since they're not
+very useful.  Binary ][ archives do not have a file header, so empty archives are zero
+bytes long.</p>
+
+<p>You cannot create AppleSingle, AppleDouble, or gzip archives with this interface because
+they are designed to store a single file.  To create AppleSingle or AppleDouble, extract a
+file with the appropriate preservation mode enabled.</p>
+
+<h2>Disk Images</h2>
+
+<p>To create a new disk image, select the <samp>File &gt; New Disk Image</samp> menu item.
+This opens a window with a variety of options to choose from.</p>
+
+<p>First, you need to pick the disk size.  Standard floppy disk sizes can be chosen from
+the available options, or a custom size can be specified in blocks.</p>
+<p>Second, choose the filesystem to use.  Only the filesytems that are compatible with
+the specified disk size will be available.  If the filesystem has a volume name or number,
+you can enter those below.  For DOS 3.x and CP/M floppies, you can also choose whether to
+reserve space for the operating system image.</p>
+<p>Third, choose the type of disk image to create.  Only the files that are compatible
+with the specified disk size will be available.</p>
+<p>Briefly:</p>
+<ul>
+  <li>Unadorned DOS-order (.do/.d13): this stores an Apple II 5.25" floppy disk as a
+    series of 256-byte sectors.  This is probably the most common format used for 5.25"
+    disks, often used with the ambiguous ".dsk" extension.  ".do" is used for 16-sector
+    disks, ".d13" for 13-sector disks.</li>
+  <li>Unadorned ProDOS-order (.po): this stores a disk as a series of 512-byte blocks.
+    The popular ".hdv" and ".iso" extensions are identical.  This is the most common
+    format for 3.5" disks, hard drives, and other block-oriented media.</li>
+  <li>2IMG (.2mg): this can store data the same way a .do, .po, or .nib image would, but
+    it also adds a file header that allows the receiving application to recognize
+    the contents unambiguously.  Here, it's only used for ProDOS-ordered images (.po).</li>
+  <li>ShrinkIt (.sdk): compressed 5.25" or 3.5" disk image.  Convenient for transfer
+    to a physical Apple II, because it's smaller and you can use ShrinkIt to unpack
+    it to a physical disk, but not all emulators support it.</li>
+  <li>DiskCopy 4.2 (.image): developed by Apple to image 3.5" disks for the Macintosh.
+    Widely supported by Macintosh applications, less popular with Apple II applications.</li>
+  <li>WOZ (.woz): faithfully captures 5.25" and 3.5" floppy disks.  Normally you would
+    only use this when making a digital copy of physical media.  Supported by most modern
+    Apple II emulators.</li>
+  <li>Nibble (.nib): low-level representation of an Apple II 5.25" floppy disk.  This
+    holds more detail than block/sector formats but less detail than WOZ.  It's supported
+    by most Apple II emulators.</li>
+  <li>Trackstar (.app): disk image format used by the Trackstar Apple II emulator card
+    for the PC.  Only use this if you're creating images for the Trackstar.</li>
+</ul>
+
+<p>Make your selections and click <samp>Create</samp>.  Use the file dialog to choose a
+location and name for the new file.  The new disk image will be opened automatically.</p>
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+    <!-- <p id="screen-size"></p>
+    <script>
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var x = document.getElementById("screen-size");
+        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
+    </script> -->
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

@@ -596,8 +596,9 @@ namespace cp2_wpf {
         public DateTime? CreateDate {
             get { return mCreateDate; }
             set {
-                // This fires twice when a change is made.  The change is not published until
-                // the focus leaves the field, regardless of how the binding is configured.
+                // This fires twice when a change is made (using a DatePicker control).  The
+                // change is not published until the focus leaves the field, regardless of how
+                // the binding is configured.
                 mCreateDate = value;
                 OnPropertyChanged();
                 NewAttribs.CreateWhen = DateTimeUpdated(mCreateDate, mCreateTimeString,
@@ -625,8 +626,9 @@ namespace cp2_wpf {
         public DateTime? ModDate {
             get { return mModDate; }
             set {
-                // This fires twice when a change is made.  The change is not published until
-                // the focus leaves the field, regardless of how the binding is configured.
+                // This fires twice when a change is made (using a DatePicker control).  The
+                // change is not published until the focus leaves the field, regardless of how
+                // the binding is configured.
                 mModDate = value;
                 OnPropertyChanged();
                 NewAttribs.ModWhen = DateTimeUpdated(mModDate, mModTimeString,

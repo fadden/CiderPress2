@@ -815,6 +815,7 @@ namespace cp2_wpf {
 
             // Don't handle Ctrl/Shift stuff here.
             // TODO: handle shift-Tab?
+            // TODO: allow entry of upper-case hex digits?
             if (Keyboard.Modifiers != ModifierKeys.None) {
                 return;
             }

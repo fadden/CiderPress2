@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II GUI Manual</title>
+    <title>CiderPress II - Physical Media</title>
 </head>
 
 <body>
@@ -51,18 +51,18 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-media -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Contents</a></li>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
         <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
         <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
         <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
         <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
         <li id="sidenav-editattrs"><a href="editattrs.html">Edit Attributes</a></li>
-        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-media" class="active"><a href="media.html">Physical Media</a></li>
         <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
         <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
         <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
@@ -75,112 +75,56 @@
 <!-- END: incl-sidenav.html -->
 
 <div id="main">
-<h1>CiderPress II GUI Manual</h1>
 
-<p>CiderPress II is a utility for managing disk images and file archives, with
-a focus on the Apple II and early Macintosh.  Disk images of floppies, hard drives,
-CD-ROMs, and other formats are supported, as are popular archive formats like
-ShrinkIt.  For easier interaction with modern storage formats, ZIP and gzip are
-also supported.</p>
+<h2>Opening Media Devices</h2>
 
-<p>If you're new to CiderPress, it may be better to start with the
-<a href="../gui-tutorial">tutorial</a>.</p>
+<p>Devices attached to your computer via USB or a SCSI adapter can be accessed
+directly.  These include CF and SD cards, hard drives, floppy disks, and CD-ROMs
+that have been formatted for ProDOS, HFS, APM, or other "vintage" formats.</p>
+<p>To use the media, you first need to attach it to your computer.  (How you do
+this is beyond the scope of this manual.)  This will likely generate a message
+that says, "You need to format the disk before you can use it.  Do you want to
+format it?"  <strong>Do not</strong> format the disk.  Instead, click
+<samp>Cancel</samp>.  This will likely lead to a second message from the system that says,
+"The volume does not contain a recognized file system".  This is fine; click
+<samp>OK</samp>.</p>
 
-<h2>Contents</h2>
-<ul>
-    <li><a href="overview.html">Overview</a>
-        <ul>
-            <li>Disk Images and File Archives</li>
-            <li>Add/Extract vs. Import/Export</li>
-            <li>Changes from CiderPress</li>
-        </ul></li>
-    <li><a href="working.html">Working With Archives</a>
-        <ul>
-            <li>Opening Archives</li>
-            <li>Getting Around</li>
-            <li>Additional Navigation</li>
-        </ul></li>
-    <li><a href="viewing.html">Viewing Files</a>
-        <ul>
-            <li>File Viewer</li>
-            <li>Conversions</li>
-            <li>Copy and Export</li>
-        </ul></li>
+<p>Use <samp>File &gt; Open Physical Disk</samp> to get a list of available
+devices.  "Fixed" devices, such as the hard drives built into the computer, will
+not be accessible, for safety reasons.  Removable media will be listed with its storage
+capacity.  Select the device, and click <samp>Open</samp>.</p>
+<p>The <samp>Open Read-Only</samp> checkbox determines whether the device is open
+just for reading, or for both reading and writing.</p>
+<p>Once open, you can use the device just like you would a disk image file.  Be sure to
+eject the device from Windows before physically removing it if you have made any changes.</p>
 
-    <li><a href="aeie.html">Add/Extract Import/Export</a>
-        <ul>
-            <li>Attribute Preservation Schemes</li>
-            <li>Configuration Options</li>
-            <li>Adding and Extracting Files</li>
-            <li>Importing and Exporting Files</li>
-        </ul></li>
+<h3>Administrator Access</h3>
 
-    <li><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a>
-        <ul>
-            <li>Drag &amp; Drop to Move Files</li>
-            <li>Drag / Copy Between Applications</li>
-            <li>Add/Extract vs. Import/Export</li>
-            <li>Miscellaneous</li>
-        </ul></li>
+<p>For most Windows systems, an additional step will be required.  You will get a
+message that says, "CiderPress II is not running as Administrator.  Restart?".  This
+happens because, with User Access Control enabled, Windows will not allow low-level
+block access to disk devices.</p>
+<p>Click <samp>OK</samp>, and then <samp>Yes</samp> when asked if you want to
+allow the program to make changes to your computer.  (CiderPress II isn't actually
+trying to make changes to your computer; this is just the standard system warning.)</p>
 
-    <li><a href="editattrs.html">Edit Attributes</a>
-        <ul>
-            <li>File Attributes</li>
-            <li>Volume Attributes</li>
-        </ul></li>
+<p>You can avoid the dialog by running the application as Administrator (though the
+system may prompt anyway you at launch time).  In Windows 10,
+this can done by right-clicking on <samp>CiderPress2.exe</samp> and selecting
+<samp>Run as Administrator</samp>.  If you want it to run as Administrator every time,
+you can do it with a shortcut: right-click on <samp>CiderPress2.exe</samp> and pick
+<samp>Create Shortcut</samp>, then right-click on the new shortcut, select the
+<samp>Shortcut</samp> tab, click <samp>Advanced</samp>, and check
+<samp>Run as Administrator</samp>.  Click <samp>OK</samp> to close the dialog, and
+then <samp>OK</samp> again to make the change to the shortcut.</p>
 
-    <li><a href="media.html">Physical Media</a>
-        <ul>
-            <li>Opening Media Devices</li>
-        </ul></li>
+<p>You can tell if the application is running as Administrator by using
+<samp>Help &gt; About</samp> and looking at the <samp>Runtime</samp> line, and
+checking if it ends with "<samp>(Admin)</samp>".
 
-    <li><a href="creating.html">Creating Archives</a>
-        <ul>
-            <li>File Archives</li>
-            <li>Disk Images</li>
-        </ul></li>
-
-    <li><a href="diskops.html">Disk Operations</a>
-        <ul>
-            <li>Save As Disk Image</li>
-            <li>Replace Partition Contents</li>
-            <li>Scan For Bad Blocks</li>
-            <li>Defragment Filesystem</li>
-        </ul></li>
-
-    <li><a href="editsector.html">Sector Editing</a>
-        <ul>
-            <li>Editing Blocks and Sectors</li>
-        </ul></li>
-
-<hr/>
-
-    <li><a href="appsettings.html">Application Settings</a>
-        <ul>
-            <li>Settings</li>
-            <!-- settings file location -->
-        </ul></li>
-
-    <li><a href="fsnotes.html">Filesystem Notes</a>
-        <ul>
-            <li>DOS 3.2/3.3</li>
-            <!-- raw files -->
-            <!-- file type map to ProDOS types -->
-            <!-- random-access text in file viewer -->
-        </ul></li>
-
-    <li><a href="bugs.html">Reporting Bugs</a>
-        <ul>
-            <li>Bugs and Crashes</li>
-        </ul></li>
-
-    <li><a href="faq.html">Frequently Asked Questions</a>
-        <ul>
-            <li>Q &amp; A</li>
-        </ul></li>
-
-    <!-- maybe: list of disk formats, with explanation of DOS vs. ProDOS disk ordering -->
-</ul>
+<p><strong>Note:</strong> Windows restricts drag &amp; drop operations between
+applications with different levels of privilege.  These don't affect most operations,
+but will prevent you from dragging files in from a Windows Explorer window.</p>
 
 
 </div>

@@ -25,3 +25,7 @@ Some text variable substitutions can be performed on HTML and Markdown files
 as they are copied, e.g. all occurrences of `${VERSION}` will be replaced with
 the current app version.  This is used to update the links in the download
 instructions (`Install.md`) to point at the current release.
+
+The contents of files in the `ndocs` directory can be previewed by using the
+[htmlpreview viewer](https://htmlpreview.github.io/?https://github.com/fadden/ciderpress2/blob/master/ndocs/index.html),
+but be aware that some of the navigation links may not work.

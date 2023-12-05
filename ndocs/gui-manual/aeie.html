@@ -62,13 +62,21 @@
         <li id="sidenav-aeie" class="active"><a href="aeie.html">Add/Extract Import/Export</a></li>
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
         <li id="sidenav-editattrs"><a href="editattrs.html">Edit Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
 
 <div id="main">
 
-<h2>Attribute Preservation</h2>
+<h2>Attribute Preservation Schemes</h2>
 
 <p>Files stored in disk images and file archives have a number of attributes,
 such as file types, dates, and access flags, that should be preserved when files
@@ -81,7 +89,7 @@ file data.</p>
 
 <p>Five strategies are supported:</p>
 <ol>
-  <li>None (default) - do nothing.  Resource forks, file types, and access flags
+  <li>None - do nothing.  Resource forks, file types, and access flags
     are discarded when files are extracted.  File dates will be preserved if the
     host filesystem has something equivalent.  (Most filesystems record modification
     dates, but not all store creation dates.)</li>
