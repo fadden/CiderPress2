@@ -88,6 +88,16 @@ file format.  Options that aren't appropriate for the disk's size will be disabl
 Pick an option and click <samp>Save</samp>, then use the file dialog to pick a name
 and location for the new file.</p>
 
+<p>Converting a block/sector image to a nibble image will generate standard low-level
+formatting on the new disk.  It should behave identically to the original.</p>
+<p>Converting a nibble image to a block/sector image will discard the low-level
+formatting, and might partially fail if the source disk has errors or copy protection.  Any
+read errors encountered will be reported during the transfer, but the loss of certain data
+(like the volume numbers embedded in the sector address headers of 5.25" disks) will
+not be called out.</p>
+<p>Converting a nibble image to a different nibble format will still result in the loss of
+data, because the transfer is always done at the block/sector level.</p>
+
 
 <h2>Replace Partition Contents</h2>
 

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II GUI Manual</title>
+    <title>CiderPress II - Filesystem Notes</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-fsnotes -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Contents</a></li>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
         <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
         <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
         <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
@@ -67,7 +67,7 @@
         <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
         <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
         <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
-        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-fsnotes" class="active"><a href="fsnotes.html">Filesystem Notes</a></li>
         <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
         <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
     </ul>
@@ -75,105 +75,49 @@
 <!-- END: incl-sidenav.html -->
 
 <div id="main">
-<h1>CiderPress II GUI Manual</h1>
 
-<p>CiderPress II is a utility for managing disk images and file archives, with
-a focus on the Apple II and early Macintosh.  Disk images of floppies, hard drives,
-CD-ROMs, and other formats are supported, as are popular archive formats like
-ShrinkIt.  For easier interaction with modern storage formats, ZIP and gzip are
-also supported.</p>
+<h2>DOS 3.2/3.3</h2>
 
-<p>If you're new to CiderPress, it may be better to start with the
-<a href="../gui-tutorial">tutorial</a>.</p>
+<p>The Apple II Disk Operating System (DOS) filesystem stores files as a series
+of 256-byte sectors, with one of eight file types.  Some aspects of the filesystem
+require special handling.</p>
+<p>Files with types I (Integer BASIC), A (Applesoft BASIC), and B (binary data) have
+a 16-bit file length stored at the start of the file.  In most cases the length just
+indicates how much of the last sector is used, but through various means it's possible
+to extend or truncate the length to be very different.  For example, some programs
+were distributed as type B with a short "fast loader" program at the start.  The DOS
+<code>BRUN</code> command would stop at the embedded length, which only spanned the
+loader; the loader would then load the rest of the file into memory.</p>
+<p>File with type T (text) can be sequential or random-access.  Sequential text
+files end when the first $00 is encountered, but random-access text files can be
+filled with zeroes.  DOS provides different mechanisms for reading these files, but
+no way to distinguish them from each other.</p>
+<p>The remaining file types &mdash; S, R, AA, BB &mdash; are simply defined by
+the list of sectors allocated to the file.  Such files are thus always a multiple
+of 256 bytes long.</p>
+<p>When viewing or extracting files from a DOS disk, it's necessary to specify
+whether the file should be accessed in "normal" or "raw" mode.  In "normal" mode,
+the length of T/I/A/B files is determined by examining their headers or, for text
+files, scanning the entire file for the first $00.  In "raw" mode, the file type
+is ignored, and files are always handled as a collection of sectors.</p>
 
-<h2>Contents</h2>
+<p>One situation where accessing a file in raw mode is necessary is when viewing
+random-access text files.  These are files of type T with fixed-length records.
+In the file viewer, you need to enable "raw" mode, and specify a length.  (The
+length can be determined by examining the BASIC program that reads the file, or
+by trying to guess the interval from the hex dump.)</p>
+
+<p>DOS file types are converted to ProDOS equivalents in certain situations, e.g.
+when extracting files with preservation enabled.  The conversion map is:</p>
 <ul>
-    <li><a href="overview.html">Overview</a>
-        <ul>
-            <li>Disk Images and File Archives</li>
-            <li>Add/Extract vs. Import/Export</li>
-            <li>Changes from CiderPress</li>
-        </ul></li>
-    <li><a href="working.html">Working With Archives</a>
-        <ul>
-            <li>Opening Archives</li>
-            <li>Getting Around</li>
-            <li>Additional Navigation</li>
-        </ul></li>
-    <li><a href="viewing.html">Viewing Files</a>
-        <ul>
-            <li>File Viewer</li>
-            <li>Conversions</li>
-            <li>Copy and Export</li>
-        </ul></li>
-
-    <li><a href="aeie.html">Add/Extract Import/Export</a>
-        <ul>
-            <li>Attribute Preservation Schemes</li>
-            <li>Configuration Options</li>
-            <li>Adding and Extracting Files</li>
-            <li>Importing and Exporting Files</li>
-        </ul></li>
-
-    <li><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a>
-        <ul>
-            <li>Drag &amp; Drop to Move Files</li>
-            <li>Drag / Copy Between Applications</li>
-            <li>Add/Extract vs. Import/Export</li>
-            <li>Miscellaneous</li>
-        </ul></li>
-
-    <li><a href="editattrs.html">Edit Attributes</a>
-        <ul>
-            <li>File Attributes</li>
-            <li>Volume Attributes</li>
-        </ul></li>
-
-    <li><a href="media.html">Physical Media</a>
-        <ul>
-            <li>Opening Media Devices</li>
-        </ul></li>
-
-    <li><a href="creating.html">Creating Archives</a>
-        <ul>
-            <li>File Archives</li>
-            <li>Disk Images</li>
-        </ul></li>
-
-    <li><a href="diskops.html">Disk Operations</a>
-        <ul>
-            <li>Save As Disk Image</li>
-            <li>Replace Partition Contents</li>
-            <li>Scan For Bad Blocks</li>
-            <li>Defragment Filesystem</li>
-        </ul></li>
-
-    <li><a href="editsector.html">Sector Editing</a>
-        <ul>
-            <li>Editing Blocks and Sectors</li>
-        </ul></li>
-
-    <li><a href="appsettings.html">Application Settings</a>
-        <ul>
-            <li>Settings</li>
-        </ul></li>
-
-    <li><a href="fsnotes.html">Filesystem Notes</a>
-        <ul>
-            <li>DOS 3.2/3.3</li>
-        </ul></li>
-
-    <li><a href="bugs.html">Reporting Bugs</a>
-        <ul>
-            <li>Reporting Bugs and Crashes</li>
-        </ul></li>
-
-    <li><a href="faq.html">FAQ</a>
-        <ul>
-            <li>Frequently Asked Questions</li>
-        </ul></li>
-
-    <!-- maybe: list of disk formats, with explanation of DOS vs. ProDOS disk ordering -->
+  <li>T - TXT ($04)</li>
+  <li>I - INT ($FA)</li>
+  <li>A - BAS ($FC)</li>
+  <li>B - BIN ($06)</li>
+  <li>S - ($F2)</li>
+  <li>R - REL ($FE)</li>
+  <li>AA - ($F3)</li>
+  <li>BB - ($F4)</li>
 </ul>
 
 

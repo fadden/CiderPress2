@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II GUI Manual</title>
+    <title>CiderPress II - Reporting Bugs</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-bugs -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Contents</a></li>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
         <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
         <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
         <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
@@ -68,113 +68,29 @@
         <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
         <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
         <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
-        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-bugs" class="active"><a href="bugs.html">Reporting Bugs</a></li>
         <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
 
 <div id="main">
-<h1>CiderPress II GUI Manual</h1>
 
-<p>CiderPress II is a utility for managing disk images and file archives, with
-a focus on the Apple II and early Macintosh.  Disk images of floppies, hard drives,
-CD-ROMs, and other formats are supported, as are popular archive formats like
-ShrinkIt.  For easier interaction with modern storage formats, ZIP and gzip are
-also supported.</p>
+<h2>Reporting Bugs</h2>
 
-<p>If you're new to CiderPress, it may be better to start with the
-<a href="../gui-tutorial">tutorial</a>.</p>
+<p>The preferred way to report bugs or request changes is through the project's
+<a href="https://github.com/fadden/CiderPress2/issues">issue tracker</a>.  The author
+has also been known to frequent
+<a href="https://groups.google.com/g/comp.sys.apple2">comp.sys.apple2</a> and
+the <a href="https://www.reddit.com/r/apple2/">Apple2 sub-reddit</a>.</p>
 
-<h2>Contents</h2>
-<ul>
-    <li><a href="overview.html">Overview</a>
-        <ul>
-            <li>Disk Images and File Archives</li>
-            <li>Add/Extract vs. Import/Export</li>
-            <li>Changes from CiderPress</li>
-        </ul></li>
-    <li><a href="working.html">Working With Archives</a>
-        <ul>
-            <li>Opening Archives</li>
-            <li>Getting Around</li>
-            <li>Additional Navigation</li>
-        </ul></li>
-    <li><a href="viewing.html">Viewing Files</a>
-        <ul>
-            <li>File Viewer</li>
-            <li>Conversions</li>
-            <li>Copy and Export</li>
-        </ul></li>
-
-    <li><a href="aeie.html">Add/Extract Import/Export</a>
-        <ul>
-            <li>Attribute Preservation Schemes</li>
-            <li>Configuration Options</li>
-            <li>Adding and Extracting Files</li>
-            <li>Importing and Exporting Files</li>
-        </ul></li>
-
-    <li><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a>
-        <ul>
-            <li>Drag &amp; Drop to Move Files</li>
-            <li>Drag / Copy Between Applications</li>
-            <li>Add/Extract vs. Import/Export</li>
-            <li>Miscellaneous</li>
-        </ul></li>
-
-    <li><a href="editattrs.html">Edit Attributes</a>
-        <ul>
-            <li>File Attributes</li>
-            <li>Volume Attributes</li>
-        </ul></li>
-
-    <li><a href="media.html">Physical Media</a>
-        <ul>
-            <li>Opening Media Devices</li>
-        </ul></li>
-
-    <li><a href="creating.html">Creating Archives</a>
-        <ul>
-            <li>File Archives</li>
-            <li>Disk Images</li>
-        </ul></li>
-
-    <li><a href="diskops.html">Disk Operations</a>
-        <ul>
-            <li>Save As Disk Image</li>
-            <li>Replace Partition Contents</li>
-            <li>Scan For Bad Blocks</li>
-            <li>Defragment Filesystem</li>
-        </ul></li>
-
-    <li><a href="editsector.html">Sector Editing</a>
-        <ul>
-            <li>Editing Blocks and Sectors</li>
-        </ul></li>
-
-    <li><a href="appsettings.html">Application Settings</a>
-        <ul>
-            <li>Settings</li>
-        </ul></li>
-
-    <li><a href="fsnotes.html">Filesystem Notes</a>
-        <ul>
-            <li>DOS 3.2/3.3</li>
-        </ul></li>
-
-    <li><a href="bugs.html">Reporting Bugs</a>
-        <ul>
-            <li>Reporting Bugs and Crashes</li>
-        </ul></li>
-
-    <li><a href="faq.html">FAQ</a>
-        <ul>
-            <li>Frequently Asked Questions</li>
-        </ul></li>
-
-    <!-- maybe: list of disk formats, with explanation of DOS vs. ProDOS disk ordering -->
-</ul>
+<p>If CiderPress II crashes, it will generate a file called
+"<code>CrashLog-CiderPress2.txt</code>" in the directory where the executable lives.
+If the file already exists, the crash will be appended to the existing data.</p>
+<p>The crash log has some basic information about the system and the version
+of the application, followed by an exception stack trace.  When filing a bug
+report, please include this and a detailed description of the steps you took to
+cause the crash to happen.</p>
 
 
 </div>
