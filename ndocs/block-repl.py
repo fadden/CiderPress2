@@ -83,7 +83,8 @@ def editFile(inFileName, outFileName):
         startTag = match.group(GROUP_START)
         endTag = match.group(GROUP_END)
         if startTag != endTag:
-            raise LocalError("START/END tag mismatch: " + startTag + " vs. " + endTag)
+            raise LocalError("START/END tag mismatch: " + startTag +
+                " vs. " + endTag)
 
         replSpan = match.span(GROUP_CHUNK)
 

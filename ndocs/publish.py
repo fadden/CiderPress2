@@ -34,7 +34,8 @@ copy_exclude_dirs = [ top_dir ]
 copy_exclude_files = [
         re.compile(r"^.*\.py$"),        # python scripts
         re.compile(r"^incl-.*$"),       # HTML include files
-        re.compile(r"^\..*\.swp$")      # VIM temporary files
+        re.compile(r"^\..*\.swp$"),     # VIM temporary files
+        re.compile(r"topic-list.txt")   # prev/next order file
         ]
 
 # Text variable substitutions.  Performed on ".html" and ".md".
@@ -86,6 +87,15 @@ def main():
     shutil.rmtree(outdir, True)
     print("--- Creating output directory", outdir)
     os.mkdir(outdir)
+
+    # Do prev/next patching for tutorials.
+    print("--- Configuring tutorial prev/next links")
+    for tutdir in ["cli-tutorial"]:
+        result = subprocess.run(["py", "prevnext.py", tutdir],
+                capture_output=True, encoding="utf-8")
+        if result.returncode != 0:
+            print("FAILED prevnext in", tutdir)
+            sys.exit(1)
 
     # Walk through the directory hierarchy.
     print("--- Copying files", outdir)
@@ -151,9 +161,10 @@ def main():
     for file in topfiles:
         inpath = os.path.join(top_dir, file)
         outpath = os.path.join(outdir, file)
-        if os.path.isfile(outpath):
-            os.remove(outpath)
-        copy_file(inpath, outpath, True)
+        #if os.path.isfile(outpath):
+        #    os.remove(outpath)
+        #copy_file(inpath, outpath, True)
+        print(" WOULD copy", inpath, "-->", outpath)
 
     sys.exit(0)
 
