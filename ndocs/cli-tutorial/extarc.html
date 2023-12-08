@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CLI Tutorial - List</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-cli-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" class="active" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-extarc -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Contents</a>
+        <ul>
+            <li id="sidenav-extarc" class="active"><a href="extarc.html">Ext-Archive and Turduckens</a></li>
+        </ul></li>
+        <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
+        <ul>
+            <li id="sidenav-raw"><a href="dosraw.html">Raw Mode</a></li>
+            <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
+        </ul></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-adding"><a href="adding.html">Adding Files</a>
+        <ul>
+            <li id="sidenav-importing"><a href="importing.html">Importing Files</a></li>
+        </ul></li>
+        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+
+<h2>Ext-Archive and Turduckens</h2>
+
+<p>Sometimes one kind of archive is stored inside another.  For example, you
+might have a ZIP archive with three disk images and a PDF scan of the original
+documentation.  The disk images might have a ShrinkIt archive or two on them.
+It's handy to be able to see all of these parts without having to extract all
+of the pieces.</p>
+
+<p>Let's take a look at another sample:</p>
+<p class="showcmd">cp2 v turducken/MultiPart.hdv</p>
+<p class="showout">File: turducken/MultiPart.hdv
+Disk image (Unadorned) 1602KB multi-partition (APM)
+#  Start block    Count Name             Type
+-- ----------- -------- ---------------- -------------------
+ 1           4     1600 ProDOS_Part      Apple_PRODOS
+ 2        1604     1600 HFS_Part         Apple_HFS
+ 3           1        3 Apple            Apple_partition_map
+
+  Partition #1 - 800KB ProDOS "Mixed.Disk", 119 blocks free
+  Type Auxtyp Modified          Length  Storage *Name
+  ---- ------ --------------- -------- -------- ----------------------------------
+  SYS  $0000  26-Mar-88 16:27    15485    16384 *PRODOS
+  SYS  $2000  18-Jun-84 00:00    10240    10752 *BASIC.SYSTEM
+  SYS  $0000  23-Dec-22 14:17    10240    10752  DOS.3.3
+
+    Embedded #1 - 140KB DOS 3.3 Vol 001, 526 sectors free
+    Type Auxtyp Modified          Length  Storage *Name
+    ---- ------ --------------- -------- -------- ----------------------------------
+     A   $0801  [No Date]             32      512  HELLO
+
+    Embedded #2 - 140KB DOS 3.3 Vol 002, 526 sectors free
+    Type Auxtyp Modified          Length  Storage *Name
+    ---- ------ --------------- -------- -------- ----------------------------------
+     A   $0801  [No Date]             32      512  HELLO2
+
+    Embedded #3 - 140KB DOS 3.3 Vol 003, 526 sectors free
+    Type Auxtyp Modified          Length  Storage *Name
+    ---- ------ --------------- -------- -------- ----------------------------------
+     A   $0801  [No Date]             32      512  HELLO3
+
+    Embedded #4 - 140KB DOS 3.3 Vol 004, 526 sectors free
+    Type Auxtyp Modified          Length  Storage *Name
+    ---- ------ --------------- -------- -------- ----------------------------------
+     A   $0801  [No Date]             32      512  HELLO4
+
+    Embedded #5 - 140KB DOS 3.3 Vol 005, 526 sectors free
+    Type Auxtyp Modified          Length  Storage *Name
+    ---- ------ --------------- -------- -------- ----------------------------------
+     A   $0801  [No Date]             32      512  HELLO5
+
+  Partition #2 - 800KB HFS "New Disk", 600KB free
+  Type Auxtyp Modified          Length  Storage *Name
+  ---- ------ --------------- -------- -------- ----------------------------------
+  DIR         20-Jan-23 12:08        0        0  Dir1
+  DIR         20-Jan-23 12:10        0        0  Dir1:Dir2
+  NON  $0000  20-Jan-23 12:10   143360   143360  Dir1:Dir2:new-init.do
+  LBR  $8000  20-Jan-23 12:09     4480     4608  Dir1:Dir2:Samples.BXY
+  CDV+ $0000  23-Dec-22 18:06    31920    32256  HardPressed.CDV
+  NON  $0000  30-Oct-22 12:16     1272     1536  SIMPLE.DOS.SDK
+  NON  $0000  24-Mar-23 15:13     5778     6144  small.woz.gz
+  NON  $0000  20-Mar-23 19:48      600     1024  Some.Files.zip
+
+  Partition #3 - 2KB - unable to recognize partition contents
+</p>
+
+<p>This is a multi-partition disk image, ostensibly from a very small hard drive.
+It's in Apple Partition Map (APM) format, which allows partitions to have names.
+You can see from the partition map shown at the very top that it has three
+partitions, two of which are 1600 blocks long (800KB).  The third partition holds
+the partition map itself, and is only 3 blocks.</p>
+
+<p>The default behavior of the <code>catalog</code> command is to list everything
+at the top level, and then descend into partitions and embedded volumes.  It shows
+all three partitions, and lists the contents of the ProDOS and HFS disks.  The
+ProDOS disk has 5 embedded DOS.MASTER volumes, which appear after the ProDOS files.</p>
+<p>Disk images stored in archives are opened, but archives in disk images are not, which
+is why it doesn't show the contents of the archives stored in the HFS partition.
+You can control the behavior with the <kbd>--depth</kbd> option.  For example, if you
+want to descend into everything possible, set the depth to maximum:</p>
+<p class="showcmd">cp2 v --depth=max turducken/MultiPart.hdv</p>
+<p class="showout">[... much output ...]</p>
+
+<p>You can also restrict the depth with <kbd>--depth=shallow</kbd>, so that it only
+shows the top level.  Doing this wouldn't be very useful unless we have a way to
+specify what the top level should be, so let's look at that.</p>
+
+<h3>Ext-Archive</h3>
+
+<p>Most commands take an <code>ext-archive</code> argument, which is short for
+"extended archive specifier".  To see how this works, let's descend into the turducken
+archive one level at a time.</p>
+
+<p class="showcmd">cp2 v --depth=shallow turducken/MultiPart.hdv</p>
+<p class="showout">File: turducken/MultiPart.hdv
+Disk image (Unadorned) 1602KB multi-partition (APM)
+#  Start block    Count Name             Type
+-- ----------- -------- ---------------- -------------------
+ 1           4     1600 ProDOS_Part      Apple_PRODOS
+ 2        1604     1600 HFS_Part         Apple_HFS
+ 3           1        3 Apple            Apple_partition_map
+</p>
+
+<p>Let's look at the HFS partition.  We can specify it by number (2), or for APM
+partitions we can use the partition name ("HFS_Part").  The value is added after
+the filename, separated with a colon (':'):</p>
+
+<p class="showcmd">cp2 v --depth=shallow turducken/MultiPart.hdv:2</p>
+<p class="showout">File: turducken/MultiPart.hdv:2
+Partition - 800KB HFS "New Disk", 600KB free
+Type Auxtyp Modified          Length  Storage *Name
+---- ------ --------------- -------- -------- ----------------------------------
+DIR         20-Jan-23 12:08        0        0  Dir1
+DIR         20-Jan-23 12:10        0        0  Dir1:Dir2
+NON  $0000  20-Jan-23 12:10   143360   143360  Dir1:Dir2:new-init.do
+LBR  $8000  20-Jan-23 12:09     4480     4608  Dir1:Dir2:Samples.BXY
+CDV+ $0000  23-Dec-22 18:06    31920    32256  HardPressed.CDV
+NON  $0000  30-Oct-22 12:16     1272     1536  SIMPLE.DOS.SDK
+NON  $0000  24-Mar-23 15:13     5778     6144  small.woz.gz
+NON  $0000  20-Mar-23 19:48      600     1024  Some.Files.zip
+</p>
+
+<p>The file "<samp>Dir1:Dir2:Samples.BXY</samp>" is a ShrinkIt archive with
+a Binary ][ header.  Let's see what's in there:</p>
+<p class="showcmd">cp2 v --depth=shallow turducken/MultiPart.hdv:2:Dir1:Dir2:Samples.BXY</p>
+<p class="showout">File: turducken/MultiPart.hdv:2:Dir1:Dir2:Samples.BXY
+Type Auxtyp Modified        Format    Length Size Name
+---- ------ --------------- ------- -------- ---- ------------------------------
+GWP+ $5445  10-Dec-14 16:21 LZW/2       1096  51% Teach Sample™
+GWP+ $5445  18-Dec-14 13:58 LZW/2       1294  60% Charset.Map
+NON  $0000  [No Date]       Stored        14 100% nl-test–ﬁ_‡_©!
+GWP+ $5445  12-Jan-15 12:57 LZW/2        562  28% Teach “test” / †example
+GWP+ $5445  14-Jan-15 12:18 LZW/2       1107  44% TEACH.SAMPLE
+AWP  $EE7B  13-Oct-04 12:06 LZW/2       2214  65% AppleWorks Test
+</p>
+
+<p>Note that subdirectories and archive parts are both separated by colons.
+(This particular archive has some files with strange names because it's
+used for testing filename handling.)</p>
+<p>The commands that operate on files within archives, such as those used to
+add and extract, generally take an ext-archive argument.  This allows you to add
+and extract files from nested archives easily.</p>
+
+
+</div>
+
+<div id="prevnext">
+    <a href="list.html" class="btn-previous">&laquo; Previous</a>
+    <a href="extract.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

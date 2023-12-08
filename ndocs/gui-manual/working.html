@@ -174,7 +174,11 @@ Archive Contents tree.<p>
 </ul>
 <p>For disk images and partitions, a few basic statistics about disk size and
 archive file layout are displayed, as well as some buttons that provide quick
-access to sector editing and other whole-disk actions.</p>
+access to sector editing and other whole-disk actions.  If the format has
+metadata fields (e.g. WOZ, 2IMG, DiskCopy 4.2), the names and values will
+be shown in a table.  If the field's name isn't grayed out, you can double-click on
+the entry to change its value.  Any restrictions on the contents of the field
+will be shown in the edit window.</p>
 <p>For multi-partition layouts, you will see a list of the partitions and their
 attributes.  Double-clicking on an entry will jump to that partition.  If it
 has a filesystem, the filesystem will be selected.</p>
@@ -207,7 +211,8 @@ on what is being displayed:</p>
     archive, this is the sum of the compressed lengths, but does not include
     archive overhead.  The units used vary, e.g. DOS 3.3 is reported in 256-byte sectors,
     while ProDOS is reported in 512-byte blocks.</li>
-  <li>Access - access flags.  Delete, reName, Write, Read, Backup, Invisible.
+  <li>Access - ProDOS-style access-enabled flags:
+    Delete, reName, Write, Read, Backup, Invisible.
 </ul>
 
 <p>For file archives and filesystems, the file list display mode can be changed

@@ -181,12 +181,12 @@ The named item must be a disk image or file archive.  There are no
 restrictions on what may be stored inside what, e.g. you can access ShrinkIt
 archives in disk images stored in bigger disk images stored in a ZIP archive.
 
-If a filename contains a colon, it must be escaped with "\" (which may need
-to be doubled-up for some command-line shells, e.g. `cp2 list foo\\:bar.zip`
-to open a file called `foo:bar.zip`).  This should only be an issue for host
-files and DOS 3.2/3.3 disks, since most other filesystems disallow colons.
-All pathnames in disk images and archives can be specified with ':' as
-the path separator.
+If a filename contains a colon, it must be escaped with backslash ('\\')
+(which may need to be doubled-up for some command-line shells, e.g.
+`cp2 list foo\\:bar.zip` to open a file called `foo:bar.zip`).  This should
+only be an issue for host files and DOS 3.2/3.3 disks, since most other
+filesystems disallow colons.  All pathnames in disk images and archives
+can be specified with ':' as the path separator.
 
 gzip is handled "transparently", i.e. if you specify `foo.po.gz` you will
 get `foo.po` automatically, without having to specify `foo.po.gz:foo.po`.
@@ -196,6 +196,7 @@ generally act as a disk image rather than as a file archive with a disk
 image entry stored inside.  This behavior can be controlled with the
 `--skip-simple` option, e.g.  using `--no-skip-simple` will allow a gzip
 file to be uncompressed (but will use the filename stored in the archive).
+Binary II wrappers for ShrinkIt archives are simply ignored.
 
 Filename matching is always case-insensitive, even for case-sensitive
 formats.
@@ -397,6 +398,12 @@ Usage: `cp2 catalog [options] <ext-archive>`
 The "type" and "auxtyp" columns will show either the ProDOS file type and
 auxiliary type, or the HFS file type and creator, depending on which seems
 to be the most relevant.  To see both, use the `--wide` option.
+
+The "length" field holds the file's length, in bytes.  The "size" field
+indicates how much space the file or fork occupies on disk or in the file
+archive.  For disk images, the size value includes operating system overhead
+and excludes sparse regions; for file archives, it holds the size after
+compression.
 
 If `--mac-zip` is enabled, the `__MACOSX/.../._filename` entries will be
 merged with the paired entry, and displayed as a single line.
@@ -705,7 +712,7 @@ with case-insensitive comparisons.  See
 DOS T/I/A/B files will be handled as they would by DOS for `LOAD`,
 `BLOAD`, or a sequential text file `READ`.  This may result in partial
 file extraction for certain 'B' files and for random-access text files.
-Use the "--raw" flag to get all sectors of the file.
+Use the `--raw` flag to get all sectors of the file.
 
 Options:
  - `--overwrite`, `--no-overwrite`
