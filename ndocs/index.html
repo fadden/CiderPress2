@@ -24,7 +24,8 @@
     <title>CiderPress II</title>
 </head>
 
-<body class="no-sidenav">
+<!-- <body class="no-sidenav"> -->
+<body>
 
 <!-- START: /incl-masthead.html -->
 <div id="masthead">
@@ -39,10 +40,10 @@
     <!-- top navigation bar contents -->
     <nav>
         <a id="topnav-home" class="active" href="./">HOME</a>
-        <a id="topnav-gui-tutorial" href="gui-tutorial">Desktop GUI Tutorial</a>
-        <a id="topnav-cli-tutorial" href="cli-tutorial">Command-Line Tutorial</a>
-        <a id="topnav-gui-manual" href="gui-manual">GUI Manual</a>
-        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-gui-manual" href="gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="cli-tutorial">CLI Tutorial</a>
         <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
             <i class="fa fa-bars"></i>
         </a>
@@ -60,6 +61,17 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
+<!-- START: incl-sidenav.html active:#sidenav-index -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-features"><a href="features.html">Feature List</a></li>
+        <li id="sidenav-format-docs"><a href="doc-index.html">Format Docs</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
 <div id="main">
 
 <!-- <img src="images/cp2_app.png" width="128" height="128" alt="press" class="center-img" style="border:0;"> -->
@@ -67,10 +79,6 @@
 <p>CiderPress II is a software tool for working with vintage Apple software, with
 an emphasis on the Apple II series of computers.  It is the successor to
 the <a href="https://a2ciderpress.com/">CiderPress</a> utility.</p>
-
-<p>
-<a href="images/cp2-wpf-sample.png"><img src="images/cp2-wpf-sample-small.png" width="320" height="180" alt="sample"/></a>
-</p>
 
 <h4>Key features:</h4>
 <ul>
@@ -83,13 +91,18 @@ the <a href="https://a2ciderpress.com/">CiderPress</a> utility.</p>
 </ul>
 <p>See <a href="features.html">this page</a> for a complete list of supported
 file formats and conversions.</p>
+<p>
+<a href="images/cp2-wpf-sample.png"><img src="images/cp2-wpf-sample-small.png" width="320" height="180" alt="sample"/></a>
+</p>
+
 <p>The tool is available with a graphical user interface (GUI) and a command-line
 interface (CLI).  These have roughly equivalent feature sets.
 The CLI runs natively on a variety of systems, and the GUI runs natively on
 Windows but requires an emulation layer for Linux and Mac OS.</p>
 
-<p><b>Download</b> the latest release (${VERSION}) from
-<a href="https://github.com/fadden/CiderPress2/releases/latest">github</a>.</p>
+<p>
+<a href="https://github.com/fadden/CiderPress2/releases/latest">
+<b>Download</b> the latest release (${VERSION}) from github.</a></p>
 
 <p>Video demos:</p>
 <ul>
@@ -124,13 +137,6 @@ archive, disk image, and vintage file formats.  These can be accessed from the
 <div id="footer">
     <hr/>
     <p>Copyright 2023 faddenSoft</p>
-    <!-- <p id="screen-size"></p>
-    <script>
-        var w = window.innerWidth;
-        var h = window.innerHeight;
-        var x = document.getElementById("screen-size");
-        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
-    </script> -->
 </div>
 <!-- END: /incl-footer.html -->
 

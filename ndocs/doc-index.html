@@ -22,7 +22,7 @@
     <title>CiderPress Format Documentation Index</title>
 </head>
 
-<body class="no-sidenav">
+<body>
 
 <!-- START: /incl-masthead.html -->
 <div id="masthead">
@@ -37,10 +37,10 @@
     <!-- top navigation bar contents -->
     <nav>
         <a id="topnav-home" class="active" href="./">HOME</a>
-        <a id="topnav-gui-tutorial" href="gui-tutorial">Desktop GUI Tutorial</a>
-        <a id="topnav-cli-tutorial" href="cli-tutorial">Command-Line Tutorial</a>
-        <a id="topnav-gui-manual" href="gui-manual">GUI Manual</a>
-        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">CLI Manual</a>
+        <a id="topnav-gui-manual" href="gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="cli-tutorial">CLI Tutorial</a>
         <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
             <i class="fa fa-bars"></i>
         </a>
@@ -57,6 +57,17 @@
     </script>
 </div>
 <!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-format-docs -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-features"><a href="features.html">Feature List</a></li>
+        <li id="sidenav-format-docs" class="active"><a href="doc-index.html">Format Docs</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
 
 <div id="main">
 
@@ -221,13 +232,6 @@ license.</p>
 <div id="footer">
     <hr/>
     <p>Copyright 2023 faddenSoft</p>
-    <!-- <p id="screen-size"></p>
-    <script>
-        var w = window.innerWidth;
-        var h = window.innerHeight;
-        var x = document.getElementById("screen-size");
-        x.innerHTML = "DEBUG: initial window size " + w + "x" + h;
-    </script> -->
 </div>
 <!-- END: /incl-footer.html -->
 

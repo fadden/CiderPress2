@@ -333,3 +333,16 @@ table, th, td {
     border-collapse: collapse;
     padding: 2px;
 }
+.showcmd {
+    font-family: monospace;
+    font-weight: bold;
+    padding-left: 30px;
+    background: #e8e8e8;
+}
+.showout {
+    display: block;
+    font-family: monospace;
+    white-space: pre;
+    padding-left: 30px;
+    background: #e8e8e8;
+}
