@@ -67,9 +67,9 @@ def editFile(inFileName, outFileName):
     """ Edit a file, replacing blocks with the contents of other files. """
 
     try:
-        with open(inFileName, "r") as inFile:
+        with open(inFileName, "r", encoding="utf-8") as inFile:
             fileData = inFile.read()
-        outFile = open(outFileName, "x")
+        outFile = open(outFileName, "x", encoding="utf-8")
     except IOError as err:
         raise LocalError(err)
 

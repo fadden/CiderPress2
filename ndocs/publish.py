@@ -95,6 +95,8 @@ def main():
                 capture_output=True, encoding="utf-8")
         if result.returncode != 0:
             print("FAILED prevnext in", tutdir)
+            print("STDOUT: ", result.stdout)
+            print("STDERR: ", result.stderr)
             sys.exit(1)
 
     # Walk through the directory hierarchy.

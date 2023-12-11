@@ -30,9 +30,9 @@ def editFile(fileList, index, outFileName):
 
     inFileName = fileList[index]
     try:
-        with open(inFileName, "r") as inFile:
+        with open(inFileName, "r", encoding="utf-8") as inFile:
             fileData = inFile.read()
-        outFile = open(outFileName, "x")
+        outFile = open(outFileName, "x", encoding="utf-8")
     except IOError as err:
         raise LocalError(err)
 

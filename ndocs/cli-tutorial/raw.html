@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II CLI Tutorial</title>
+    <title>CLI Tutorial - Raw Mode</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-raw -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Contents</a>
         <ul>
@@ -63,7 +63,7 @@
         </ul></li>
         <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
         <ul>
-            <li id="sidenav-raw"><a href="raw.html">Raw Mode</a></li>
+            <li id="sidenav-raw" class="active"><a href="raw.html">Raw Mode</a></li>
             <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
         </ul></li>
         <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
@@ -80,21 +80,44 @@
 
 <div id="main">
 
-<h2>CLI Tutorial</h2>
+<h2>Raw Mode</h2>
 
-<p>This is a tutorial for the command-line interface (CLI) for CiderPress II.  With it,
-you can do roughly the same set of things that you can with the graphical user
-interface (GUI).  It has the advantage that you can execute commands from shell scripts
-or other applications.</p>
-<p>The interface offers more than 30 commands.  This tutorial will demonstrate the use of
-the most common.  For the rest, please refer to the
-<a href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">full manual</a>.</p>
+<p>This only applies to Apple DOS 3.2/3.3 filesystems.  If you're not interested in
+those, feel free to skip to the next section.</p>
 
+<p>DOS disks store files as a series of 256-byte sectors, with no explicit file
+length.  Since most files are not an exact multiple of 256 bytes, an additional
+mechanism was needed to indicate a file's true length.</p>
+<p>For Integer BASIC, Applesoft BASIC, and generic binary data, the problem was
+handled by adding a 16-bit length at the start of the file.  For sequential text
+files, the data ends the first time a zero value is seen.  This works reasonably
+well, but sometimes the stored length and the file's length are significantly
+different.</p>
+<p>The discrepancies can be inadvertent or deliberate.  Binary (type B) files were
+sometimes modified to have a "loader" section and a "payload" section.  The file's
+length was set so that DOS would stop loading the file when the short loader
+section was in memory.  The loader would then use an RWTS routine to read the
+payload.</p>
+<p>One tricky case is random-access text files.  These used fixed-length records
+with zeroes in the gaps between them.  Attempting to interpret them as
+sequential-access text resulted in short or even zero-length text.  The reason
+these are tricky is that there is nothing in the filesystem to indicate that a
+text file (type T) is random or sequential.</p>
+
+<p>The upshot of all this is that DOS files can have two different lengths, and
+it's necessary to support both.  CiderPress II handles this by treating files the
+way that DOS would -- obeying the length in files of type I/A/B, and treating T
+as sequential -- unless given the <kbd>--raw</kbd> flag.  When in raw mode, the
+file types are ignored, and all files are treated as a series of sectors.</p>
+
+<p>When extracting files, this can be used to get the "full" version of binary
+files, and obtain the complete contents of a random-access text file.</p>
 
 </div>
 
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="extract.html" class="btn-previous">&laquo; Previous</a>
+    <a href="export.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

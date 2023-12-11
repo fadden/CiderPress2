@@ -116,6 +116,10 @@ to overwrite a file.</p>
 file archives (a "turducken").  For example, a ShrinkIt archive could be stored on a
 ProDOS filesystem in a WOZ disk image in a ZIP archive.  CiderPress II fully supports
 nested archives, allowing direct access to the files at any level.</p>
+<p>It's important to note that, because of the way that modifications to file archives
+are handled, it's necessary to have enough space to hold both the old archive and the
+new archive.  When the file archive is on the host system that's rarely an issue, but
+when the file archive is in a small disk image it's easy to run out of space.</p>
 
 
 <h2>Add/Extract vs. Import/Export</h2>

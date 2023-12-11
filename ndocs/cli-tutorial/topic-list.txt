@@ -3,3 +3,6 @@ introduction.html
 list.html
 extarc.html
 extract.html
+raw.html
+export.html
+create.html
