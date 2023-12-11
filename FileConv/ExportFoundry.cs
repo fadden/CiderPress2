@@ -159,7 +159,7 @@ namespace FileConv {
                         // This is not reached, but the compiler doesn't know that.
                         throw ex.InnerException;
                     } else {
-                        throw ex;
+                        throw;
                     }
                 }
                 return (Converter)instance;

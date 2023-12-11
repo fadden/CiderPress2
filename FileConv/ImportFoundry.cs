@@ -97,7 +97,7 @@ namespace FileConv {
                         ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                         throw ex.InnerException;
                     } else {
-                        throw ex;
+                        throw;
                     }
                 }
                 return (Importer)instance;

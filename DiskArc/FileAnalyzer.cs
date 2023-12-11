@@ -165,7 +165,7 @@ namespace DiskArc {
                         // This is not reached, but the compiler doesn't know that.
                         throw ex.InnerException;
                     } else {
-                        throw ex;
+                        throw;
                     }
                 }
                 if (instance is IDiskContents) {
