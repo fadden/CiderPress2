@@ -57,3 +57,16 @@ directory as a ".csproj" file.  This is more thorough than the Visual Studio "ma
 This does not try to remove "MakeDist/bin", since it will likely be executing.
 
 If Visual Studio is active, it will recreate the directory structure immediately.
+
+
+# Version Numbers #
+
+The version number used for packaging comes from `GlobalAppVersion.AppVersion` in the AppCommon
+library.  This is the same version object used by the GUI and CLI applications.  It's important
+to do a full build in Visual Studio *before* running a MakeDist build, so that the MakeDist
+binary has the updated version number.
+
+The DiskArc library has its own version number, in DiskArc.Defs.
+
+The [documentation publisher](../ndocs/publish.py) has a copy of the version number, primarily
+for generating the download links in the installation documentation.

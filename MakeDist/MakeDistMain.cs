@@ -79,9 +79,9 @@ namespace MakeDist {
                             Usage();
                             break;
                         }
-                        string versionTag = GlobalAppVersion.AppVersion.GetBuildTag();
+                        string versionTag = GlobalAppVersion.AppVersion.ToString();//.GetBuildTag();
 
-                        // TODO: take RIDs as command-line argument list, with "std" doing default set
+                        // TODO: take RIDs as command-line arg list, with "std" doing default set
                         bool result = Build.ExecBuild(versionTag, sStdRIDs, isDebugBuild);
                         Environment.ExitCode = result ? 0 : 1;
                     }

@@ -16,13 +16,14 @@ import sys
 
 # Current version string.  Used for text substitution.
 app_version = "0.4.0-dev1"
-pkg_version = "0.4.0-d1"
+pkg_version = app_version
 
-
+# ----- nothing configurable below -----
 
 
 # Output directory.  The directory will be completely removed and regenerated.
-output_dir = "../pdocs"     # DEBUG - change to "../docs"
+#output_dir = "../docs"
+output_dir = "../pdocs"     # DEBUG
 
 # Subdirectory with files that will be copied to the top of the project.
 top_dir = "top"

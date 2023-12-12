@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II GUI Tutorial</title>
+    <title>GUI Tutorial - Nested Archives</title>
 </head>
 
 <body>
@@ -51,15 +51,15 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-nested -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Entries</a>
         <ul>
-            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
+            <li id="sidenav-nested" class="active"><a href="nested.html">Nested Archives</a>
         </ul></li>
         <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
         <!-- using the file viewer to look at things; graphics, docs, random-access text;
@@ -80,26 +80,22 @@
 
 <div id="main">
 
-<h1>Desktop GUI Tutorial</h1>
+<h2>Nested Archives</h2>
 
-<p>This is a tutorial for the graphical user interface (GUI) portion of CiderPress II,
-specifically the version developed for Windows.  It has roughly the same set of
-features as the command-line interface, but for certain operations it can be
-significantly more convenient to use.</p>
-
-<p>The tutorial covers common operations.  For a full explanation of all features,
-please refer to the <a href="../gui-manual/">full manual</a>.</p>
-
-<p>All of the sample files used in this tutorial are available from the github
-source code repository, in the
-<a href="https://github.com/fadden/CiderPress2/tree/main/TestData">TestData</a> directory,
-should you wish to try them for yourself.</p>
-
-
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/cp2-wpf-sample.png" alt="WPF-sample"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Text goes here.</p>
+    </div>
 </div>
 
+
+</div> <!-- main -->
+
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="list.html" class="btn-previous">&laquo; Previous</a>
 </div>
 
 <!-- START: /incl-footer.html -->
