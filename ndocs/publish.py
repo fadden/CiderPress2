@@ -90,7 +90,7 @@ def main():
 
     # Do prev/next patching for tutorials.
     print("--- Configuring tutorial prev/next links")
-    for tutdir in ["cli-tutorial"]:
+    for tutdir in ["cli-tutorial", "gui-tutorial"]:
         result = subprocess.run(["py", "prevnext.py", tutdir],
                 capture_output=True, encoding="utf-8")
         if result.returncode != 0:
