@@ -12,7 +12,7 @@
 - various from: http://bitsavers.informatik.uni-stuttgart.de/pdf/apple/disk/sony/, notably
   "Macintosh Versus IIgs Sector Sizes and Two-to-One Interleave" (2-May-1988 memo) and
   sheets 33-36 of 699-0285-A "Specification for 3.5 Inch Single Sided Disk Drive" (which
-  describes the sector format in detail).
+  describes the sector format in detail)
 
 ## Encoding ##
 
@@ -87,7 +87,8 @@ On a 13-sector disk, each sector looks like this:
 Given approximately 481 bytes/sector, 6400/481 = 13.3 sectors/track.
 
 The DOS 3.2 formatter only writes address fields.  The data prolog and epilog aren't written
-until the first time a sector is written, so attempting to read new sectors will fail.
+until the first time a sector is written, so attempting to read new sectors on a 13-sector disk
+will fail.
 
 On a 16-sector disk, each sector looks like this:
 ```
@@ -182,7 +183,8 @@ filesystem to hold data used by disk recovery applications.  These bytes are als
 HFS, but they don't appear to be used there, presumably because HFS was used on a wider range
 of disk devices and couldn't rely on the presence of the tags.
 
-The AppleDisk 3.5" driver for GS/OS has a text string indicating that the software is protected
+The 24-bit checksum on the data area is calculated with a fairly complicated algorithm.  The
+AppleDisk 3.5" driver for GS/OS has a text string indicating that the software is protected
 under US Patent 4,564,941, "Error detection system" (filed 1983, granted 1986).  The patent
 describes, among other things, an "interleaved" checksum algorithm that may be what was used for
 the checksum here.

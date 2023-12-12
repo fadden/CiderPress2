@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - History</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-home -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" class="active" href="./">HOME</a>
+        <a id="topnav-gui-manual" href="gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-history -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-features"><a href="features.html">Feature List</a></li>
+        <li id="sidenav-format-docs"><a href="doc-index.html">Format Docs</a></li>
+        <li id="sidenav-history" class="active"><a href="history.html">History</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h1>CiderPress History</h1>
+
+<p>The true origin of CiderPress is a program called "NuView", the NuFX
+Archive Viewer.  Written in May 1989, it printed a list of files from a ShrinkIt
+archive.  This was also of note because it's the first useful program
+(i.e. not a class project) I ever wrote in the C programming language.</p>
+<p>This project gradually evolved into a program called "NuLib", which continued
+to grow until 1992.
+In 1998 I started working on a NuFX archive manipulation library, called
+NufxLib.  That was a back-burner project until it was finally released
+with the NuLib2 archiver in May 2000.</p>
+
+<p>In December 2002 I decided to start working on Windows software.
+The original CiderPress was introduced in March 2003 as a shareware
+application.  It was originally intended as "ShrinkIt for Windows",
+a simple GUI wrapper around the NufxLib library, but during the early stages
+of development support for read-only access to disk images was added.</p>
+<p>In October 2004, CiderPress v2.0 was released.  It added the ability
+to create and modify disk images, and allowed direct access to physical media.</p>
+<p>Four years after its initial release, in March 2007, the program
+was re-released as free open-source software.  In January 2015, the code
+base was updated for modern systems, but at its heart it was still a
+Windows 98/2K 32-bit application.</p>
+
+<p>Work on CiderPress II began in May 2022, mostly out of frustration with
+the awkwardness of the user interface of the previous incarnation.
+Another goal was to have a full set of features available from the
+command line, including file converters.  The original CiderPress had a
+few sample commands that ran under Linux, but nothing actually useful.</p>
+<p>The first public announcement was made a year later, in May 2023, at a
+point where the CLI was in good shape but the GUI was barely functional.
+Several months later, near the end of 2023, an alpha-quality build was
+released for general testing.</p>
+
+<p>Depending on how you figure things, this might be the 5th time I've
+written the same project.  It just gets a bit larger and broader in
+scope each time.</p>
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>
