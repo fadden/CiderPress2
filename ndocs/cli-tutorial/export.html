@@ -74,6 +74,7 @@
         <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
         <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
         <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
@@ -82,14 +83,15 @@
 
 <h2>Exporting Files</h2>
 
-<p>Extracted files are unmodified copies of the original.  Sometimes this is useful,
-but at other times you'd like the file to be in a form that is more easily accessible
-on a modern system.  CiderPress II includes a number of file converters for documents,
-code, and graphics.  You can pick a specific converter, or let the application decide
-which is most appropriate.</p>
+<p>Extracted files are unmodified copies of the original.  This is often exactly what
+you want, but sometimes times you'd like the extracted file to be in a form that is more
+easily accessible on a modern system.  CiderPress II includes a number of file converters
+for documents, code, and graphics.  You can pick a specific converter, or let the
+application decide which is most appropriate.</p>
 
-<p>The arguments to <kbd>export</kbd> are the same as <kbd>extract</kbd>, but with
-the addition of "export-spec".  The export specifier tells CiderPress II how to do
+<p>Conversions are performed by the <kbd>export</kbd> command, which takes the same
+arguments as <kbd>extract</kbd>, but with
+the addition of an "export-spec".  The export specifier tells CiderPress II how to do
 the conversion.  For example, to choose the conversion automatically:</p>
 <p class="showcmd">cp2 export fileconv/test-files.sdk best Docs:sample.text Code:ZIPPY</p>
 <p class="showout">exporting Docs/sample.text -> Docs\sample.text.txt [text]

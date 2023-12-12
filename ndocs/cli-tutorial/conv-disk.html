@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II CLI Tutorial</title>
+    <title>CLI Tutorial - Converting Disk Images</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-conv-disk -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Contents</a>
         <ul>
@@ -72,7 +72,7 @@
             <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
         </ul></li>
         <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
-        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+        <li id="sidenav-conv-disk" class="active"><a href="conv-disk.html">Converting Disk Images</a></li>
         <li id="sidenav-config"><a href="config.html">Config File</a></li>
         <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
     </ul>
@@ -81,21 +81,45 @@
 
 <div id="main">
 
-<h2>Command-Line Tutorial</h2>
+<h2>Converting Disk Images</h2>
 
-<p>This is a tutorial for the command-line interface (CLI) for CiderPress II.  With it,
-you can do roughly the same set of things that you can with the graphical user
-interface (GUI).  It has the advantage that you can execute commands from shell scripts
-or other applications.</p>
-<p>The interface offers more than 30 commands.  This tutorial will demonstrate the use of
-the most common.  For the rest, please refer to the
-<a href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">full manual</a>.</p>
+<p>Converting a disk image to a different format is a two step process:</p>
+<ol>
+  <li>Create a new disk image that has the same storage capacity as the old image.</li>
+  <li>Copy the data as blocks or sectors.</li>
+</ol>
+
+<p>For example, let's say you wanted to convert a 5.25" disk image in <samp>.do</samp>
+format to WOZ format.  Create the new image:</p>
+<p class="showcmd">cp2 create-disk-image newdisk.woz 140k</p>
+<p class="showout">Creating UNFORMATTED disk image: WOZ, order=physical, size=140KB
+</p>
+
+<p>Then copy the blocks over:</p>
+<p class="showcmd">cp2 copy-blocks olddisk.do newdisk.woz</p>
+<p class="showout">Copying blocks 0-279 to 0-279
+Copied 280 blocks, encountered 0 errors
+</p>
+
+<p>For disks that don't have blocks, such as 13-sector floppy disk images, you
+would copy as tracks / sectors instead:</p>
+<p class="showcmd">cp2 copy-sectors olddisk.do newdisk.woz</p>
+<p class="showout">Copied 560 sectors, encountered 0 errors
+</p>
+
+<p><b>NOTE:</b> these commands overwrite the full contents of the destination
+disk.  Make sure you're copying to the correct file.</p>
+
+<p>The disk conversion is always done by copying blocks or sectors.  It does not
+copy the low-level disk format.  This means that copying from <samp>.nib</samp>
+to <samp>.woz</samp> could lose information, even though they're both nibble formats.</p>
 
 
 </div>
 
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="copy.html" class="btn-previous">&laquo; Previous</a>
+    <a href="config.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

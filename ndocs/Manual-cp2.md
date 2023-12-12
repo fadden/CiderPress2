@@ -455,8 +455,8 @@ conversions may occur.  This is especially true when copying files to
 or from DOS disk images.  On balance, the degree of preservation should
 be higher than you would get by extracting files to the host filesystem
 and adding them elsewhere (especially when copying files between two DOS
-disk images).  When copying between two ZIP archives, using `--no-mac-zip`
-may reduce the number of conversions.
+disk images, as sparse allocations are replicated).  When copying between two
+ZIP archives, using `--no-mac-zip` may reduce the number of conversions.
 
 The source and destination ext-archive specifiers may end with a directory
 name, if the archives are disk images.  In both cases, the specified
@@ -803,7 +803,9 @@ the ".txt" extension removed.  This behavior may be suppressed with the
 `--no-strip-ext` option.
 
 If a file is not compatible with the import specification, the command will
-fail.
+fail.  Note that files on disk images that are being overwritten are removed
+before the conversion process starts, so the original file will be gone even
+if the command fails.
 
 Options:
  - `--strip-ext`, `--no-strip-ext`

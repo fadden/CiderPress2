@@ -32,6 +32,7 @@ namespace MakeDist {
         private static string[] sDistFiles = new string[] {
             "README.md",
             "LegalStuff.txt",
+            "sample.cp2rc",
             "docs/Manual-cp2.md",
         };
 

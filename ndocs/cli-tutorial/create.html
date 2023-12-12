@@ -74,6 +74,7 @@
         <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
         <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
         <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
     </ul>
 </div>
 <!-- END: incl-sidenav.html -->
@@ -82,11 +83,72 @@
 
 <h2>Creating Archives</h2>
 
+<p>You can create new file archives and disk images easily.  For example, to
+create a new, empty ZIP archive:</p>
+<p class="showcmd">cp2 create-file-archive new.zip</p>
+
+<p>CiderPress II determines which type of archive to create from the filename
+extension.  You can use this to create Binary II (<code>.bny</code>, <code>.bqy</code>),
+ShrinkIt (<code>.shk</code>), and ZIP (<code>.zip</code>) file archives.  You can't use
+it to create single-file archives, like gzip (<code>.gz</code>).</p>
+
+<p>Creating disk images is slightly more complicated, because you need to specify
+the image size and will usually want to format the image with a particular filesystem.
+To create a basic 5.25" DOS floppy disk image:</p>
+<p class="showcmd">cp2 create-disk-image new.do 140k dos</p>
+<p class="showout">Creating disk image: Unadorned Sector, order=dos/sect, size=140KB, DOS 3.x
+</p>
+
+<p>The disk image format is specified by the filename extension.  The size is
+specified in bytes with an optional multiplier (KB, MB, etc.), or in tracks.  For example, to
+create a 13-sector DOS 3.2 WOZ image:</p>
+<p class="showcmd">cp2 cdi --sectors=13 new.woz 35trk dos</p>
+<p class="showout">Creating disk image: WOZ, order=physical, size=114KB, DOS 3.x
+</p>
+
+<p>The size specifies the formatted capacity of the disk.
+The multiplier can be kibibytes (k, kB, kiB), mebibytes (M, MB, MiB),
+gibibytes (G, GB, GiB), tebibytes (T, TB, TiB), 512-byte blocks (blk, blocks), or
+tracks (trk, tracks).  Tracks are 3328 or 4096 bytes, depending
+on whether <kbd>--sectors</kbd> is 13 or (default) 16.
+(FWIW, it is incorrect to equate the base 2 and base 10 abbreviations &mdash; MB and MiB
+are different things &mdash; but the application treats them as synonymous because
+of tradition and convention.)</p>
+
+<p>The filesytem can be <kbd>DOS</kbd>, <kbd>ProDOS</kbd>, <kbd>Pascal</kbd>,
+<kbd>CPM</kbd>, or <kbd>HFS</kbd>.
+You can omit the filesystem type to create a completely blank image:</p>
+<p class="showcmd">cp2 cdi new.hdv 32MiB</p>
+<p class="showout">Creating UNFORMATTED disk image: Unadorned Sector, order=pdos/blk, size=32.0MB
+</p>
+
+<p>Some combinations are invalid.  For example, you can't create an 800KB .NIB image,
+or put DOS 3.3 on a 32MB image. See the full manual for a list of what's allowed.</p>
+
+<p>By default, the boot tracks of 140KB DOS and CP/M disks are marked as in-use by
+the system.  DOS disks will get a copy of DOS 3.3 or 3.2.1 depending on the
+<kbd>--sectors</kbd> setting.  If you add the <kbd>--no-reserve-boot</kbd> option,
+the boot area will be freed up for file storage.</p>
+
+<p>Filesystems with volume names (ProDOS, Pascal, HFS) will be named "<samp>NEWDISK</samp>".
+You can use the <kbd>rename</kbd> to change it, by specifying "<kbd>:</kbd>" as the name
+of the file to rename:</p>
+<p class="showcmd">cp2 rename foo.po : MyVol</p>
+<p class="showout">renaming NEWDISK -> MYVOL
+</p>
+
+<p>DOS 3.2/3.3 disks are formatted with disk volume 254.  The value in the VTOC can
+be changed with the <kbd>rename</kbd> command:</p>
+<p class="showcmd">cp2 rename foo.po : 100</p>
+<p class="showout">renaming DOS-254 -> 100
+</p>
+
 
 </div>
 
 <div id="prevnext">
     <a href="export.html" class="btn-previous">&laquo; Previous</a>
+    <a href="add.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

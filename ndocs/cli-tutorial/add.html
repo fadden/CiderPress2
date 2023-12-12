@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II CLI Tutorial</title>
+    <title>CLI Tutorial - Adding Files</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-add -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Contents</a>
         <ul>
@@ -67,7 +67,7 @@
             <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
         </ul></li>
         <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
-        <li id="sidenav-add"><a href="add.html">Adding Files</a>
+        <li id="sidenav-add" class="active"><a href="add.html">Adding Files</a>
         <ul>
             <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
         </ul></li>
@@ -81,21 +81,71 @@
 
 <div id="main">
 
-<h2>Command-Line Tutorial</h2>
+<h2>Adding Files</h2>
 
-<p>This is a tutorial for the command-line interface (CLI) for CiderPress II.  With it,
-you can do roughly the same set of things that you can with the graphical user
-interface (GUI).  It has the advantage that you can execute commands from shell scripts
-or other applications.</p>
-<p>The interface offers more than 30 commands.  This tutorial will demonstrate the use of
-the most common.  For the rest, please refer to the
-<a href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">full manual</a>.</p>
+<p>Files can be added to an archive with the <kbd>add</kbd> command.  It takes the
+name of an archive and a list of files and directories as arguments:</p>
+<p class="showcmd">cp2 add myfiles.shk sample.text Code/LISA</p>
+<p class="showout">Created file archive 'myfiles.shk'
+Adding 8 files
+adding Code\LISA\anix.equates
+adding Code\LISA\ANIX.LISTING
+adding Code\LISA\DETOKEN.A
+adding Code\LISA\LISA.MNEMONICS
+adding Code\LISA\LISA3.9
+adding Code\LISA\MNEMONICS.A
+adding sample.text
+</p>
 
+<p>If the archive name indicates a file archive, and the file does not exist,
+it will be created automatically.</p>
+
+<h3>Attribute Preservation</h3>
+
+<p>Files that were extracted with attribute preservation should be added with
+those attributes.  This is generally handled automatically by cp2, which will
+identify AppleSingle, AppleDouble, NAPS, and (on Mac OS) host-preserved attributes.</p>
+<p class="showcmd">cp2 a myfiles.shk TEACH.SAMPLE.as</p>
+<p class="showout">Adding 1 file
+adding TEACH.SAMPLE.as -> TEACH.SAMPLE
+adding TEACH.SAMPLE.as (rsrc) -> TEACH.SAMPLE
+</p>
+
+<p>Sometimes this is undesirable, e.g. you want an AppleSingle file to be added
+as an AppleSingle file, not unpacked into its parts.
+You can switch off individual preservation schemes by adding
+the <kbd>--no-from-adf</kbd>, <kbd>--no-from-as</kbd>, <kbd>--no-from-host</kbd>,
+or <kbd>--no-from-naps</kbd> flag.  You can turn them all off with
+<kbd>--no-from-any</kbd>.</p>
+
+<p>Files added to ZIP archives will use a special arrangement of AppleDouble that
+puts the "header" files in a separate hierarchy under the <samp>__MACOSX</samp> directory.
+You can disable this behavior with <kbd>--no-mac-zip</kbd>.</p>
+
+<h3>Using Ext-Archive</h3>
+
+<p>When working with filesystems on disk images, files and directories are added
+to the volume directory.  Sometimes this isn't desired, e.g. you want to add all
+files to a subdirectory.  You can do this by adding the directory name to the
+ext-archive specifier.</p>
+
+<p class="showcmd">cp2 cdi newdisk.po 800kb prodos</p>
+<p class="showout">Creating disk image: Unadorned Sector, order=pdos/blk, size=800KB, ProDOS
+</p>
+<p class="showcmd">cp2 mkdir newdisk.po SubDir</p>
+<p class="showout">creating SubDir
+</p>
+<p class="showcmd">cp2 a newdisk.po:SubDir TEACH.SAMPLE.as</p>
+<p class="showout">Adding 1 file
+adding TEACH.SAMPLE.as -> SubDir/TEACH.SAMPLE
+adding TEACH.SAMPLE.as (rsrc) -> SubDir/TEACH.SAMPLE
+</p>
 
 </div>
 
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="create.html" class="btn-previous">&laquo; Previous</a>
+    <a href="import.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

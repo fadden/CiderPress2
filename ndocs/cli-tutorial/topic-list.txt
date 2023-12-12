@@ -6,3 +6,9 @@ extract.html
 raw.html
 export.html
 create.html
+add.html
+import.html
+copy.html
+conv-disk.html
+config.html
+end.html

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II CLI Tutorial</title>
+    <title>CLI Tutorial - Importing Files</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-import -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Contents</a>
         <ul>
@@ -69,7 +69,7 @@
         <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
         <li id="sidenav-add"><a href="add.html">Adding Files</a>
         <ul>
-            <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
+            <li id="sidenav-import" class="active"><a href="import.html">Importing Files</a></li>
         </ul></li>
         <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
         <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
@@ -81,21 +81,50 @@
 
 <div id="main">
 
-<h2>Command-Line Tutorial</h2>
+<h2>Importing Files</h2>
 
-<p>This is a tutorial for the command-line interface (CLI) for CiderPress II.  With it,
-you can do roughly the same set of things that you can with the graphical user
-interface (GUI).  It has the advantage that you can execute commands from shell scripts
-or other applications.</p>
-<p>The interface offers more than 30 commands.  This tutorial will demonstrate the use of
-the most common.  For the rest, please refer to the
-<a href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">full manual</a>.</p>
+<p>Files added to an archive are copied without modification, other than what is
+required to separate the contents of the forks from file attribute preservation metadata.
+Sometimes you want to convert the file's contents as it's being added though.</p>
+
+<p>Conversions are performed by the <kbd>import</kbd> command, which takes the same
+arguments as <kbd>add</kbd>, but with the addition of an "import-spec".  The import
+specifier tells CiderPress II how to do the conversion.  Unlike exports, there is
+no "best" conversion, so you must specify which converter to use.</p>
+
+<p>Suppose we want to edit an Applesoft BASIC program.  We first need to export
+the program to a text file:</p>
+<p class="showcmd">cp2 xp code.shk bas HRBARS</p>
+<p class="showout">exporting HRBARS -> HRBARS.txt [bas]
+</p>
+
+<p>We would edit HRBARS.txt, making whatever changes were desired, and then
+we'd add it back:</p>
+<p class="showcmd">cp2 import -f code.shk bas HRBARS.txt</p>
+<p class="showout">Importing 1 file
+Overwriting 'HRBARS'
+importing HRBARS.txt -> HRBARS
+</p>
+
+<p>If the import fails, e.g. because the Applesoft program has a syntax error
+(like an invalid line number) or it's simply the wrong type of file (like a PNG),
+the command will halt with an error message.</p>
+
+<p>The only import converters currently defined are <kbd>text</kbd>, for text
+files, and <kbd>bas</kbd>, for Applesoft BASIC.</p>
+<p>The text converter will change the text to use the proper end-of-line character,
+usually carriage return ($0D).  The character set for the input can be
+specified as UTF-8, ISO 8859-1, or CP1252, while the output can be encoded as
+ASCII, high ASCII, or Mac OS Roman.  The defaults are UTF-8 and ASCII, but if the
+target is a DOS filesystem the output will be set to high ASCII instead.  See
+the manual for details.</p>
 
 
 </div>
 
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="add.html" class="btn-previous">&laquo; Previous</a>
+    <a href="copy.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

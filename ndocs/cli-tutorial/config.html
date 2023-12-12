@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II CLI Tutorial</title>
+    <title>CLI Tutorial - Config File</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-config -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Contents</a>
         <ul>
@@ -73,7 +73,7 @@
         </ul></li>
         <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
         <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
-        <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-config" class="active"><a href="config.html">Config File</a></li>
         <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
     </ul>
 </div>
@@ -81,21 +81,56 @@
 
 <div id="main">
 
-<h2>Command-Line Tutorial</h2>
+<h2>Configuration File</h2>
 
-<p>This is a tutorial for the command-line interface (CLI) for CiderPress II.  With it,
-you can do roughly the same set of things that you can with the graphical user
-interface (GUI).  It has the advantage that you can execute commands from shell scripts
-or other applications.</p>
-<p>The interface offers more than 30 commands.  This tutorial will demonstrate the use of
-the most common.  For the rest, please refer to the
-<a href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">full manual</a>.</p>
+<p>The command-line utility looks for a configuration file in your home directory.
+On UNIX systems and Mac OS it's called "<samp>.cp2rc</samp>", while on Windows it's
+called "<samp>_cp2rc</samp>".  The easiest way to figure out where it lives and
+what it's called is to use the <kbd>version</kbd> command:</p>
+<p class="showcmd">cp2 version</p>
+<p class="showout">CiderPress II Command-Line Utility v1.0.0
++ DiskArc Library v1.0.0
++ Runtime: .NET 6.0.25 / win10-x64
+
+<span style="color:red;">Settings file is 'C:\Users\fadden\_cp2rc'</span>
+
+Copyright 2023 faddenSoft - https://ciderpress2.com/
+See http://www.apache.org/licenses/LICENSE-2.0 for license.
+</p>
+
+<p>The output will show where the config file is, or if it doesn't exist,
+where it should be placed.</p>
+
+<p>The CiderPress II installation package comes with a sample config file,
+called "<samp>sample.cp2rc</samp>", that can be used as a starting point.</p>
+<p>There are two kinds of statements.  The first is used to change the
+default values used for command options.  For example, if you wanted the
+<kbd>catalog</kbd> command to use <kbd>--depth=shallow</kbd> and show the notes
+for any problems found in the archive, you could add a line:</p>
+<p class="showcmd">catalog: --show-notes --depth=shallow</p>
+
+<p>If you want an option to apply to all commands, you can use the special
+command name "<kbd>global</kbd>".  To reduce the verbosity of all commands:</p>
+<p class="showcmd">global: --no-verbose</p>
+
+<p>The second kind of statement sets the default options for import and export
+converters.  These options take effect even when exporting with the "best" specifier.
+For example, if you wanted to to export Apple II hi-res images in black &amp; white,
+you could add:</p>
+<p class="showcmd">&gt;export hgr,bw=true</p>
+
+<p>To change the text importer to treat input as ISO 8859-1 rather than UTF-8:</p>
+<p class="showcmd">&gt;import text,char=latin</p>
+
+<p>See the CLI manual for a complete list of import/export converters and their
+associated options.</p>
 
 
 </div>
 
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="conv-disk.html" class="btn-previous">&laquo; Previous</a>
+    <a href="end.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

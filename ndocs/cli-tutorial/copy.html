@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II CLI Tutorial</title>
+    <title>CLI Tutorial - Copying Files</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-copy -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Contents</a>
         <ul>
@@ -71,7 +71,7 @@
         <ul>
             <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
         </ul></li>
-        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-copy" class="active"><a href="copy.html">Copying Files</a></li>
         <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
         <li id="sidenav-config"><a href="config.html">Config File</a></li>
         <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
@@ -81,21 +81,67 @@
 
 <div id="main">
 
-<h2>Command-Line Tutorial</h2>
+<h2>Copying Files</h2>
 
-<p>This is a tutorial for the command-line interface (CLI) for CiderPress II.  With it,
-you can do roughly the same set of things that you can with the graphical user
-interface (GUI).  It has the advantage that you can execute commands from shell scripts
-or other applications.</p>
-<p>The interface offers more than 30 commands.  This tutorial will demonstrate the use of
-the most common.  For the rest, please refer to the
-<a href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">full manual</a>.</p>
+<p>It's possible to copy files between archives by extracting them from the
+source and then adding them to the destination.  With file attribute preservation
+this can yield very good results in most situations.  It is, however, less
+convenient than simply copying files from one archive to another.</p>
+
+<p>The <kbd>copy</kbd> command copies a list of files and directories from one
+archive to another.  For example:</p>
+<p class="showcmd">cp2 copy fileconv/test-files.sdk Docs:TEACH.SAMPLE Code:LISA mydisk.po</p>
+<p class="showout">copying Docs/TEACH.SAMPLE
+copying Docs/TEACH.SAMPLE (rsrc)
+copying Code/LISA/LISA3.9
+copying Code/LISA/ANIX.LISTING
+copying Code/LISA/anix.equates
+copying Code/LISA/LISA.MNEMONICS
+copying Code/LISA/DETOKEN.A
+copying Code/LISA/MNEMONICS.A
+</p>
+
+<p>Note the destination archive is the last argument (similar to the way
+commands like <kbd>cp</kbd> work).</p>
+
+<p>To copy all files, omit the file list.  This is a simple way to convert a
+disk image to a file archive and vice-versa.</p>
+
+<p>Text files copied to or from a DOS filesystem will be converted to or from high ASCII.</p>
+
+<p>You cannot use this to duplicate files within a single archive.  The source and
+destination must reference different files.</p>
+
+<h3>Using Ext-Archive</h3>
+
+<p>The source and destination archives are both ext-archive specifications.  You can
+use this to copy a set of files from an arbitrary location in one archive to another.
+For example, the "turducken" example we used earlier has a couple of files in
+the directory <samp>Dir2</samp>, which is in the directory <samp>Dir1</samp>, on an
+HFS partition of an APM multi-part volume.  Suppose we want to copy all of those
+files into the directory "FunStuff/GoesHere" on a ProDOS disk:</p>
+<p class="showcmd">cp2 copy turducken/MultiPart.hdv:2:Dir1:Dir2 mydisk.po:FunStuff:GoesHere</p>
+<p class="showout">copying Dir1:Dir2:new-init.do -> Funstuff/GoesHere/new.init.do
+copying Dir1:Dir2:Samples.BXY -> Funstuff/GoesHere/Samples.BXY
+</p>
+
+<p>If we had specified the source archive as <kbd>turducken/MultiPart.hdv:2:Dir1</kbd>,
+and then added <kbd>Dir2</kbd> as an argument, we would have made a copy of Dir2
+as well as its contents:</p>
+<p class="showcmd">cp2 copy turducken/MultiPart.hdv:2:Dir1 Dir2 mydisk.po:FunStuff:GoesHere</p>
+<p class="showout">copying Dir1:Dir2:new-init.do -> Funstuff/GoesHere/Dir2/new.init.do
+copying Dir1:Dir2:Samples.BXY -> Funstuff/GoesHere/Dir2/Samples.BXY
+</p>
+
+<p>The ext-archive argument can thus be used to alter the "root" of both the source
+and destination.</p>
 
 
 </div>
 
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="import.html" class="btn-previous">&laquo; Previous</a>
+    <a href="conv-disk.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->
