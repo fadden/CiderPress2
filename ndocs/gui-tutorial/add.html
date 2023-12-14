@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>GUI Tutorial - Nested Archives</title>
+    <title>GUI Tutorial - Add and Import</title>
 </head>
 
 <body>
@@ -51,7 +51,7 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-nested -->
+<!-- START: incl-sidenav.html active:#sidenav-add -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
@@ -59,11 +59,11 @@
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Entries</a>
         <ul>
-            <li id="sidenav-nested" class="active"><a href="nested.html">Nested Archives</a>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
         </ul></li>
         <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
         <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
-        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-add" class="active"><a href="add.html">Add and Import</a></li>
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
         <!-- doing basic operations with drag & drop -->
         <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
@@ -78,85 +78,91 @@
 
 <div id="main">
 
-<h2>Nested Archives</h2>
+<h2>Add and Import</h2>
 
 <div class="grid-container">
-    <div class="grid-item-image">
-        <img src="images/multipart-arc-start.png" alt="multipart-arc-start"/>
-    </div>
     <div class="grid-item-text">
-        <p>Sometimes archives are stored inside other archives.  For example, you might put
-        a disk image in a ZIP file to compress it.  Let's take a look at a fairly complex
-        example.</p>
-
-        <p>The file <samp>turducken/MultiPart.hdv</samp> is a hard drive image
-        with three partitions: one ProDOS, one HFS, and one for the partition map
-        itself.
-        The ProDOS filesystem has five embedded DOS.MASTER volumes.
-        All of this is immediately visible in the Archive Contents tree.</p>
+        <p>Files can be added to archives, with or without conversion from a
+        different format.  Let's start by talking about adding files without
+        modification.</p>
+        <p>The process has two parts: decide where you want the files to go,
+        then pick the files and add them.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-apm.png" alt="multipart-apm"/>
+        <img src="images/add-dir-tree.png" alt="add-dir-tree"/>
     </div>
     <div class="grid-item-text">
-        <p>We can explore the contents by clicking on the the various
-        elements shown in the tree.  The topmost entry is for the <samp>.hdv</samp>
-        disk image, which doesn't have anything interesting.  The entry below
-        that is for the APM partition list.  If you click on that, you get a
-        list of the partitions, with their start location and size in blocks,
-        as well as their names.  If you double-click on an entry in this list,
-        the tree selection will jump to that partition.</p>
-
-        <p>You can get a similar partition list for the DOS.MASTER volumes by
-        clicking on the <samp>Embedded partitions</samp> entry.</p>
+        <p>The first part is very simple if you're adding files to a file
+        archive or non-hierarchical filesystem like DOS 3.3 or CP/M, because
+        there's only one place for them to be.</p>
+        <p>For a hierarchical filesystem like HFS or ProDOS, you need to pick which
+        directory the files will be stored in.  You do this by selecting the desired
+        entry from the Directory tree, in the panel at the bottom left of the window.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-hfs.png" alt="multipart-hfs"/>
+        <img src="images/add-select-files.png" alt="add-select-files"/>
     </div>
     <div class="grid-item-text">
-        <p>Let's try opening an archive within the archive.  If you click on
-        the HFS volume, you can see a couple of disk images and a ZIP archive.</p>
+        <p>Next, use the <kbd>Actions &gt; Add Files</kbd> menu item.  This opens
+        a window that allows you to select one or more files and directories to add.
+        This has the same behavior as other lists: left-click to select, Ctrl+Click to
+        toggle a single entry, Shift+Click to select a range.</p>
+        <p>You can select a combination of files and directories.  If you select a
+        directory, the contents of that directory will be added recursively.</p>
+        <p>When ready, click the <samp>Select</samp> button to add the files.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-zip.png" alt="multipart-zip"/>
+        <img src="images/add-options.png" alt="add-options"/>
     </div>
     <div class="grid-item-text">
-        <p>If we double-click on <samp>Some.Files.zip</samp>, the archive opens.
-        We can access the files directly.</p>
+        <p>You can modify the behavior using the options panel on the right.
+        The <samp>Strip Paths</samp> option will remove the directories from
+        the paths, adding all files to the target location.  <samp>Raw</samp>
+        should be used on DOS 3.2/3.3 files that were previously extracted in
+        raw mode.</p>
+        <p>The <samp>Preservation Handling</samp> options determine which preservation
+        modes are supported.  Normally you will want to have all of these enabled.
+        If, for example, you have a file called "<samp>MyFile.as</samp>", and you
+        want it to be added to the archive as AppleSingle rather than unpacked and
+        added as the contents, you would un-check the <samp>AppleSingle</samp> box.</p>
+    </div>
+</div>
+
+<h3>Import</h3>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/import-files.png" alt="import-files"/>
+    </div>
+    <div class="grid-item-text">
+        <p>If you want to convert files while adding them, you can use
+        <samp>Actions &gt; Import</samp> instead.  This generally works the same as
+        adding files &mdash; select the target location and the files to add &mdash;
+        but the files are assumed to be in a "modern" format.  Attribute preservation
+        is ignored, and a file converter is applied.</p>
+        <p>Unlike export, import has no "best conversion" mode.  You must specify
+        the converter to use, with the <samp>Conversion Mode</samp> pop-up menu.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-expand.png" alt="multipart-expand"/>
+        <img src="images/import-conv-opts.png" alt="import-conv-opts"/>
     </div>
     <div class="grid-item-text">
-        <p>What's more, <samp>Some.Files.zip</samp> is now part of the
-        Archive Contents tree.  We can navigate to it directly by selecting it
-        in the tree.</p>
-        <p>Try going back to the HFS disk and double-clicking on
-        <samp>SIMPLE.DOS.SDK</samp> or <samp>small.woz.gz</samp>.  These are
-        compressed disk images, so opening them adds entries for the compression
-        wrapper, the disk image file, and the filesystem.</p>
-    </div>
-</div>
-
-<div class="grid-container">
-    <div class="grid-item-text">
-        <p>By default, the top level of disk images and partitions are opened
-        automatically, but only to a certain level.  You can control this with
-        the <samp>Auto-Open Depth</samp> option in the Application Settings.
-        If you want every possible disk image and file archive opened and
-        added to the Archive Contents tree, set it to <samp>Max</samp>.</p>
+        <p>The options used for file imports can be set by clicking on the
+        <samp>Conversion Settings</samp> button in the Add/Import Options area.
+        Pick the conversion mode from the pop-up menu at the top, configure
+        the desired options, and click <samp>Done</samp>.</p>
     </div>
 </div>
 
@@ -164,8 +170,7 @@
 </div> <!-- main -->
 
 <div id="prevnext">
-    <a href="list.html" class="btn-previous">&laquo; Previous</a>
-    <a href="view.html" class="btn-next">Next &raquo;</a>
+    <a href="extract.html" class="btn-previous">&laquo; Previous</a>
 </div>
 
 <!-- START: /incl-footer.html -->

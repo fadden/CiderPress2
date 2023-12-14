@@ -3,3 +3,5 @@ introduction.html
 list.html
 nested.html
 view.html
+extract.html
+add.html

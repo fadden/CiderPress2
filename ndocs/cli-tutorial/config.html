@@ -104,13 +104,20 @@ where it should be placed.</p>
 <p>The CiderPress II installation package comes with a sample config file,
 called "<samp>sample.cp2rc</samp>", that can be used as a starting point.</p>
 <p>There are two kinds of statements.  The first is used to change the
-default values used for command options.  For example, if you wanted the
+default values used for command options.  It's simply the command name,
+followed by a colon, then one or more options.</p>
+<p>For example, if you wanted the
 <kbd>catalog</kbd> command to use <kbd>--depth=shallow</kbd> and show the notes
 for any problems found in the archive, you could add a line:</p>
 <p class="showcmd">catalog: --show-notes --depth=shallow</p>
 
-<p>If you want an option to apply to all commands, you can use the special
-command name "<kbd>global</kbd>".  To reduce the verbosity of all commands:</p>
+<p>Or maybe you want the default file extraction preservation mode to be
+AppleSingle:</p>
+<p class="showcmd">extract: --preserve=as</p>
+
+<p>If you want to specify that an option should be applied to all commands,
+you can use the special command name "<kbd>global</kbd>".  For example,
+to reduce the verbosity of all commands:</p>
 <p class="showcmd">global: --no-verbose</p>
 
 <p>The second kind of statement sets the default options for import and export

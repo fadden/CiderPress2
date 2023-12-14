@@ -777,7 +777,14 @@ Shows a brief summary of commands and options.
 
 Usage: `cp2 help [command]`
 
+If no command is specified, a list of all available commands is displayed.
+A list of known options, with their hard-coded defaults, is also shown.  (The
+list does not reflect any global or command-specific options set in the
+config file.)
+
 If a command is specified, detailed help for that specific command is shown.
+Notably, the help for `import` and `export` includes a summary of the
+available converters.
 
 Options: (none)
 

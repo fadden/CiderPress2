@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>GUI Tutorial - Extract and Export</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" class="active" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-extract -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Entries</a>
+        <ul>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
+        </ul></li>
+        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-extract" class="active"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <!-- doing basic operations with drag & drop -->
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <!-- rename files, set DOS/ProDOS file types -->
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <!-- create file archives and disk images -->
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+        <!-- not doing: disk ops, sector editing, app settings -->
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Extract and Export</h2>
+
+<div class="grid-container">
+    <div class="grid-item-text">
+        <p>Files can be extracted from archives, with or without conversion
+        to a different format.  Let's start by talking about extracting files
+        without modification.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/extract-files.png" alt="extract-files"/>
+    </div>
+    <div class="grid-item-text">
+        <p>The process is straightforward: select the files you want to extract,
+        and then use the <samp>Actions &gt; Extract</samp> menu item.  You can
+        also right-click in the file list to bring up the context menu and
+        select <samp>Extract</samp> from that.</p>
+        <p>This will bring up a <samp>Select Folder</samp> window.  Pick the
+        desired location of the files and click <samp>Select Here</samp> to
+        extract them.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/extract-options.png" alt="extract-options"/>
+    </div>
+    <div class="grid-item-text">
+        <p>You can modify the behavior using the options panel on the right.
+        The <samp>Strip Paths</samp> will remove the leading partial paths from files,
+        which can be handy if you just want the file to be extracted into the output
+        directory without retaining the directory structure.  <samp>Raw</samp> can
+        be handy for DOS 3.2/3.3 files in certain situations.</p>
+        <p>The <samp>Preservation Mode</samp> setting is very important.  It determines
+        how resource forks and extended file attributes are preserved.  There are
+        four settings:</p>
+        <ul>
+            <li>None - no effort is made.  Resource forks are discarded.</li>
+            <li>AppleSingle - all files are extracted to AppleSingle archives
+                ("<samp>.as</samp>" files).</li>
+            <li>AppleDouble - all files are extracted to AppleDouble.  This stores the
+                data fork as a plain file with the original name, and the resource fork
+                and attributes in a "header" file, prefixed with "<samp>._<samp>".</li>
+            <li>NAPS - adds a NuLib2 Attribute Preservation String to the end of the
+                filename, which looks like "#062000".  This is how NuLib2 and the original
+                CiderPress preserved the file type.</li>
+        </ul>
+    </div>
+</div>
+
+<h3>Export</h3>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/export-files.png" alt="export-files"/>
+    </div>
+    <div class="grid-item-text">
+        <p>If you want to convert the files to a different format while extracting
+        them, use <samp>Actions &gt; Export</samp> instead.  This generally works
+        the same as extraction &mdash; select the files to extract and the output
+        folder &mdash; but instead of carefully preserving the file contents
+        and attributes, every file is run through the same set of converters that
+        the file viewer uses.</p>
+        <p>The <samp>Export Configuration</samp> section in the Extract/Export Options
+        allows you to pick a specific converter, or just use "<samp>Best</samp>"
+        to have the most appropriate one chosen for you.</p>
+        <p>Exported files will be given an appropriate file extension:
+        <samp>.TXT</samp> for plain text, <samp>.RTF</samp> for formatted text,
+        <samp>.CSV</samp> for databases and spreadsheets, and <samp>.PNG</samp>
+        for graphics.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/export-conv-opts.png" alt="export-conv-opts"/>
+    </div>
+    <div class="grid-item-text">
+        <p>The default conversion options used by the file viewer are set
+        independently of those used for file exports.  Click the
+        <samp>Conversion Settings</samp> button in the Extract/Export Options
+        area to open the option editor.  Pick the conversion mode from the pop-up
+        menu at the top, configure the desired options, and click <samp>Done</samp>.</p>
+    </div>
+</div>
+
+</div> <!-- main -->
+
+<div id="prevnext">
+    <a href="view.html" class="btn-previous">&laquo; Previous</a>
+    <a href="add.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

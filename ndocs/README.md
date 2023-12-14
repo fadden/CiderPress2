@@ -5,7 +5,8 @@ which provides documentation for the project.  Most of the files exist in two
 places, `docs` and `ndocs`.
 
 The `docs` directory is where github serves web pages from.  The contents
-should always match up with the current release.
+should always match up with the current release.  Any changes made here will
+be overwritten the next time the documentation is published.
 
 The `ndocs` directory is where changes are made during development.  The
 files here provide documentation for the tip-of-tree code, which may have
@@ -16,10 +17,15 @@ elements are inserted by a Python script (`block-repl.py`) that must be
 run whenever one of the "-incl" files changes.  This can be done manually,
 to review the changes, or automatically, during publication.
 
+The tutorial files have "prev/next" buttons that are generated automatically
+from a list of topics, stored in "topic-list.txt" in each directory.  These
+are updated with `prevnext.py`.
+
 When a software update is ready for release, the documents are published to
-the `docs` directory by invoking the `publish.py` script.  In addition, a
-handful of top-level documents (like the top-level README and installation
-instructions) are also copied.
+the `docs` directory by invoking the `publish.py` script.  The script runs
+`block-repl.py` and `prevnext.py` before copying anything.  In addition, a
+handful of top-level documents (like the project README and installation
+instructions) are copied out of the `top` directory.
 
 Some text variable substitutions can be performed on HTML and Markdown files
 as they are copied, e.g. all occurrences of `${VERSION}` will be replaced with

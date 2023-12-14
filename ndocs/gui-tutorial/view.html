@@ -62,10 +62,8 @@
             <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
         </ul></li>
         <li id="sidenav-view" class="active"><a href="view.html">Viewing Contents</a></li>
-        <!-- using the file viewer to look at things; graphics, docs, random-access text;
-          ignore copy/export -->
-        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
-        <!-- using menu commands to add and extract -->
+        <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
         <!-- doing basic operations with drag & drop -->
         <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
@@ -99,8 +97,8 @@
         <p>For example, if you view a double hi-res image, it will be converted
         to a bitmap and displayed.</p>
         <p>Some converters have options that you can configure.  In this case,
-        there are four <samp>Color Conversion</samp> options to choose from.  Any
-        changes you make are temporary unless you click the
+        there are four color conversion options to choose from.  Any
+        changes you make to the options are temporary unless you click the
         <samp>Save as Default Configuration</samp> button at the bottom.</p>
         <p>Bitmaps can be magnified with the <samp>Graphics Zoom</samp> slider.</p>
         <p>You can move between files with the <samp>&lt;</samp> and <samp>&gt;</samp>
@@ -138,7 +136,8 @@
         <p>Let's look at a Teach Document.  These can include fancy formatting,
         and so are converted to Rich Text Format instead of plain text.</p>
         <p>They also have a resource fork, which you can look at by clicking
-        on the <samp>Resource Fork</samp> tab.</p>
+        on the <samp>Resource Fork</samp> tab.  The output is a hex dump of the
+        individual resources.</p>
 
         <p>If there are embedded comments, points of interest, or problems noticed
         by the converter, you can see them in the <samp>Notes</samp> tab.</p>
@@ -147,18 +146,68 @@
 
 <div class="grid-container">
     <div class="grid-item-text">
-        <p>The <samp>Copy</samp> button copies the current conversion output to the
-        system clipboard.  The <samp>Export</samp> button allows you to save the
+        <p>The <samp>Copy</samp> button at the bottom right copies the current
+        conversion output to the system clipboard.  The <samp>Export</samp> button
+        allows you to save the
         current conversion output to a file.</p>
+    </div>
+</div>
+
+<h3>Random-Access DOS Text</h3>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/animals-seq.png" alt="animals-seq"/>
+    </div>
+    <div class="grid-item-text">
+        <p>DOS 3.2/3.3 random-access text files are tricky.  The record length isn't
+        recorded, and there is no indication that the files aren't plain text.</p>
+        <p>Let's take a look at the datafile from the <samp>ANIMALS</samp> game on
+        the old DOS system master disk.  (You can find this in the
+        <samp>fileconv/dos-files.do.gz</samp> sample archive.)  If you double-click
+        on it, you just see a couple of numbers.</p>
+        <p>The problem is that it's being treated as sequential text, so the file
+        appears to end after the first record.  We need to do two things to fix this.
+        First, check the <samp>Open Raw (DOS 3.x Only)</samp> checkbox.  This causes
+        the file viewer to read all sectors of the file.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/wpf-sample.png" alt="WPF-sample"/>
+        <img src="images/animals-rnd0.png" alt="animals-rnd0"/>
     </div>
     <div class="grid-item-text">
-        <p>Text goes here.</p>
+        <p>As soon as we did this, the format conversion mode switched to
+        <samp>Random-Access Text</samp>, but the output still doesn't look right.</p>
+        <p>The problem is noted in a comment at the top: the record length hasn't been
+        set, so the file is still being treated as sequential text.  If you
+        look through the <samp>ANIMALS</samp> program you'll find this line:</p>
+        <p>
+<pre> 1040 RF$="&#x2404;READ ANIMALSFILE,R":
+   WF$="&#x2404;WRITE ANIMALSFILE,R":
+   CL$="&#x2404;CLOSE":
+   OP$="&#x2404;OPEN ANIMALSFILE,L80":
+   PRINT OP$</pre>
+        </p>
+        <p>(&#x2404; is Ctrl+D, which tells DOS that a command follows.)
+        <p>The "<code>,L80</code>" part is the record length.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/animals-rnd80.png" alt="animals-rnd80"/>
+    </div>
+    <div class="grid-item-text">
+        <p>If we type <kbd>80</kbd> into the <samp>Record Length</samp> option field,
+        we get something that looks like a database of animals with questions.</p>
+        <p>Each line is one record.  Each record can have multiple fields, so the
+        file is displayed as CSV (comma-separated value).</p>
+        <p>NOTE: <samp>Open Raw</samp> affects the way other DOS files are opened.
+        You will generally want to un-check it before viewing other types of files
+        (unless you want to see the I/A/B file headers or see the contents that
+        appear after the purported end of file).</p>
     </div>
 </div>
 
@@ -167,6 +216,7 @@
 
 <div id="prevnext">
     <a href="nested.html" class="btn-previous">&laquo; Previous</a>
+    <a href="extract.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

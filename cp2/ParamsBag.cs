@@ -522,6 +522,10 @@ namespace cp2 {
             List<string> result = new List<string>();
 
             // Get fresh list of options with default values.
+            //
+            // If we want to show the effects of the "global" options in the config file,
+            // we might need to separate them from the command-specific options.  Otherwise
+            // any options set on the "help" command itself would appear to be defaults.
             Dictionary<string, Option> opts = InitOptions();
 
             StringBuilder sb = new StringBuilder();
