@@ -5,3 +5,8 @@ nested.html
 view.html
 extract.html
 add.html
+dragcopy.html
+editattrs.html
+create.html
+sectedit.html
+end.html

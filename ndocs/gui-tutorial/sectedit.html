@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II GUI Tutorial</title>
+    <title>GUI Tutorial - Sector Editing</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-sectedit -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Entries</a>
         <ul>
@@ -67,7 +67,7 @@
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
         <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
         <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
-        <li id="sidenav-sectedit"><a href="sectedit.html">Sector Editing</a></li>
+        <li id="sidenav-sectedit" class="active"><a href="sectedit.html">Sector Editing</a></li>
         <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
         <!-- not doing: disk ops, app settings -->
     </ul>
@@ -76,28 +76,59 @@
 
 <div id="main">
 
-<h1>Desktop GUI Tutorial</h1>
+<h2>Sector Editing</h2>
 
-<p>This is a tutorial for the graphical user interface (GUI) portion of CiderPress II,
-specifically the version developed for Windows.  It has roughly the same set of
-features as the command-line interface, but for certain operations it can be
-significantly more convenient to use.</p>
-
-<p>The tutorial covers common operations.  For a full explanation of all features,
-please refer to the <a href="../gui-manual/">full manual</a>.</p>
-
-<p>All of the sample files used in this tutorial are available from the github
-source code repository, in the
-<a href="https://github.com/fadden/CiderPress2/tree/main/TestData">TestData</a> directory,
-should you wish to try them for yourself.</p>
-
-<p>Disk images and file archives are different things.  Sometimes this tutorial
-refers to them collectively as "archives" for the sake of brevity.</p>
-
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/sectedit-entry.png" alt="sectedit-entry"/>
+    </div>
+    <div class="grid-item-text">
+        <p>You can edit blocks and tracks/sectors on any disk image.  To open
+        the sector editor, you need to select the entry for the disk image
+        or disk partition in the Archive Contents tree.  This will be the
+        entry one level up from the filesystem you want to edit.</p>
+        <p>The easiest way to open the sector editor is to use the buttons
+        in the center panel.  They're also available from the <samp>Actions</samp>
+        menu.  For this example, we're looking at an 800KB 3.5"
+        floppy disk image, so <samp>Edit Sectors</samp> is disabled.  Click
+        <samp>Edit Blocks</samp>.</p>
+    </div>
 </div>
 
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/sectedit-block.png" alt="sectedit-block"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Block zero isn't very interesting, so click <samp>Next</samp> twice
+        to advance to block 2.</p>
+        <p>This shows the HFS MDB block, which has some information about the
+        volume, including the volume name.  The editor shows a standard hex dump,
+        with hex on the left and text on the right.  You can change the character
+        set used to display text with the <samp>Text Conversion</samp> controls.</p>
+
+        <p>To see a different block, you can use the <samp>Prev</samp> / <samp>Next</samp>
+        buttons, or enter a block number in the <samp>Block</samp> entry field.  Values
+        can be entered in decimal or hex; for the latter you will need to prefix it
+        with "<samp>0x</samp>" or "<samp>$</samp>".  Type the value and hit <kbd>Return</kbd>
+        to read that sector.</p>
+
+        <p>To edit values, click on the hex digits of the desired entry, and
+        start typing hex values.  When finished, click the <samp>Write</samp> button.
+        Note that doing so will cause the filesystem to be closed and re-opened; you
+        may notice the Archive Contents tree being updated as you work.</p>
+
+        <p>The <samp>Copy to Clipboard</samp> button will copy the hex dump to the
+        system clipboard, suitable for pasting into online forums.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="create.html" class="btn-previous">&laquo; Previous</a>
+    <a href="end.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->

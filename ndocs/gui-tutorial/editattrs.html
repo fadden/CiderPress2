@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II GUI Tutorial</title>
+    <title>GUI Tutorial - Edit Attributes</title>
 </head>
 
 <body>
@@ -51,11 +51,11 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-index -->
+<!-- START: incl-sidenav.html active:#sidenav-editattrs -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
-        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Entries</a>
         <ul>
@@ -65,7 +65,7 @@
         <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
         <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
         <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
-        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-editattrs" class="active"><a href="editattrs.html">Editing Attributes</a></li>
         <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
         <li id="sidenav-sectedit"><a href="sectedit.html">Sector Editing</a></li>
         <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
@@ -76,28 +76,64 @@
 
 <div id="main">
 
-<h1>Desktop GUI Tutorial</h1>
+<h2>Edit Attributes</h2>
 
-<p>This is a tutorial for the graphical user interface (GUI) portion of CiderPress II,
-specifically the version developed for Windows.  It has roughly the same set of
-features as the command-line interface, but for certain operations it can be
-significantly more convenient to use.</p>
-
-<p>The tutorial covers common operations.  For a full explanation of all features,
-please refer to the <a href="../gui-manual/">full manual</a>.</p>
-
-<p>All of the sample files used in this tutorial are available from the github
-source code repository, in the
-<a href="https://github.com/fadden/CiderPress2/tree/main/TestData">TestData</a> directory,
-should you wish to try them for yourself.</p>
-
-<p>Disk images and file archives are different things.  Sometimes this tutorial
-refers to them collectively as "archives" for the sake of brevity.</p>
-
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/editattrs-files.png" alt="editattrs-files"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Archive entries have a filename, and can have a variety of other
+        attributes, such as file types and timestamps.  These can be edited
+        by selecting the entry and using <samp>Actions &gt; Edit Attributes</samp>.
+        (This is also available from the context menu that appears when you
+        right-click in the file list.)</p>
+    </div>
 </div>
 
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/editattrs-edit.png" alt="editattrs-edit"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Editable attributes may include:</p>
+        <ul>
+            <li>Filename.  This may be a partial pathname in file archives.</li>
+            <li>ProDOS file type.  Found in ProDOS filesystems and compatible
+                file archives, this is also used to set the type on DOS and
+                Apple Pascal filesystems, but the set of values is limited for those.</li>
+            <li>HFS file type.  Found in HFS and MFS filesystems, compatible archives,
+                and in "extended" ProDOS files.</li>
+            <li>Creation and/or modification timestamps.  All filesystems and file
+                archives limit dates to a specific range of values.</li>
+            <li>Access flags.  Most filesystems support a notion of "locked" files,
+                some have additional flags for "hidden" files, or offer additional
+                capabilities.</li>
+        </ul>
+        <p>Not all of these exist for all files.  Only the relevant items will be shown.</p>
+        <p>Some formats allow an entry to have both ProDOS and HFS file types.  These can
+        be edited independently.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/editattrs-voldir.png" alt="editattrs-voldir"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Some filesystems allow the attributes of directories to be edited.
+        For these, you can select an entry from the Directory tree and use
+        <samp>Actions &gt; Edit Directory Attributes</samp>.  For filesystems with
+        volume names, you can use this to rename them.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
 <div id="prevnext">
-    <a href="introduction.html" class="btn-next">Next &raquo;</a>
+    <a href="dragcopy.html" class="btn-previous">&laquo; Previous</a>
+    <a href="create.html" class="btn-next">Next &raquo;</a>
 </div>
 
 <!-- START: /incl-footer.html -->
