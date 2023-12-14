@@ -101,7 +101,12 @@ To create a basic 5.25" DOS floppy disk image:</p>
 
 <p>The disk image format is specified by the filename extension.  The size is
 specified in bytes with an optional multiplier (KB, MB, etc.), or in tracks.  For example, to
-create a 13-sector DOS 3.2 WOZ image:</p>
+create an 800KB HFS image in DiskCopy 4.2 format:</p>
+<p class="showcmd">cp2 cdi new.image 800kb hfs</p>
+<p class="showout">Creating disk image: DiskCopy 4.2, order=pdos/blk, size=800KB, HFS
+</p>
+
+<p>To create a 13-sector DOS 3.2 WOZ image:</p>
 <p class="showcmd">cp2 cdi --sectors=13 new.woz 35trk dos</p>
 <p class="showout">Creating disk image: WOZ, order=physical, size=114KB, DOS 3.x
 </p>

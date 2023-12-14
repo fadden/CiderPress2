@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>GUI Tutorial - Nested Archives</title>
+    <title>GUI Tutorial - Viewing Contents</title>
 </head>
 
 <body>
@@ -51,7 +51,7 @@
 </div>
 <!-- END: /incl-topnav.html -->
 
-<!-- START: incl-sidenav.html active:#sidenav-nested -->
+<!-- START: incl-sidenav.html active:#sidenav-view -->
 <div id="sidenav">
     <!-- side navigation bar contents -->
     <ul>
@@ -59,9 +59,9 @@
         <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
         <li id="sidenav-list"><a href="list.html">Listing Entries</a>
         <ul>
-            <li id="sidenav-nested" class="active"><a href="nested.html">Nested Archives</a>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
         </ul></li>
-        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-view" class="active"><a href="view.html">Viewing Contents</a></li>
         <!-- using the file viewer to look at things; graphics, docs, random-access text;
           ignore copy/export -->
         <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
@@ -80,85 +80,85 @@
 
 <div id="main">
 
-<h2>Nested Archives</h2>
+<h2>Viewing Contents</h2>
 
 <div class="grid-container">
-    <div class="grid-item-image">
-        <img src="images/multipart-arc-start.png" alt="multipart-arc-start"/>
-    </div>
     <div class="grid-item-text">
-        <p>Sometimes archives are stored inside other archives.  For example, you might put
-        a disk image in a ZIP file to compress it.  Let's take a look at a fairly complex
-        example.</p>
-
-        <p>The file <samp>turducken/MultiPart.hdv</samp> is a hard drive image
-        with three partitions: one ProDOS, one HFS, and one for the partition map
-        itself.
-        The ProDOS filesystem has five embedded DOS.MASTER volumes.
-        All of this is immediately visible in the Archive Contents tree.</p>
+        <p>The file viewer can be used to see the contents of files, in raw form or
+        after being converted.  You can double-click to open a single file, or use
+        the standard selection actions (Ctrl+Click to toggle individual items,
+        Shift+Click to select a range) to view a specific set.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-apm.png" alt="multipart-apm"/>
+        <img src="images/view-monarch.png" alt="view-monarch"/>
     </div>
     <div class="grid-item-text">
-        <p>We can explore the contents by clicking on the the various
-        elements shown in the tree.  The topmost entry is for the <samp>.hdv</samp>
-        disk image, which doesn't have anything interesting.  The entry below
-        that is for the APM partition list.  If you click on that, you get a
-        list of the partitions, with their start location and size in blocks,
-        as well as their names.  If you double-click on an entry in this list,
-        the tree selection will jump to that partition.</p>
-
-        <p>You can get a similar partition list for the DOS.MASTER volumes by
-        clicking on the <samp>Embedded partitions</samp> entry.</p>
+        <p>For example, if you view a double hi-res image, it will be converted
+        to a bitmap and displayed.</p>
+        <p>Some converters have options that you can configure.  In this case,
+        there are four <samp>Color Conversion</samp> options to choose from.  Any
+        changes you make are temporary unless you click the
+        <samp>Save as Default Configuration</samp> button at the bottom.</p>
+        <p>Bitmaps can be magnified with the <samp>Graphics Zoom</samp> slider.</p>
+        <p>You can move between files with the <samp>&lt;</samp> and <samp>&gt;</samp>
+        buttons at the left and right edges of the window.  If you opened multiple files,
+        the buttons will walk through that set.  If you opened a single file, the buttons
+        will walk through all files shown in the file list (skipping
+        directory entries).</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-hfs.png" alt="multipart-hfs"/>
+        <img src="images/view-monarch-hex.png" alt="view-monarch-hex"/>
     </div>
     <div class="grid-item-text">
-        <p>Let's try opening an archive within the archive.  If you click on
-        the HFS volume, you can see a couple of disk images and a ZIP archive.</p>
+        <p>You can change the conversion performed.  The <samp>Conversion</samp>
+        pop-up menu has all of the conversions that were found to be appropriate
+        for this file.  Since this is a 16384-byte ProDOS <samp>BIN</samp> file,
+        it's likely to be a double hi-res image, but it could also be 6502 code.
+        The second option in the <samp>Conversion</samp> menu is thus
+        <samp>65xx Code Disassembly</samp>.</p>
+        <p>Two converters are always present: <samp>Plain Text</samp> and
+        <samp>Hex Dump</samp>.  These can be selected quickly with the
+        <samp>Text</samp> and <samp>Hex Dump</samp> buttons to the right.</p>
+        <p>Switching to Hex Dump also changes the available options.  You're now
+        able to choose the character set used for the ASCII portion of the hex dump.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-zip.png" alt="multipart-zip"/>
+        <img src="images/view-teachsample.png" alt="view-teachsample"/>
     </div>
     <div class="grid-item-text">
-        <p>If we double-click on <samp>Some.Files.zip</samp>, the archive opens.
-        We can access the files directly.</p>
+        <p>Let's look at a Teach Document.  These can include fancy formatting,
+        and so are converted to Rich Text Format instead of plain text.</p>
+        <p>They also have a resource fork, which you can look at by clicking
+        on the <samp>Resource Fork</samp> tab.</p>
+
+        <p>If there are embedded comments, points of interest, or problems noticed
+        by the converter, you can see them in the <samp>Notes</samp> tab.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-text">
+        <p>The <samp>Copy</samp> button copies the current conversion output to the
+        system clipboard.  The <samp>Export</samp> button allows you to save the
+        current conversion output to a file.</p>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="grid-item-image">
-        <img src="images/multipart-expand.png" alt="multipart-expand"/>
+        <img src="images/wpf-sample.png" alt="WPF-sample"/>
     </div>
     <div class="grid-item-text">
-        <p>What's more, <samp>Some.Files.zip</samp> is now part of the
-        Archive Contents tree.  We can navigate to it directly by selecting it
-        in the tree.</p>
-        <p>Try going back to the HFS disk and double-clicking on
-        <samp>SIMPLE.DOS.SDK</samp> or <samp>small.woz.gz</samp>.  These are
-        compressed disk images, so opening them adds entries for the compression
-        wrapper, the disk image file, and the filesystem.</p>
-    </div>
-</div>
-
-<div class="grid-container">
-    <div class="grid-item-text">
-        <p>By default, the top level of disk images and partitions are opened
-        automatically, but only to a certain level.  You can control this with
-        the <samp>Auto-Open Depth</samp> option in the Application Settings.
-        If you want every possible disk image and file archive opened and
-        added to the Archive Contents tree, set it to <samp>Max</samp>.</p>
+        <p>Text goes here.</p>
     </div>
 </div>
 
@@ -166,8 +166,7 @@
 </div> <!-- main -->
 
 <div id="prevnext">
-    <a href="list.html" class="btn-previous">&laquo; Previous</a>
-    <a href="view.html" class="btn-next">Next &raquo;</a>
+    <a href="nested.html" class="btn-previous">&laquo; Previous</a>
 </div>
 
 <!-- START: /incl-footer.html -->
