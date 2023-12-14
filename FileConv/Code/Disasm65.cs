@@ -150,7 +150,8 @@ namespace FileConv.Code {
             } else if (fileType == FileAttribs.FILE_TYPE_SYS ||
                        fileType == FileAttribs.FILE_TYPE_CMD ||
                        fileType == FileAttribs.FILE_TYPE_8OB ||
-                       fileType == FileAttribs.FILE_TYPE_P8C) {
+                       fileType == FileAttribs.FILE_TYPE_P8C ||
+                       fileType == FileAttribs.FILE_TYPE_REL) {
                 // These are explicitly 8-bit code.
                 applic = Applicability.Yes;
                 startAddr = 0x2000;
