@@ -93,6 +93,12 @@ presents the set that can actually be stored.</p>
 pathname.  The allowed syntax and any restrictions are described with a few bullet
 points below the entry field.</p>
 
+<p>CP/M user numbers are handled as if they were part of the filename, appearing
+after a comma.  They are omitted for user zero.  For example, a file called
+<samp>FILE.TXT</samp> in user 0's space would simply be called <samp>FILE.TXT</samp>,
+but a file with the same name in user 1's space would be called <samp>FILE.TXT,1</samp>.
+You can change the user assignment by "renaming" the file.</p>
+
 <h4>ProDOS type</h4>
 
 <p>Only present if the format supports ProDOS file types.</p>
