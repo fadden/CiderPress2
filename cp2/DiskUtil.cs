@@ -58,8 +58,8 @@ namespace cp2 {
                 return false;
             }
             if (!okayForCreate) {
-                Console.Error.WriteLine("Filename extension (" + ext +
-                    ") is ambiguous or not supported for file creation");
+                Console.Error.WriteLine("Filename extension \"" + ext +
+                    "\" is ambiguous or not supported for file creation");
                 return false;
             }
             if (ext == ".d13" && !(parms.Sectors == 13)) {
@@ -79,6 +79,18 @@ namespace cp2 {
             if (byteSize < 0) {
                 Console.Error.WriteLine("Invalid size specifier '" + sizeStr + "'");
                 return false;
+            }
+
+            // Special handling for the popular ".dsk" extension.  If the size is 320KB or
+            // smaller, they could be creating a 16-sector 5.25" disk image, and it would be
+            // ambiguous.  For larger images we can assume it's just a series of blocks.
+            if (ext == ".dsk") {
+                if (byteSize <= 320 * 1024) {
+                    Console.Error.WriteLine("Filename extension \"" + ext +
+                        "\" is ambiguous at that size (try \".do\" or \".po\"?)");
+                    return false;
+                }
+                orderHint = SectorOrder.ProDOS_Block;
             }
 
             // Translate the "format" parameter, if provided.

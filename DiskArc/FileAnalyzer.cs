@@ -296,6 +296,10 @@ namespace DiskArc {
                     }
                     break;
                 case ".img":
+                    // This is somewhat ambiguous.  It was used by one specific version of
+                    // Copy ][+ for physical-order 5.25" images, but nobody uses those.  It's
+                    // more likely an unadorned sector image or possibly DiskCopy 4.2.
+                    okayForCreate = false;
                     fileKind1 = FileKind.UnadornedSector;
                     orderHint1 = SectorOrder.Physical;
                     fileKind2 = FileKind.DiskCopy;
@@ -305,7 +309,11 @@ namespace DiskArc {
                     orderHint1 = SectorOrder.DOS_Sector;
                     break;
                 case ".dsk":
-                    okayForCreate = false;      // ambiguous
+                    // For 5.25" 16-sector disk images this is *usually* a DOS-ordered disk, but
+                    // often isn't.  It's used for all sorts of things, but almost always for
+                    // unadorned block images.  The largest possible 16-sector floppy is 320KB,
+                    // so anything that size or smaller is ambiguous.  We don't know the size,
+                    // so it's up to the caller to reject creation of small disks.
                     fileKind1 = FileKind.UnadornedSector;
                     orderHint1 = SectorOrder.DOS_Sector;
                     fileKind2 = FileKind.DiskCopy;

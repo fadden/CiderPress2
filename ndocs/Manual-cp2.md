@@ -1462,12 +1462,16 @@ The size string is case-insensitive.
 ### Filename Extensions ###
 
 Used for commands like `create-disk-image` and `create-file-archive`
-to decide what sort of file to create.
+to decide what sort of file to create.  When opening an existing file, some
+of the extensions are allowed to mean more than one thing.
 
  - ".do" - unadorned DOS-ordered disk sector image; for 16-sector 5.25" disks
  - ".d13" - unadorned DOS-ordered disk sector image; for 35-track
    13-sector 5.25" disks
  - ".po", ".iso", ".hdv", ".dc6" - unadorned ProDOS-ordered disk block image
+ - ".dsk" - unadorned ProDOS-ordered disk block image; for creation this may
+   only be used for disks 360KB or larger to avoid ambiguity (for a 16-sector
+   5.25" disk, DOS ordering is expected)
  - ".nib" - unadorned 35-track 5.25" disk nibble image
  - ".woz" - WOZ format nibble image, for 5.25" (35- or 40-track)
    or 3.5" (SSDD or DSDD) disks
@@ -1482,9 +1486,9 @@ to decide what sort of file to create.
 
 Extensions not supported for file creation:
 
- - ".dsk" - unadorned ambiguously-ordered disk image
  - ".nb2" - variant of ".nib" that is no longer used
  - ".raw" - unadorned sector or unadorned nibble (ambiguous)
+ - ".img" - unadorned sector or DiskCopy (ambiguous)
  - ".gz" - gzip file (just use "gzip" utility)
  - ".as" - AppleSingle file (extract a file as AppleSingle instead)
  - ".bin", ".macbin" - MacBinary files cannot be created
