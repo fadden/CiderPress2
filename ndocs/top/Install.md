@@ -55,7 +55,7 @@ In the shell, change to the directory where the files were unzipped.  Then:
  - Mac OS: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
    to make it executable.  You then need to remove the quarantine flag from the files, or the
    system will not allow you to execute them.  In the directory where the files were unpacked, run
-   `xattr -d comp.apple.quarantine *`.  Run `./cp2 version` to confirm this was successful.
+   `xattr -d com.apple.quarantine *`.  Run `./cp2 version` to confirm this was successful.
 
 The commands are:
 
@@ -98,3 +98,14 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
 
     #!/bin/sh
     exec PATH/TO/dotnet PATH/TO/cp2.dll $@
+
+### Linux and Wine ###
+
+It's possible to run the GUI application under Linux using the Wine compatibility layer.
+However, with Wine v8.0.2 on Ubuntu 20.04, it was not difficult to make the application crash.
+
+If you want to try it, download the 32-bit (x86) self-contained package for Windows.  On my
+system, the 64-bit version hangs during startup (for both GUI and CLI), and the framework-dependent
+package requires downloading additional Wine components, so `win-x86_sc` is your best bet.
+
+(I am not a Wine expert.  It's possible I'm doing it wrong.)
