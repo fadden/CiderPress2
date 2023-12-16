@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Drag &amp; Drop, Copy &amp; Paste</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-dragcopy -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy" class="active"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Drag &amp; Drop to Move Files</h2>
+
+<p>Drag &amp; drop within the application can be used to move files from one directory to
+another in disk images with hierarchical filesystems, such as ProDOS and HFS.</p>
+
+<p>When moving files within a disk directory hierarchy, all selected files are transferred to the
+target directory.  If you select a variety of files from multiple directories, all of them
+will be moved to the destination.  If you want to retain the directory structure, move a
+directory instead of the files inside it.</p>
+
+<p>Unlike inter-application copies, the behavior is not affected by whether the display is
+configured to show all files or only a single directory.</p>
+
+<p>Dragging a file to the directory it already lives in has no effect.</p>
+
+<p>Files may be dropped in the file list or directory tree.  If dropped in the file list, the
+application checks to see if they were dropped on a directory entry.  If so, that directory will
+be used as the destination; if not, the directory that is currently selected in the directory tree
+will be used.</p>
+
+<p>The order in which files appear in a directory can be important, so an effort is made to
+preserve the order of the files.  They will generally be moved in the order in which they appear
+in the file list on screen.</p>
+
+<p>Copy &amp; paste within a file archive is not permitted, because it's not possible to read
+from an entry while modifying the archive.  Copy & paste within a disk image is allowed, but
+attempting to copy a file onto itself will fail.</p>
+
+
+<h2>Drag / Copy Between Applications</h2>
+
+<p>Inter-application Drag and Copy operations can be initiated from the file list.  They two have
+identical behavior behind the scenes: in both cases, a collection of "virtual" file references and
+metadata is collected and provided to Windows.  The file data itself is not copied to the
+clipboard.  Using virtual file streams improves performance when starting a drag or copy
+operation, and allows files to be dragged or pasted directly into "foreign" applications, such as
+Windows Explorer.</p>
+
+<p>Data is read from the virtual streams at the time the files are dropped or pasted.  Because of
+this, files copied onto the clipboard cannot be pasted after the source archive or disk image is
+closed.  Similarly, files copied to the clipboard cannot be pasted if they are deleted from a
+disk image or file archive after being copied.  This means you can't copy files between disk
+images by opening the first image, copying the data, closing it, and then opening the second image
+to do the paste.</p>
+
+<p>The application has no ability to influence how Windows Explorer handles the clipboard data
+prepared for "foreign" transfers, so the file data must be arranged in the clipboard in a way that
+allows it to be written to Windows without further action.  This requires separating data and
+resource forks into separate file entries, with filenames and file contents appropriate for Windows
+and the currently-selected attribute preservation system (NAPS, AppleSingle, etc).</p>
+
+<p>When dragging or copying between instances of CiderPress II, a different set of metadata and
+virtual file streams is used.  These copy both forks and all file attributes.  Certain options,
+such as "strip paths" and "use raw data", will change how the data is placed on the clipboard.</p>
+
+<p>Files may be dropped into the file list or the directory tree, from a drag initiated from
+another application instance or from Windows Explorer.  If dropped in the file list, we check
+to see if they were dropped on a directory.  If so, we use that directory as target; if not, we
+use the current directory.  When pasting (with <samp>Edit &gt; Paste</samp> or <kbd>Ctrl+V</kbd>),
+the directory currently selected in the directory tree is always used as the destination.</p>
+
+<p>The order in which files appear in a directory can be important, so an effort is made to
+preserve the order when copying them.  However, directory entries need to come before any
+entries that use them, to ensure that the appropriate hierarchy is established before trying
+to create the files.</p>
+
+<h3>Dragging in From Windows Explorer</h3>
+
+<p>Files dragged from a Windows Explorer window are presented to CiderPress II as a list
+of filenames.  This works like any other add/import operation.</p>
+
+<p>The exception to this is when Windows Explorer is treating a ZIP archive as if it were part of
+the filesystem.  In this case, the files are delivered as metadata and virtual file streams.
+This mode of operation is not currently supported.</p>
+
+<h3>Partial Pathname Handling</h3>
+
+<p>Suppose we have an HFS disk image with the following set of files:</p>
+<pre>
+  MyDocs
+    AddressList.csv
+    FavoriteThings.txt
+    FancyText.doc
+  MyPhotos
+    Rocks.jpg
+    Family.gif
+    Vacation
+      Snow.jpg
+      Resort.gif
+</pre>
+<p>If we copy these to the clipboard, what should the filenames be set to?  Specifically, if the
+file list is just showing the contents of the "Vacation" directory, and we copy "Snow.jpg",
+should it get pasted in Windows Explorer as "Snow.jpg", or under a couple of directories as
+"MyPhotos/Vacation/Snow.jpg"?</p>
+
+<p>The expected result of pasting or dropping the files in a different window will depend on how
+the files were being listed in CiderPress II.  If the application was only displaying the contents
+of the "Vacation" directory, it would be reasonable to drop the file as "Snow.jpg".  However, if
+the application was showing the full file list, then the user would expect the directory
+hierarchy to be preserved because that's what's shown on screen.</p>
+
+<p>This is independent of the "strip paths" option, which always removes all paths.  For example,
+when viewing just the "MyPhotos" directory, extracting the "Vacation" folder should extract
+"Vacation/Snow.jpg" and "Vacation/Resort.gif".  With full paths those would further be stored in a
+"MyPhotos" folder, while with stripped paths it would just create "Snow.jpg" and "Resort.gif" in
+the target folder.</p>
+
+<p>The behavior in the single-folder view matches Windows Explorer drag &amp; drop behavior,
+because Explorer is effectively always showing a single folder.</p>
+
+<p>Using the current view mode as the determinant of the behavior has one notable
+drawback: CiderPress II always displays file archives in full-list mode.  While it's
+possible to fully strip the directories with the "strip paths" option, it's not possible
+to specify a partial path hierarchy.  (This could be resolved by synthesizing a directory
+hierarchy for file archives.)</p>
+
+<p>It's worth noting that this feature works the same way that "extract" does: files extracted
+from the single-directory view will be "rooted" in that directory, but files extracted from
+the full file list will be extracted with their full paths.</p>
+
+<p>When files are copied between instances of CiderPress II, the receiving application also has an
+opportunity to strip paths from the incoming files.  (The "strip paths" option is configured
+separately for add operations and extract operations.)</p>
+
+<h3>DOS 3.x File Handling</h3>
+
+<p>There are two additional considerations when working with files on DOS disks: "raw" mode and
+text file character conversion.</p>
+
+<p>It's important to pay attention to the "raw files" setting when copying files from a DOS disk,
+because it determines how the data will be formed on the clipboard.  It should generally be
+enabled for DOS-to-DOS transfers and disabled for anything else.  Setting it on the receiving
+side is not necessary, as the mode flag is passed along with the extended attribute data.</p>
+
+<p>DOS text files have the high bit set on every character, while ProDOS and other filesystems
+store text files with the high bit clear.  A conversion can optionally be applied when copying
+and pasting files within or between instances of CiderPress II.  The conversion does not
+affect files copied to or from other applications, such as Windows Explorer, but that can be
+accomplished using the import/export text feature.  The conversion is only enabled when copying
+to a filesystem, e.g. from DOS to ProDOS, ProDOS to DOS, or NuFX to DOS, but not DOS to NuFX.
+The <samp>Convert DOS Text</samp> option must be enabled in the application settings on
+the receiving side.</p>
+
+
+<h2>Add/Extract vs. Import/Export</h2>
+
+<p>CiderPress II uses "add" and "extract" to preserve file contents, and "import" and "export" to
+convert file contents.  Both modes have their uses when dragging and copying, so we need a way to
+tell the application which mode to use.</p>
+
+<p>A simple button on the toolbar determines whether "extract" or "export" mode will be used.
+Set <samp>Drag &amp; Copy Mode</samp> to <samp>Add/Extract</samp> or <samp>Import/Export</samp>
+as needed.  The behavior is otherwise the same as it would be if that menu command were
+chosen.  The various options can be set in the options bar on the right side of the window.</p>
+
+<p>If the export conversion mode is set to a specific type, rather than "best", then only the
+items suited for conversion will be exported.</p>
+
+<p>When transferring files between CiderPress II instances, the mode must be set to "extract".  If
+the mode is set to "export", the direct-transfer data will not be placed on the clipboard.
+Attempting to paste exported data into CiderPress II will result an error message.</p>
+
+
+<h2>Miscellaneous</h2>
+
+<p>Windows tries to prevent drag &amp; drop operations between applications with different
+privilege levels when UAC (User Access Control) is enabled.  Windows Explorer does not usually
+run as administrator, so if you run CiderPress II with elevated privileges, e.g. to gain access to
+physical media, you may not be able to drag files in and out.</p>
+
+<p>If no archive is open in the application, dropping a file from Windows Explorer into the main
+application window will cause CiderPress II to try to open that file.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

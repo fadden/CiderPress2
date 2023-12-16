@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CLI Tutorial - Adding Files</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-cli-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" class="active" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-add -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Contents</a>
+        <ul>
+            <li id="sidenav-extarc"><a href="extarc.html">Ext-Archive and Turduckens</a></li>
+        </ul></li>
+        <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
+        <ul>
+            <li id="sidenav-raw"><a href="raw.html">Raw Mode</a></li>
+            <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
+        </ul></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-add" class="active"><a href="add.html">Adding Files</a>
+        <ul>
+            <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
+        </ul></li>
+        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+        <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Adding Files</h2>
+
+<p>Files can be added to an archive with the <kbd>add</kbd> command.  It takes the
+name of an archive and a list of files and directories as arguments:</p>
+<p class="showcmd">cp2 add myfiles.shk sample.text Code/LISA</p>
+<p class="showout">Created file archive 'myfiles.shk'
+Adding 8 files
+adding Code\LISA\anix.equates
+adding Code\LISA\ANIX.LISTING
+adding Code\LISA\DETOKEN.A
+adding Code\LISA\LISA.MNEMONICS
+adding Code\LISA\LISA3.9
+adding Code\LISA\MNEMONICS.A
+adding sample.text
+</p>
+
+<p>If the archive name indicates a file archive, and the file does not exist,
+it will be created automatically.</p>
+
+<h3>Attribute Preservation</h3>
+
+<p>Files that were extracted with attribute preservation should be added with
+those attributes.  This is generally handled automatically by cp2, which will
+identify AppleSingle, AppleDouble, NAPS, and (on Mac OS) host-preserved attributes.</p>
+<p class="showcmd">cp2 a myfiles.shk TEACH.SAMPLE.as</p>
+<p class="showout">Adding 1 file
+adding TEACH.SAMPLE.as -> TEACH.SAMPLE
+adding TEACH.SAMPLE.as (rsrc) -> TEACH.SAMPLE
+</p>
+
+<p>Sometimes this is undesirable, e.g. you want an AppleSingle file to be added
+as an AppleSingle file, not unpacked into its parts.
+You can switch off individual preservation schemes by adding
+the <kbd>--no-from-adf</kbd>, <kbd>--no-from-as</kbd>, <kbd>--no-from-host</kbd>,
+or <kbd>--no-from-naps</kbd> flag.  You can turn them all off with
+<kbd>--no-from-any</kbd>.</p>
+
+<p>Files added to ZIP archives will use a special arrangement of AppleDouble that
+puts the "header" files in a separate hierarchy under the <samp>__MACOSX</samp> directory.
+You can disable this behavior with <kbd>--no-mac-zip</kbd>.</p>
+
+<h3>Using Ext-Archive</h3>
+
+<p>When working with filesystems on disk images, files and directories are added
+to the volume directory.  Sometimes this isn't desired, e.g. you want to add all
+files to a subdirectory.  You can do this by adding the directory name to the
+ext-archive specifier.</p>
+
+<p class="showcmd">cp2 cdi newdisk.po 800kb prodos</p>
+<p class="showout">Creating disk image: Unadorned Sector, order=pdos/blk, size=800KB, ProDOS
+</p>
+<p class="showcmd">cp2 mkdir newdisk.po SubDir</p>
+<p class="showout">creating SubDir
+</p>
+<p class="showcmd">cp2 a newdisk.po:SubDir TEACH.SAMPLE.as</p>
+<p class="showout">Adding 1 file
+adding TEACH.SAMPLE.as -> SubDir/TEACH.SAMPLE
+adding TEACH.SAMPLE.as (rsrc) -> SubDir/TEACH.SAMPLE
+</p>
+
+</div>
+
+<div id="prevnext">
+    <a href="create.html" class="btn-previous">&laquo; Previous</a>
+    <a href="import.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

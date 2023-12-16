@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CLI Tutorial - Importing Files</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-cli-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" class="active" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-import -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Contents</a>
+        <ul>
+            <li id="sidenav-extarc"><a href="extarc.html">Ext-Archive and Turduckens</a></li>
+        </ul></li>
+        <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
+        <ul>
+            <li id="sidenav-raw"><a href="raw.html">Raw Mode</a></li>
+            <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
+        </ul></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-add"><a href="add.html">Adding Files</a>
+        <ul>
+            <li id="sidenav-import" class="active"><a href="import.html">Importing Files</a></li>
+        </ul></li>
+        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+        <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Importing Files</h2>
+
+<p>Files added to an archive are copied without modification, other than what is
+required to separate the contents of the forks from file attribute preservation metadata.
+Sometimes you want to convert the file's contents as it's being added though.</p>
+
+<p>Conversions are performed by the <kbd>import</kbd> command, which takes the same
+arguments as <kbd>add</kbd>, but with the addition of an "import-spec".  The import
+specifier tells CiderPress II how to do the conversion.  Unlike exports, there is
+no "best" conversion, so you must specify which converter to use.</p>
+
+<p>Suppose we want to edit an Applesoft BASIC program.  We first need to export
+the program to a text file:</p>
+<p class="showcmd">cp2 xp code.shk bas HRBARS</p>
+<p class="showout">exporting HRBARS -> HRBARS.txt [bas]
+</p>
+
+<p>We would edit HRBARS.txt, making whatever changes were desired, and then
+we'd add it back:</p>
+<p class="showcmd">cp2 import -f code.shk bas HRBARS.txt</p>
+<p class="showout">Importing 1 file
+Overwriting 'HRBARS'
+importing HRBARS.txt -> HRBARS
+</p>
+
+<p>If the import fails, e.g. because the Applesoft program has a syntax error
+(like an invalid line number) or it's simply the wrong type of file (like a PNG),
+the command will halt with an error message.</p>
+
+<p>The only import converters currently defined are <kbd>text</kbd>, for text
+files, and <kbd>bas</kbd>, for Applesoft BASIC.</p>
+<p>The text converter will change the text to use the proper end-of-line character,
+usually carriage return ($0D).  The character set for the input can be
+specified as UTF-8, ISO 8859-1, or CP1252, while the output can be encoded as
+ASCII, high ASCII, or Mac OS Roman.  The defaults are UTF-8 and ASCII, but if the
+target is a DOS filesystem the output will be set to high ASCII instead.  See
+the manual for details.</p>
+
+
+</div>
+
+<div id="prevnext">
+    <a href="add.html" class="btn-previous">&laquo; Previous</a>
+    <a href="copy.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

@@ -1,24 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-    <link rel="stylesheet" href="main.css" />
-    <title>CiderPress Format Docs Index</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="main.css"/>
+    <!-- END: /incl-head.html -->
 
     <style>
-        .center {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
+        img {
+            /* add a border so image thumbnails look clickable */
+            border: 2px solid;
         }
     </style>
+
+    <title>CiderPress Format Documentation Index</title>
 </head>
 
 <body>
-<div id="content">
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-home -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" class="active" href="./">HOME</a>
+        <a id="topnav-gui-manual" href="gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-format-docs -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-features"><a href="features.html">Feature List</a></li>
+        <li id="sidenav-format-docs" class="active"><a href="doc-index.html">Format Docs</a></li>
+        <li id="sidenav-history"><a href="history.html">History</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
 <h1>CiderPress Format Documentation Index</h1>
 
 <p>This is an index of the file format documentation found in the
@@ -35,7 +88,8 @@ asserts, as well as my attempts to reconcile conflicting information from
 authoritative sources.</p>
 <p>The material was developed while writing the code that processes the files,
 so it should be reasonably accurate, and may provide some insight for
-programmers trying to understand why the code works the way it does.</p>
+programmers trying to understand why the code works the way it does.  The
+documentation lives in the source code tree, right next to the relevant code.</p>
 
 <p>All documentation in the CiderPress II source tree is copyright faddenSoft,
 distributed under the terms of the
@@ -130,6 +184,8 @@ license.</p>
       General notes on Apple IIgs and Macintosh resource forks</a></li>
 </ul>
 <ul>
+  <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/Disasm65-notes.md">
+      6502, 65C02, and 65816 disassembly</a></li>
   <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/ApplePascal-notes.md">
       Apple Pascal Textfile and Codefile</a></li>
   <li><a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Code/BASIC-notes.md">
@@ -168,11 +224,19 @@ license.</p>
       Print Shop and Print Shop GS graphics (clip art)</a></li>
 </ul>
 
-<hr/>
+</div>
 
-<p>All of the above is part of the <a href="https://ciderpress2.com/">CiderPress II</a> project.</p>
+</body>
+</html>
 
 </div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
 
 </body>
 </html>

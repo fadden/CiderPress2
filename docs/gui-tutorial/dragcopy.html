@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>GUI Tutorial - Drag &amp; drop, Copy &amp; Paste</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" class="active" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-dragcopy -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Entries</a>
+        <ul>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
+        </ul></li>
+        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-dragcopy" class="active"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-sectedit"><a href="sectedit.html">Sector Editing</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+        <!-- not doing: disk ops, app settings -->
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Drag &amp; Drop, Copy &amp; Paste</h2>
+
+<div class="grid-container">
+    <div class="grid-item-text">
+        <p>You can add, extract, import, and export files by dragging and
+        dropping them to and from a Windows Explorer.  You can also copy
+        them between archives by copying from one instance of CiderPress II
+        to another, or copy and paste them into other applications.</p>
+        <p>When dragging files around, things generally work exactly the way you'd
+        expect: select the
+        files you want to transfer, and drag them in or out.  The behavior is
+        the same as it would be if you used an item from the <samp>Actions</samp>
+        menu; all of the options in the right-side panel (such as <samp>Strip Paths</samp>)
+        take effect.  There are a few things to be aware of, however.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/drag-copy-mode.png" alt="drag-copy-mode"/>
+    </div>
+    <div class="grid-item-text">
+        <p>In the toolbar at the top of the screen is a section labeled
+        "<samp>Drag &amp; Copy mode</samp>".  The buttons here let you choose whether
+        drag and copy actions act like add/extract or import/export.</p>
+        <p>If you were transferring files between archives, or extracting files
+        that you want to preserve, you would use the <samp>Add/Extract</samp> mode.
+        On the other hand, if you were copying a text file or graphics image to
+        paste into a word processor document, you would want <samp>Import/Export</samp>
+        mode instead.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/gmail-send-dhr.png" alt="gmail-send-dhr"/>
+    </div>
+    <div class="grid-item-text">
+        <p>For example, if you wanted to send an old graphics image through e-mail, you might
+        configure to extract as AppleSingle, drag the file into the draft message
+        to attach it, then switch to export mode and drag it again to drop a
+        converted bitmap in.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/copy-paste-menu.png" alt="copy-paste-menu"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Copy and paste, using the commands in the <samp>Edit</samp> menu, works
+        the same way.</p>
+        <p>You are not allowed to paste a file onto itself.</p>
+        <p>Note: the file contents are not actually copied onto the system clipboard,
+        just a reference to them.  Attempting to paste the contents of the clipboard
+        after closing the source archive will fail.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/drag-in-files.png" alt="drag-in-files"/>
+    </div>
+    <div class="grid-item-text">
+        <p>When dragging files in, you can drop them into an entry in the Directory
+        tree, or into the file list.  The target directory does not have to be
+        selected.  If you drop onto the file list, the files will be added to
+        the current directory selection, unless you drop them onto a directory
+        entry in the file list, in which case they will be added to that directory.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-text">
+        <p>There is one other thing you can do with drag &amp; drop: move files
+        between directories in a hierarchical filesystem such as HFS or ProDOS.
+        Just pick the files you want to move and drag them to an entry in the
+        Directory tree, or to a directory entry in the file list.</p>
+        <p>You cannot drag a directory into a child of itself.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
+<div id="prevnext">
+    <a href="add.html" class="btn-previous">&laquo; Previous</a>
+    <a href="editattrs.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

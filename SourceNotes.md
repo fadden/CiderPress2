@@ -61,3 +61,43 @@ The hidden `--debug` option for cp2 will show additional debugging information
 for certain operations.  For example, `cp2 help --debug` also lists the
 commands used to run the tests, and `cp2 version --debug` will display
 additional information about the runtime environment.
+
+## GUI Tool Development ##
+
+During development, the command-line interface was developed first.  The
+graphical interface is currently being prototyped with WPF (Windows
+Presentation Foundation).  This might seem an odd choice, since WPF is several
+years old and Windows-only, and there are multi-platform UI toolkits. The
+motivations are:
+
+ 1. Some multi-platform UI toolkits don't work on all of my target platforms.
+    For example, Microsoft's MAUI doesn't currently work on Linux.
+ 2. Some UI toolkits emphasize mobile device interaction, making them less
+    suitable for what is intended as a desktop application.
+ 3. Some UI toolkits are missing important pieces, like robust display of
+    formatted text.
+ 4. I'm familiar with WPF.
+
+My goal with the WPF implementation was to provide a useful program that
+proves out the API in the underlying libraries.  The bulk of the
+implementation is shared between the CLI and GUI apps, but you can't trust an
+API until it has been used for a real application.  I had initially planned to
+use a platform-independent UI toolkit for the first version, but I wasn't able
+to find one that seemed both appropriate and ready.  WPF has a lot of issues,
+but I've already fought those battles and know how to solve the problems.
+Learning a new API and working through a new set of issues was just going to
+slow things down.
+
+The final reason for sticking with WPF is that I'm not convinced that a
+platform-neutral implementation is the right choice.  Some features, like
+managing physical media, are specific to each platform.  Drag & drop
+operations are provided by some GUI toolkits, but only within an application.
+Copying files between program instances, or to and from a system
+Finder/Explorer window, requires platform-specific handling.  The right answer
+may be that every platform needs a custom implementation that can take full
+advantage of the system's characteristics.
+
+Since I don't know what the right answer is, I'm going to forge ahead with the
+WPF version.  This will ensure that the various APIs work correctly with a GUI
+app, and demonstrate how I think the tool should behave.  Fortunately, the GUI
+application code is a relatively small part of the overall package.

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Editing Sectors</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-editsector -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector" class="active"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Editing Blocks and Sectors</h2>
+
+<p>Disk images and partitions can be edited as 256-byte sectors or 512-byte blocks.</p>
+<p>Sector editing is available when the disk geometry can be expressed as a collection
+of tracks, with a fixed number of sectors per track.  Block editing is available
+when the disk can be viewed as a series of 512-byte blocks.  This means that an
+image of an Apple II 13-sector 5.25" disk can only be edited as sectors, and a 32MB hard drive
+can only be edited as blocks.  Apple II 16-sector 5.25" disks can go either way.</p>
+
+<p>Apple II operating systems that access 16-sector disks apply a translation table
+to the sector number.  Reading and writing sectors sequentially is inefficient because,
+between the time the software finished reading sector 0 and was ready to start on
+sector 1, the disk will rotate past the start of sector 1.  The software skew allows
+the operating system to interleave the sectors in a fashion that is optimized for
+its performance goals.</p>
+
+<p>DOS uses one scheme, ProDOS and Apple Pascal another, and CP/M uses a third.  When
+reading sectors from a nibble image, it's important to select the correct translation
+table.  Usually the filesystem installed on the disk makes it easy to identify, but
+some systems use different schemes on different tracks.</p>
+
+<p>Block images are generally much simpler, storing blocks in sequential order.</p>
+
+<p>You can open the block/sector editor by selecting the disk image or partition
+you wish to edit, and then clicking one of the buttons in the center panel or using
+the corresponding item in the <samp>Actions</samp> menu.  There are three options:</p>
+<ol>
+  <li>Edit Sectors - opens the editor with track/sector addressing, a 256-byte data
+    area, and DOS 3.3 sector skew.</li>
+  <li>Edit Blocks - opens the editor with block addressing, a 512-byte data area,
+    and ProDOS sector skew.</li>
+  <li>Edit Blocks (CP/M) - opens the editor with block addressing, a 512-byte data area,
+    and CP/M sector skew.  Also displays the CP/M allocation block number at
+    the top of the window.</li>
+</ol>
+
+<h3>Navigation</h3>
+
+<p>Track, sector, and block numbers may be entered in decimal or hexadecimal
+(precede it with "<samp>$</samp>" or "<samp>0x</samp>" for hex).  The range of valid
+values is shown.  Enter the
+desired values and click <samp>Read</samp> to read the block, or <samp>Write</samp>
+to write it.  (You're allowed to write a block somewhere other than where you read it,
+though you will be asked for confirmation if you try.)</p>
+<p>Use the <samp>Prev</samp> and <samp>Next</samp> buttons to move forward or backward
+by one block or sector.</p>
+<p>To edit sector data, click in the hex data area on the byte you wish to change, and
+enter two hex digits (0-9, a-f).  Editing the text area directly is not currently supported.</p>
+
+<p>For 16-sector disks, the sector skew can be changed with the <samp>Sector Order</samp>
+pop-up menu.</p>
+<p>For nibble images, the sector format is displayed.</p>
+<p>The character conversion mode used for the text portion of the hex dump can be
+altered with the <samp>Text Conversion</samp> buttons.</p>
+
+<p>If you want to share the sector contents, use the <samp>Copy to Clipboard</samp> to
+generate a text copy of the hex dump.</p>
+
+<h3>Filesystem Updates</h3>
+
+<p>Editing a disk with a filesystem could change the filesystem, or render it
+unrecognizable.  When you start making changes, the filesystem or partitions stored
+in the disk image will be removed from the Archive Contents tree (top-left panel).
+When you exit the sector
+editor, the disk will be re-scanned, and the filesystem re-added to the archive tree
+if possible.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

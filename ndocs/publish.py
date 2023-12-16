@@ -22,8 +22,8 @@ pkg_version = app_version
 
 
 # Output directory.  The directory will be completely removed and regenerated.
-#output_dir = "../docs"
-output_dir = "../pdocs"     # DEBUG
+output_dir = "../docs"
+#output_dir = "../pdocs"     # DEBUG
 
 # Subdirectory with files that will be copied to the top of the project.
 top_dir = "top"
@@ -164,10 +164,10 @@ def main():
     for file in topfiles:
         inpath = os.path.join(top_dir, file)
         outpath = os.path.join(outdir, file)
-        #if os.path.isfile(outpath):
-        #    os.remove(outpath)
-        #copy_file(inpath, outpath, True)
-        print(" WOULD copy", inpath, "-->", outpath)
+        if os.path.isfile(outpath):
+            os.remove(outpath)
+        copy_file(inpath, outpath, True)
+        #print(" WOULD copy", inpath, "-->", outpath)
 
     sys.exit(0)
 

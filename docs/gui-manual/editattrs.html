@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Edit Attributes</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-editattrs -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs" class="active"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>File Attributes</h2>
+
+<p>File entry attributes can be edited by selecting a file, and then
+<samp>Actions &gt; Edit Attributes</samp>.</p>
+
+<p>ProDOS file types are a single byte, with a 16-bit auxiliary type.  HFS file types
+are four bytes, and have a four-byte creator identifier.  The various file archives and
+filesystems allow files to have one, both, or neither of these.  Support for the
+other attributes varies widely between archive formats, so the application only
+presents the set that can actually be stored.</p>
+
+<h4>Filename</h4>
+
+<p>All entries have a filename.  For file archives this will often be a partial
+pathname.  The allowed syntax and any restrictions are described with a few bullet
+points below the entry field.</p>
+
+<p>CP/M user numbers are handled as if they were part of the filename, appearing
+after a comma.  They are omitted for user zero.  For example, a file called
+<samp>FILE.TXT</samp> in user 0's space would simply be called <samp>FILE.TXT</samp>,
+but a file with the same name in user 1's space would be called <samp>FILE.TXT,1</samp>.
+You can change the user assignment by editing the file's suffix.</p>
+
+<h4>ProDOS type</h4>
+
+<p>Only present if the format supports ProDOS file types.</p>
+<p>The file type is chosen from a pop-up menu, sorted numerically.  The standard
+abbreviation is shown.  The auxiliary type is entered as a 4-digit hexadecimal
+value.</p>
+<p>If the type combination is recognized, a description of the expected file
+contents is shown.</p>
+<p>The file type of directory entries cannot be changed.</p>
+<p>On some filesystems, such as DOS 3.3 and Pascal, the file type is presented
+as a ProDOS type even though the actual set is more limited.  The list shown
+in the pop-up menu will be restricted to the allowed set.</p>
+
+<h4>HFS type</h4>
+
+<p>Only present if the format supports HFS file types.</p>
+<p>File type and creator have two entry fields.  The left field holds the
+character representation of the file type, while the right field holds the
+hexadecimal value.  For example, a file of type text will show <samp>TEXT</samp>
+on the left, and <samp>54455854</samp> on the right.  Either field may be
+edited.</p>
+<p>Erasing an entry field sets the type to zero.</p>
+<p>The file type of directory entries cannot be changed.</p>
+
+<h4>Timestamp</h4>
+
+<p>Only present if the format supports timestamps.  While modification dates
+are widely supported, creation dates are less common.</p>
+<p>Dates and times should be entered in your local timezone, in 24-hour format.
+Most vintage file formats store times without a specific timezone.</p>
+<p>All date formats have a limited range.  You will not be allowed to enter
+dates outside the range.  Erasing the field sets the date to "no date".</p>
+
+<h4>Access</h4>
+
+<p>Only present if the format supports one or more access flags.  The flags
+are shown as ProDOS-style access-enabled bits.  Flags that aren't applicable
+will be disabled.</p>
+
+<h4>Comment</h4>
+
+<p>Only present if the format supports per-entry comments.  The comment will
+be converted with an appropriate text mode.  It may be edited freely so long
+as the length limitation is not exceeded.</p>
+
+
+<h2>Volume Attributes</h2>
+
+<p>To edit the attributes of a filesystem volume directory, select the top entry in the
+Directory tree, and then <samp>Actions &gt; Edit Directory Attributes</samp>.
+(Alternatively, right-click on the entry in the Directory tree, and select
+the option from the context menu.)
+This allows you to change the disk volume name and possibly some dates.</p>
+<p>For DOS 3.2/3.3, this provides a way to change the volume number stored in the
+DOS VTOC.  It does not change the sector numbers embedded into nibble images.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

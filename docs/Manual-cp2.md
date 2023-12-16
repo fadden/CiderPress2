@@ -20,9 +20,12 @@ Contents:
    - [Finding Resource Forks](#finding-resource-forks)
    - [Access Flags](#access-flags)
  - [Metadata](#metadata)
+   - [DiskCopy 4.2](#diskcopy-4.2)
+   - [Trackstar](#trackstar)
    - [2IMG](#2img)
    - [WOZ](#woz)
  - [Appendix](#appendix)
+   - [Mac ZIP](#mac-zip)
    - [AppleWorks Filename Formatting](#appleworks-filename-formatting)
    - ["TO DO" List](#to-do-list)
 
@@ -178,12 +181,12 @@ The named item must be a disk image or file archive.  There are no
 restrictions on what may be stored inside what, e.g. you can access ShrinkIt
 archives in disk images stored in bigger disk images stored in a ZIP archive.
 
-If a filename contains a colon, it must be escaped with "\" (which may need
-to be doubled-up for some command-line shells, e.g. `cp2 list foo\\:bar.zip`
-to open a file called `foo:bar.zip`).  This should only be an issue for host
-files and DOS 3.2/3.3 disks, since most other filesystems disallow colons.
-All pathnames in disk images and archives can be specified with ':' as
-the path separator.
+If a filename contains a colon, it must be escaped with backslash ('\\')
+(which may need to be doubled-up for some command-line shells, e.g.
+`cp2 list foo\\:bar.zip` to open a file called `foo:bar.zip`).  This should
+only be an issue for host files and DOS 3.2/3.3 disks, since most other
+filesystems disallow colons.  All pathnames in disk images and archives
+can be specified with ':' as the path separator.
 
 gzip is handled "transparently", i.e. if you specify `foo.po.gz` you will
 get `foo.po` automatically, without having to specify `foo.po.gz:foo.po`.
@@ -193,6 +196,7 @@ generally act as a disk image rather than as a file archive with a disk
 image entry stored inside.  This behavior can be controlled with the
 `--skip-simple` option, e.g.  using `--no-skip-simple` will allow a gzip
 file to be uncompressed (but will use the filename stored in the archive).
+Binary II wrappers for ShrinkIt archives are simply ignored.
 
 Filename matching is always case-insensitive, even for case-sensitive
 formats.
@@ -395,6 +399,12 @@ The "type" and "auxtyp" columns will show either the ProDOS file type and
 auxiliary type, or the HFS file type and creator, depending on which seems
 to be the most relevant.  To see both, use the `--wide` option.
 
+The "length" field holds the file's length, in bytes.  The "size" field
+indicates how much space the file or fork occupies on disk or in the file
+archive.  For disk images, the size value includes operating system overhead
+and excludes sparse regions; for file archives, it holds the size after
+compression.
+
 If `--mac-zip` is enabled, the `__MACOSX/.../._filename` entries will be
 merged with the paired entry, and displayed as a single line.
 
@@ -445,8 +455,8 @@ conversions may occur.  This is especially true when copying files to
 or from DOS disk images.  On balance, the degree of preservation should
 be higher than you would get by extracting files to the host filesystem
 and adding them elsewhere (especially when copying files between two DOS
-disk images).  When copying between two ZIP archives, using `--no-mac-zip`
-may reduce the number of conversions.
+disk images, as sparse allocations are replicated).  When copying between two
+ZIP archives, using `--no-mac-zip` may reduce the number of conversions.
 
 The source and destination ext-archive specifiers may end with a directory
 name, if the archives are disk images.  In both cases, the specified
@@ -702,7 +712,7 @@ with case-insensitive comparisons.  See
 DOS T/I/A/B files will be handled as they would by DOS for `LOAD`,
 `BLOAD`, or a sequential text file `READ`.  This may result in partial
 file extraction for certain 'B' files and for random-access text files.
-Use the "--raw" flag to get all sectors of the file.
+Use the `--raw` flag to get all sectors of the file.
 
 Options:
  - `--overwrite`, `--no-overwrite`
@@ -767,7 +777,14 @@ Shows a brief summary of commands and options.
 
 Usage: `cp2 help [command]`
 
+If no command is specified, a list of all available commands is displayed.
+A list of known options, with their hard-coded defaults, is also shown.  (The
+list does not reflect any global or command-specific options set in the
+config file.)
+
 If a command is specified, detailed help for that specific command is shown.
+Notably, the help for `import` and `export` includes a summary of the
+available converters.
 
 Options: (none)
 
@@ -793,7 +810,9 @@ the ".txt" extension removed.  This behavior may be suppressed with the
 `--no-strip-ext` option.
 
 If a file is not compatible with the import specification, the command will
-fail.
+fail.  Note that files on disk images that are being overwritten are removed
+before the conversion process starts, so the original file will be gone even
+if the command fails.
 
 Options:
  - `--strip-ext`, `--no-strip-ext`
@@ -1425,30 +1444,35 @@ The size is an integer, possibly followed by a multiplier string,
 e.g. "800K".  Supported multiplier strings are:
 
  - (none) - bytes
- - "K", "KB", "KiB" - kibibytes (1024 bytes)
- - "M", "MB", "MiB" - mebibytes (1024*1024 bytes)
- - "G", "GB", "GiB" - gibibytes (1024*1024*1024 bytes)
- - "T", "TB", "TiB" - tebibytes (1024*1024*1024*1024 bytes)
- - "BLK", "BLOCKS" - blocks (512 bytes)
- - "TRK", "TRACKS" - 5.25" disk tracks (4096 bytes, or 3328 bytes
+ - "k", "kB", "kiB" - kibibytes (1024 bytes)
+ - "M", "MB", "MiB" - mebibytes (1024 * 1024 bytes)
+ - "G", "GB", "GiB" - gibibytes (1024 * 1024 * 1024 bytes)
+ - "T", "TB", "TiB" - tebibytes (1024 * 1024 * 1024 * 1024 bytes)
+ - "BLK", "blocks" - blocks (512 bytes)
+ - "TRK", "tracks" - 5.25" disk tracks (4096 bytes, or 3328 bytes
     with `--sectors=13` flag)
 
 The size indicates the amount of storage available to the filesystem,
 not the size of the disk image itself.  A standard 5.25" disk would be
 specified as "140KB" for both ".do" sector images and ".nib" nibble images.
-(65535-block ProDOS volumes may be specified as 32MB.)
+(As a special case, ProDOS volumes may be specified as 32MB, though they will
+be formatted with 65535 blocks rather than 65536.)
 
 The size string is case-insensitive.
 
 ### Filename Extensions ###
 
 Used for commands like `create-disk-image` and `create-file-archive`
-to decide what sort of file to create.
+to decide what sort of file to create.  When opening an existing file, some
+of the extensions are allowed to mean more than one thing.
 
  - ".do" - unadorned DOS-ordered disk sector image; for 16-sector 5.25" disks
  - ".d13" - unadorned DOS-ordered disk sector image; for 35-track
    13-sector 5.25" disks
  - ".po", ".iso", ".hdv", ".dc6" - unadorned ProDOS-ordered disk block image
+ - ".dsk" - unadorned ProDOS-ordered disk block image; for creation this may
+   only be used for disks 360KB or larger to avoid ambiguity (for a 16-sector
+   5.25" disk, DOS ordering is expected)
  - ".nib" - unadorned 35-track 5.25" disk nibble image
  - ".woz" - WOZ format nibble image, for 5.25" (35- or 40-track)
    or 3.5" (SSDD or DSDD) disks
@@ -1463,9 +1487,9 @@ to decide what sort of file to create.
 
 Extensions not supported for file creation:
 
- - ".dsk" - unadorned ambiguously-ordered disk image
  - ".nb2" - variant of ".nib" that is no longer used
  - ".raw" - unadorned sector or unadorned nibble (ambiguous)
+ - ".img" - unadorned sector or DiskCopy (ambiguous)
  - ".gz" - gzip file (just use "gzip" utility)
  - ".as" - AppleSingle file (extract a file as AppleSingle instead)
  - ".bin", ".macbin" - MacBinary files cannot be created
@@ -1538,7 +1562,7 @@ Converters are available for code:
      printable (default)
  - `disasm` - disassemble 6502, 65C02, or 65816 code
    - `cpu` (multi): CPU type: `6502`, `6502u`, `65c02`, `65816` (default is
-     `65c02` for 8-bit code, 65816 for 16-bit code)
+     `65c02` for 8-bit code, `65816` for 16-bit code)
    - `long` (bool): for 65816, true=start with long A/X/Y regs (default)
    - `follow` (bool): for 65816, true=try to follow SEP/REP (default)
  - `int`: Integer BASIC program
@@ -1922,7 +1946,6 @@ This extension is fully supported.
 
 Some ideas for the future:
  - Add creation tool for multi-part images (APM, CFFA, etc).
- - Add whole-partition manipulation, e.g. add-partition / extract-partition.
  - Add tools to assist physical media access.
  - Add file "fingerprint" feature: print CRC-32 or other hash for data/rsrc
    next to each filename.

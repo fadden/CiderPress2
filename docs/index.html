@@ -1,32 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="main.css"/>
-    <title>CiderPress II</title>
+    <!-- END: /incl-head.html -->
+
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 
     <style>
-        .center {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
+        img {
+            /* add a border so image thumbnails look clickable */
+            border: 2px solid;
         }
     </style>
+
+    <title>CiderPress II</title>
 </head>
 
+<!-- <body class="no-sidenav"> -->
 <body>
-<div id="content">
-<h1 style="text-align:center">CiderPress II</h1>
 
-<img src="images/cp2_app.png" width="128" height="128" alt="press" class="center"/>
-<p>This site is under construction.  The github repository
-is <a href="https://github.com/fadden/ciderpress2">here</a>.</p>
-
-<p>The CiderPress Format Docs index is <a href="doc-index.html">here</a>.</p>
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
 </div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-home -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" class="active" href="./">HOME</a>
+        <a id="topnav-gui-manual" href="gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-index -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index" class="active"><a href="./">Overview</a></li>
+        <li id="sidenav-features"><a href="features.html">Feature List</a></li>
+        <li id="sidenav-format-docs"><a href="doc-index.html">Format Docs</a></li>
+        <li id="sidenav-history"><a href="history.html">History</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<!-- <img src="images/cp2_app.png" width="128" height="128" alt="press" class="center-img" style="border:0;"> -->
+
+<p>CiderPress II is a software tool for working with vintage Apple software, with
+an emphasis on the Apple II series of computers.  It is the successor to
+the <a href="https://a2ciderpress.com/">CiderPress</a> utility.</p>
+
+<h4>Key features:</h4>
+<ul>
+    <li>Supports a variety of vintage archive formats, as well as file
+        attribute and resource fork preservation in ZIP archives.</li>
+    <li>Supports many disk image formats and filesystems, including
+        multi-partition disk layouts.</li>
+    <li>Works directly with physical hard drives and removable media.</li>
+    <li>Provides file converters for many document, graphic, and code files.</li>
+</ul>
+<p>See <a href="features.html">this page</a> for a complete list of supported
+file formats and conversions.</p>
+<p>
+<a href="images/cp2-wpf-sample.png"><img src="images/cp2-wpf-sample-small.png" width="320" height="180" alt="sample"/></a>
+</p>
+
+<p>The tool is available with a graphical user interface (GUI) and a command-line
+interface (CLI).  These have roughly equivalent feature sets.
+The CLI runs natively on a variety of systems (including Windows, Linux, and macOS),
+while the current GUI runs only on Windows.</p>
+
+<p>
+<a href="https://github.com/fadden/CiderPress2/releases/latest">
+<b>Download</b> the latest release (1.0.0-alpha1)</a> from github.</p>
+
+<p>Some short video demos, made during development:</p>
+<ul>
+    <li><a href="https://youtu.be/P2kss3aOEvs">v0.4 drag &amp; drop</a></li>
+    <li><a href="https://youtu.be/5tE07owhcCc">v0.3 disk handling</a></li>
+    <li><a href="https://www.youtube.com/watch?v=esEHP6Bo8GI">v0.2 new GUI</a></li>
+    <li><a href="https://www.youtube.com/watch?v=_jDVdC6-eoA">v0.1 CLI/GUI</a></li>
+</ul>
+
+<h4>Open Source</h4>
+<p>CiderPress II is written in C# .NET, using the (free to download)
+Visual Studio Community 2022 IDE as the primary development environment.
+The GUI uses the Windows Presentation Foundation (WPF) API.</p>
+<p>The full source code is available on
+<a href="https://github.com/fadden/ciderpress2">github</a>, distributed under
+the Apache 2.0 license, which allows use of the code in both commercial and
+non-commercial projects.</p>
+
+<p>As part of this project, documentation was created for all of the supported
+archive, disk image, and vintage file formats.  These are included with the
+source code, and can be accessed from the
+<a href="doc-index.html">CiderPress Format Documentation Index</a>.</p>
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
 
 </body>
 </html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>GUI Tutorial - Introduction</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" class="active" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-introduction -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction" class="active"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Entries</a>
+        <ul>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
+        </ul></li>
+        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-sectedit"><a href="sectedit.html">Sector Editing</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+        <!-- not doing: disk ops, app settings -->
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Getting Started</h2>
+
+<div class="grid-container">
+    <div class="grid-item-text">
+        <p>This tutorial will assume you're working on a Windows system.  If you're
+        using a compatibility layer like <a href="https://www.winehq.org/">Wine</a>
+        or some other form of emulation, what you see and what you can do may be different.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/load-screen.png" alt="load-screen"/>
+    </div>
+    <div class="grid-item-text">
+        <p>When you start CiderPress II without giving it a file to open, it
+        will display a mostly-empty window with a few buttons.  These allow
+        you to open a file or create a new one.  If you've used the application
+        to open files before, you will also see buttons that let you open the most
+        recent files with a single click.</p>
+        <p>All of these things can also be done with items in the <samp>File</samp>
+        menu.  In addition, you can open a file by dragging and dropping it onto this
+        screen from Windows Explorer (that's the default Windows file manager; it has
+        officially been renamed to File Explorer).</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/open-with-1.png" alt="open-with-1"/>
+    </div>
+    <div class="grid-item-text">
+        <p>It's very convenient to open files by double-clicking on them.  To
+        configure CiderPress II as the default application for a file of a
+        particular type, such as <samp>.shk</samp> or <samp>.2mg</samp>,
+        right-click on it, and select "<samp>Open with</samp>".
+        Instead of picking the application, select "<samp>Choose another app</samp>".</p>
+        <p>(If you don't see CiderPress2 in the list of applications, you may need
+        to launch it first by double-clicking on <samp>CiderPress2.exe</samp> from
+        the installation directory, so that the system is aware of it.)</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/open-with-2.png" alt="open-with-2"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Now select <samp>CiderPress2</samp>.  It may not appear near the top as it
+        does here, so you may need to scroll through the <samp>More Apps</samp> area.
+        <p>Check the box for <samp>Always use this app to open files</samp>.
+        Click <samp>OK</samp>.</p>
+        <p>The application will start, and the file type association will be updated.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
+<div id="prevnext">
+    <a href="index.html" class="btn-previous">&laquo; Previous</a>
+    <a href="list.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

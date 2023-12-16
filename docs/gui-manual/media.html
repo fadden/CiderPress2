@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Physical Media</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-media -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media" class="active"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Opening Media Devices</h2>
+
+<p>Devices attached to your computer via USB or a SCSI adapter can be accessed
+directly.  These include CF and SD cards, hard drives, floppy disks, and CD-ROMs
+that have been formatted for ProDOS, HFS, APM, or other "vintage" formats.</p>
+<p>To use the media, you first need to attach it to your computer.  (How you do
+this is beyond the scope of this manual.)  This will likely generate a message
+that says, "You need to format the disk before you can use it.  Do you want to
+format it?"  <strong>Do not</strong> format the disk.  Instead, click
+<samp>Cancel</samp>.  This will likely lead to a second message from the system that says,
+"The volume does not contain a recognized file system".  This is fine; click
+<samp>OK</samp>.</p>
+
+<p>Use <samp>File &gt; Open Physical Disk</samp> to get a list of available
+devices.  "Fixed" devices, such as the hard drives built into the computer, will
+not be accessible, for safety reasons.  Removable media will be listed with its storage
+capacity.  Select the device, and click <samp>Open</samp>.</p>
+<p>The <samp>Open Read-Only</samp> checkbox determines whether the device is open
+just for reading, or for both reading and writing.</p>
+<p>Once open, you can use the device just like you would a disk image file.  Be sure to
+eject the device from Windows before physically removing it if you have made any changes.</p>
+
+<h3>Administrator Access</h3>
+
+<p>For most Windows systems, an additional step will be required.  You will get a
+message that says, "CiderPress II is not running as Administrator.  Restart?".  This
+happens because, with User Access Control enabled, Windows will not allow low-level
+block access to disk devices.</p>
+<p>Click <samp>OK</samp>, and then <samp>Yes</samp> when asked if you want to
+allow the program to make changes to your computer.  (CiderPress II isn't actually
+trying to make changes to your computer; this is just the standard system warning.)</p>
+
+<p>You can avoid the dialog by running the application as Administrator (though the
+system may prompt anyway you at launch time).  In Windows 10,
+this can done by right-clicking on <samp>CiderPress2.exe</samp> and selecting
+<samp>Run as Administrator</samp>.  If you want it to run as Administrator every time,
+you can do it with a shortcut: right-click on <samp>CiderPress2.exe</samp> and pick
+<samp>Create Shortcut</samp>, then right-click on the new shortcut, select the
+<samp>Shortcut</samp> tab, click <samp>Advanced</samp>, and check
+<samp>Run as Administrator</samp>.  Click <samp>OK</samp> to close the dialog, and
+then <samp>OK</samp> again to make the change to the shortcut.</p>
+
+<p>You can tell if the application is running as Administrator by using
+<samp>Help &gt; About</samp> and looking at the <samp>Runtime</samp> line, and
+checking if it ends with "<samp>(Admin)</samp>".
+
+<p><strong>Note:</strong> Windows restricts drag &amp; drop operations between
+applications with different levels of privilege.  These don't affect most operations,
+but will prevent you from dragging files in from a Windows Explorer window.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

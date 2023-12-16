@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>GUI Tutorial - Nested Archives</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" class="active" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-nested -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Entries</a>
+        <ul>
+            <li id="sidenav-nested" class="active"><a href="nested.html">Nested Archives</a>
+        </ul></li>
+        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-sectedit"><a href="sectedit.html">Sector Editing</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+        <!-- not doing: disk ops, app settings -->
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Nested Archives</h2>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/multipart-arc-start.png" alt="multipart-arc-start"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Sometimes archives are stored inside other archives.  For example, you might put
+        a disk image in a ZIP file to compress it.  Let's take a look at a fairly complex
+        example.</p>
+
+        <p>The file <samp>turducken/MultiPart.hdv</samp> is a hard drive image
+        with three partitions: one ProDOS, one HFS, and one for the partition map
+        itself.
+        The ProDOS filesystem has five embedded DOS.MASTER volumes.
+        All of this is immediately visible in the Archive Contents tree.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/multipart-apm.png" alt="multipart-apm"/>
+    </div>
+    <div class="grid-item-text">
+        <p>We can explore the contents by clicking on the the various
+        elements shown in the tree.  The topmost entry is for the <samp>.hdv</samp>
+        disk image, which doesn't have anything interesting.  The entry below
+        that is for the APM partition list.  If you click on that, you get a
+        list of the partitions, with their start location and size in blocks,
+        as well as their names.  If you double-click on an entry in this list,
+        the tree selection will jump to that partition.</p>
+
+        <p>You can get a similar partition list for the DOS.MASTER volumes by
+        clicking on the <samp>Embedded partitions</samp> entry.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/multipart-hfs.png" alt="multipart-hfs"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Let's try opening an archive within the archive.  If you click on
+        the HFS volume, you can see a couple of disk images and a ZIP archive.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/multipart-zip.png" alt="multipart-zip"/>
+    </div>
+    <div class="grid-item-text">
+        <p>If we double-click on <samp>Some.Files.zip</samp>, the archive opens.
+        We can access the files directly.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/multipart-expand.png" alt="multipart-expand"/>
+    </div>
+    <div class="grid-item-text">
+        <p>What's more, <samp>Some.Files.zip</samp> is now part of the
+        Archive Contents tree.  We can navigate to it directly by selecting it
+        in the tree.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-text">
+        <p>Try going back to the HFS disk and double-clicking on
+        <samp>SIMPLE.DOS.SDK</samp> or <samp>small.woz.gz</samp>.  These are
+        compressed disk images, so opening them adds entries for the compression
+        wrapper, the disk image file, and the filesystem.</p>
+        <p>By default, the top level of disk images and partitions are opened
+        automatically, but only to a certain level.  You can control this with
+        the <samp>Auto-Open Depth</samp> option in the Application Settings.
+        If you want every possible disk image and file archive opened and
+        added to the Archive Contents tree, set it to <samp>Max</samp>.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
+<div id="prevnext">
+    <a href="list.html" class="btn-previous">&laquo; Previous</a>
+    <a href="view.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Filesystem Notes</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-fsnotes -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes" class="active"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>DOS 3.2/3.3</h2>
+
+<p>The Apple II Disk Operating System (DOS) filesystem stores files as a series
+of 256-byte sectors, with one of eight file types.  Some aspects of the filesystem
+require special handling.</p>
+<p>Files with types I (Integer BASIC), A (Applesoft BASIC), and B (binary data) have
+a 16-bit file length stored at the start of the file.  In most cases the length is only
+used to tell how much of the last sector is actually used, but through various means it's
+possible to extend or truncate the length to be very different.  For example, some programs
+were distributed as type B with a short "fast loader" program at the start.  The DOS
+<code>BRUN</code> command would stop at the embedded length, which only spanned the
+loader; the loader would then load the rest of the file into memory.</p>
+<p>File with type T (text) can be sequential or random-access.  Sequential text
+files end when the first $00 is encountered, but random-access text files can be
+filled with zeroes.  DOS provides different mechanisms for reading these files, but
+no way to distinguish them from each other.</p>
+<p>The remaining file types &mdash; S, R, AA, BB &mdash; are simply defined by
+the list of sectors allocated to the file.  Such files are thus always a multiple
+of 256 bytes long.</p>
+<p>When viewing or extracting files from a DOS disk, it's necessary to specify
+whether the file should be accessed in "normal" or "raw" mode.  In "normal" mode,
+the length of T/I/A/B files is determined by examining their headers or, for text
+files, scanning the entire file for the first $00.  In "raw" mode, the file type
+is ignored, and files are always handled as a collection of sectors.</p>
+
+<p>One situation where accessing a file in raw mode is necessary is when viewing
+random-access text files.  These are files of type T with fixed-length records.
+In the file viewer, you need to enable "raw" mode, and specify a length.  (The
+length can be determined by examining the BASIC program that reads the file, or
+by trying to guess the interval from the hex dump.)</p>
+
+<p>DOS file types are converted to ProDOS equivalents in certain situations, e.g.
+when extracting files with preservation enabled.  The conversion map is:</p>
+<ul>
+  <li>T - TXT ($04)</li>
+  <li>I - INT ($FA)</li>
+  <li>A - BAS ($FC)</li>
+  <li>B - BIN ($06)</li>
+  <li>S - ($F2)</li>
+  <li>R - REL ($FE)</li>
+  <li>AA - ($F3)</li>
+  <li>BB - ($F4)</li>
+</ul>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

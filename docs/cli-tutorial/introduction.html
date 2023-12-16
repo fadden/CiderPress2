@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CLI Tutorial - Introduction</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-cli-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" class="active" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-introduction -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction" class="active"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Contents</a>
+        <ul>
+            <li id="sidenav-extarc"><a href="extarc.html">Ext-Archive and Turduckens</a></li>
+        </ul></li>
+        <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
+        <ul>
+            <li id="sidenav-raw"><a href="raw.html">Raw Mode</a></li>
+            <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
+        </ul></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-add"><a href="add.html">Adding Files</a>
+        <ul>
+            <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
+        </ul></li>
+        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+        <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Getting Started</h2>
+
+<p>You will need a command shell.  If you don't have one in mind, try:</p>
+<ul>
+  <li>Windows: hit <kbd>Windows+R</kbd> to open the "run" window. Enter "<samp>cmd</samp>"
+  for a classic DOS shell or "<samp>powershell</samp>" for something fancier, and hit
+  <samp>Return</samp>.</li>
+  <li>Linux: you have many options; use "xterm" or "gnome-terminal" to get a window with
+  a shell prompt.</li>
+  <li>Mac OS: from the Finder, in the <samp>Go</samp> menu, select <samp>Utilities</samp>.
+  From the list of applications, double-click <samp>Terminal</samp> to launch it.</li>
+</ul>
+
+<p>You will need to download and install CiderPress II.  It's convenient to add the
+"cp2" command to your path.  You can do this by adding the installation directory to
+your PATH environment variable, or by adding a symbolic link to the executable
+to an existing PATH member, such as <samp>~/bin</samp>.  If you don't want to do this, you can
+also just specify the full path to the executable every time.</p>
+
+<p>Some shells interpret certain characters in special ways.  For example, in MINGW for
+Windows, you can specify the <code>C:\Src</code> directory by referring to it as
+"<samp>C:\\Src</samp>" or "<samp>/c/src</samp>".  In the first case the backslash
+was entered twice because '\' is used as an escape character by the shell, and in the
+second case the shell interprets an argument with a leading '/' in a special way.
+The tutorial will call out places where this sort of thing is likely to be problematic.</p>
+
+<p>The first command you should try is "help":</p>
+<p class="showcmd">cp2 help</p>
+<p>You should see a usage summary, a list of commands, and a list of options with
+their default values:</p>
+<p class="showout">CiderPress II Command-Line Utility v1.0.0
+Usage: cp2 &lt;command&gt; [options...] [args...]
+
+Commands:
+  add | a : adds files to an archive
+  catalog | v : displays a detailed listing of an archive
+[...]
+</p>
+
+<p>Some commands have aliases that are shorter than the full name, for convenience
+when typing.  For example, you can request a listing with <kbd>cp2 catalog</kbd>
+or <kbd>cp2 v</kbd>.
+If you can't remember the syntax of a particular command, you can request help
+for that specific command.  For example, to get help for the "help" command:</p>
+<p class="showcmd">cp2 help help</p>
+<p class="showout">Usage: cp2 help [options] [command]
+help: displays program usage information
+</p>
+
+<h2>Notes</h2>
+
+<p>The tutorial will use various disk images and file archives as examples.
+All of these can be found in the CiderPress II source tree, in the
+<a href="https://github.com/fadden/CiderPress2/tree/main/TestData"><code>TestData</code></a>
+directory, should you wish to try the commands for yourself.</p>
+<p>Disk images are very different from file archives, but in many situations the
+differences don't matter.  This tutorial will sometimes refer to them collectively
+as "archives".</p>
+
+
+</div>
+
+<div id="prevnext">
+    <a href="index.html" class="btn-previous">&laquo; Previous</a>
+    <a href="list.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

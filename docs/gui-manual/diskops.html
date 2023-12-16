@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Disk Operations</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-diskops -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops" class="active"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Save As Disk Image</h2>
+
+<p>This option is available for disk images and partitions (not filesystems).  It allows
+you to save the contents to a new disk image.  The new disk does not have to use the
+same format, so this is a quick way to convert a disk image from one format to another.</p>
+<p>Select the disk image or partition in the archive tree, then either click the
+<samp>Save As Disk Image</samp> button in the center panel, or use the corresponding
+item in the <samp>Actions</samp> menu.  This opens a window that lets you pick a
+file format.  Options that aren't appropriate for the disk's size will be disabled.
+Pick an option and click <samp>Save</samp>, then use the file dialog to pick a name
+and location for the new file.</p>
+
+<p>Converting a block/sector image to a nibble image will generate standard low-level
+formatting on the new disk.  It should behave identically to the original.</p>
+<p>Converting a nibble image to a block/sector image will discard the low-level
+formatting, and might partially fail if the source disk has errors or copy protection.  Any
+read errors encountered will be reported during the transfer, but the loss of certain data
+(like the volume numbers embedded in the sector address headers of 5.25" disks) will
+not be called out.</p>
+<p>Converting a nibble image to a different nibble format will still result in the loss of
+data, because the transfer is always done at the block/sector level.</p>
+
+
+<h2>Replace Partition Contents</h2>
+
+<p>This option is only available for partitions.  It allows you to overwrite the contents
+of the partition with those from a disk image.  The filesystem on the disk image must be
+the same size or smaller than the partition.</p>
+<p>Select the partition in the archive tree, then either click the
+<samp>Replace Partition Contents</samp> button in the center panel, or use the corresponding
+item in the <samp>Actions</samp> menu.  Use the file dialog to choose the disk image file.
+A window will open showing the geometry of the disk image (source) and partition (destination),
+and asking for confirmation.  If the geometry of the two is not compatible, you will not
+be allowed to continue.  If all is well, click <samp>Copy</samp> to overwrite the partition.
+Otherwise, click <samp>Cancel</samp>.</p>
+<p><strong>Important:</strong> this overwrites the entire partition, completely replacing
+the previous contents with the disk image.  It does not merge them together.  Anything
+in the partition will be destroyed.</p>
+
+
+<h2>Scan For Bad Blocks</h2>
+
+<p>This option is only available for disk images that use a nibble format (e.g. .nib and .woz).
+It scans the disk for bad blocks or sectors, and reports a list of failures.  This is
+a non-destructive scan; it makes no attempt to fix problems found.</p>
+<p>This does not look for filesystem issues.  Those are scanned for automatically whenever
+the disk image is opened.</p>
+
+
+<h2>Defragment Filesystem</h2>
+
+<p>This option is only available for filesystems that have serious problems with fragmentation
+(this is technically a filesystem utility, not a disk utility).  This is currently
+implemented only for Apple Pascal.</p>
+<p>Select the filesystem, then select <samp>Actions &gt; Defragment Filesystem</samp> from
+the menu.  The operation runs immediately.</p>
+<p>For safety reasons, you will not be allowed to defragment a filesystem that has any
+errors or irregularities.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

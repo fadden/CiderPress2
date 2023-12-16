@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CLI Tutorial - Creating Archives</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-cli-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" class="active" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-create -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Contents</a>
+        <ul>
+            <li id="sidenav-extarc"><a href="extarc.html">Ext-Archive and Turduckens</a></li>
+        </ul></li>
+        <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
+        <ul>
+            <li id="sidenav-raw"><a href="raw.html">Raw Mode</a></li>
+            <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
+        </ul></li>
+        <li id="sidenav-create" class="active"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-add"><a href="add.html">Adding Files</a>
+        <ul>
+            <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
+        </ul></li>
+        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+        <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Creating Archives</h2>
+
+<p>You can create new file archives and disk images easily.  For example, to
+create a new, empty ZIP archive:</p>
+<p class="showcmd">cp2 create-file-archive new.zip</p>
+
+<p>CiderPress II determines which type of archive to create from the filename
+extension.  You can use this to create Binary II (<code>.bny</code>, <code>.bqy</code>),
+ShrinkIt (<code>.shk</code>), and ZIP (<code>.zip</code>) file archives.  You can't use
+it to create single-file archives, like gzip (<code>.gz</code>).</p>
+
+<p>Creating disk images is slightly more complicated, because you need to specify
+the image size and will usually want to format the image with a particular filesystem.
+To create a basic 5.25" DOS floppy disk image:</p>
+<p class="showcmd">cp2 create-disk-image new.do 140k dos</p>
+<p class="showout">Creating disk image: Unadorned Sector, order=dos/sect, size=140KB, DOS 3.x
+</p>
+
+<p>The disk image format is specified by the filename extension.  The size is
+specified in bytes with an optional multiplier (kB, MB, etc.), or in tracks.  For example, to
+create an 800KB HFS image in DiskCopy 4.2 format:</p>
+<p class="showcmd">cp2 cdi new.image 800kb hfs</p>
+<p class="showout">Creating disk image: DiskCopy 4.2, order=pdos/blk, size=800KB, HFS
+</p>
+
+<p>To create a 13-sector DOS 3.2 WOZ image:</p>
+<p class="showcmd">cp2 cdi --sectors=13 new.woz 35trk dos</p>
+<p class="showout">Creating disk image: WOZ, order=physical, size=114KB, DOS 3.x
+</p>
+
+<p>The size specifies the formatted capacity of the disk.
+The multiplier can be kibibytes (k, kB, kiB), mebibytes (M, MB, MiB),
+gibibytes (G, GB, GiB), tebibytes (T, TB, TiB), 512-byte blocks (blk, blocks), or
+tracks (trk, tracks).  Tracks are 3328 or 4096 bytes, depending
+on whether <kbd>--sectors</kbd> is 13 or (default) 16.
+(Note: it is incorrect to equate the base 2 and base 10 abbreviations &mdash; MB and MiB
+are different things &mdash; but the application treats them as synonymous because
+of tradition and convention.)  The multiplier is case-insensitive.</p>
+
+<p>The filesytem can be <kbd>DOS</kbd>, <kbd>ProDOS</kbd>, <kbd>Pascal</kbd>,
+<kbd>CPM</kbd>, or <kbd>HFS</kbd>.
+You can omit the filesystem type to create a completely blank image:</p>
+<p class="showcmd">cp2 cdi new.hdv 32MiB</p>
+<p class="showout">Creating UNFORMATTED disk image: Unadorned Sector, order=pdos/blk, size=32.0MB
+</p>
+
+<p>Some combinations are invalid.  For example, you can't create an 800KB .NIB image,
+or put DOS 3.3 on a 32MB image. See the full manual for a list of what's allowed.</p>
+
+<p>By default, the boot tracks of 140KB DOS and CP/M disks are marked as in-use by
+the system.  DOS disks will get a copy of DOS 3.3 or 3.2.1 depending on the
+<kbd>--sectors</kbd> setting.  If you add the <kbd>--no-reserve-boot</kbd> option,
+the boot area will be freed up for file storage.</p>
+
+<p>Filesystems with volume names (ProDOS, Pascal, HFS) will be named "<samp>NEWDISK</samp>".
+You can use the <kbd>rename</kbd> to change it, by specifying "<kbd>:</kbd>" as the name
+of the file to rename:</p>
+<p class="showcmd">cp2 rename foo.po : MyVol</p>
+<p class="showout">renaming NEWDISK -> MYVOL
+</p>
+
+<p>DOS 3.2/3.3 disks are formatted with disk volume 254.  The value in the VTOC can
+be changed with the <kbd>rename</kbd> command:</p>
+<p class="showcmd">cp2 rename foo.po : 100</p>
+<p class="showout">renaming DOS-254 -> 100
+</p>
+
+
+</div>
+
+<div id="prevnext">
+    <a href="export.html" class="btn-previous">&laquo; Previous</a>
+    <a href="add.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

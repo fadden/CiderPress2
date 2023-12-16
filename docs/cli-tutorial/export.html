@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CLI Tutorial - Exporting</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-cli-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" class="active" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-export -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Contents</a>
+        <ul>
+            <li id="sidenav-extarc"><a href="extarc.html">Ext-Archive and Turduckens</a></li>
+        </ul></li>
+        <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
+        <ul>
+            <li id="sidenav-raw"><a href="raw.html">Raw Mode</a></li>
+            <li id="sidenav-export" class="active"><a href="export.html">Exporting Files</a></li>
+        </ul></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-add"><a href="add.html">Adding Files</a>
+        <ul>
+            <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
+        </ul></li>
+        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+        <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Exporting Files</h2>
+
+<p>Extracted files are unmodified copies of the original.  This is often exactly what
+you want, but sometimes times you'd like the extracted file to be in a form that is more
+easily accessible on a modern system.  CiderPress II includes a number of file converters
+for documents, code, and graphics.  You can pick a specific converter, or let the
+application decide which is most appropriate.</p>
+
+<p>Conversions are performed by the <kbd>export</kbd> command, which takes the same
+arguments as <kbd>extract</kbd>, but with
+the addition of an "export-spec".  The export specifier tells CiderPress II how to do
+the conversion.  To let cp2 choose the conversion automatically, use the
+export-spec "<kbd>best</kbd>":</p>
+<p class="showcmd">cp2 export fileconv/test-files.sdk best Docs:sample.text Code:ZIPPY</p>
+<p class="showout">exporting Docs/sample.text -> Docs\sample.text.txt [text]
+exporting Code/ZIPPY -> Code\ZIPPY.txt [disasm]
+</p>
+
+<p>The command decided to do a simple text
+conversion on <samp>sample.text</samp>, and generated a disassembly for <samp>ZIPPY</samp>
+(which is a ProDOS 8 SYS program).</p>
+
+<p>In this case, the disassembly of ZIPPY isn't quite right, because despite being
+a SYS program it actually includes 65816 code.  We need to tell the converter to
+handle this a bit differently, which we can do by adding an option to the export spec:</p>
+<p class="showcmd">cp2 export --overwrite fileconv/test-files.sdk disasm,cpu=65816,long=false Code:ZIPPY</p>
+<p class="showout">Overwriting 'Code\ZIPPY.txt'
+exporting Code/ZIPPY -> Code\ZIPPY.txt [disasm]
+</p>
+
+<p>This specifies the <kbd>disasm</kbd> converter, with the 65816 CPU, starting
+with short registers.  (The complete list of converters and their options can be
+found in the full manual.  A quick summary can be had from <kbd>cp2 help export</kbd>.)</p>
+<p>This also snuck in the <kbd>--overwrite</kbd> flag, to tell cp2 to overwrite the
+existing file.  This can be abbreviated <kbd>-f</kbd> ("force").</p>
+
+<p>Exported files will be output in one of four basic formats, with an appropriate
+file extension added:</p>
+<ol>
+  <li>Plain text (.TXT), in UTF-8 without a byte-order mark.</li>
+  <li>Rich text (.RTF).  Used for anything with fancy document formatting.</li>
+  <li>Comma-separated value (.CSV).  Used for spreadsheets, databases, and
+    random-access text files.</li>
+  <li>PNG bitmap (.PNG).  Used for all graphics.</li>
+</ol>
+
+<p>You can't specify conversion options when using "best" mode, but you can set
+defaults in the config file (more on that later).</p>
+
+
+</div>
+
+<div id="prevnext">
+    <a href="raw.html" class="btn-previous">&laquo; Previous</a>
+    <a href="create.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

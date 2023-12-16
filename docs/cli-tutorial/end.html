@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CLI Tutorial - Closing Notes</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-cli-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" class="active" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-end -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Contents</a>
+        <ul>
+            <li id="sidenav-extarc"><a href="extarc.html">Ext-Archive and Turduckens</a></li>
+        </ul></li>
+        <li id="sidenav-extract"><a href="extract.html">Extracting Files</a>
+        <ul>
+            <li id="sidenav-raw"><a href="raw.html">Raw Mode</a></li>
+            <li id="sidenav-export"><a href="export.html">Exporting Files</a></li>
+        </ul></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-add"><a href="add.html">Adding Files</a>
+        <ul>
+            <li id="sidenav-import"><a href="import.html">Importing Files</a></li>
+        </ul></li>
+        <li id="sidenav-copy"><a href="copy.html">Copying Files</a></li>
+        <li id="sidenav-conv-disk"><a href="conv-disk.html">Converting Disk Images</a></li>
+        <li id="sidenav-config"><a href="config.html">Config File</a></li>
+        <li id="sidenav-end" class="active"><a href="end.html">Closing Notes</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Closing Notes</h2>
+
+<p>There are many more commands than were shown here:</p>
+<ul>
+  <li><kbd>defrag</kbd> - defragment an Apple Pascal volume</li>
+  <li><kbd>delete</kbd> - delete files</li>
+  <li><kbd>extract-partition</kbd> - copy the contents of a partition from a
+    multi-partition layout to a disk image</li>
+   <li><kbd>get-metadata</kbd> - get the metadata values from WOZ, 2IMG, etc.</li>
+   <li><kbd>list</kbd> - generate a succinct file listing</li>
+   <li><kbd>mkdir</kbd> - create a directory</li>
+   <li><kbd>move</kbd> - rename or relocate a file</li>
+   <li><kbd>multi-disk-catalog</kbd> - like <kbd>catalog</kbd>, but for a large
+     collection of archives</li>
+   <li><kbd>print</kbd> - extract a file to stdout</li>
+   <li><kbd>read-track</kbd> - read a raw track from a nibble image</li>
+   <li><kbd>read-block</kbd> - read a block from a disk image</li>
+   <li><kbd>read-sector</kbd> - read a sector from a disk image</li>
+   <li><kbd>replace-partition</kbd> - overwrite a partition with the contents
+     of a disk image</li>
+   <li><kbd>set-attr</kbd> - set file attributes, such as file type</li>
+   <li><kbd>set-metadata</kbd> - set metadata values on WOZ, 2IMG, etc.</li>
+   <li><kbd>test</kbd> - test entries in an archive</li>
+   <li><kbd>write-block</kbd> - write a block to a disk image</li>
+   <li><kbd>write-sector</kbd> - write a sector to a disk image</li>
+</ul>
+
+<p>There are also many more options that can be used to modify the behavior
+of the various commands.</p>
+
+<p>See the CLI manual for full details.</p>
+
+</div>
+
+<div id="prevnext">
+    <a href="config.html" class="btn-previous">&laquo; Previous</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

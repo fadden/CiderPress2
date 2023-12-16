@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Working With Archives</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-working -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working" class="active"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Opening Archives</h2>
+
+<p>When CiderPress II starts, you will see a plain window with menu items, a toolbar
+near the top, and a few buttons in the middle.  The
+buttons allow you to open an existing file or create a new file.  If you have
+opened archives in the past, there will also be buttons that reopen recently-opened
+files.</p>
+<p>The same features can be accessed with the <samp>File &gt; Open</samp>,
+<samp>File &gt; New Disk Image</samp>, <samp>File &gt; New File Archive</samp>,
+and <samp>File &gt; Recent Files</samp> menu items.</p>
+<p>You can also open an archive by dragging it from Windows Explorer and dropping it
+on this window.</p>
+
+<p>It's possible to bypass the opening screen entirely.  You can do this by dragging
+and dropping a file onto the CiderPress II application icon, or by double-clicking
+on a file when CiderPress II is configured as the default application for that
+file extension.  To configure the default application in Windows:</p>
+<ul>
+  <li>Right click on a file of the appropriate type, and select <samp>Open with</samp>
+  and the <samp>Choose another app</samp> option.</li>
+  <li>In the window that pops up, select <samp>CiderPress2</samp> as the application,
+  and check the "always use this app to open files" box.</li>
+</ul>
+
+<p>In all cases, the contents of the file are analyzed to see if they can be
+recognized as a supported archive type.  If the filename has a known extension,
+such as ".zip", the file will be rejected if the contents don't match.</p>
+<p>Archives can be scanned automatically to see if they contain other archives.
+The setting of the "Auto-Open Depth" option will determine if and how deeply
+this process is performed.  At its maximum setting, all archive contents will
+be scanned recursively, which can take a few seconds on large collections.</p>
+
+
+<h2>Getting Around</h2>
+
+<p>When an archive is open, the main area of the window is divided into four regions:</p>
+<ol>
+  <li>Top left: archive contents.</li>
+  <li>Bottom left: directory hierarchy.</li>
+  <li>Center: file list or archive info.</li>
+  <li>Right: add/extract/import/export settings.</li>
+</ol>
+
+<h3>Archive Contents</h3>
+
+<p>The top-left window shows a hierarchical view of the contents of the disk image
+or file archive.  For a simple file archive this will only have one entry, while a
+disk image will usually have two: one for the disk image file, and one for the
+filesystem.</p>
+<p>Left-clicking on an entry switches the focus to that entity.  This will cause the
+contents of the other windows to be updated appropriately.</p>
+
+<p>There are five kinds of entries:</p>
+<ul>
+  <li>File archive.  ZIP, ShrinkIt, etc.  These are simple linear lists of files,
+    and so do not have a directory structure.</li>
+  <li>Disk image.  DiskCopy, 2IMG, WOZ, etc.  This represents the image file itself,
+    which may have editable metadata or comment fields.</li>
+  <li>Multi-partition layout.  APM, UniDOS, etc.  This is for disk images that
+    hold multiple partitions.</li>
+  <li>Partition.  One partition in a multi-partition layout.</li>
+  <li>Filesystem.  DOS, ProDOS, HFS, etc.  This is the contents of a disk image or
+    partition, where the files are found.  If the filesytem is hierarchical,
+    the Directory Hierarchy window will be populated with a directory tree.</li>
+</ul>
+
+<p>Right-clicking on an entry will bring up a menu of actions.  Inappropriate actions
+will be dimmed, e.g. you can't sector-edit a file archive.</p>
+
+<p>Some disks have custom filesystems that can't be recognized.  So long as the disk
+image format appears to be correct, the archive will be opened, but it won't have
+a filesystem entry in the archive tree.</p>
+
+<p>If you open a disk image or file archive inside the current archive, it
+will be added to the tree.</p>
+
+<h3>Directory Hierarchy</h3>
+
+<p>For most archives, the directory hierarchy tree will have a single place-holder
+entry.  For ProDOS and HFS filesystems, it will have a directory tree instead.
+The top entry represents the volume directory, and will show the volume name.</p>
+<p>Left-clicking on an entry will select that directory.  The file list will be
+updated appropriately.</p>
+<p>Right-clicking on an entry will bring up a menu of actions.  Inappropriate actions
+will be dimmed.</p>
+
+<h3>File List / Info</h3>
+
+<p>The contents of the center window change depending on what is selected in the
+Archive Contents tree.<p>
+<ul>
+  <li>Disk images and partitions: geometry statistics, disk editing buttons,
+    and optional metadata.</li>
+  <li>Multi-partition layout: partition list.</li>
+  <li>File archives and filesystems: a list of files.</li>
+</ul>
+<p>For disk images and partitions, a few basic statistics about disk size and
+archive file layout are displayed, as well as some buttons that provide quick
+access to sector editing and other whole-disk actions.  If the format has
+metadata fields (e.g. WOZ, 2IMG, DiskCopy 4.2), the names and values will
+be shown in a table.  If the field's name isn't grayed out, you can double-click on
+the entry to change its value.  Any restrictions on the contents of the field
+will be shown in the edit window.</p>
+<p>For multi-partition layouts, you will see a list of the partitions and their
+attributes.  Double-clicking on an entry will jump to that partition.  If it
+has a filesystem, the filesystem will be selected.</p>
+<p>For filesystems and file archives, a list of the files found is shown.  The
+list is divided into several columns, which will be shown or hidden depending
+on what is being displayed:</p>
+<ul>
+  <li>Status icon - this will be blank for most entries.  If the entry has a
+    comment, a "speech bubble" icon will be shown.  If the file scanner found
+    some problems with the file, it will be marked "dubious" with a yellow
+    triangle, indicating that it cannot be modified.  If the file is too
+    damaged to be read, it will be marked with a red symbol.</li>
+  <li>Pathname or Filename - file archives always show Pathname, non-hierarchical
+    filesystems always show Filename.  Hierarchical filesytems will show one or
+    the other depending on the display mode (see below).</li>
+  <li>Type - ProDOS or HFS file type.  The most appropriate type is shown,
+    based on the archive type and the file characteristics.</li>
+  <li>Auxtype - ProDOS auxiliary type or HFS creator.</li>
+  <li>Mod Date - date when file was last modified.  Shown in local time.</li>
+  <li>Data Len - length of the data fork.</li>
+  <li>Raw Len - "raw" length of the data fork.  Only shown for DOS 3.2/3.3 filesystems.</li>
+  <li>Data Format - format of data fork storage, i.e. how it is compressed.
+    Only shown for file archives.</li>
+  <li>Rsrc Len - length of the resource fork.  Only shown for archives that support
+    forked files.</li>
+  <li>Rsrc Format - format of resource fork storage, i.e. how it is compressed.
+    Only shown for file archives that support forked files.</li>
+  <li>Total Size - combined length of the data and resource forks.
+    For entries in a filesystem, this is the amount of storage used, including any OS overhead.
+    For entries in a a file archive, this is the sum of the compressed lengths,
+    but does not include archive headers.
+    The units used vary, e.g. DOS 3.3 is reported in 256-byte sectors,
+    while ProDOS is reported in 512-byte blocks.</li>
+  <li>Access - ProDOS-style access-enabled flags:
+    Delete, reName, Write, Read, Backup, Invisible.
+</ul>
+
+<p>For file archives and filesystems, the file list display mode can be changed
+with buttons in the toolbar or items in the <samp>View</samp> menu.  There are three
+possible modes:</p>
+<ol>
+  <li>Full-file: show all files in the archive, with full pathnames.</li>
+  <li>Single-directory: show only the filenames of the files in a single directory.</li>
+  <li>Archive info: replaces the file list with a set of information about the
+    filesystem.  If you see a warning or error icon next to the filesystem entry
+    in the archive tree, this screen will provide details about what was found.</li>
+</ol>
+<p>Switching between full-file and single-directory allows you to see the entire
+contents of a hierarchical filesystem all at once, or focus in on a single directory.
+File archives are always full-file, and non-hierarchical filesystems are always
+single-directory.</p>
+
+<p>Columns may be resized by clicking and dragging on the separators in the
+column headers.  The column widths are saved in the application settings file.</p>
+<p>The entries in the file list can be sorted by clicking on the column header.
+Click again to reverse the direction of the sort.  To return to the original
+order, i.e. the order in which the files are stored in the archive, use the Reset
+Sort button in the toolbar.</p>
+
+<p>Double-clicking on a directory entry in the file list will update the Directory
+tree to have that entry selected.</p>
+<p>Double-clicking on a non-directory entry in the file list will usually open the
+entry in the file viewer.
+If the entry looks like a file archive or disk image, an attempt will first be made to open
+it as such.  If the attempt succeeds, it will be added to the Archive Contents tree
+and opened for viewing.
+If you accidentally open a disk image or file archive without intending to do so,
+you can close it by right-clicking on the entry in the Archive Contents tree and
+selecting <samp>Close File Source</samp>.</p>
+
+<p>Right-clicking on an entry brings up a menu of actions.</p>
+
+<h3>Add/Extract/Import/Export Settings</h3>
+
+<p>The rightmost window contains a set of options used when adding, extracting,
+importing, or exporting files.  These are explained in detail in a later section
+of the manual.</p>
+<p>The window can be hidden with the <samp>Show/Hide Settings</samp> button.</p>
+
+
+<h2>Additional Navigation</h2>
+
+<p>The <samp>Navigate</samp> menu items allow you to navigate upward in the
+tree.  Selecting the <samp>Go To Parent Directory</samp> item will change the
+Directory tree selection to be one entry higher, stopping when it reaches the
+volume directory.
+The <samp>Go To Parent</samp> item performs the same action, but will continue
+the upward movement in the Archive Contents tree if the Directory tree is at the top.</p>
+<p>The toolbar button with the up-arrow icon performs the <samp>Go To Parent</samp>
+action.</p>
+
+
+<h2>Windows Notes</h2>
+
+<p>It's possible to explore some ".iso" files with Windows Explorer.  Such files
+may be opened (read-only) by the system process (pid 4) and presented as a
+drive letter, which means they can be opened as read-only by other processes
+but can't be opened read-write.  This can be verified with Process Explorer
+(<a href="https://serverfault.com/a/1980/268812">notes</a>): run as administrator, then
+<samp>Find &gt; Find Handle or DLL</samp>, and enter a unique part of the filename.</p>
+
+<p>Ejecting the virtual CD/DVD will remove the restrictions on the file.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

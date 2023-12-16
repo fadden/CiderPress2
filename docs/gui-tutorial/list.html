@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>GUI Tutorial - Listing Entries</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" class="active" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-list -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list" class="active"><a href="list.html">Listing Entries</a>
+        <ul>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
+        </ul></li>
+        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-sectedit"><a href="sectedit.html">Sector Editing</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+        <!-- not doing: disk ops, app settings -->
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Listing Entries</h2>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-full.png" alt="woz-system-full"/>
+    </div>
+    <div class="grid-item-text">
+        <p>We'll start by opening the file <samp>woz/iigs-system-35.woz</samp>.
+        This is a WOZ-format image of an Apple IIgs 3.5" floppy disk, with
+        a ProDOS filesystem on it.</p>
+        <p>The main part of the window is now divided into four panels:</p>
+        <ol>
+            <li>Archive Contents tree in the top left.</li>
+            <li>Directory tree in the bottom left.</li>
+            <li>File list in the middle.</li>
+            <li>File I/O options on the right.</li>
+        </ol>
+        <p>The contents of these changes depending on what is selected.  We're
+        going to ignore the rightmost panel and just focus on the other three for now.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-atree.png" alt="woz-system-atree"/>
+    </div>
+    <div class="grid-item-text">
+        <p>First, look at the Archive Contents tree in the top left.
+        It has two entries, one for the WOZ disk image file, and one for
+        the ProDOS filesystem that resides on the disk.  The filesystem,
+        which has the volume name "<samp>SYSTEM.DISK</samp>", is currently
+        selected.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-dtree.png" alt="woz-system-dtree"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Now look at the window below it on the left.  This shows the directory
+        structure of the ProDOS filesystem.  The topmost entry is the volume
+        directory.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-filelist.png" alt="woz-system-filelist"/>
+    </div>
+    <div class="grid-item-text">
+        <p>The main central window has a list of files, one per row.  Information
+        about the files is divided into columns.  You can resize the columns by
+        clicking and dragging the dividing line in the headers, and change the sort
+        order of the list by clicking on a column's name in the header (once for
+        ascending, twice for descending).</p>
+        <p>Right now, the file list only shows the files that are in the currently-selected
+        directory.  To see the contents of a different directory, you can select
+        one from the Directory tree in the bottom-left panel, or double-click on
+        a directory entry.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-sysutils.png" alt="woz-system-sysutils"/>
+    </div>
+    <div class="grid-item-text">
+        <p>For example, if we double-click on <samp>SYS.UTILS</samp>, we move
+        to that directory.  Note the selected entry in the Directory tree also
+        changed.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-fulllist.png" alt="woz-system-fulllist"/>
+    </div>
+    <div class="grid-item-text">
+        <p>You can change the view to show all possible files, using the
+        <samp>View &gt; Show Full List</samp> menu item.  Note the <samp>Filename</samp>
+        column is now the <samp>Pathname</samp> column, and entries are shown with
+        their full paths.</p>
+        <p>Double-clicking directories in the file list and clicking on entries
+        in the Directory tree will still move the selection around,
+        but won't change the contents of the list.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-fsinfo.png" alt="woz-system-fsinfo"/>
+    </div>
+    <div class="grid-item-text">
+        <p>The central panel can also be configured to display information about
+        the filesystem, using <samp>View &gt; Show Information</samp>.  This ProDOS
+        volume isn't very interesting, but if it had any warning or errors, they
+        would appear here.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/woz-system-diskinfo.png" alt="woz-system-diskinfo"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Let's go back to the Archive Contents tree in the top left.  If we click
+        on the top entry, <samp>WOZ iigs-system-35.woz</samp>, the view switches
+        to information about the WOZ disk image itself.</p>
+        <p>Some basic information is shown at the top, followed by some buttons
+        for quick access to sector editing and other disk features.  Below that
+        is a list of the metadata values stored in the WOZ file.  They grayed-out
+        entries can't be modified, but others (like <samp>info:write_protected</samp>)
+        can be edited by double-clicking on them.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
+<div id="prevnext">
+    <a href="introduction.html" class="btn-previous">&laquo; Previous</a>
+    <a href="nested.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

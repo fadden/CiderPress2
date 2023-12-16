@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>CiderPress II - Application Settings</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-manual -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" class="active" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-appsettings -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Contents</a></li>
+        <li id="sidenav-overview"><a href="overview.html">Overview</a></li>
+        <li id="sidenav-working"><a href="working.html">Working With Archives</a></li>
+        <li id="sidenav-viewing"><a href="viewing.html">Viewing Files</a></li>
+        <li id="sidenav-aeie"><a href="aeie.html">Add/Extract Import/Export</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-media"><a href="media.html">Physical Media</a></li>
+        <li id="sidenav-creating"><a href="creating.html">Creating Archives</a></li>
+        <li id="sidenav-diskops"><a href="diskops.html">Disk Operations</a></li>
+        <li id="sidenav-editsector"><a href="editsector.html">Sector Editing</a></li>
+        <li id="sidenav-appsettings" class="active"><a href="appsettings.html">Application Settings</a></li>
+        <li id="sidenav-fsnotes"><a href="fsnotes.html">Filesystem Notes</a></li>
+        <li id="sidenav-bugs"><a href="bugs.html">Reporting Bugs</a></li>
+        <li id="sidenav-faq"><a href="faq.html">FAQ</a></li>
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Settings</h2>
+
+<p>There are a handful of application-level settings that can be edited with
+<samp>Edit &gt; Settings</samp>.</p>
+<ul>
+  <li>Auto-Open Depth - determines how deeply archives are scanned for the
+    presence of other archives.  If set to <samp>Shallow</samp>, only the top level
+    is opened.  At <samp>Sub-Volume</samp>, filesystems and file archives are
+    scanned, but it won't try to open file archives or disk images stored inside
+    file archives or disk images (with some exceptions).  At <samp>Max</samp>,
+    all file are examined.</p>
+  <li>Enable MacZip Handling - enables special treatment of files in the
+    <code>__MACOSX</code> directory in ZIP archives.  These files are AppleDouble
+    "header" files, which can contain file attributes and resource forks.  When
+    this feature is enabled, the header files are hidden, and the file entries
+    are shown with full attributes.  When disabled, all files are shown as they
+    would appear in a standard ZIP archive utility.</li>
+  <li>Import/Export Conversion - these are the same as the <samp>Conversion Settings</samp>
+    buttons in the panel on the right side of the main window.  Those buttons
+    are only accessible when a file is open, so there's a copy here that can be
+    used whether or not a file is open.  The behavior is otherwise the same.</li>
+  <li>Enable DOS Text Conversion - if enabled, DOS text files copied between a
+    DOS filesystem and a different filesystem, with drag &amp; drop or copy &amp; paste,
+    will have the high bit set or cleared on the file contents as appropriate.
+    This does not affect add/extract (which never modifies files) or import/export
+    (which always modifies files), just direct disk-to-disk copies.</li>
+</ul>
+
+<p>An option near the bottom, <samp>Enable DEBUG menu</samp>, can be used to add
+a <samp>DEBUG</samp> menu to the application.  This has some additional features
+intended to help debug CiderPress II.  They're not generally useful.</p>
+
+<p>Application settings are stored in a file called "<code>CiderPress2-settings.json</code>".
+It can be found in the directory with the CiderPress II application executable.  If the
+file is removed, all settings will revert to defaults.</p>
+
+
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

@@ -8,7 +8,7 @@ Mac OS, and Linux.  It's even available for the
 Not everyone wants to install the .NET runtime on their system, so CiderPress II is available
 as both "framework-dependent" and "self-contained" downloads.  The former is much smaller
 (by 30+MB), but the latter will work without having the runtime installed.  Windows users
-will likely already have the runtime installed.
+will likely already have the runtime.
 
 If you want to install the .NET runtime, get it here: https://dotnet.microsoft.com/en-us/download .
 Click on "all .NET 6.0 downloads" (or whatever version is current), then in the
@@ -20,21 +20,21 @@ if you just want to run CiderPress II.  The downloads in the Binaries column wil
 but may not have it automatically configured in your shell path.
 
 You can pick a file to download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
-or use one of these links to download a recent release:
+or use one of these links to download a recent stable release:
 
-System      | Self-Cont'd? | Link
------------ | ------------ | ----
-Windows x86 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_win-x86_fd.zip
-Windows x86 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_win-x86_sc.zip
-Windows x64 | no           | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_win-x64_fd.zip
-Windows x64 | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_win-x64_sc.zip
-Mac OS x64  | no           | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_osx-x64_fd.zip
-Mac OS x64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_osx-x64_sc.zip
-Linux x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_linux-x64_fd.zip
-Linux x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v0.4.0-dev1/cp2_0.4.0-d1_linux-x64_sc.zip
+System        | Self-Cont'd? | Link
+------------- | ------------ | ----
+Windows x86   | no           | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_win-x86_fd.zip
+Windows x86   | yes          | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_win-x86_sc.zip
+Windows x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_win-x64_fd.zip
+Windows x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_win-x64_sc.zip
+Mac OS x64    | no           | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_osx-x64_fd.zip
+Mac OS x64    | yes          | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_osx-x64_sc.zip
+Linux x64     | no           | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_linux-x64_fd.zip
+Linux x64     | yes          | https://github.com/fadden/CiderPress2/releases/download/v1.0.0-alpha1/cp2_1.0.0-alpha1_linux-x64_sc.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
-for you).  There is no installer; the commands are executed directly from where they were unzipped.
+for you).  There is no installer; the commands are executed directly from where they are unzipped.
 On some systems an additional step may be necessary.  You will need a command-line shell to
 run "cp2":
 
@@ -51,9 +51,10 @@ In the shell, change to the directory where the files were unzipped.  Then:
  - Linux: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
    to fix it.  Run `./cp2 version` to confirm it works.
  - Mac OS: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
-   to make it executable.  You then need to remove the quarantine flag from the files, or the
-   system will not allow you to execute them.  In the directory where the files were unpacked, run
-   `xattr -d comp.apple.quarantine *`.  Run `./cp2 version` to confirm this was successful.
+   to make it executable.  The system adds a "quarantine" flag to anything downloaded from the
+   Internet, so you need to do an extra step before you can execute the program.  In the directory
+   where the files were unpacked, run `xattr -d com.apple.quarantine *`.  Run `./cp2 version`
+   to confirm this was successful.
 
 The commands are:
 
@@ -62,8 +63,8 @@ The commands are:
 
 The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
 of viewing in a terminal window.  The file is in "markdown" format, which is perfectly readable
-as a plain text file.  The download also includes release notes for CiderPress2,
-`CiderPress2-notes.txt`, which can be opened in a web browser by hitting F1 from the GUI.
+as a plain text file.  The manual for the GUI, and tutorials for both applications, can
+be found on the [web site](https://ciderpress2.com/).
 
 ## Tested Systems ##
 
@@ -96,3 +97,14 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
 
     #!/bin/sh
     exec PATH/TO/dotnet PATH/TO/cp2.dll $@
+
+### Linux and Wine ###
+
+It's possible to run the GUI application under Linux using the Wine compatibility layer.
+However, with Wine v8.0.2 on Ubuntu 20.04, it was not difficult to make the application crash.
+
+If you want to try it, download the 32-bit (x86) self-contained package for Windows.  On my
+system, the 64-bit version hangs during startup (for both GUI and CLI), and the framework-dependent
+package requires downloading additional Wine components, so `win-x86_sc` is your best bet.
+
+(I am not a Wine expert.  It's possible I'm doing it wrong.)

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>GUI Tutorial - Sector Editing</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" class="active" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-sectedit -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Entries</a>
+        <ul>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
+        </ul></li>
+        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-sectedit" class="active"><a href="sectedit.html">Sector Editing</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+        <!-- not doing: disk ops, app settings -->
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Sector Editing</h2>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/sectedit-entry.png" alt="sectedit-entry"/>
+    </div>
+    <div class="grid-item-text">
+        <p>You can edit blocks and tracks/sectors on any disk image.  To open
+        the sector editor, you need to select the entry for the disk image
+        or disk partition in the Archive Contents tree.  If you want to edit a
+        filesystem, this will be the entry one level up.</p>
+        <p>The easiest way to open the sector editor is to use the buttons
+        in the center panel.  They're also available from the <samp>Actions</samp>
+        menu.  For this example, we're looking at an 800KB 3.5"
+        floppy disk image, so <samp>Edit Sectors</samp> is disabled.  Click
+        <samp>Edit Blocks</samp>.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/sectedit-block.png" alt="sectedit-block"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Block zero isn't very interesting, so click <samp>Next</samp> twice
+        to advance to block 2.</p>
+        <p>This shows the HFS MDB block, which has some information about the
+        volume, including the volume name.  The editor shows a standard hex dump,
+        with hex on the left and text on the right.  You can change the character
+        set used to display text with the <samp>Text Conversion</samp> controls.</p>
+
+        <p>To see a different block, you can use the <samp>Prev</samp> / <samp>Next</samp>
+        buttons, or enter a block number in the <samp>Block</samp> entry field.  Values
+        can be entered in decimal or hex; for the latter you will need to prefix it
+        with "<samp>0x</samp>" or "<samp>$</samp>".  Type the value and hit <kbd>Return</kbd>
+        to read that sector.</p>
+
+        <p>To edit values, click on the hex digits of the desired entry, and
+        start typing hex values.  When finished, click the <samp>Write</samp> button.
+        Note that doing so will cause the filesystem to be closed and re-opened; you
+        may notice the Archive Contents tree being updated as you work.</p>
+
+        <p>The <samp>Copy to Clipboard</samp> button will copy the hex dump to the
+        system clipboard, suitable for pasting into online forums.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
+<div id="prevnext">
+    <a href="create.html" class="btn-previous">&laquo; Previous</a>
+    <a href="end.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>

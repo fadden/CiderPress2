@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- START: /incl-head.html -->
+    <!-- common head elements -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="../main.css"/>
+    <!-- END: /incl-head.html -->
+
+    <title>GUI Tutorial - Add and Import</title>
+</head>
+
+<body>
+
+<!-- START: /incl-masthead.html -->
+<div id="masthead">
+    <div class="masthead-title">
+        CiderPress II
+    </div>
+</div>
+<!-- END: /incl-masthead.html -->
+
+<!-- START: /incl-topnav.html active:#topnav-gui-tutorial -->
+<div id="topnav">
+    <!-- top navigation bar contents -->
+    <nav>
+        <a id="topnav-home" href=".././">HOME</a>
+        <a id="topnav-gui-manual" href="../gui-manual">Desktop GUI Manual</a>
+        <a id="topnav-cli-manual" href="https://github.com/fadden/CiderPress2/blob/main/docs/Manual-cp2.md">Command-Line Manual</a>
+        <a id="topnav-gui-tutorial" class="active" href="../gui-tutorial">GUI Tutorial</a>
+        <a id="topnav-cli-tutorial" href="../cli-tutorial">CLI Tutorial</a>
+        <a id="topnav-menuicon" href="javascript:void(0);" class="icon" onclick="toggleSidenav()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </nav>
+    <script>
+        // Sidenav toggle function.
+        //
+        // Use a jQuery function to toggle the sidenav bar.  The initial state
+        // is undefined / inherited, so it will pop in and out as the screen
+        // resizes around the "large" breakpoint.
+        function toggleSidenav() {
+            $("#sidenav").toggle("fast");
+        }
+    </script>
+</div>
+<!-- END: /incl-topnav.html -->
+
+<!-- START: incl-sidenav.html active:#sidenav-add -->
+<div id="sidenav">
+    <!-- side navigation bar contents -->
+    <ul>
+        <li id="sidenav-index"><a href="./">Overview</a></li>
+        <li id="sidenav-introduction"><a href="introduction.html">Getting Started</a></li>
+        <li id="sidenav-list"><a href="list.html">Listing Entries</a>
+        <ul>
+            <li id="sidenav-nested"><a href="nested.html">Nested Archives</a>
+        </ul></li>
+        <li id="sidenav-view"><a href="view.html">Viewing Contents</a></li>
+        <li id="sidenav-extract"><a href="extract.html">Extract and Export</a></li>
+        <li id="sidenav-add" class="active"><a href="add.html">Add and Import</a></li>
+        <li id="sidenav-dragcopy"><a href="dragcopy.html">Drag &amp; Drop, Copy &amp; Paste</a></li>
+        <li id="sidenav-editattrs"><a href="editattrs.html">Editing Attributes</a></li>
+        <li id="sidenav-create"><a href="create.html">Creating Archives</a></li>
+        <li id="sidenav-sectedit"><a href="sectedit.html">Sector Editing</a></li>
+        <li id="sidenav-end"><a href="end.html">Closing Notes</a></li>
+        <!-- not doing: disk ops, app settings -->
+    </ul>
+</div>
+<!-- END: incl-sidenav.html -->
+
+<div id="main">
+
+<h2>Add and Import</h2>
+
+<div class="grid-container">
+    <div class="grid-item-text">
+        <p>Files can be added to archives, with or without conversion from a
+        different format.  Let's start by talking about adding files without
+        modification.</p>
+        <p>The process has two parts: decide where you want the files to go,
+        then pick the files and add them.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/add-dir-tree.png" alt="add-dir-tree"/>
+    </div>
+    <div class="grid-item-text">
+        <p>The first part is very simple if you're adding files to a file
+        archive or non-hierarchical filesystem like DOS 3.3 or CP/M, because
+        there's only one place for them to be.</p>
+        <p>For a hierarchical filesystem like HFS or ProDOS, you need to pick which
+        directory the files will be stored in.  You do this by selecting the desired
+        entry from the Directory tree, in the panel at the bottom left of the window.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/add-select-files.png" alt="add-select-files"/>
+    </div>
+    <div class="grid-item-text">
+        <p>Next, use the <kbd>Actions &gt; Add Files</kbd> menu item.  This opens
+        a window that allows you to select one or more files and directories to add.
+        This has the same behavior as other lists: left-click to select, Ctrl+Click to
+        toggle a single entry, Shift+Click to select a range.</p>
+        <p>You can select a combination of files and directories.  If you select a
+        directory, the contents of that directory will be added recursively
+        (unless disabled by a setting).</p>
+        <p>When ready, click the <samp>Select</samp> button to add the files.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/add-options.png" alt="add-options"/>
+    </div>
+    <div class="grid-item-text">
+        <p>You can modify the behavior using the options panel on the right.
+        The <samp>Strip Paths</samp> option will remove the directories from
+        the paths, adding all files to the target location.  <samp>Raw</samp>
+        should be used on DOS 3.2/3.3 files that were previously extracted in
+        raw mode.</p>
+        <p>The <samp>Preservation Handling</samp> options determine which preservation
+        modes are supported.  Normally you will want to have all of these enabled.
+        If, for example, you have a file called "<samp>MyFile.as</samp>", and you
+        want it to be added to the archive as AppleSingle rather than unpacked and
+        added as its contents, you would un-check the <samp>AppleSingle</samp> box.</p>
+    </div>
+</div>
+
+<h3>Import</h3>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/import-files.png" alt="import-files"/>
+    </div>
+    <div class="grid-item-text">
+        <p>If you want to convert files while adding them, you can use
+        <samp>Actions &gt; Import</samp> instead.  This generally works the same as
+        adding files &mdash; select the target location and the files to add &mdash;
+        but the files are assumed to be in a "modern" format.  Attribute preservation
+        is ignored, and a file converter is applied.</p>
+        <p>Unlike export, import has no "best conversion" mode.  You must specify
+        the converter to use, with the <samp>Conversion Mode</samp> pop-up menu.</p>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="grid-item-image">
+        <img src="images/import-conv-opts.png" alt="import-conv-opts"/>
+    </div>
+    <div class="grid-item-text">
+        <p>The options used for file imports can be set by clicking on the
+        <samp>Conversion Settings</samp> button in the Add/Import Options area.
+        Pick the conversion mode from the pop-up menu at the top, configure
+        the desired options, and click <samp>Done</samp>.</p>
+    </div>
+</div>
+
+
+</div> <!-- main -->
+
+<div id="prevnext">
+    <a href="extract.html" class="btn-previous">&laquo; Previous</a>
+    <a href="dragcopy.html" class="btn-next">Next &raquo;</a>
+</div>
+
+<!-- START: /incl-footer.html -->
+<div id="footer">
+    <hr/>
+    <p>Copyright 2023 faddenSoft</p>
+</div>
+<!-- END: /incl-footer.html -->
+
+</body>
+</html>
