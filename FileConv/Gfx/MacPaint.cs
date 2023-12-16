@@ -140,14 +140,23 @@ namespace FileConv.Gfx {
 
             int dataOffset = HEADER_LEN;
             uint version = RawData.GetU32BE(readBuf, 0);
+            bool badVersion = false;
             if (version > MAX_VERSION) {
-                // Must be MacBinary.
-                Debug.Assert(RawData.GetU32BE(readBuf,
-                             DiskArc.Arc.MacBinary.TYPE_OFFSET) == HFS_TYPE);
-                dataOffset += DiskArc.Arc.MacBinary.HEADER_LEN;
+                // MacBinary or garbled-but-maybe.
+                if (RawData.GetU32BE(readBuf,
+                             DiskArc.Arc.MacBinary.TYPE_OFFSET) == HFS_TYPE) {
+                    // Loosk like a MacBinary header, skip past it.
+                    dataOffset += DiskArc.Arc.MacBinary.HEADER_LEN;
+                } else {
+                    badVersion = true;
+                }
             }
 
-            return ConvertMacPaint(readBuf, dataOffset);
+            IConvOutput output = ConvertMacPaint(readBuf, dataOffset);
+            if (badVersion) {
+                output.Notes.AddW("Found bad version number: 0x" + version.ToString("x8"));
+            }
+            return output;
         }
 
         private static Bitmap8 ConvertMacPaint(byte[] buf, int startOffset) {
