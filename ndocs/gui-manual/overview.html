@@ -127,29 +127,29 @@ when the file archive is in a small disk image it's easy to run out of space.</p
 <p>There are four distinct operations for adding and extracting files:</p>
 
 <ul>
-  <li>Add: add a file to an archive without modification.
-    Attempt to restore file attributes from saved metadata.</li>
   <li>Extract: extract a file from an archive without modification.
     Attempt to preserve file attributes.</li>
-  <li>Import: add a file to an archive, converting its format.
-    For example, the end-of-line markers in a text file might be changed from CRLF to CR,
-    or an Applesoft BASIC program could be converted from a text file to tokenized form.</li>
+  <li>Add: add a file to an archive without modification.
+    Attempt to restore file attributes from saved metadata.</li>
   <li>Export: extract a file from an archive, converting it to something new.
     This could be a simple adjustment to a text file, or a conversion from Apple II hi-res
     to PNG.</li>
+  <li>Import: add a file to an archive, converting its format.
+    For example, the end-of-line markers in a text file might be changed from CRLF to CR,
+    or an Applesoft BASIC program could be converted from a text file to tokenized form.</li>
 </ul>
 
 <p>Utilities such as NuLib2 and the original CiderPress blend the operations together,
 which can lead to some ambiguous behavior.  In CiderPress II, add/extract are always
-distinctly different commands from import/export.</p>
+distinctly different operations from import/export.</p>
 
 
 <h2>Changes from CiderPress</h2>
 
 <p>The original CiderPress, first published in 2003, is a Windows-only application that can be
-run on other platforms with the use of the WINE emulation wrapper.  The code was written in C++,
+run on other platforms with the use of the Wine emulation wrapper.  The code was written in C++,
 using the Windows MFC toolkit.  Some of the lower-level functions were implemented in portable
-libraries that were shared with other applications.</p>
+libraries that were used by other applications.</p>
 
 <p>CiderPress II is written in C#, targeted at .NET Core 6.  It gives equal importance to
 GUI and command-line interfaces, and can run on a variety of systems, including
@@ -178,7 +178,7 @@ file management, and WOZ disk image support, there are a few more subtle changes
     are now presented to the user as "notes".</li>
 </ul>
 
-<p>A few things have been removed and are not expected to return:</p>
+<p>A few things have been removed and are not expected to return, due to lack of interest:</p>
 
 <ul>
   <li>NuFX archives with deflate, bzip2, and LZC compression are no longer supported.</li>
@@ -197,7 +197,7 @@ file management, and WOZ disk image support, there are a few more subtle changes
     making it easy to integrate NuFX LZW or Squeeze compression into code that doesn't want
     the rest of the NuFX archive handling.</li>
   <li>The file conversion library returns platform-agnostic objects that can be converted to
-    TXT/RTF/PNG/CSV, rather than returning Windows-specific bitmaps and pre-formatted RTF.</li>
+    TXT/RTF/PNG/CSV, rather than directly generating Windows-specific bitmaps and RTF.</li>
 </ul>
 
 </div>

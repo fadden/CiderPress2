@@ -79,15 +79,17 @@
 <h2>Viewing Files</h2>
 
 <p>The file viewer can display the contents of a file read from a file archive or
-disk image in various forms.  The most basic, plain text and hex dumps, are available
-for all types of files.  The conversion usually appears in the <samp>Data Fork</samp> tab.</p>
+disk image in various forms.  Two basic conversion modes, plain text and hex dump,
+are available for all types of files.  The converted output usually appears in the
+<samp>Data Fork</samp> tab.</p>
+
 <p>The Plain Text converter does its best to display the contents of the file as text.
 Control characters can be converted to Unicode "control pictures" or dumped in their
 raw state (which is reasonable when exporting to a file but not recommended for the
-file viewer).  Some control characters, such as carriage return and newline, are
+internal file viewer).  Some control characters, such as carriage return and newline, are
 converted to the local end-of-line character.  You can specify the character set to
 use with the radio buttons, choosing whether the source is high/low ASCII (e.g. DOS 3.3),
-Mac OS Roman (HFS), or ISO Latin-1 (documentation in a ZIP archive).</p>
+Mac OS Roman (e.g. HFS), or ISO Latin-1 (e.g. documentation in a ZIP archive).</p>
 <p>The Hex Dump converter displays the contents as hex values, 16 per line, with
 printable values shown in a column on the right.  Control characters are replaced with
 a dot glyph.  The character set can be chosen from the usual set.</p>
@@ -101,12 +103,13 @@ format, or complaints about errors found during processing.</p>
 
 <p>The arrow buttons at the left and right sides of the window can be used to move
 to adjacent files.  If you selected multiple files before opening the file viewer,
-only those files will be available to view.</p>
+only those files will be available to view.  If only one file was selected, the
+buttons will move between all files that were shown in the file list panel.</p>
 
 
 <h2>Conversions</h2>
 
-<p>Many files will have a more specific conversion available.  Word processor documents,
+<p>Many files will have a specific conversion available.  Word processor documents,
 spreadsheets, and graphical images can be converted to a more modern format.  There are
 four types of output:</p>
 <ol>
@@ -139,11 +142,12 @@ you to search forward or backward through the text for a simple text string.</p>
 scales the image in the viewer, allowing you to zoom in on part of an image.</p>
 
 <p>The <samp>Open Raw</samp> button only affects DOS 3.3 files.  It allows files with
-types T, I, A, and B to be opened as a series of 256-byte sectors, so you can see the headers
-and data stored past the declared end of file.  Selecting this is usually required for
-random-access text files, which will ordinarily appear truncated or empty.  When this is
-checked, some of the standard file viewers won't work, e.g. you won't be able to get a
-formatted listing of an Applesoft BASIC program.</p>
+types T, I, A, and B to be opened as a series of 256-byte sectors, so you can see the
+file headers and the data stored past the declared end of file.  Selecting this is usually
+required for random-access text files, which will ordinarily appear truncated or empty.  When
+this is checked, some of the standard file viewers won't work, e.g. you won't be able to get a
+formatted listing of an Applesoft BASIC program because the file now starts with an
+additional header.</p>
 
 
 <h2>Copy and Export</h2>

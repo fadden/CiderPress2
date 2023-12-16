@@ -82,9 +82,9 @@
 of 256-byte sectors, with one of eight file types.  Some aspects of the filesystem
 require special handling.</p>
 <p>Files with types I (Integer BASIC), A (Applesoft BASIC), and B (binary data) have
-a 16-bit file length stored at the start of the file.  In most cases the length just
-indicates how much of the last sector is used, but through various means it's possible
-to extend or truncate the length to be very different.  For example, some programs
+a 16-bit file length stored at the start of the file.  In most cases the length is only
+used to tell how much of the last sector is actually used, but through various means it's
+possible to extend or truncate the length to be very different.  For example, some programs
 were distributed as type B with a short "fast loader" program at the start.  The DOS
 <code>BRUN</code> command would stop at the embedded length, which only spanned the
 loader; the loader would then load the rest of the file into memory.</p>

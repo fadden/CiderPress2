@@ -1444,18 +1444,19 @@ The size is an integer, possibly followed by a multiplier string,
 e.g. "800K".  Supported multiplier strings are:
 
  - (none) - bytes
- - "K", "KB", "KiB" - kibibytes (1024 bytes)
- - "M", "MB", "MiB" - mebibytes (1024*1024 bytes)
- - "G", "GB", "GiB" - gibibytes (1024*1024*1024 bytes)
- - "T", "TB", "TiB" - tebibytes (1024*1024*1024*1024 bytes)
- - "BLK", "BLOCKS" - blocks (512 bytes)
- - "TRK", "TRACKS" - 5.25" disk tracks (4096 bytes, or 3328 bytes
+ - "k", "kB", "kiB" - kibibytes (1024 bytes)
+ - "M", "MB", "MiB" - mebibytes (1024 * 1024 bytes)
+ - "G", "GB", "GiB" - gibibytes (1024 * 1024 * 1024 bytes)
+ - "T", "TB", "TiB" - tebibytes (1024 * 1024 * 1024 * 1024 bytes)
+ - "BLK", "blocks" - blocks (512 bytes)
+ - "TRK", "tracks" - 5.25" disk tracks (4096 bytes, or 3328 bytes
     with `--sectors=13` flag)
 
 The size indicates the amount of storage available to the filesystem,
 not the size of the disk image itself.  A standard 5.25" disk would be
 specified as "140KB" for both ".do" sector images and ".nib" nibble images.
-(65535-block ProDOS volumes may be specified as 32MB.)
+(As a special case, ProDOS volumes may be specified as 32MB, though they will
+be formatted with 65535 blocks rather than 65536.)
 
 The size string is case-insensitive.
 

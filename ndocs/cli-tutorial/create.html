@@ -100,7 +100,7 @@ To create a basic 5.25" DOS floppy disk image:</p>
 </p>
 
 <p>The disk image format is specified by the filename extension.  The size is
-specified in bytes with an optional multiplier (KB, MB, etc.), or in tracks.  For example, to
+specified in bytes with an optional multiplier (kB, MB, etc.), or in tracks.  For example, to
 create an 800KB HFS image in DiskCopy 4.2 format:</p>
 <p class="showcmd">cp2 cdi new.image 800kb hfs</p>
 <p class="showout">Creating disk image: DiskCopy 4.2, order=pdos/blk, size=800KB, HFS
@@ -116,9 +116,9 @@ The multiplier can be kibibytes (k, kB, kiB), mebibytes (M, MB, MiB),
 gibibytes (G, GB, GiB), tebibytes (T, TB, TiB), 512-byte blocks (blk, blocks), or
 tracks (trk, tracks).  Tracks are 3328 or 4096 bytes, depending
 on whether <kbd>--sectors</kbd> is 13 or (default) 16.
-(FWIW, it is incorrect to equate the base 2 and base 10 abbreviations &mdash; MB and MiB
+(Note: it is incorrect to equate the base 2 and base 10 abbreviations &mdash; MB and MiB
 are different things &mdash; but the application treats them as synonymous because
-of tradition and convention.)</p>
+of tradition and convention.)  The multiplier is case-insensitive.</p>
 
 <p>The filesytem can be <kbd>DOS</kbd>, <kbd>ProDOS</kbd>, <kbd>Pascal</kbd>,
 <kbd>CPM</kbd>, or <kbd>HFS</kbd>.

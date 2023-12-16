@@ -83,7 +83,8 @@
         <p>The file viewer can be used to see the contents of files, in raw form or
         after being converted.  You can double-click to open a single file, or use
         the standard selection actions (Ctrl+Click to toggle individual items,
-        Shift+Click to select a range) to view a specific set.</p>
+        Shift+Click to select a range) to view a specific set
+        with <samp>Actions &gt; View Files</samp>.</p>
     </div>
 </div>
 
@@ -102,7 +103,7 @@
         <p>You can move between files with the <samp>&lt;</samp> and <samp>&gt;</samp>
         buttons at the left and right edges of the window.  If you opened multiple files,
         the buttons will walk through that set.  If you opened a single file, the buttons
-        will walk through all files shown in the file list (skipping
+        will walk through all of the files that were being shown in the file list (skipping
         directory entries).</p>
     </div>
 </div>
@@ -121,7 +122,7 @@
         <p>Two converters are always present: <samp>Plain Text</samp> and
         <samp>Hex Dump</samp>.  These can be selected quickly with the
         <samp>Text</samp> and <samp>Hex Dump</samp> buttons to the right.</p>
-        <p>Switching to Hex Dump also changes the available options.  You're now
+        <p>Notice that switching to Hex Dump changed the available options.  You're now
         able to choose the character set used for the ASCII portion of the hex dump.</p>
     </div>
 </div>
@@ -154,12 +155,17 @@
 <h3>Random-Access DOS Text</h3>
 
 <div class="grid-container">
+    <div class="grid-item-text">
+        <p>DOS 3.2/3.3 random-access text files are tricky.  The record length isn't
+        recorded, and there is no indication that the files aren't plain text.</p>
+    </div>
+</div>
+
+<div class="grid-container">
     <div class="grid-item-image">
         <img src="images/animals-seq.png" alt="animals-seq"/>
     </div>
     <div class="grid-item-text">
-        <p>DOS 3.2/3.3 random-access text files are tricky.  The record length isn't
-        recorded, and there is no indication that the files aren't plain text.</p>
         <p>Let's take a look at the datafile from the <samp>ANIMALS</samp> game on
         the old DOS system master disk.  (You can find this in the
         <samp>fileconv/dos-files.do.gz</samp> sample archive.)  If you double-click
@@ -205,7 +211,7 @@
         <p>NOTE: <samp>Open Raw</samp> affects the way other DOS files are opened.
         You will generally want to un-check it before viewing other types of files
         (unless you want to see the I/A/B file headers or see the contents that
-        appear after the purported end of file).</p>
+        appear after the declared end of file).</p>
     </div>
 </div>
 

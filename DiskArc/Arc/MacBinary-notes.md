@@ -18,8 +18,8 @@ Like other 1980s-era transmission formats, the format assumes transmission in 12
 (e.g. XMODEM protocol).  To simplify the encoding and decoding software, the file is padded to
 conform to this packet size.
 
-The MacBinary standard was a fairly straightforward encoding of the MFS/HFS file data.
-MacBinary II was a backward-compatible extension that added a few additional fields and a CRC
+The MacBinary standard is a fairly straightforward encoding of the MFS/HFS file data.
+MacBinary II is a backward-compatible extension that added a few additional fields and a CRC
 on the header contents.  MacBinary III added a couple of miscellaneous fields and a signature.
 Of these, MacBinary II appears to be the most common.
 

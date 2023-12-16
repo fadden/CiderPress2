@@ -34,7 +34,7 @@ limitations under the License.
 
         <TextBlock Grid.Row="0" Text="Select type of archive to create:   "/>
         <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,4,0,0">
-            <RadioButton Content="Binary ]["
+            <RadioButton Content="Binary II"
                          IsChecked="{Binding IsChecked_Binary2}"/>
             <RadioButton Content="ShrinkIt (NuFX)" Margin="0,2,0,0"
                          IsChecked="{Binding IsChecked_NuFX}"/>

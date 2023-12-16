@@ -36,7 +36,7 @@ namespace cp2_wpf {
             "*.nib;*.nb2;*.raw;*.app;*.woz;";
         public const string FILE_FILTER_2MG = "2IMG disk image (*.2mg)|*.2mg";
         public const string FILE_FILTER_APP = "Trackstar disk image (*.app)|*.app";
-        public const string FILE_FILTER_BINARY2 = "Binary ][ (*.bny/bqy)|*.bny;*.bqy";
+        public const string FILE_FILTER_BINARY2 = "Binary II (*.bny/bqy)|*.bny;*.bqy";
         public const string FILE_FILTER_CSV = "Comma-separated values (*.csv)|*.csv";
         public const string FILE_FILTER_D13 = "Unadorned 13-sector disk (*.d13)|*.d13";
         public const string FILE_FILTER_DO = "Unadorned DOS sectors (*.do)|*.do";

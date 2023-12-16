@@ -15,11 +15,9 @@ as copy and replace whole disk partitions.
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
- - The command-line tool is alpha quality.  See [the manual](docs/Manual-cp2.md) for a thorough
-   description of commands and features.
- - The GUI tool is alpha quality.  It's only available for Windows at this time, though
-   emulation with WINE appears to be possible.
- - Video demos:
+ - The command-line and desktop GUI tools are alpha quality.  The command-line tool is available
+   for Windows, macOS, and Linux, but the GUI tool currently only runs on Windows.
+ - Video demos, made during development:
    - v0.4 drag & drop: https://youtu.be/P2kss3aOEvs
    - v0.3 disk handling: https://youtu.be/5tE07owhcCc
    - v0.2 new GUI: https://www.youtube.com/watch?v=esEHP6Bo8GI

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../main.css"/>
     <!-- END: /incl-head.html -->
 
-    <title>CiderPress II - Physical Media</title>
+    <title>CiderPress II - Editing Sectors</title>
 </head>
 
 <body>
@@ -85,19 +85,19 @@ when the disk can be viewed as a series of 512-byte blocks.  This means that an
 image of an Apple II 13-sector 5.25" disk can only be edited as sectors, and a 32MB hard drive
 can only be edited as blocks.  Apple II 16-sector 5.25" disks can go either way.</p>
 
-<p>Apple II operating systems that accessed 16-sector disks applied a translation table
-to the sector number.  Reading and writing sectors sequentially was inefficient because,
+<p>Apple II operating systems that access 16-sector disks apply a translation table
+to the sector number.  Reading and writing sectors sequentially is inefficient because,
 between the time the software finished reading sector 0 and was ready to start on
-sector 1, the disk would rotate past the start of sector 1.  The software skew allowed
-the operating system to interleave the sectors in a fashion that was optimized for
+sector 1, the disk will rotate past the start of sector 1.  The software skew allows
+the operating system to interleave the sectors in a fashion that is optimized for
 its performance goals.</p>
 
 <p>DOS uses one scheme, ProDOS and Apple Pascal another, and CP/M uses a third.  When
 reading sectors from a nibble image, it's important to select the correct translation
-table.  Usually the filesystem installed on the disk makes it easy, but some systems
-use different schemes on different tracks.</p>
+table.  Usually the filesystem installed on the disk makes it easy to identify, but
+some systems use different schemes on different tracks.</p>
 
-<p>Block devices are generally much simpler, storing blocks in sequential order.</p>
+<p>Block images are generally much simpler, storing blocks in sequential order.</p>
 
 <p>You can open the block/sector editor by selecting the disk image or partition
 you wish to edit, and then clicking one of the buttons in the center panel or using
@@ -115,14 +115,15 @@ the corresponding item in the <samp>Actions</samp> menu.  There are three option
 <h3>Navigation</h3>
 
 <p>Track, sector, and block numbers may be entered in decimal or hexadecimal
-(precede it with '$' for hex).  The range of valid values is shown.  Enter the
+(precede it with "<samp>$</samp>" or "<samp>0x</samp>" for hex).  The range of valid
+values is shown.  Enter the
 desired values and click <samp>Read</samp> to read the block, or <samp>Write</samp>
 to write it.  (You're allowed to write a block somewhere other than where you read it,
 though you will be asked for confirmation if you try.)</p>
 <p>Use the <samp>Prev</samp> and <samp>Next</samp> buttons to move forward or backward
 by one block or sector.</p>
 <p>To edit sector data, click in the hex data area on the byte you wish to change, and
-enter two hex digits (0-9, a-f).  (Editing the text area is not currently supported.)</p>
+enter two hex digits (0-9, a-f).  Editing the text area directly is not currently supported.</p>
 
 <p>For 16-sector disks, the sector skew can be changed with the <samp>Sector Order</samp>
 pop-up menu.</p>
@@ -137,7 +138,8 @@ generate a text copy of the hex dump.</p>
 
 <p>Editing a disk with a filesystem could change the filesystem, or render it
 unrecognizable.  When you start making changes, the filesystem or partitions stored
-in the disk image will be removed from the archive tree.  When you exit the sector
+in the disk image will be removed from the Archive Contents tree (top-left panel).
+When you exit the sector
 editor, the disk will be re-scanned, and the filesystem re-added to the archive tree
 if possible.</p>
 

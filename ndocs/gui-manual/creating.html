@@ -76,7 +76,7 @@
 
 <div id="main">
 
-<h2>File Archives</h2>
+<h2>Creating File Archives</h2>
 
 <p>To create a new file archive, select the <samp>File &gt; New File Archive</samp> menu item.
 Choose the desired archive from the list, and click <samp>OK</samp>.  Use the file dialog
@@ -90,7 +90,7 @@ bytes long.</p>
 they are designed to store a single file.  To create AppleSingle or AppleDouble, extract a
 file with the appropriate preservation mode enabled.</p>
 
-<h2>Disk Images</h2>
+<h2>Creating Disk Images</h2>
 
 <p>To create a new disk image, select the <samp>File &gt; New Disk Image</samp> menu item.
 This opens a window with a variety of options to choose from.</p>
@@ -100,9 +100,11 @@ the available options, or a custom size can be specified in blocks.</p>
 <p>Second, choose the filesystem to use.  Only the filesytems that are compatible with
 the specified disk size will be available.  If the filesystem has a volume name or number,
 you can enter those below.  For DOS 3.x and CP/M floppies, you can also choose whether to
-reserve space for the operating system image.</p>
+reserve space for the operating system image.  (For DOS 3.2/3.3, a copy of the operating
+system will be installed.)</p>
 <p>Third, choose the type of disk image to create.  Only the files that are compatible
 with the specified disk size will be available.</p>
+
 <p>Briefly:</p>
 <ul>
   <li>Unadorned DOS-order (.do/.d13): this stores an Apple II 5.25" floppy disk as a
@@ -110,11 +112,13 @@ with the specified disk size will be available.</p>
     disks, often used with the ambiguous ".dsk" extension.  ".do" is used for 16-sector
     disks, ".d13" for 13-sector disks.</li>
   <li>Unadorned ProDOS-order (.po): this stores a disk as a series of 512-byte blocks.
-    The popular ".hdv" and ".iso" extensions are identical.  This is the most common
+    The popular ".hdv" and ".iso" extensions are identical, and sometimes ".dsk" is
+    used for this as well.  This is the most common
     format for 3.5" disks, hard drives, and other block-oriented media.</li>
   <li>2IMG (.2mg): this can store data the same way a .do, .po, or .nib image would, but
     it also adds a file header that allows the receiving application to recognize
-    the contents unambiguously.  Here, it's only used for ProDOS-ordered images (.po).</li>
+    the contents unambiguously.  This format is widely supported by Apple II emulators.
+    Here, it's only used for ProDOS-ordered images (.po).</li>
   <li>ShrinkIt (.sdk): compressed 5.25" or 3.5" disk image.  Convenient for transfer
     to a physical Apple II, because it's smaller and you can use ShrinkIt to unpack
     it to a physical disk, but not all emulators support it.</li>

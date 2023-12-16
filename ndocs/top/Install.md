@@ -8,7 +8,7 @@ Mac OS, and Linux.  It's even available for the
 Not everyone wants to install the .NET runtime on their system, so CiderPress II is available
 as both "framework-dependent" and "self-contained" downloads.  The former is much smaller
 (by 30+MB), but the latter will work without having the runtime installed.  Windows users
-will likely already have the runtime installed.
+will likely already have the runtime.
 
 If you want to install the .NET runtime, get it here: https://dotnet.microsoft.com/en-us/download .
 Click on "all .NET 6.0 downloads" (or whatever version is current), then in the
@@ -20,7 +20,7 @@ if you just want to run CiderPress II.  The downloads in the Binaries column wil
 but may not have it automatically configured in your shell path.
 
 You can pick a file to download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
-or use one of these links to download a recent release:
+or use one of these links to download a recent stable release:
 
 System        | Self-Cont'd? | Link
 ------------- | ------------ | ----
@@ -36,7 +36,7 @@ Linux x64     | no           | https://github.com/fadden/CiderPress2/releases/do
 Linux x64     | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_sc.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
-for you).  There is no installer; the commands are executed directly from where they were unzipped.
+for you).  There is no installer; the commands are executed directly from where they are unzipped.
 On some systems an additional step may be necessary.  You will need a command-line shell to
 run "cp2":
 

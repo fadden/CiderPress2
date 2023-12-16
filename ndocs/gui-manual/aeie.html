@@ -93,10 +93,10 @@ file data.</p>
     are discarded when files are extracted.  File dates will be preserved if the
     host filesystem has something equivalent.  (Most filesystems record modification
     dates, but not all store creation dates.)</li>
-  <li>AppleSingle (AS) - files are stored as a single ".as" file.  This format
+  <li>AppleSingle (AS) - entries are stored as a single ".as" file.  This format
     defines a way to store the data fork, resource fork, original filename,
     and all file attributes in a single file.</li>
-  <li>AppleDouble (ADF) - file are stored as a pair of files.  The data fork
+  <li>AppleDouble (ADF) - entries are stored as a pair of files.  The data fork
     is stored in a file with the original name, while the resource fork and
     any attributes are stored in an optional "header" file whose name starts with
     "<code>._</code>".  This can be convenient to work with, because anything
@@ -120,18 +120,17 @@ file data.</p>
 <h2>Configuration Options</h2>
 
 <p>The panel on the right side of the screen has a collection of configuration options
-that affect add/extract and import/export operations.  These are displayed here so that
+that affect add/extract and import/export operations.  These are presented here so that
 they can be applied equally to operations started with menu items, copy &amp; paste
 operations, and drag &amp; drop.</p>
 <p>Options you can set when adding or importing files:</p>
 <ul>
-  <li><samp>Recurse Into Directories</samp> - determines whether files will be
-    added from the current directory only, or from that directory and all
-    subdirectories.</li>
+  <li><samp>Recurse Into Directories</samp> - determines whether the application
+    descends into the contents of selected subdirectories.</li>
   <li><samp>Use Compression</samp> - determines whether files added will be
     compressed.  Only meaningful for file archives that support compression.</li>
-  <li><samp>Strip Paths</samp> - if set, files will not be added with subdirectory
-    names.  Only matters if directory recursion is enabled.</li>
+  <li><samp>Strip Paths</samp> - if set, partial paths will be stripped from
+    files as they are added.</li>
   <li><samp>Raw</samp> - if set, file data forks will be opened in "raw" mode.
     This is only meaningful for DOS 3.2/3.3 files, and should only be used for
     files that were generated or extracted as "raw" data.</li>
@@ -144,7 +143,7 @@ operations, and drag &amp; drop.</p>
     any extraneous file extensions removed.  For example, when adding a ".txt" file,
     the file's type would be set to TXT or TEXT, and the ".txt" dropped from the
     filename.</li>
-  <li>Conversion Mode</samp> - when importing files, this determines which converter
+  <li><samp>Conversion Mode</samp> - when importing files, this determines which converter
     will be applied.  (Converters are not auto-selected for imports.)</li>
 </ul>
 <p>In addition, the <samp>Conversion Settings</samp> button will open a configuration
@@ -153,9 +152,9 @@ specify which character set to use when importing text files.</p>
 
 <p>Options you can set when extracting or exporting files:</p>
 <ul>
-  <li><samp>Strip Paths</samp> - if set, files will not be added with subdirectory
-    names.  Only matters for archives that store full pathnames, such as ProDOS
-    and HFS filesystems.</li>
+  <li><samp>Strip Paths</samp> - if set, files will not be extracted with subdirectory
+    names.  Only matters for file archives and filesystems that store full pathnames,
+    such as ProDOS and HFS.</li>
   <li><samp>Raw</samp> - if set, file data forks will be opened in "raw" mode.
     This is only meaningful for DOS 3.2/3.3 files, and should be used when attempting
     to preserve the full file contents.</li>
@@ -187,8 +186,23 @@ to the directory where you want to extract the files, and click
 <p>If a file already exists, you will be prompted for permission to overwrite the file,
 or skip add/extract of that one file.</p>
 
+<p>The pathnames of extracted files can be affected by the current file list view mode.
+For example, suppose you have an HFS volume with a subdirectory called <samp>Subdir</samp>
+that has a file called <samp>MyFile</samp> in it.  If you're in single-directory view
+mode, with <samp>Subdir</samp> selected in the Directory tree, extracting <samp>MyFile</samp>
+will result in the creation of a file called <samp>MyFile</samp> in the chosen output
+directory.
+If you're in full-file mode, the file list shows all files on the volume, and will display
+the file's partial pathname as <samp>Subdir/MyFile</samp>.
+When you extract the entry, a subdirectory called
+<samp>Subdir</samp> will be created, and <samp>MyFile</samp> will be extracted into it.</p>
+<p>The rule is that the extraction process matches what you see in the file list.  You
+can modify this by checking the <samp>Strip Paths</samp> option.</p>
+
 
 <h2>Importing and Exporting files</h2>
+
+<p>Import/export have the same general behavior as add/extract.</p>
 
 <p>To import files, choose the desired conversion mode from the options panel.
 Select the <samp>Actions &gt; Import Files</samp> menu item.  Select
@@ -196,7 +210,7 @@ the set of files and directories to import, and click <samp>Select</samp>.  The
 files will be added to the directory that is currently selected in the directory tree.</p>
 
 <p>To export files, choose the desired conversion mode from the options panel.
-select the files and directories you want to export in the
+Select the files and directories you want to export in the
 file list, and select the <samp>Actions &gt; Export Files</samp> menu item.  Navigate
 to the directory where you want to extract the files, and click
 <samp>Select Here</samp>.</p>

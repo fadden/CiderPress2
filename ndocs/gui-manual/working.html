@@ -81,22 +81,22 @@
 <p>When CiderPress II starts, you will see a plain window with menu items, a toolbar
 near the top, and a few buttons in the middle.  The
 buttons allow you to open an existing file or create a new file.  If you have
-worked with files in the past, there will also be buttons that reopen recently-opened
+opened archives in the past, there will also be buttons that reopen recently-opened
 files.</p>
 <p>The same features can be accessed with the <samp>File &gt; Open</samp>,
 <samp>File &gt; New Disk Image</samp>, <samp>File &gt; New File Archive</samp>,
 and <samp>File &gt; Recent Files</samp> menu items.</p>
-<p>You can also open a file by dragging it from Windows Explorer and dropping it
+<p>You can also open an archive by dragging it from Windows Explorer and dropping it
 on this window.</p>
 
 <p>It's possible to bypass the opening screen entirely.  You can do this by dragging
 and dropping a file onto the CiderPress II application icon, or by double-clicking
 on a file when CiderPress II is configured as the default application for that
-file extension.  To do the latter in Windows:</p>
+file extension.  To configure the default application in Windows:</p>
 <ul>
   <li>Right click on a file of the appropriate type, and select <samp>Open with</samp>
   and the <samp>Choose another app</samp> option.</li>
-  <li>In the window that pops up, select the <samp>CiderPress2</samp> application,
+  <li>In the window that pops up, select <samp>CiderPress2</samp> as the application,
   and check the "always use this app to open files" box.</li>
 </ul>
 
@@ -149,8 +149,8 @@ will be dimmed, e.g. you can't sector-edit a file archive.</p>
 image format appears to be correct, the archive will be opened, but it won't have
 a filesystem entry in the archive tree.</p>
 
-<p>If you open a disk image or file archive inside another archive, it
-will appear in the tree.</p>
+<p>If you open a disk image or file archive inside the current archive, it
+will be added to the tree.</p>
 
 <h3>Directory Hierarchy</h3>
 
@@ -205,11 +205,12 @@ on what is being displayed:</p>
   <li>Rsrc Len - length of the resource fork.  Only shown for archives that support
     forked files.</li>
   <li>Rsrc Format - format of resource fork storage, i.e. how it is compressed.
-    Only shown for file archives.</li>
-  <li>Total Size - combined length of the data and resource forks, as well as any
-    overhead.  This is the amount of storage used in the filesystem.  For a file
-    archive, this is the sum of the compressed lengths, but does not include
-    archive overhead.  The units used vary, e.g. DOS 3.3 is reported in 256-byte sectors,
+    Only shown for file archives that support forked files.</li>
+  <li>Total Size - combined length of the data and resource forks.
+    For entries in a filesystem, this is the amount of storage used, including any OS overhead.
+    For entries in a a file archive, this is the sum of the compressed lengths,
+    but does not include archive headers.
+    The units used vary, e.g. DOS 3.3 is reported in 256-byte sectors,
     while ProDOS is reported in 512-byte blocks.</li>
   <li>Access - ProDOS-style access-enabled flags:
     Delete, reName, Write, Read, Backup, Invisible.
@@ -234,8 +235,8 @@ single-directory.</p>
 column headers.  The column widths are saved in the application settings file.</p>
 <p>The entries in the file list can be sorted by clicking on the column header.
 Click again to reverse the direction of the sort.  To return to the original
-order, i.e. the order in which the files are stored in the archive, use the reset
-sort button in the toolbar.</p>
+order, i.e. the order in which the files are stored in the archive, use the Reset
+Sort button in the toolbar.</p>
 
 <p>Double-clicking on a directory entry in the file list will update the Directory
 tree to have that entry selected.</p>
@@ -279,7 +280,7 @@ but can't be opened read-write.  This can be verified with Process Explorer
 (<a href="https://serverfault.com/a/1980/268812">notes</a>): run as administrator, then
 <samp>Find &gt; Find Handle or DLL</samp>, and enter a unique part of the filename.</p>
 
-<p>Ejecting the virtual DVD will remove the restrictions on the file.</p>
+<p>Ejecting the virtual CD/DVD will remove the restrictions on the file.</p>
 
 
 </div>

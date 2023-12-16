@@ -65,12 +65,17 @@
 
 <div id="main">
 
-<h1>Feature Summary</h1>
+<h1>Feature List</h1>
 
 <p>The application supports a wide variety of file archives, disk images,
 and filesystems.  These may be nested inside each other, e.g. you can directly
 access a ShrinkIt archive in a ProDOS volume in a WOZ disk image stored in a
 ZIP archive.</p>
+
+<p>You can list contents, add, extract, import, export, copy, rename, move, delete,
+test, get attributes, and set attributes on files.  You can create new disk images in
+various formats and sizes, get metadata, set metadata, copy blocks or sectors,
+edit blocks or sectors, and view raw tracks, as well as copy and replace whole disk partitions.</p>
 
 <h4>File Archives</h4>
 
@@ -81,28 +86,30 @@ ZIP archive.</p>
         <th>Status</th>
     </tr>
     <tr> <td>AppleLink PE</td> <td>.acu</td> <td>read</td> </tr>
-    <tr> <td>AppleDouble</td> <td>("._" prefix pair)</td> <td>read/add/extract</td> </tr>
+    <tr> <td>AppleDouble</td> <td>("<code>._</code>" prefix pair)</td> <td>read/add/extract</td> </tr>
     <tr> <td>AppleSingle</td> <td>.as</td> <td>read/add/extract</td> </tr>
-    <tr> <td>Binary ][</td> <td>.bny .bqy</td> <td>full</td> </tr>
+    <tr> <td>Binary II</td> <td>.bny .bqy</td> <td>full</td> </tr>
     <tr> <td>gzip</td> <td>.gz</td> <td>read/add/extract</td> </tr>
     <tr> <td>MacBinary</td> <td>.bin .macbin</td> <td>read</td> </tr>
     <tr> <td>NuFX (ShrinkIt)</td> <td>.shk .sdk .bxy .sea .bse</td> <td>full</td> </tr>
-    <tr> <td>ZIP</td> <td>.zip</td> <td>full (include __MACOSX handling)</td> </tr>
+    <tr> <td>ZIP</td> <td>.zip</td> <td>full (includes __MACOSX handling)</td> </tr>
 </table>
 
 <p><b>Read</b> indicates the archives can be read, but not written.</p>
-<p><b>Add/extract</b> means that you can extract files from the format, but
-you can only create them by extracting files <i>to</i> them.
-For example, AppleSingle and AppleDouble are designed to preserve attributes
-and resource forks for a single file, not hold a collection, so it makes sense
-to handle them this way.</p>
+<p><b>Add/extract</b> means that you can extract files from archives in that format, but
+you can only create new archives by extracting files <i>to</i> them.
+For example, AppleSingle and AppleDouble work this way because they're designed
+to wrap a single file, not hold a collection.  Creating an AppleSingle file,
+adding data and/or resource forks to it, and then setting attributes, is much more
+complicated than just extracting an entry from a file archive or disk image
+as AppleSingle.</p>
 <p><b>Full</b> means archives can be created, read, and written.</p>
 
 <p>The __MACOSX support allows files in ZIP archives to be stored with resource
 forks and HFS/ProDOS file attributes.</p>
 
 <p>Compression modes supported are LZW/1 and LZW/2 for NuFX,
-Squeeze for Binary ][, and deflate for ZIP/gzip.</p>
+Squeeze for Binary II, and deflate for ZIP/gzip.</p>
 
 
 <h4>Disk Images</h4>
@@ -122,7 +129,7 @@ Squeeze for Binary ][, and deflate for ZIP/gzip.</p>
 </table>
 
 <p>Disk images may be from 5.25" floppy disks, 3.5" floppy disks, hard drives,
-CD-ROMs, and other block-addressable media.</p>
+CD-ROMs, CF/SD cards, and other block-addressable media.</p>
 
 <p>The original CiderPress had support for FDI (Formatted Disk Image)
 and DDD (Dalton's Disk Disintegrator).  These are not currently supported.</p>
@@ -144,6 +151,8 @@ and DDD (Dalton's Disk Disintegrator).  These are not currently supported.</p>
     <tr> <td>RDOS</td> <td>read (all three variants)</td> </tr>
 </table>
 
+<p>Filesystems with full support can be formatted onto new disk images.</p>
+
 <h4>Multi-Volume Layouts</h4>
 
 <table>
@@ -162,9 +171,9 @@ and DDD (Dalton's Disk Disintegrator).  These are not currently supported.</p>
     <tr> <td>Pascal ProFile Manager</td> <td>read/write</td> </tr>
 </table>
 
-<p>Creation of multi-volume disk images is not yet supported.
-Extracting and replacing individual partitions within a multi-volume
+<p>Extracting and replacing individual partitions within a multi-volume
 image is supported.</p>
+<p>Creation of new multi-volume disk images is not yet supported.</p>
 
 <h4>File Conversion - Export</h4>
 
@@ -183,7 +192,7 @@ image is supported.</p>
     </tr>
     <tr> <td>Plain text</td> <td>convert EOL and character set from DOS, ProDOS, HFS, etc.</td> </tr>
     <tr> <td>Random-access text</td> <td>configurable record length; output to CSV</td> </tr>
-    <tr> <td>Hex dump</td> <td>character portion has selectable character set</td> </tr>
+    <tr> <td>Hex dump</td> <td>character portion has selectable character set; skips sparse sections</td> </tr>
     <tr> <td>Resource listing</td> <td>plain text; from IIgs or Macintosh resource forks</td> </tr>
     <tr> <td>Disassembly</td> <td>6502 (+undoc), 65C02, 65816; includes NiftyList annotations</td> </tr>
     <tr> <td>Object Module Format (OMF)</td> <td>file structure output as plain text</td> </tr>
@@ -197,7 +206,7 @@ image is supported.</p>
     <tr> <td>Apple Pascal textfile</td> <td>plain text</td> </tr>
     <tr> <td>AppleWorks "Classic" Database</td> <td>v3, output to CSV</td> </tr>
     <tr> <td>AppleWorks "Classic" Spreadsheet</td> <td>v3, output to CSV, some functions translated</td> </tr>
-    <tr> <td>AppleWorks "Classic" Word Processor</td> <td>v3 (and most v4/v5), most formatting supported</td> </tr>
+    <tr> <td>AppleWorks "Classic" Word Processor</td> <td>v3 (and usually v4/v5), most formatting supported</td> </tr>
     <tr> <td>AppleWorks GS Word Processor</td> <td>most formatting supported</td> </tr>
     <tr> <td>Gutenberg word processor</td> <td>plain text, formatting not handled</td> </tr>
     <tr> <td>Magic Window document</td> <td>plain text, formatting not handled</td> </tr>
@@ -215,7 +224,7 @@ image is supported.</p>
 </table>
 
 <p>Text conversions can treat the source as low/high ASCII, Mac OS Roman,
-or ISO 8859-1.  The hex dump skips over sparse sections of files.</p>
+or ISO 8859-1.</p>
 
 <h4>File Conversion - Import</h4>
 

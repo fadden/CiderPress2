@@ -107,15 +107,16 @@ commands like <kbd>cp</kbd> work).</p>
 <p>To copy all files, omit the file list.  This is a simple way to convert a
 disk image to a file archive and vice-versa.</p>
 
-<p>Text files copied to or from a DOS filesystem will be converted to or from high ASCII.</p>
+<p>Text files copied to or from a DOS filesystem will be converted to or from high ASCII.
+This can be controlled with the <samp>--convert-dos-text</samp> option.</p>
 
 <p>You cannot use this to duplicate files within a single archive.  The source and
 destination must reference different files.</p>
 
 <h3>Using Ext-Archive</h3>
 
-<p>The source and destination archives are both ext-archive specifications.  You can
-use this to copy a set of files from an arbitrary location in one archive to another.
+<p>The source and destination archives are both interpreted as ext-archive specifications.
+You can use this to copy a set of files from an arbitrary location in one archive to another.
 For example, the "turducken" example we used earlier has a couple of files in
 the directory <samp>Dir2</samp>, which is in the directory <samp>Dir1</samp>, on an
 HFS partition of an APM multi-part volume.  Suppose we want to copy all of those

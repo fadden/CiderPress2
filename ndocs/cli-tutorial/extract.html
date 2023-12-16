@@ -146,18 +146,22 @@ extracting Docs/TeachTest (rsrc) -> Docs\._TeachTest
 <p>You can reference files in an archive with wildcards.  The
 asterisk (<kbd>*</kbd>) character matches multiple characters, and the question
 mark (<kbd>?</kbd>) matches a single character.  For example:</p>
-<p class="showcmd"> cp2 extract fileconv/test-files.sdk Graphics/*.HR</p>
+<p class="showcmd"> cp2 extract fileconv/test-files.sdk "Graphics/*.HR"</p>
 <p class="showout">extracting Graphics/BARS.HR
 extracting Graphics/MULTICOLOR.HR
 </p>
 
 <p>Another example, showing multiple wildcards and short options:</p>
-<p class="showcmd">cp2 x -jpn fileconv/test-files.sdk Graphics/*/*.320?</p>
+<p class="showcmd">cp2 x -jpn fileconv/test-files.sdk "Graphics/*/*.320?"</p>
 <p class="showout">extracting Graphics/SHR/ROSE.3200 -> ROSE.3200#c08005
 extracting Graphics/SHR/EAGLE.3200 -> EAGLE.3200#c00002
 extracting Graphics/SHR/DG.3200 -> DG.3200#060000
 extracting Graphics/SHR/ASTRO.3201 -> ASTRO.3201#060000
 </p>
+
+<p>It's important to put arguments with wildcards in quotes, so that
+the command shell doesn't try to match them against files in the current
+directory.</p>
 
 <h3>Using Ext-Archive</h3>
 
@@ -166,7 +170,7 @@ you can specify the base directory to use when extracting files by adding the
 partial path to the archive name.  Suppose we wanted to extract the contents of
 the <code>Graphics/SHR</code> directory, and we wanted all of the files to end up in
 an <code>SHR</code> subdirectory of the directory we're running the command in.
-Specifying <code>Graphics/SHR/*</code> would extract the files into the
+Specifying <code>"Graphics/SHR/*"</code> would extract the files into the
 <code>Graphics/SHR</code> directory, which we don't want, but
 removing the paths with <code>--strip-paths</code> would also remove <code>SHR</code>.</p>
 <p>Instead, we can tell it to extract the entire <code>SHR</code> directory, treating

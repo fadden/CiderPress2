@@ -92,13 +92,14 @@ application decide which is most appropriate.</p>
 <p>Conversions are performed by the <kbd>export</kbd> command, which takes the same
 arguments as <kbd>extract</kbd>, but with
 the addition of an "export-spec".  The export specifier tells CiderPress II how to do
-the conversion.  For example, to choose the conversion automatically:</p>
+the conversion.  To let cp2 choose the conversion automatically, use the
+export-spec "<kbd>best</kbd>":</p>
 <p class="showcmd">cp2 export fileconv/test-files.sdk best Docs:sample.text Code:ZIPPY</p>
 <p class="showout">exporting Docs/sample.text -> Docs\sample.text.txt [text]
 exporting Code/ZIPPY -> Code\ZIPPY.txt [disasm]
 </p>
 
-<p>Here we just told it use the "best" option.  It decided to do a simple text
+<p>The command decided to do a simple text
 conversion on <samp>sample.text</samp>, and generated a disassembly for <samp>ZIPPY</samp>
 (which is a ProDOS 8 SYS program).</p>
 

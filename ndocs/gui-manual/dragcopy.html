@@ -132,7 +132,7 @@ virtual file streams is used.  These copy both forks and all file attributes.  C
 such as "strip paths" and "use raw data", will change how the data is placed on the clipboard.</p>
 
 <p>Files may be dropped into the file list or the directory tree, from a drag initiated from
-another application instance or from Windows explorer.  If dropped in the file list, we check
+another application instance or from Windows Explorer.  If dropped in the file list, we check
 to see if they were dropped on a directory.  If so, we use that directory as target; if not, we
 use the current directory.  When pasting (with <samp>Edit &gt; Paste</samp> or <kbd>Ctrl+V</kbd>),
 the directory currently selected in the directory tree is always used as the destination.</p>
@@ -216,8 +216,8 @@ and pasting files within or between instances of CiderPress II.  The conversion 
 affect files copied to or from other applications, such as Windows Explorer, but that can be
 accomplished using the import/export text feature.  The conversion is only enabled when copying
 to a filesystem, e.g. from DOS to ProDOS, ProDOS to DOS, or NuFX to DOS, but not DOS to NuFX.
-The "Convert DOS Text" option must be enabled in the application settings on the receiving
-side.</p>
+The <samp>Convert DOS Text</samp> option must be enabled in the application settings on
+the receiving side.</p>
 
 
 <h2>Add/Extract vs. Import/Export</h2>
@@ -235,15 +235,15 @@ chosen.  The various options can be set in the options bar on the right side of 
 items suited for conversion will be exported.</p>
 
 <p>When transferring files between CiderPress II instances, the mode must be set to "extract".  If
-the mode is set to "export", the "direct transfer" data will not be placed on the clipboard.
+the mode is set to "export", the direct-transfer data will not be placed on the clipboard.
 Attempting to paste exported data into CiderPress II will result an error message.</p>
 
 
 <h2>Miscellaneous</h2>
 
-<p>Windows does not allow drag &amp; drop operations between applications with different privilege
-levels when UAC (User Access Control) is enabled.  Windows Explorer does not usually run as
-administrator, so if you run CiderPress II with elevated privileges, e.g. to gain access to
+<p>Windows tries to prevent drag &amp; drop operations between applications with different
+privilege levels when UAC (User Access Control) is enabled.  Windows Explorer does not usually
+run as administrator, so if you run CiderPress II with elevated privileges, e.g. to gain access to
 physical media, you may not be able to drag files in and out.</p>
 
 <p>If no archive is open in the application, dropping a file from Windows Explorer into the main
