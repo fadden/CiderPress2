@@ -1196,7 +1196,8 @@ namespace cp2_wpf {
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
-            AddPaths(pathNames, dropTarget, GetImportSpec());
+            AddPaths(pathNames, dropTarget,
+                mMainWin.IsChecked_ImportExport ? GetImportSpec() : null);
         }
 
         private void AddPaths(string[] pathNames, IFileEntry dropTarget,
