@@ -33,7 +33,7 @@ namespace MakeDist {
             "win-x64",          // 64-bit, non-version-specific Windows
             "linux-x64",        // 64-bit, most Linux desktop distributions
             "osx-x64",          // 64-bit, non-version-specific Mac OS (min version 10.12 Sierra)
-            "osx-arm64",        // 64-bit ARM, non-version-specific Mac OS
+            //"osx-arm64",        // 64-bit ARM, non-version-specific Mac OS
         };
 
         /// <summary>

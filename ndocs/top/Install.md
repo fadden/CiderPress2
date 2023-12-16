@@ -30,8 +30,6 @@ Windows x64   | no           | https://github.com/fadden/CiderPress2/releases/do
 Windows x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64_sc.zip
 Mac OS x64    | no           | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_fd.zip
 Mac OS x64    | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_sc.zip
-Mac OS arm64  | no           | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-arm64_fd.zip
-Mac OS arm64  | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-arm64_sc.zip
 Linux x64     | no           | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_fd.zip
 Linux x64     | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_sc.zip
 
@@ -53,9 +51,10 @@ In the shell, change to the directory where the files were unzipped.  Then:
  - Linux: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
    to fix it.  Run `./cp2 version` to confirm it works.
  - Mac OS: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
-   to make it executable.  You then need to remove the quarantine flag from the files, or the
-   system will not allow you to execute them.  In the directory where the files were unpacked, run
-   `xattr -d com.apple.quarantine *`.  Run `./cp2 version` to confirm this was successful.
+   to make it executable.  The system adds a "quarantine" flag to anything downloaded from the
+   Internet, so you need to do an extra step before you can execute the program.  In the directory
+   where the files were unpacked, run `xattr -d com.apple.quarantine *`.  Run `./cp2 version`
+   to confirm this was successful.
 
 The commands are:
 
