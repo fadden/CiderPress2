@@ -51,15 +51,17 @@ namespace FileConv {
         /// <param name="srcLen">Length of source data.</param>
         /// <param name="dst">Destination buffer.</param>
         /// <param name="dstOffset">Offset in buffer where output should start.</param>
-        /// <returns>Number of bytes unpacked, -1 if the input underflowed, or -2 if the
-        ///   output overflowed.</returns>
+        /// <param name="stoppedOnError">Result: true if unpacking stopped because an error
+        ///   was encountered.</param>
+        /// <returns>Number of bytes unpacked.</returns>
         public static int UnpackBytes(byte[] src, int srcOffset, int srcLen,
-                byte[] dst, int dstOffset) {
+                byte[] dst, int dstOffset, out bool stoppedOnError) {
             Debug.Assert(srcOffset >= 0 && srcLen >= 0);
             Debug.Assert(src.Length >= srcOffset + srcLen);
             Debug.Assert(dstOffset >= 0);
             Debug.Assert(dst.Length > dstOffset);
 
+            stoppedOnError = false;
             if (srcLen == 0) {
                 return 0;
             }
@@ -91,17 +93,21 @@ namespace FileConv {
                         outCount = flagCount * 4;
                         break;
                     default:
-                        Debug.Assert(false);
+                        Debug.Assert(false);        // shouldn't be possible
+                        stoppedOnError = true;
                         return -1024;
                 }
 
                 if (srcOffset + inCount > src.Length) {
-                    Debug.WriteLine("UnpackBytes underrun (flag=$" + flag.ToString("x2") + ")");
-                    return -1;
+                    Debug.WriteLine("UnpackBytes underrun (flag=$" + flag.ToString("x2") +
+                        ") with output count=" + (dstOffset - origDstOffset));
+                    stoppedOnError = true;
+                    return dstOffset - origDstOffset;
                 }
                 if (dstOffset + outCount > dst.Length) {
                     Debug.WriteLine("UnpackBytes overrun (flag=$" + flag.ToString("x2") + ")");
-                    return -2;
+                    stoppedOnError = true;
+                    return dstOffset - origDstOffset;
                 }
 
                 switch (flag & 0xc0) {

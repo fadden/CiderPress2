@@ -54,13 +54,16 @@ namespace FileConv.Code {
             // Check extension and file contents.
             string ext = Path.GetExtension(FileAttrs.FileNameOnly).ToLowerInvariant();
             bool hasExt = (ext == ".s");
-            bool looksGood = LooksLikeMerlin(DataStream);
+            MerlinIsh appearance = LooksLikeMerlin(DataStream);
 
-            if (hasExt && looksGood) {
+            if (hasExt && appearance == MerlinIsh.Probably) {
                 return Applicability.Yes;
-            } else if (looksGood) {
+            } else if (appearance == MerlinIsh.Probably) {
                 // Possibly Merlin, probably *some* sort of assembler.
                 return Applicability.Probably;
+            } else if (hasExt && appearance == MerlinIsh.Maybe) {
+                // Could be an "equates" file.
+                return Applicability.Maybe;
             } else if (hasExt) {
                 // Unlikely, but offer as non-default option.
                 return Applicability.ProbablyNot;
@@ -69,19 +72,20 @@ namespace FileConv.Code {
             }
         }
 
+        private enum MerlinIsh { Unknown = 0, Not, Maybe, Probably };
+
         /// <summary>
-        /// Returns true if the contents of the file look like a Merlin source file.  This will
-        /// also return true for DOS ED/ASM files.
+        /// Determines if the contents of the file look like a Merlin source file.  This will
+        /// also return successfully for DOS ED/ASM files.
         /// </summary>
         /// <remarks>
-        /// The file must be exclusively high ASCII and 0x20.  Typical source files start with
-        /// a space on 40-60% of lines, and '*' or ';' on most of the rest, but "equates" files
-        /// break the rule.
+        /// The file must be exclusively high ASCII and 0x20.
         /// </remarks>
-        private static bool LooksLikeMerlin(Stream stream) {
-            int lineCount, spaceLineCount, commentLineCount;
+        /// <returns>Merlin-ishiness rating.</returns>
+        private static MerlinIsh LooksLikeMerlin(Stream stream) {
+            int lineCount, blankLineCount, spaceLineCount, commentLineCount, labelLineCount;
 
-            lineCount = spaceLineCount = commentLineCount = 0;
+            lineCount = blankLineCount = spaceLineCount = commentLineCount = labelLineCount = 0;
             bool isLineStart = true;
 
             // Load the entire thing into memory.  We confirmed that it's small.
@@ -94,7 +98,7 @@ namespace FileConv.Code {
                 byte bval = buf[offset++];
                 if ((bval & 0x80) == 0 && bval != ' ') {
                     // Low ASCII byte that isn't a space character.  Not our file.
-                    return false;
+                    return MerlinIsh.Not;
                 }
                 if (isLineStart) {
                     lineCount++;
@@ -103,9 +107,19 @@ namespace FileConv.Code {
                         // Found a space followed by a non-space.
                         spaceLineCount++;
                     }
-                    if (bval == ('*' | 0x80)) {
+                    byte ascval = (byte)(bval & 0x7f);
+                    if ((bval & 0x80) == 0) {
+                        // not high ASCII
+                    } else if (ascval == '\r') {
+                        blankLineCount++;
+                    } else if (ascval == '*' || ascval == ';') {
                         commentLineCount++;
+                    } else if ((ascval >= 'a' && ascval <= 'z') ||
+                            (ascval >= 'A' && ascval <= 'Z') ||
+                            ascval == '_' || ascval == ']' || ascval == ':') {
+                        labelLineCount++;
                     }
+                    // things that don't count: lines that start with multiple spaces
                     isLineStart = false;
                 }
                 if (bval == ('\r' | 0x80)) {
@@ -113,17 +127,23 @@ namespace FileConv.Code {
                 }
             }
 
-            // Apply heuristics.
             if (lineCount == 0) {
-                return false;       // don't divide by zero
+                return MerlinIsh.Not;       // don't divide by zero
             }
-            if ((spaceLineCount * 100) / lineCount > 40) {
-                return true;
+            // Should be all valid lines.  Allow for a little weirdness.
+            int validLines = blankLineCount + spaceLineCount + commentLineCount + labelLineCount;
+            if ((validLines * 100) / lineCount < 96) {
+                return MerlinIsh.Not;
             }
-            if (((spaceLineCount + commentLineCount) * 100) / lineCount > 50) {
-                return true;
+            // We need to tell the difference between a Merlin or ED/ASM text file and a plain
+            // text file.  In a typical assembly file, 40-60% of lines are instructions, and
+            // start with a space.  That will not be the case for an "equates" file where
+            // most lines start with a label, but that's harder to distinguish from plain text.
+            // TODO? evaluate lines for label/opcode/operand/optional-comment format
+            if ((spaceLineCount * 100) / lineCount <= 40) {
+                return MerlinIsh.Maybe;
             }
-            return false;
+            return MerlinIsh.Probably;
         }
 
         public override Type GetExpectedType(Dictionary<string, string> options) {

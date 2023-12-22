@@ -87,6 +87,10 @@ namespace FileConv {
             None = 0,
             IsRawDOS = 0x01,
         }
+
+        /// <summary>
+        /// True if the source is a DOS filesystem and the "raw" flag is set.
+        /// </summary>
         public bool IsRawDOS { get { return (Flags & ConvFlags.IsRawDOS) != 0; } }
 
         /// <summary>

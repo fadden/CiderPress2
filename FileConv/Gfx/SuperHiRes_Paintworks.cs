@@ -82,26 +82,29 @@ namespace FileConv.Gfx {
             // Some files are slightly oversized.  Allow it.
             byte[] unpackBuf = new byte[MAX_EXPECTED_LEN + 1024];
             int unpackCount = ApplePack.UnpackBytes(fileBuf, PIXEL_DATA_OFFSET,
-                fileBuf.Length - PIXEL_DATA_OFFSET, unpackBuf, 0);
+                fileBuf.Length - PIXEL_DATA_OFFSET, unpackBuf, 0, out bool unpackErr);
             bool isShort = false;
             // TODO: I've seen a few 44800-byte files (280 lines).  We may want to handle
             // anything that's a multiple of 160 bytes.
             if (unpackCount == SHORT_ROWS * BYTES_PER_ROW) {
                 isShort = true;
             } else if (unpackCount < TALL_ROWS * BYTES_PER_ROW) {
-                // Let's retry this as a PNT/$0001 file.  The title "Revolution 76" does this.
-                int retryCount = ApplePack.UnpackBytes(fileBuf, 0, fileBuf.Length, unpackBuf, 0);
+                // Let's retry this as a PNT/$0001 file, which starts with the uncompressed
+                // data at the start of the file.  The title "Revolution 76" does this.
+                int retryCount = ApplePack.UnpackBytes(fileBuf, 0, fileBuf.Length, unpackBuf, 0,
+                    out unpackErr);
                 if (retryCount == SuperHiRes.EXPECTED_LEN) {
+                    // Render it, but complain.
                     IConvOutput wrongOut = SuperHiRes.ConvertBuffer(unpackBuf);
                     wrongOut.Notes.AddW("File type is wrong, should be $C1 (PNT) / $0001");
                     return wrongOut;
                 } else {
                     // No luck.  Report failure.
-                    if (unpackCount < 0) {
+                    if (unpackErr) {
                         return new ErrorText("Failed to decompress data.");
                     } else {
                         return new ErrorText("Failed to decompress data (found " +
-                            unpackCount + " bytes).");
+                            unpackCount + " bytes, expected " + SuperHiRes.EXPECTED_LEN + ").");
                     }
                 }
             }
@@ -115,6 +118,11 @@ namespace FileConv.Gfx {
             }
 
             IConvOutput output = ConvertPaintworks(unpackBuf, colors, isShort);
+
+            // Now that we have an output object, add any warnings encountered earlier.
+            if (unpackErr) {
+                output.Notes.AddW("Encountered an error while unpacking the file");
+            }
             if (unpackCount > TALL_ROWS * BYTES_PER_ROW) {
                 output.Notes.AddI("Found " + (unpackCount - TALL_ROWS * BYTES_PER_ROW) +
                     " extra bytes at end");

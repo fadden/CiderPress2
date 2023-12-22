@@ -385,13 +385,13 @@ namespace FileConv.Gfx {
                 }
 
                 int unpackCount = ApplePack.UnpackBytes(fileBuf, packOffset,
-                    main.mScanLineDirectory[row].mBytesToUnpack, unpackBuf, 0);
+                    main.mScanLineDirectory[row].mBytesToUnpack, unpackBuf, 0, out bool unpackErr);
                 if (unpackCount == byteWidth - 1) {
                     // Seeing this sometimes on images with an odd number of pixels.  Repeat
                     // the previous byte value.
                     unpackBuf[byteWidth - 1] = unpackBuf[byteWidth - 2];
                     shortUnpackCount++;
-                } else if (unpackCount < byteWidth) {
+                } else if (unpackErr || unpackCount < byteWidth) {
                     output.Notes.AddW("UnpackBytes failed on line " + row + ": expected=" +
                         byteWidth + ", actual=" + unpackCount);
                     break;

@@ -74,8 +74,9 @@ namespace FileConv.Gfx {
             // Not much to this.  Unpack the file as a single PackBytes buffer, then render it
             // using the super hi-res screen code.
             byte[] shrBuf = new byte[SuperHiRes.EXPECTED_LEN];
-            if (ApplePack.UnpackBytes(readBuf, 0, readBuf.Length, shrBuf, 0)
-                    != SuperHiRes.EXPECTED_LEN) {
+            int unpackLen = ApplePack.UnpackBytes(readBuf, 0, readBuf.Length, shrBuf, 0,
+                out bool unpackErr);
+            if (unpackErr || unpackLen != SuperHiRes.EXPECTED_LEN) {
                 return new ErrorText("Failed to unpack compressed image data");
             }
 

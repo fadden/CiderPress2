@@ -74,7 +74,9 @@ namespace FileConv.Gfx {
                 DataStream.Position = 0;
                 uint vers = RawData.ReadU32BE(DataStream, out ok);
                 if (vers > MAX_VERSION) {
-                    return Applicability.ProbablyNot;
+                    // Weird version value.  Allow it, because the file type is a strong signal,
+                    // but at reduced priority.
+                    return Applicability.Maybe;
                 } else {
                     return Applicability.Yes;
                 }
@@ -88,8 +90,8 @@ namespace FileConv.Gfx {
                 DataStream.Position = DiskArc.Arc.MacBinary.HEADER_LEN;
                 uint vers = RawData.ReadU32BE(DataStream, out ok);
                 if (vers > MAX_VERSION) {
-                    // Weird version value.  Allow it, but at a very low priority.
-                    return Applicability.ProbablyNot;
+                    // Weird version.  Again, allow it because of the file type.
+                    return Applicability.Maybe;
                 } else {
                     // Looks like MacPaint in MacBinary.
                     return Applicability.Yes;
@@ -145,7 +147,7 @@ namespace FileConv.Gfx {
                 // MacBinary or garbled-but-maybe.
                 if (RawData.GetU32BE(readBuf,
                              DiskArc.Arc.MacBinary.TYPE_OFFSET) == HFS_TYPE) {
-                    // Loosk like a MacBinary header, skip past it.
+                    // Looks like a MacBinary header, skip past it.
                     dataOffset += DiskArc.Arc.MacBinary.HEADER_LEN;
                 } else {
                     badVersion = true;

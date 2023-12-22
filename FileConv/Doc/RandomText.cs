@@ -71,10 +71,25 @@ namespace FileConv.Doc {
             if (FileAttrs.FileType != FileAttribs.FILE_TYPE_TXT) {
                 return Applicability.Not;
             }
-            // DOS doesn't have aux types, so we can't rely on it.  If they're formatting the
-            // file in "raw" mode, it's probably for this.
-            if (FileAttrs.AuxType != 0 || IsRawDOS) {
+            if (DataStream is DOS_FileDesc && !IsRawDOS) {
+                // File is on a DOS filesystem, but they're not in raw mode.  Allow but put it
+                // way down the list.
+                return Applicability.ProbablyNot;
+            }
+            if (DataStream is not DOS_FileDesc && FileAttrs.AuxType == 0) {
+                // File is on ProDOS or in a file archive and has a zero auxtype.  This is
+                // almost certainly not random-access text, but we'll make it available
+                // for manual selection.
+                return Applicability.ProbablyNot;
+            }
+
+            // Merlin ProDOS source code is TXT with nonzero aux type, so we really want to
+            // see a zero byte.
+            bool hasZero = HasEarlyZero(DataStream);
+            if (hasZero) {
                 return Applicability.Probably;
+            } else if (FileAttrs.AuxType != 0) {
+                return Applicability.Maybe;
             } else {
                 return Applicability.ProbablyNot;
             }
@@ -175,6 +190,37 @@ namespace FileConv.Doc {
             if (dataStream is DOS_FileDesc &&
                     ((DOS_FileDesc)dataStream).Part != Defs.FilePart.RawData) {
                 output.Notes.AddI("DOS random-access text files should be opened in 'raw' mode.");
+            }
+        }
+
+        /// <summary>
+        /// Checks to see if a file has a $00 byte followed by a nonzero byte.  If this is being
+        /// read from a DOS disk (in raw mode), we want to ignore the last sector.
+        /// </summary>
+        private static bool HasEarlyZero(Stream stream) {
+            long len = stream.Length;
+            if (stream is DOS_FileDesc) {
+                len = (len - 255) & ~0xff;
+            }
+            if (len <= 0) {
+                return false;
+            }
+
+            byte[] buf = new byte[8192];
+            stream.Position = 0;
+            bool foundZero = false;
+            while (true) {
+                int actual = stream.Read(buf, 0, buf.Length);
+                if (actual == 0) {
+                    return false;       // EOF reached
+                }
+                for (int i = 0; i < actual; i++) {
+                    if (buf[i] == 0x00) {
+                        foundZero = true;
+                    } else if (foundZero) {
+                        return true;
+                    }
+                }
             }
         }
     }

@@ -95,8 +95,8 @@ namespace FileConv.Gfx {
             // Unpack the pixel data.
             byte[] unpackBuf = new byte[NUM_ROWS * BYTE_WIDTH];     // 32000
             int actual = ApplePack.UnpackBytes(fileBuf, offset, (int)(DataStream.Length - offset),
-                unpackBuf, 0);
-            if (actual != unpackBuf.Length) {
+                unpackBuf, 0, out bool unpackErr);
+            if (unpackErr || actual != unpackBuf.Length) {
                 return new ErrorText("Failed to unpack pixel data.");
             }
 
