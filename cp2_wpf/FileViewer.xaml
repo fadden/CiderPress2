@@ -103,11 +103,11 @@ limitations under the License.
         </Grid.ColumnDefinitions>
 
         <!-- prev/next buttons; use VS icon lib Backwards / Forwards for nicer arrows? -->
-        <Button Grid.Row="0" Grid.Column="0" Content="&lt;" Height="50" Width="20" FontSize="16"
-                ToolTip="{Binding PrevFileTip}" IsEnabled="{Binding HasPrevFile}"
+        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Height="50" Width="20" FontSize="16" Margin="0,0,0,80"
+                Content="&lt;" ToolTip="{Binding PrevFileTip}" IsEnabled="{Binding HasPrevFile}"
                 Click="PrevFile_Click"/>
-        <Button Grid.Row="0" Grid.Column="2" Content="&gt;" Height="50" Width="20" FontSize="16"
-                ToolTip="{Binding NextFileTip}" IsEnabled="{Binding HasNextFile}"
+        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Height="50" Width="20" FontSize="16" Margin="0,0,0,80"
+                Content="&gt;" ToolTip="{Binding NextFileTip}" IsEnabled="{Binding HasNextFile}"
                 Click="NextFile_Click"/>
 
         <TabControl Name="tabControl" Grid.Row="0" Grid.Column="1" TabStripPlacement="Bottom"
