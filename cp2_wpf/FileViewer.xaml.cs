@@ -676,8 +676,11 @@ namespace cp2_wpf {
                 return;
             }
 
-            previewImage.Width = Math.Floor(bsrc.PixelWidth * mult);
-            previewImage.Height = Math.Floor(bsrc.PixelHeight * mult);
+            // I'm not sure why "+1" is needed here, but it significantly improves the
+            // appearance of B&W images with fine detail, e.g. MacPaint graphics.  This
+            // just affects the Windows on-screen scaling, not the export.
+            previewImage.Width = Math.Floor(bsrc.PixelWidth * mult) + 1;
+            previewImage.Height = Math.Floor(bsrc.PixelHeight * mult) + 1;
             //Debug.WriteLine("Gfx zoom " + mult + " --> " +
             //    previewImage.Width + "x" + previewImage.Height);
         }
