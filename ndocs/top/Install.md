@@ -62,7 +62,7 @@ The commands are:
  - `CiderPress2`: desktop graphical interface (Windows builds only)
 
 The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
-of viewing in a terminal window.  The file is in "markdown" format, which is perfectly readable
+of viewing in a terminal window.  The file is in "Markdown" format, which is perfectly readable
 as a plain text file.  The manual for the GUI, and tutorials for both applications, can
 be found on the [web site](https://ciderpress2.com/).
 
@@ -76,8 +76,8 @@ The CiderPress II command-line utility was developed on x64 CPUs with:
 
 Compatibility is determined mostly by the .NET runtime, so more recent versions of the operating
 systems are expected to work.  Older versions of the operating systems may or may not work.  For
-example, the CLI application has been successfully run on Windows 7 32-bit, but this will not be
-tested regularly.
+example, the CLI application has been successfully run on Windows 7 32-bit (x86), but this will
+not be tested regularly.
 
 The code is targeted to .NET Core 6, and is expected to work on newer versions of the runtime.
 
@@ -87,7 +87,7 @@ The contents of the framework-dependent download packages for different systems 
 entirely identical.  The application itself is compiled to platform-agnostic bytecode.  Each
 platform has a system-specific "cp2" executable that gets the runtime up and pointed in the
 right direction.  The only significant difference is between 32-bit code and 64-bit code; you
-cannot run a 64-bit package on a 32-bit system.
+cannot run a 64-bit package on a 32-bit runtime.
 
 If you want to run the command-line app on a platform that doesn't have a system-specific
 binary on the Releases page, you need to install the .NET runtime for your system, and then

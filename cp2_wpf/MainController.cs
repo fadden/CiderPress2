@@ -1735,10 +1735,17 @@ namespace cp2_wpf {
                 // continue anyway to create empty obj
             }
 
-            List<IFileEntry> entries = new List<IFileEntry>();
-            foreach (FileListItem item in dataGrid.SelectedItems) {
-                entries.Add(item.FileEntry);
+            // Gather list of entries, descending into subdirectories.  We want to close any
+            // open archives before trying to copy them.
+            List<IFileEntry> entries;
+            if (!GetFileSelection(omitDir: false, omitOpenArc: false, closeOpenArc: true,
+                    oneMeansAll: false, out object? archiveOrFileSystem,
+                    out IFileEntry selectionDir, out List<IFileEntry>? selected, out int unused)) {
+                entries = new List<IFileEntry>();   // continue with an empty selection
+            } else {
+                entries = selected;
             }
+
             IFileEntry baseDir = IFileEntry.NO_ENTRY;       // equivalent to volume dir
             if (CurrentWorkObject is IFileSystem && mMainWin.ShowSingleDirFileList) {
                 DirectoryTreeItem? dirItem = mMainWin.SelectedDirectoryTreeItem;

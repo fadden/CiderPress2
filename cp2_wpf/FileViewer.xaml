@@ -144,12 +144,13 @@ limitations under the License.
                                 Background="{StaticResource CheckerBackground}"
                                 SnapsToDevicePixels="True">
                             <Grid Name="previewGrid">
-                                <!-- set previewImage width/height to multiple of image size -->
+                                <!-- code sets previewImage width/height to multiple of image size -->
                                 <Image Name="previewImage" Source="/Res/RedX.png"
                                     RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-                                <!-- NearestNeighbor does weirdly on tiny checkerboard patterns
-                                     like Print Shop BARNS; HighQuality makes everything a little
-                                     fuzzy at the edges and slightly darker -->
+                                <!-- NearestNeighbor does weirdly on checkerboard dither patterns
+                                     like Print Shop BARNS and badly on MacPaint, though it's much
+                                     better when set to actual size + 1; HighQuality makes everything
+                                     a little fuzzy at the edges and slightly darker -->
                             </Grid>
                         </Border>
                     </ScrollViewer>
