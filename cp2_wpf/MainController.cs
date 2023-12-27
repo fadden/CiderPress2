@@ -976,7 +976,7 @@ namespace cp2_wpf {
                 // single-directory mode this is easy, but if it's in full-list mode we might
                 // have a directory and a couple of things inside that directory.  We need to
                 // avoid adding entries twice, and we need to ensure that directories appear
-                // before their contents, which requires an explicit sort.
+                // before their contents.
 
                 // Start by creating a dictionary of selected entries, so we can exclude them
                 // during the subdir descent with O(1) lookups.
@@ -986,7 +986,8 @@ namespace cp2_wpf {
                     knownItems.Add(listItem.FileEntry, listItem.FileEntry);
                 }
 
-                // Add items to the "selected" list.  Descend into subdirectories.
+                // Add unique items to the "selected" list.  Include and descend into
+                // subdirectories if "omitDir" isn't set.
                 foreach (FileListItem listItem in listSel) {
                     IFileEntry entry = listItem.FileEntry;
                     if (entry.IsDirectory) {
@@ -995,20 +996,26 @@ namespace cp2_wpf {
                             AddDirEntries(listItem.FileEntry, knownItems, selected);
                         }
                     } else {
+                        // Don't need to check knownItems, since it's all from the selection.
                         selected.Add(listItem.FileEntry);
                     }
                 }
 
-                // Sort the list of selected items by filename.  The exact sort order doesn't
-                // matter; we just need directories to appear before their contents, which they
-                // should do with any ascending sort (by virtue of the names being shorter).
+                // We need directories to appear before their contents, which they should do with
+                // any ascending sort (by virtue of the names being shorter).  The problem is that
+                // sometimes we want to preserve the original file order, so we want to minimize
+                // the effects of the sorting.
                 //
-                // We want to suppress this when viewing files.  This only really matters for
-                // file deletion, so we can use the "omit dir" flag.
+                // We always want to suppress this when viewing files.  Sorting is only of vital
+                // importance for  recursive file deletion, so we can skip this if the "omit dir"
+                // flag is set by the file viewer.  (If we're only shifting directories around,
+                // it shouldn't actually matter whether we do it or not, but there's no point
+                // in doing work we don't have to.)
                 if (!omitDir) {
-                    selected.Sort(delegate (IFileEntry entry1, IFileEntry entry2) {
-                        return string.Compare(entry1.FullPathName, entry2.FullPathName);
-                    });
+                    selected = ShiftDirectories(selected);
+                    //selected.Sort(delegate (IFileEntry entry1, IFileEntry entry2) {
+                    //    return string.Compare(entry1.FullPathName, entry2.FullPathName);
+                    //});
                 }
             }
             // Selection set may be empty at this point.
@@ -1060,6 +1067,76 @@ namespace cp2_wpf {
                 if (child.IsDirectory) {
                     AddDirEntries(child, excludes, list);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Moves directory entries so they appear before the first file in that directory.
+        /// </summary>
+        /// <remarks>
+        /// Only useful for filesystems, as file archives don't support ContainingDir.
+        /// </remarks>
+        /// <param name="entries">List of entries to sort.</param>
+        /// <returns></returns>
+        private List<IFileEntry> ShiftDirectories(List<IFileEntry> entryList) {
+            // Generate a dictionary of all included directories.
+            Dictionary<IFileEntry, bool> dirs = new Dictionary<IFileEntry, bool>();
+            foreach (IFileEntry entry in entryList) {
+                if (entry.IsDirectory) {
+                    dirs.Add(entry, false);
+                }
+            }
+            if (dirs.Count == 0) {
+                // Nothing to do, just return original list.
+                return entryList;
+            }
+
+            List<IFileEntry> sorted = new List<IFileEntry>(entryList.Count);
+
+            foreach (IFileEntry entry in entryList) {
+                if (entry.IsDirectory) {
+                    if (!dirs[entry]) {
+                        // This one hasn't been encountered or referenced before.  We need to
+                        // copy this entry to the output, but first we need to recursively copy
+                        // any of the directory's parent entries that are in entryList, starting
+                        // from the topmost.
+                        ShiftDirAddParents(entry, sorted, dirs);
+                        Debug.Assert(dirs[entry]);
+                    }
+                } else {
+                    IFileEntry parent = entry.ContainingDir;
+                    if (!dirs.TryGetValue(parent, out bool alreadySeen)) {
+                        // Parent directory isn't part of our selection.  Nothing for us to do.
+                    } else if (!alreadySeen) {
+                        // Need to add the directory first.
+                        ShiftDirAddParents(parent, sorted, dirs);
+                        Debug.Assert(dirs[parent]);
+                    }
+                    sorted.Add(entry);
+                }
+            }
+
+            Debug.Assert(sorted.Count == entryList.Count);
+            return sorted;
+        }
+
+        /// <summary>
+        /// Recursively adds the specified entry and any of its parent directories to
+        /// the sorted list, if they're not there already.
+        /// </summary>
+        private void ShiftDirAddParents(IFileEntry entry, List<IFileEntry> sorted,
+                Dictionary<IFileEntry, bool> dirs) {
+            Debug.Assert(entry.IsDirectory);
+            if (entry.ContainingDir != IFileEntry.NO_ENTRY) {
+                ShiftDirAddParents(entry.ContainingDir, sorted, dirs);
+            }
+            if (!dirs.TryGetValue(entry, out bool alreadySeen)) {
+                // Not part of selection.  Ignore it.
+            } else if (!alreadySeen) {
+                // Included in selection but not yet seen; add it now.
+                //Debug.WriteLine("Moving dir parent earlier: " + entry);
+                sorted.Add(entry);
+                dirs[entry] = true;
             }
         }
 
