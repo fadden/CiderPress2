@@ -115,7 +115,9 @@ namespace AppCommon {
         /// <exception cref="IOException">File I/O error occurred.</exception>
         /// <exception cref="FileConv.ConversionException">Error in import conversion.</exception>
         public void AddFilesToArchive(IArchive archive, out bool isCancelled) {
-            Debug.Assert(!archive.Characteristics.HasSingleEntry);
+            if (archive.Characteristics.HasSingleEntry) {
+                throw new Exception("can't add files to single-entry archive");
+            }
             bool canRsrcFork = archive.Characteristics.HasResourceForks ||
                 (archive is Zip && EnableMacOSZip);
             bool doStripPaths = StripPaths ||

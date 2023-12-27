@@ -1071,9 +1071,37 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// Performs some basic checks before trying to add/paste/drop files.  Reports failures
+        /// to the user.
+        /// </summary>
+        /// <returns>True if it's okay to paste or drop files here.</returns>
+        internal bool CheckPasteDropOkay() {
+            if (!CanWrite) {
+                if (CurrentWorkObject is IFileSystem) {
+                    MessageBox.Show("Can't add files to a read-only filesystem.", "Unable to add",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                } else {
+                    MessageBox.Show("Can't add files to a read-only archive.", "Unable to add",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                return false;
+            }
+            if (!IsMultiFileItemSelected) {
+                MessageBox.Show("Can't add files to a single-file archive.", "Unable to add",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Handles paste and file-list drop operations.
         /// </summary>
         public void PasteOrDrop(IDataObject? dropObj, IFileEntry dropTarget) {
+            if (!CheckPasteDropOkay()) {
+                return;
+            }
+
             IDataObject dataObj = (dropObj != null) ? dropObj : Clipboard.GetDataObject();
             ClipInfo? clipInfo = ClipInfo.GetClipInfo(dropObj);
             if (clipInfo == null || clipInfo.ClipEntries == null) {
@@ -1196,6 +1224,9 @@ namespace cp2_wpf {
         public void AddFileDrop(IFileEntry dropTarget, string[] pathNames) {
             Debug.Assert(pathNames.Length > 0);
             Debug.WriteLine("External file drop (target=" + dropTarget + "):");
+            if (!CheckPasteDropOkay()) {
+                return;
+            }
             AddPaths(pathNames, dropTarget,
                 mMainWin.IsChecked_ImportExport ? GetImportSpec() : null);
         }

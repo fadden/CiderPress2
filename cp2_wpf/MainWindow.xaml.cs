@@ -424,6 +424,7 @@ namespace cp2_wpf {
         }
 
         private void CanAddFiles(object sender, CanExecuteRoutedEventArgs e) {
+            // See also CheckPasteDropOkay() in MainController.
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
                 mMainCtrl.IsMultiFileItemSelected && ShowCenterFileList);
         }
