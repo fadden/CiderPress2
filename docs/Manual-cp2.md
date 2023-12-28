@@ -1231,8 +1231,8 @@ Short single-hyphen equivalents are provided for a few of the options:
  - `-ph` = `--preserve=host`
  - `-pn` = `--preserve=naps`
 
-These may be provided singly or in a single chunk, e.g. "-pnfj" is equivalent
-to "-pn -f -j".
+These may be provided singly or as a single chunk, e.g. `-pnfj` is equivalent
+to `-pn -f -j`.
 
 #### `--classic`
 

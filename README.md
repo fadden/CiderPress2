@@ -1,7 +1,5 @@
 # CiderPress II # 
 
-### **This is alpha-quality software.  Use at your own risk.**
-
 CiderPress II is a software tool for working with disk images and file archives associated
 with vintage Apple computers, notably the Apple II line and early Macintoshes.  It runs on
 modern desktop and embedded systems.
@@ -15,9 +13,10 @@ as copy and replace whole disk partitions.
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
- - The command-line and desktop GUI tools are alpha quality.  The command-line tool is available
-   for Windows, macOS, and Linux, but the GUI tool currently only runs on Windows.
- - Video demos, made during development:
+ - The command-line tool runs on Windows, macOS, and Linux (anywhere .NET Core 6 runs).
+ - The desktop GUI runs only on Windows.
+ - Video demos:
+   - v1.0 quick introduction: https://youtu.be/ZrUfNzscq3g
    - v0.4 drag & drop: https://youtu.be/P2kss3aOEvs
    - v0.3 disk handling: https://youtu.be/5tE07owhcCc
    - v0.2 new GUI: https://www.youtube.com/watch?v=esEHP6Bo8GI

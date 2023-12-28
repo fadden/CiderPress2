@@ -101,3 +101,17 @@ Since I don't know what the right answer is, I'm going to forge ahead with the
 WPF version.  This will ensure that the various APIs work correctly with a GUI
 app, and demonstrate how I think the tool should behave.  Fortunately, the GUI
 application code is a relatively small part of the overall package.
+
+## Source Code Division ##
+
+As of v1.0, the division of code between components is approximately:
+
+ - 4% generic libraries (CommonUtil)
+ - 54% app-specific libraries (DiskArc, FileConv, AppCommon)
+ - 14% library tests (DiskArcTests and FileConvTests)
+ - 13% CLI (includes regression tests)
+ - 13% WPF GUI
+ - 1% miscellaneous (Examples, MakeDist)
+
+(Based on Lines of Executable Code, from Visual Studio's "Calculate Code
+Metrics" feature.)
