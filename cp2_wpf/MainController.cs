@@ -2444,7 +2444,7 @@ namespace cp2_wpf {
         public void HelpHelp() {
             //string pathName = Path.Combine(WinUtil.GetRuntimeDataDir(), "CiderPress2-notes.txt");
             //string url = "file://" + pathName;
-            string url = "https://ciderpress2.com/";
+            string url = "https://ciderpress2.com/gui-manual/";
             CommonUtil.ShellCommand.OpenUrl(url);
         }
 
