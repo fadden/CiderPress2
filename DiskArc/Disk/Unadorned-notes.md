@@ -79,9 +79,9 @@ address fields on each sector identify the sector number.  While sector skewing 
 handled, the file format is always "physical" order.
 
 There may be some ambiguity in naming, e.g. sometimes they're called ".raw", or an image with
-6384 bytes per track will be called ".nib", but the files must be 6656*35 or 6384*35 bytes
-exactly.  The lengths are unlikely to be used for other formats.  (6656*35/512=455, so it could
-be confused for a 227.5KB unadorned block image, but that's unlikely in practice.)
+6384 bytes per track will be called ".nib", but the files must be 6656 * 35 or 6384 * 35 bytes
+exactly.  The lengths are unlikely to be used for other formats.  (6656 * 35 / 512 = 455, so it
+could be confused for a 227.5KB unadorned block image, but that's unlikely in practice.)
 
 See the nibble file format notes for detailed information about the low-level track format.
 
