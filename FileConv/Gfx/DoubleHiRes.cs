@@ -65,6 +65,8 @@ namespace FileConv.Gfx {
 
         private const int PAGE_SIZE = 8192;
         private const int EXPECTED_LEN = PAGE_SIZE * 2;
+        private const int MIN_PB_LEN = ((EXPECTED_LEN + 255) / 256) * 2;
+        private const int MAX_PB_LEN = EXPECTED_LEN;        // assume compression succeeded
         private const int NUM_ROWS = 192;
         private const int PIXELS_PER_ROW = 560;
         private const int NUM_COLORS = 16;
@@ -83,7 +85,17 @@ namespace FileConv.Gfx {
         }
 
         protected override Applicability TestApplicability() {
-            if (DataStream == null || DataStream.Length != EXPECTED_LEN) {
+            if (DataStream == null || IsRawDOS) {
+                return Applicability.Not;
+            }
+            // Check for PackBytes-compressed hi-res.
+            if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FOT && FileAttrs.AuxType == 0x4001 &&
+                    DataStream.Length >= MIN_PB_LEN && DataStream.Length <= MAX_PB_LEN) {
+                return Applicability.Probably;           // 0x4001 is PackBytes-compressed dhgr
+            }
+
+            // Primary indicator is file length.  Must be $2000.
+            if (DataStream.Length != EXPECTED_LEN) {
                 return Applicability.Not;
             }
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN) {
@@ -109,7 +121,17 @@ namespace FileConv.Gfx {
 
             byte[] fullBuf = new byte[EXPECTED_LEN];
             DataStream.Position = 0;
-            DataStream.ReadExactly(fullBuf, 0, Math.Min(EXPECTED_LEN, (int)DataStream.Length));
+            if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FOT && FileAttrs.AuxType == 0x4001) {
+                byte[] tmpBuf = new byte[DataStream.Length];
+                DataStream.ReadExactly(tmpBuf, 0, tmpBuf.Length);
+                int outLen = ApplePack.UnpackBytes(tmpBuf, 0, tmpBuf.Length, fullBuf, 0,
+                    out bool decompErr);
+                if (decompErr || outLen != EXPECTED_LEN) {
+                    return new ErrorText("Unable to decompress data.");
+                }
+            } else {
+                DataStream.ReadExactly(fullBuf, 0, Math.Min(EXPECTED_LEN, (int)DataStream.Length));
+            }
 
             ColorConvMode convMode =
                 OptToEnum(GetStringOption(options, OPT_CONV, CONV_MODE_LATCHED));

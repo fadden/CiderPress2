@@ -48,6 +48,9 @@ namespace FileConv.Gfx {
         private const int MIN_LEN = EXPECTED_LEN - 8;
         private const int MAX_LEN = EXPECTED_LEN + 1;
 
+        private const int MIN_PB_LEN = ((EXPECTED_LEN + 255) / 256) * 2;
+        private const int MAX_PB_LEN = EXPECTED_LEN;        // assume compression succeeded
+
 
         private HiRes() { }
 
@@ -61,6 +64,12 @@ namespace FileConv.Gfx {
             if (DataStream == null || IsRawDOS) {
                 return Applicability.Not;
             }
+            // Check for PackBytes-compressed hi-res.
+            if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FOT && FileAttrs.AuxType == 0x4000 &&
+                    DataStream.Length >= MIN_PB_LEN && DataStream.Length <= MAX_PB_LEN) {
+                return Applicability.Probably;           // 0x4000 is PackBytes-compressed hgr
+            }
+
             // Primary indicator is file length.  $1ffc, $1ff8, $2000 are most common.
             if (DataStream.Length < MIN_LEN || DataStream.Length > MAX_LEN) {
                 return Applicability.Not;
@@ -88,11 +97,36 @@ namespace FileConv.Gfx {
             Debug.Assert(DataStream != null);
 
             byte[] fullBuf = new byte[EXPECTED_LEN];
-            DataStream.Position = 0;
-            DataStream.ReadExactly(fullBuf, 0, Math.Min(EXPECTED_LEN, (int)DataStream.Length));
+            bool isCompressed =
+                (FileAttrs.FileType == FileAttribs.FILE_TYPE_FOT && FileAttrs.AuxType == 0x4000);
+            bool badComp = false;
+            if (isCompressed) {
+                DataStream.Position = 0;
+                byte[] tmpBuf = new byte[DataStream.Length];
+                DataStream.ReadExactly(tmpBuf, 0, tmpBuf.Length);
+                int outLen = ApplePack.UnpackBytes(tmpBuf, 0, tmpBuf.Length, fullBuf, 0,
+                    out bool decompErr);
+                if (decompErr || outLen < MIN_LEN) {
+                    if (DataStream.Length >= MIN_LEN && DataStream.Length <= MAX_LEN) {
+                        // Retry as uncompressed.
+                        badComp = true;
+                        isCompressed = false;
+                    } else {
+                        return new ErrorText("Unable to decompress data.");
+                    }
+                }
+            }
+            if (!isCompressed) {
+                DataStream.Position = 0;
+                DataStream.ReadExactly(fullBuf, 0, Math.Min(EXPECTED_LEN, (int)DataStream.Length));
+            }
 
             bool doMonochrome = GetBoolOption(options, OPT_BW, false);
-            return ConvertBuffer(fullBuf, Palette8.Palette_HiRes, doMonochrome);
+            IConvOutput output = ConvertBuffer(fullBuf, Palette8.Palette_HiRes, doMonochrome);
+            if (badComp) {
+                output.Notes.AddW("File aux type is incorrect (not compressed)");
+            }
+            return output;
         }
 
         #region Common
