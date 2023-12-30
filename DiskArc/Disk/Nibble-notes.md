@@ -17,7 +17,7 @@
 ## Encoding ##
 
 The Apple II receives a stream of bits from the floppy disk controller.  For a variety of reasons
-(see Beneath Apple DOS for an introduction, or _Understanding the Apple IIe_ chapter 9 for a
+(see _Beneath Apple DOS_ for an introduction, or _Understanding the Apple IIe_ chapter 9 for a
 deep dive), it's not possible to write arbitrary values to the stream.  The original Disk ][
 drive controller imposed a requirement that the bit stream not have more than one consecutive
 zero bit, so 1011 was okay, but 1001 was not.  An update to the controller allowed two consecutive
@@ -143,7 +143,7 @@ one sector for every 16 tracks closer to the center.  This forms 5 speed zones:
  - track 48-63: 9 sectors
  - track 64-79: 8 sectors
 
-(Math: 12*16 + 11*16 + 10*16 + 9*16 + 8*16 = 800 per side)
+(Math: 12\*16 + 11\*16 + 10\*16 + 9\*16 + 8\*16 = 800 per side)
 
 Each sector holds 524 bytes of data.  They look like this:
 ```
