@@ -7,27 +7,25 @@
 
 ## General ##
 
-There are two general categories: nibble images, which contain the raw disk nibbles as they
-are read from a floppy disk, and block/sector images, which contain the data as it is visible
-to user programs.
+An "unadorned" disk image file is a series of 512-byte blocks, 256-byte sectors, or raw nibble
+tracks, without any sort of file header or footer.  Such files can be identified by the
+filename extension (.iso, .hdv, .po, .nib, etc.) and file length.
 
-## Block/Sector Images ##
+Block images are very straightforward: the file starts with block 0, which is followed by block 1,
+and so on to the end of the disk.  Unadorned nibble images have fixed-length tracks, starting
+with track 0.  Apple II 16-sector disk images are more complicated, because the order in which
+sectors appear depends on the program used to create the image.
 
-One of the most common ways to store an Apple II disk image is an "unadorned" file, meaning it
-has no header or other identifying information.  The file is simply a collection of blocks or
-sectors as they were read from the disk.  The file extensions ".po", ".do", and ".dsk" are
-commonly used.  ".hdv" is sometimes used for hard drive images, and ".iso" is commonly used
-for CD-ROM images.
+The contents of the disk image could be something simple, like a floppy disk with a DOS 3.3
+filesystem, or it could be a multi-partition hard drive with multiple filesystems.  It could be
+completely custom.  The only telling feature is that the file's length will be a multiple of 256,
+512, or the nibble track length (usually 6656 bytes).
 
-The contents of the file could be something simple, like a floppy disk with DOS files, or a
-multi-partition hard drive with multiple operating systems.  It could be completely custom.
-The only telling feature is that the file's length will be a multiple of 256.  In all but one
-case (a 13-sector disk in a ".d13" file), it will be a multiple of 512.
+## DOS vs. ProDOS vs. CP/M Sector Order ##
 
-### DOS vs. ProDOS Order ###
-
-(This section is only relevant for 5.25" floppy disk images.  Larger volumes are always created
-as blocks in ascending order, and sectors in embedded DOS volumes map linearly to blocks.)
+(This section is only relevant for 16-sector 5.25" floppy disk images.  Larger volumes are always
+created as blocks in ascending order, 13-sector floppies use physical sector order, and sectors in
+embedded DOS volumes map linearly to blocks.)
 
 DOS 3.2 disks used a simple scheme: if you request sector 5, you get sector 5.  This caused
 some performance issues when reading multiple sectors consecutively, because by the time you
