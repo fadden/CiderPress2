@@ -27,7 +27,7 @@ namespace FileConv {
         public Notes Notes { get; } = new Notes();
 
         public enum FileKind {
-            Unknown = 0, GIF, JPEG, PNG
+            Unknown = 0, GIF, JPEG, PNG, PDF, RTF, Word
         }
 
         public FileKind Kind { get; private set; }

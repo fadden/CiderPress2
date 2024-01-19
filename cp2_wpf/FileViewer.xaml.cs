@@ -200,6 +200,12 @@ namespace cp2_wpf {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        // List of temporary files created for viewing "host" files in an external viewer.
+        // On Windows you can't delete a file when another application has it open, so the
+        // best we can do is scrub them when we close the window.
+        private List<string> mTmpFiles = new List<string>();
+        private const string TEMP_FILE_PREFIX = "cp2tmp_";
+
         private object mArchiveOrFileSystem;
         private List<IFileEntry> mSelected;
         private int mCurIndex;      // index into mSelected
@@ -270,6 +276,7 @@ namespace cp2_wpf {
         /// </summary>
         private void Window_Closed(object sender, EventArgs e) {
             CloseStreams();
+            DeleteTempFiles();
         }
 
         private void UpdatePrevNextControls() {
@@ -541,14 +548,32 @@ namespace cp2_wpf {
                 IsExportEnabled = true;
             } else if (mCurDataOutput is HostConv) {
                 HostConv.FileKind kind = ((HostConv)mCurDataOutput).Kind;
-                BitmapSource? bsrc = PrepareHostImage(mDataFork, kind);
-                if (bsrc == null) {
-                    DataPlainText = "Unable to decode " + kind + " image.";
-                    SetDisplayType(DisplayItemType.SimpleText);
-                } else {
-                    previewImage.Source = bsrc;
-                    ConfigureMagnification();
-                    SetDisplayType(DisplayItemType.Bitmap);
+                switch (kind) {
+                    case HostConv.FileKind.GIF:
+                    case HostConv.FileKind.JPEG:
+                    case HostConv.FileKind.PNG:
+                        BitmapSource? bsrc = PrepareHostImage(mDataFork, kind);
+                        if (bsrc == null) {
+                            DataPlainText = "Unable to decode " + kind + " image.";
+                            SetDisplayType(DisplayItemType.SimpleText);
+                        } else {
+                            previewImage.Source = bsrc;
+                            ConfigureMagnification();
+                            SetDisplayType(DisplayItemType.Bitmap);
+                        }
+                        break;
+                    case HostConv.FileKind.PDF:
+                    case HostConv.FileKind.RTF:
+                    case HostConv.FileKind.Word:
+                        if (LaunchExternalViewer(mDataFork, kind)) {
+                            DataPlainText = "(Displaying with external command)";
+                        } else {
+                            DataPlainText = "Failed to launch external viewer";
+                        }
+                        dataForkTextBox.HorizontalContentAlignment = HorizontalAlignment.Center;
+                        dataForkTextBox.VerticalContentAlignment = VerticalAlignment.Center;
+                        SetDisplayType(DisplayItemType.SimpleText);
+                        break;
                 }
                 // Exporting these is a little weird, and probably wrong.  It makes more sense to
                 // extract them in their native form.  Handling them requires a separate path in
@@ -643,6 +668,90 @@ namespace cp2_wpf {
                 }
                 Debug.WriteLine("BitmapFrame.Create failed: " + ex);
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Launches an external viewer to display a "host" file.
+        /// </summary>
+        /// <returns>True on success.</returns>
+        private bool LaunchExternalViewer(Stream? stream, HostConv.FileKind kind) {
+            if (stream == null) {
+                return false;
+            }
+
+            string ext;
+            switch (kind) {
+                case HostConv.FileKind.GIF:
+                    ext = ".gif";
+                    break;
+                case HostConv.FileKind.JPEG:
+                    ext = ".jpg";
+                    break;
+                case HostConv.FileKind.PNG:
+                    ext = ".png";
+                    break;
+                case HostConv.FileKind.PDF:
+                    ext = ".pdf";
+                    break;
+                case HostConv.FileKind.RTF:
+                    ext = ".rtf";
+                    break;
+                case HostConv.FileKind.Word:
+                    ext = ".doc";
+                    break;
+                default:
+                    Debug.Assert(false, "Unhandled kind: " + kind);
+                    return false;
+            }
+
+            // The GUID-based filename isn't guaranteed to be unique, but it should be absurdly
+            // close to it, especially if we use an app-specific prefix and scrub our old temp
+            // files.  This isn't mission-critical even if it does fail.
+            string tmpFileName = Path.GetTempPath() +
+                TEMP_FILE_PREFIX + Guid.NewGuid().ToString() + ext;
+            try {
+                // Can't use DeleteOnClose here because we don't control the lifetime of the
+                // external process.
+                using (Stream tmpFile = new FileStream(tmpFileName, FileMode.Create)) {
+                    stream.Position = 0;
+                    stream.CopyTo(tmpFile);
+                }
+                mAppHook.LogI("Created temp file '" + tmpFileName + "'");
+                mTmpFiles.Add(tmpFileName);
+            } catch (IOException ex) {
+                mAppHook.LogW("Failed to create temp file '" + tmpFileName + "': " + ex.Message);
+                return false;
+            }
+
+            Process? proc = new Process();
+            proc.StartInfo = new ProcessStartInfo(tmpFileName);
+            proc.StartInfo.UseShellExecute = true;
+            return proc.Start();
+        }
+
+        /// <summary>
+        /// Removes temporary files we created.  Call this when the file viewer is closed.
+        /// </summary>
+        private void DeleteTempFiles() {
+            // TODO: we probably also want to scrub any leftovers from previous iterations
+            //   when the program launches.  Scan of local temp directory should be fast, though
+            //   we might want to put it in a dedicated directory.  Should get user confirmation,
+            //   ideally with a non-intrusive launch screen affordance rather than a modal
+            //   dialog.  If we can open the file read/write then the external viewer should be
+            //   done with it.
+            string tempPathRoot = Path.GetTempPath();
+            foreach (string path in mTmpFiles) {
+                if (!path.StartsWith(tempPathRoot)) {
+                    throw new Exception("whoops");      // be paranoid about removing files
+                }
+                try {
+                    File.Delete(path);
+                    mAppHook.LogI("Removed temp '" + path + "'");
+                } catch (Exception ex) {
+                    // Exception message includes path name.
+                    mAppHook.LogW("Unable to remove temp: " + ex.Message);
+                }
             }
         }
 

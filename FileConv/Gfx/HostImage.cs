@@ -56,6 +56,16 @@ namespace FileConv.Gfx {
         private static byte[] PNG_SIG =
             new byte[] { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a };
 
+        private static uint PDF_TYPE = MacChar.IntifyMacConstantString("PDF ");
+        private static byte[] PDF_SIG = new byte[] { 0x25, 0x50, 0x44, 0x46 };  // "%PDF" is enough
+
+        private static uint RTF_TYPE = MacChar.IntifyMacConstantString("RTF ");
+        private static byte[] RTF_SIG = new byte[] { 0x7b, 0x5c, 0x72, 0x74 };  // "{\rtf"
+
+        private static uint WORD_TYPE = MacChar.IntifyMacConstantString("WDBN");
+        private static uint WORD6_TYPE = MacChar.IntifyMacConstantString("W6BN");
+        private static uint WORD8_TYPE = MacChar.IntifyMacConstantString("W8BN");
+
         protected override Applicability TestApplicability() {
             const int TEST_LEN = 8;
             if (DataStream == null || DataStream.Length < TEST_LEN) {
@@ -82,6 +92,20 @@ namespace FileConv.Gfx {
                     mKind = HostConv.FileKind.PNG;
                     return Applicability.Yes;
                 }
+            } else if (ext == ".pdf" || FileAttrs.HFSFileType == PDF_TYPE) {
+                if (RawData.CompareBytes(buf, PDF_SIG, PDF_SIG.Length)) {
+                    mKind = HostConv.FileKind.PDF;
+                    return Applicability.Yes;
+                }
+            } else if (ext == ".rtf" || FileAttrs.HFSFileType == RTF_TYPE) {
+                if (RawData.CompareBytes(buf, RTF_SIG, RTF_SIG.Length)) {
+                    mKind = HostConv.FileKind.RTF;
+                    return Applicability.Yes;
+                }
+            } else if (FileAttrs.HFSFileType == WORD_TYPE || FileAttrs.HFSFileType == WORD6_TYPE ||
+                    FileAttrs.HFSFileType == WORD8_TYPE) {
+                mKind = HostConv.FileKind.Word;
+                return Applicability.Yes;
             }
             return Applicability.Not;
         }
