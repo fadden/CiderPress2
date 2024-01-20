@@ -35,6 +35,7 @@ namespace cp2.Tests {
             parms.FromNAPS = true;
 
             TestCtrlNames(parms);
+            TestReadOnly(parms);
 
             // AppleWorks filename formatting has been disabled.
             //TestAppleWorksName(parms);
@@ -199,6 +200,41 @@ namespace cp2.Tests {
                     sampleNameNoTag
                 };
                 Controller.CompareLines(expected, stdout);
+            } finally {
+                Environment.CurrentDirectory = oldCurrentDir;
+            }
+        }
+
+        private static void TestReadOnly(ParamsBag parms) {
+            // Grab a copy of a ProDOS disk image.
+            string proTestName = "simple-dir-test.po";
+            FileUtil.CopyFile(Path.Join(Controller.TEST_DATA, "prodos", proTestName),
+                Path.Join(Controller.TEST_TMP, proTestName));
+
+            string oldCurrentDir = Environment.CurrentDirectory;
+            try {
+                Environment.CurrentDirectory = Controller.TEST_TMP;
+
+                // Delete a file to make sure things are set up correctly.
+                if (!Delete.HandleDelete("rm",
+                        new string[] { proTestName, "FILES.ADD.WITH" }, parms)) {
+                    throw new Exception("Initial rm failed");
+                }
+
+                // Mark the disk read-only.
+                FileInfo finfo = new FileInfo(proTestName);
+                finfo.IsReadOnly = true;
+
+                // Try another deletion, should fail cleanly.
+                if (Delete.HandleDelete("rm",
+                        new string[] { proTestName, "FILES.ADD.WITH" }, parms)) {
+                    throw new Exception("Read-only rm succeeded");
+                }
+
+                // The read-only "list" operation should succeed.
+                if (!Catalog.HandleList("list", new string[] { proTestName }, parms)) {
+                    throw new Exception("Read-only list failed");
+                }
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;
             }

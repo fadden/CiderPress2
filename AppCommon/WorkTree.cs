@@ -310,7 +310,7 @@ namespace AppCommon {
                     FileAccess access = asReadOnly ? FileAccess.Read : FileAccess.ReadWrite;
                     hostStream = new FileStream(hostPathName, FileMode.Open, access,
                         FileShare.Read);
-                } catch (IOException ex) {
+                } catch (UnauthorizedAccessException ex) {
                     // Retry with read-only access unless we did that the first time around.
                     if (asReadOnly) {
                         throw;

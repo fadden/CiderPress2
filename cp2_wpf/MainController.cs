@@ -496,7 +496,7 @@ namespace cp2_wpf {
                 // File is fully parsed.  Generate the archive tree.
                 PopulateArchiveTree();
             } catch (Exception ex) {
-                // Expecting IOException and InvalidDataException.
+                // Expecting IOException, UnauthorizedAccessException, and InvalidDataException.
                 ShowFileError("Unable to open file: " + ex.Message);
                 return;
             } finally {
@@ -613,7 +613,7 @@ namespace cp2_wpf {
                 // File is fully parsed.  Generate the archive tree.
                 PopulateArchiveTree();
             } catch (Exception ex) {
-                // Expecting IOException and InvalidDataException.
+                // Expecting IOException, UnauthorizedAccessException, and InvalidDataException.
                 ShowFileError("Unable to open file: " + ex.Message);
                 return;
             } finally {
