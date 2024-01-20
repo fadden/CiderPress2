@@ -733,9 +733,9 @@ namespace AppCommon {
                         PNGGenerator.Generate((IBitmap)convOutput, outStream);
                     } else if (convOutput is HostConv) {
                         // Copy directly to output.
-                        if (dataStream != null) {
-                            dataStream.Position = 0;
-                            dataStream.CopyTo(outStream);
+                        if (dataCopy != null) {
+                            dataCopy.Position = 0;
+                            dataCopy.CopyTo(outStream);
                         }
                     } else {
                         Debug.Assert(false, "unknown IConvOutput impl " + convOutput);

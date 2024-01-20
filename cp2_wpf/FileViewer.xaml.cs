@@ -731,20 +731,12 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Removes temporary files we created.  Call this when the file viewer is closed.
+        /// Removes temporary files we created.  Call this when the file viewer is closed.  Any
+        /// files still open in external programs will not be deleted.
         /// </summary>
         private void DeleteTempFiles() {
-            // TODO: we probably also want to scrub any leftovers from previous iterations
-            //   when the program launches.  Scan of local temp directory should be fast, though
-            //   we might want to put it in a dedicated directory.  Should get user confirmation,
-            //   ideally with a non-intrusive launch screen affordance rather than a modal
-            //   dialog.  If we can open the file read/write then the external viewer should be
-            //   done with it.
-            string tempPathRoot = Path.GetTempPath();
             foreach (string path in mTmpFiles) {
-                if (!path.StartsWith(tempPathRoot)) {
-                    throw new Exception("whoops");      // be paranoid about removing files
-                }
+                Debug.Assert(path.StartsWith(Path.GetTempPath()));
                 try {
                     File.Delete(path);
                     mAppHook.LogI("Removed temp '" + path + "'");
@@ -753,6 +745,31 @@ namespace cp2_wpf {
                     mAppHook.LogW("Unable to remove temp: " + ex.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Generates a list of stale file viewer temporary files.
+        /// </summary>
+        public static List<string> FindStaleTempFiles() {
+            List<string> staleTemps = new List<string>();
+
+            string pattern = TEMP_FILE_PREFIX + "*";
+            string[] allFiles = Directory.GetFiles(Path.GetTempPath(), pattern);
+
+            // Check to see if the file is still open, by opening it read-only with sharing
+            // disallowed.  There's a potential race condition, where something else re-opens
+            // it after our test, but that's not really interesting for us.
+            foreach (string path in allFiles) {
+                try {
+                    using (FileStream stream = new FileStream(path, FileMode.Open,
+                            FileAccess.Read, FileShare.None)) {
+                        staleTemps.Add(path);
+                    }
+                } catch {
+                    // If we can't open it, we probably can't delete it either.
+                }
+            }
+            return staleTemps;
         }
 
         /// <summary>

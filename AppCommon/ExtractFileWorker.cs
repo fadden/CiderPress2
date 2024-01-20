@@ -700,9 +700,20 @@ namespace AppCommon {
                         PNGGenerator.Generate((IBitmap)convOutput, outStream);
                     }
                 } else if (convOutput is HostConv) {
-                    // Should we just copy these to the output unmodified?
-                    ReportConvFailure("GIF/JPEG/PNG should be extracted, not exported");
-                    return false;
+                    // Copy these to the output unmodified
+                    if (dataCopy == null) {
+                        ReportConvFailure("weird: HostConv but no data fork");
+                        return false;
+                    }
+                    if (!PrepareOutputFile(extractPath, out bool doCancel)) {
+                        return !doCancel;
+                    }
+                    cleanPath1 = extractPath;
+                    ShowProgress(attrs, cleanPath1, false, dataPercent, conv.Tag);
+                    using (Stream outStream = new FileStream(cleanPath1, FileMode.CreateNew)) {
+                        dataCopy.Position = 0;
+                        dataCopy.CopyTo(outStream);
+                    }
                 } else {
                     Debug.Assert(false, "unknown IConvOutput impl " + convOutput);
                     ReportConvFailure("got weird output object: " + convOutput);

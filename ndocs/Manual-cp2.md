@@ -1635,6 +1635,8 @@ The result of the conversion takes one of the following forms:
  - Formatted documents are output in Rich Text Format (.RTF).
  - Spreadsheets and other cell-grid formats are output as Comma-Separated
    Value (.CSV) files, UTF-8 encoded.
+ - Files that can be used on a modern system, such as GIF images and PDF
+   documents, are extracted without modification.
 
 Specifying the special value `best` as the converter tag will analyze the file
 and choose the conversion that seems most appropriate.  It's not possible to

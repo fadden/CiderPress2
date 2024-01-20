@@ -155,6 +155,8 @@ namespace cp2_wpf {
             Debug.Assert(DiskArc.Disk.Woz_Meta.DebugTest());
             AppHook.LogI("--- unit tests complete ---");
 
+            RemoveStaleTempFiles();
+
             ApplyAppSettings();
 
             UpdateTitle();
@@ -184,6 +186,33 @@ namespace cp2_wpf {
                     DoOpenWorkFile(Path.GetFullPath(args[curArg]), readOnly);
                 }
             }
+        }
+
+        private void RemoveStaleTempFiles() {
+            // Ideally we'd prompt the user before doing this, but the odds of something useful
+            // living in the system temp directory with our app-specific filename prefix are
+            // very low.  If we want to be cautious, we can add a "stale temp files found" item
+            // to the launch screen, with "view" and "clear" buttons.
+
+            DateTime startWhen = DateTime.Now;
+            List<string> staleTemps = FileViewer.FindStaleTempFiles();
+            foreach (string filePath in staleTemps) {
+                if (!filePath.StartsWith(Path.GetTempPath())) {
+                    // Be paranoid when removing files.
+                    Debug.Assert(false);
+                    throw new Exception("Internal error: bad temp path " + filePath);
+                }
+                try {
+                    File.Delete(filePath);
+                    AppHook.LogI("Removed stale temp file '" + filePath + "'");
+                } catch (Exception ex) {
+                    AppHook.LogW("Failed to delete temp file: " + ex.Message);
+                }
+            }
+
+            DateTime endWhen = DateTime.Now;
+            AppHook.LogD("Stale temp file scan completed in " +
+                (endWhen - startWhen).TotalSeconds + " ms");
         }
 
         /// <summary>
