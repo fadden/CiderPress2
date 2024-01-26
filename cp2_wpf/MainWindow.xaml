@@ -692,6 +692,7 @@ limitations under the License.
                                 <MenuItem Command="{StaticResource ExtractFilesCmd}"/>
                                 <MenuItem Command="{StaticResource ExportFilesCmd}"/>
                                 <MenuItem Command="Copy"/>
+                                <MenuItem Command="Paste"/>
                                 <MenuItem Command="{StaticResource DeleteFilesCmd}"/>
                                 <MenuItem Command="{StaticResource TestFilesCmd}"/>
                                 <Separator/>
