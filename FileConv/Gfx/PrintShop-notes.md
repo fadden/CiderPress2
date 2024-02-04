@@ -49,3 +49,47 @@ Y M C | color  | red, green, blue
 1 0 1 | green  | 0x00, 0xff, 0x00
 1 1 0 | orange | 0xff, 0x66, 0x00
 1 1 1 | black  | 0x00, 0x00, 0x00
+
+
+## Fonts ##
+
+Each font contains 59 characters (0-58).
+
+In the Print Shop Companion (PSC) font editor, offsets 0 (space) and 32 (image) are not editable.
+
+In Print Shop, offset 32 points to the current graphic selected, which is not contained in the font
+file itself.
+
+The Space character is at offset 0, and in all the examples I've seen, has a height of 0 pixels.
+The data is calculated in the PSC font editor based off of an average of all other character
+widths.
+
+Character data is stored one bit per pixel, where 0 indicated background and 1 is foreground.  LSB
+is first.  Pixel data bytes are encoded left to right, as a series of rows.  Character data is
+arbitrarily located within the file but is accessible through ordered pointers as defined below.
+
+The file format is:
+```
++$00/12:  ($5FF4) - Optional Print Shop Companion Font Header (From Font Editor)
++$0C/59:  ($6000) - Character widths (in pixels). High bit indicates "Edited" in PSC. Should be stripped.
++$3B/59:  ($603B) - Character heights in rows.
++$47/59:  ($6076) - Low Bytes of character data pointers
++$82/59:  ($60B1) - High Bytes of character data pointers
++$BD/nn:  ($60EC) - Character data.
+```
+If a 12-byte Print Shop Companion Header exists, the file is loaded at an earlier location in memory
+such that the Character Widths block always falls at $6000.  Pointers to font data are calculated
+with offset assumed. The presence or absence of the 12-byte header must be accounted for when
+dereferencing the internal pointers.
+
+To check for validity, we can iterate through all 59 characters (excluding 0 and 32) and check that:
+
+- The address pointers fall within the range of the data file.
+- Width and height values are "reasonable".  The PSC font editor limits character sizes to a max of
+  48x38 (152 bytes)
+
+If all are within range, then acceptability should be flagged as Yes, if the pointers are in range,
+but some characters are out of the expected sizes, then the acceptability should be flagged as
+ProbablyYes
+
+Like the Print Shop graphic data, fonts are expanded 2x3 in usage.
