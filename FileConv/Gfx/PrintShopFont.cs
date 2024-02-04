@@ -22,7 +22,7 @@ using DiskArc;
 namespace FileConv.Gfx
 {
     /// <summary>
-    /// Converts Print Shop clip art of various types.
+    /// Converts Print Shop fonts.
     /// </summary>
     public class PrintShopFont : Converter
     {
