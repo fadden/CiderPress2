@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2023 faddenSoft
+ * Copyright 2024 faddenSoft
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,11 @@ namespace FileConv.Gfx
         public const string TAG = "psfont";
         public const string LABEL = "Print Shop Font";
         public const string DESCRIPTION =
-            "Converts a Print Shop or Print Shop font file to a bitmap.  " +
+            "Converts a Print Shop font file to a bitmap.  " +
             "These can optionally be pixel-multiplied x2/x3.";
 
         // TODO
-        public const string DISCRIMINATOR =
-            "DOS B " +
-            ".";
+        public const string DISCRIMINATOR = "DOS B with aux type $5FF4 or $6000";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
@@ -70,7 +68,10 @@ namespace FileConv.Gfx
         private const byte MAX_CHARACTER_WIDTH = 48;
         private const ushort IMAGE_CHARACTER = 32;
         const int INTER_CHARACTER_SPACING_PX = 3;
-
+        const int LEFT_PADDING = 2;
+        const int RIGHT_PADDING = 2;
+        const int TOP_PADDING = 2;
+        const int BOTTOM_PADDING = 2;
         private const int XMULT = 2;
         private const int YMULT = 3;
 
@@ -153,7 +154,7 @@ namespace FileConv.Gfx
 
             for (int idx = 1; idx < CHARACTER_COUNT; idx++)
             {
-                if (idx != 32)
+                if (idx != IMAGE_CHARACTER)
                 {
                     if (idx != 1) totalWidth += INTER_CHARACTER_SPACING_PX;
                     totalWidth += GetWidthForCharacter(idx);
@@ -166,20 +167,26 @@ namespace FileConv.Gfx
 
             if (doMult)
             {
-                output = new Bitmap8((4 + totalWidth) * XMULT, (4 + maxHeight) * YMULT);
-                Debug.WriteLine("Bitmap3: Width: " + (4 + totalWidth) * XMULT + " Height: " + (4 + maxHeight) * YMULT);
+                output = new Bitmap8((LEFT_PADDING + totalWidth + RIGHT_PADDING) * XMULT,
+                                     (TOP_PADDING + maxHeight + BOTTOM_PADDING) * YMULT);
             }
             else
             {
-                output = new Bitmap8(totalWidth + 4, maxHeight + 4);
-                Debug.WriteLine("Bitmap: Width: " + totalWidth + 4 + " Height: " + maxHeight + 4);
+                output = new Bitmap8(LEFT_PADDING + totalWidth + RIGHT_PADDING, 
+                                     TOP_PADDING+ maxHeight + BOTTOM_PADDING);
             }
             output.SetPalette(palette);
 
-            int xOffset = 1;
-            for (int idx = 1; idx < CHARACTER_COUNT; idx++)
+            for (int idx = 0; idx < output.Width; idx++) {
+                for (int jdx = 0; jdx < output.Height; jdx++) {
+                    output.SetPixelIndex(idx, jdx, 1);
+                }
+            }
+
+            int xOffset = LEFT_PADDING;
+            for (int idx = 1; idx < CHARACTER_COUNT; idx++) // Skip Offset 0 ("Space")
             {
-                if (idx != 32)
+                if (idx != IMAGE_CHARACTER)
                 {
                     byte charWidth = GetWidthForCharacter(idx);
                     byte charHeight = GetHeightForCharacter(idx);
@@ -190,22 +197,21 @@ namespace FileConv.Gfx
                     {
                         for (int col = 0; col < WidthToBytes(charWidth); col++)
                         {
-
                             byte bval = charData[offset++];
                             for (int bit = 0; bit < 8; bit++)
                             {
-                                // Bits are zero for white, one for black; leftmost pixel in MSB.
-                                byte color = (byte)(bval >> 7);
+                                // Bits are zero for background, one for foreground; leftmost pixel in MSB.
+                                byte color = (byte)(1-(bval >> 7));
 
-                                if (col * 8 + bit + xOffset < totalWidth)
+                                if (col * 8 + bit + xOffset < totalWidth + LEFT_PADDING + RIGHT_PADDING)
                                 {
                                     if (doMult)
                                     {
-                                        SetMultPixels(output, col * 8 + bit + xOffset, row + 1, color);
+                                        SetMultPixels(output, col * 8 + bit + xOffset, row + TOP_PADDING, color);
                                     }
                                     else
                                     {
-                                        output.SetPixelIndex(col * 8 + bit + xOffset, row + 1, color);
+                                        output.SetPixelIndex(col * 8 + bit + xOffset, row + TOP_PADDING, color);
                                     }
                                 }
                                 bval <<= 1;
