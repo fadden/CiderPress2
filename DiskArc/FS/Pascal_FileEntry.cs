@@ -56,7 +56,7 @@ namespace DiskArc.FS {
 
         public bool IsValid { get { return FileSystem != null; } }
 
-        public bool IsDubious => mHasConflict;
+        public bool IsDubious => mHasConflict || mBadDirEntry;
 
         public bool IsDamaged { get; private set; }
 
@@ -246,6 +246,11 @@ namespace DiskArc.FS {
         /// </summary>
         private bool mHasConflict;
 
+        /// <summary>
+        /// True if the directory entry appears to be damaged in some way.
+        /// </summary>
+        private bool mBadDirEntry = false;
+
         public ushort StartBlock => mStartBlock;
         public ushort NextBlock => mNextBlock;
         public ushort ByteCount {
@@ -418,7 +423,7 @@ namespace DiskArc.FS {
                 }
 
                 if (!newEntry.ValidateEntry(hdr)) {
-                    newEntry.IsDamaged = true;
+                    newEntry.mBadDirEntry = true;
                     fileSystem.IsDubious = true;
                 } else {
                     // Update file usage map.  This detects overlapping entries.
@@ -520,15 +525,24 @@ namespace DiskArc.FS {
             // Range checks.
             if (mStartBlock < hdr.mNextBlock || mStartBlock >= hdr.mVolBlockCount) {
                 notes.AddW("Invalid start block " + mStartBlock + " for '" + FileName + "'");
+                IsDamaged = true;       // bad start, can't open
                 return false;
             }
-            if (mNextBlock <= mStartBlock || mNextBlock > hdr.mVolBlockCount) {
+            if (mNextBlock <= mStartBlock) {
                 notes.AddW("Invalid next block " + mNextBlock + " for '" + FileName +
                     "' (start=" + mStartBlock + ")");
+                IsDamaged = true;       // zero-length or ends before it starts, can't open
+                return false;
+            }
+            if (mNextBlock > hdr.mVolBlockCount) {
+                notes.AddW("Invalid next block " + mNextBlock + " for '" + FileName +
+                    "' (start=" + mStartBlock + ", vol count=" + hdr.mVolBlockCount + ")");
+                mNextBlock = hdr.mVolBlockCount;    // off end of volume; clip it
                 return false;
             }
             if (mByteCount > BLOCK_SIZE) {
                 notes.AddW("Invalid byte count " + mByteCount + " for '" + FileName + "'");
+                IsDamaged = true;
                 return false;
             }
             return true;

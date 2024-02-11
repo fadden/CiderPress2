@@ -855,10 +855,10 @@ namespace cp2 {
         private static void PrintFileEntry(IFileSystem fs, IFileEntry entry, string prefix,
                 string indent, ParamsBag parms) {
             char lck;
-            if (entry.IsDubious) {
-                lck = '?';
-            } else if (entry.IsDamaged) {
+            if (entry.IsDamaged) {
                 lck = '!';
+            } else if (entry.IsDubious) {
+                lck = '?';
             } else {
                 lck = (entry.Access & (int)FileAttribs.AccessFlags.Write) == 0 ? '*' : ' ';
             }

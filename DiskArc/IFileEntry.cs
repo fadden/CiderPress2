@@ -114,7 +114,9 @@ namespace DiskArc {
         /// True if the file's structure is suspicious or damaged.  The file cannot be accessed.
         /// </summary>
         /// <remarks>
-        /// The filesystem will also be marked "dubious", which disables writes.
+        /// <para>The filesystem will also be marked "dubious", which disables writes.</para>
+        /// <para>It is possible for a file to be marked as both "dubious" and "damaged".  In
+        /// such a case, IsDubious can be ignored.</para>
         /// </remarks>
         bool IsDamaged { get; }
 
