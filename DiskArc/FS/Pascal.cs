@@ -207,7 +207,8 @@ namespace DiskArc.FS {
             if (hdr.mFirstBlock != 0 || hdr.mNextBlock != EXPECTED_FIRST_DATA ||
                     hdr.mFileType != 0 ||
                     hdr.mVolumeName[0] == 0 || hdr.mVolumeName[0] > MAX_VOL_NAME_LEN ||
-                    hdr.mVolBlockCount < EXPECTED_FIRST_DATA || hdr.mVolBlockCount > chunkBlocks ||
+                    hdr.mVolBlockCount < EXPECTED_FIRST_DATA ||
+                    //hdr.mVolBlockCount > chunkBlocks ||
                     hdr.mFileCount > MAX_FILE_COUNT) {
                 return false;
             }
@@ -425,9 +426,16 @@ namespace DiskArc.FS {
             if (!ValidateVolDirHeader(mVolDirHeader, chunkBlocks)) {
                 throw new DAException("Invalid volume directory header");
             }
-            if (mVolDirHeader.mVolBlockCount != chunkBlocks) {
+            if (mVolDirHeader.mVolBlockCount < chunkBlocks) {
                 Notes.AddI("Disk holds " + chunkBlocks + " blocks, but volume is only " +
                     mVolDirHeader.mVolBlockCount + " blocks");
+            } else if (mVolDirHeader.mVolBlockCount > chunkBlocks) {
+                Notes.AddW("Disk holds " + chunkBlocks + " blocks, but volume is " +
+                    mVolDirHeader.mVolBlockCount + " blocks");
+                IsDubious = true;
+                // Clip the count in the volume header, so that files that extend past
+                // the end of the disk are correctly marked as damaged.
+                mVolDirHeader.mVolBlockCount = (ushort)chunkBlocks;
             }
 
             // Create volume usage map.  Assign "system" usage to the boot and directory blocks.

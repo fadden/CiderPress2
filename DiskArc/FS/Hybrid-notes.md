@@ -36,7 +36,7 @@ It's possible to create a "hybrid" disk that has both the DOS 3.3 filesystem and
 filesystem, so long as the other begins on track 0.  ProDOS, UCSD Pascal, and CP/M filesystems
 all qualify.  This works because the "starting point" of a DOS filesystem is the VTOC on
 track 17 sector 0.  By marking tracks 0 through 16 as in-use but not associated with a file,
-the other operating system can avoid being trampled by DOS by marking tracks 17+ as in-use int
+the other operating system can avoid being trampled by DOS by marking tracks 17+ as in-use in
 the VTOC.
 
 The other operating system can be configured in one of two ways.  For ProDOS, which has a
@@ -44,6 +44,9 @@ blocks-in-use bitmap, the volume can be configured to span the entire volume, wi
 on the second half of the disk marked as being in use.  For UCSD Pascal, which uses the file
 entries to determine block usage, it's necessary to declare the volume size as shorter than
 the full length of the disk.
+
+Because the CP/M directory starts on track 3, it's actually possible to have DOS, CP/M, and
+either ProDOS or Pascal on a single disk.
 
 The DOS MASTER distribution disk provides an interesting case: tracks 17 through 21 are DOS 3.3,
 but the rest of the disk (tracks 0-16 and 22-34) is ProDOS.  This is very different from a
