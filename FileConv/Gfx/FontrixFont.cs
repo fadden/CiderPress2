@@ -30,7 +30,6 @@ namespace FileConv.Gfx {
         public const string DESCRIPTION =
             "Converts a Fontrix font file to a bitmap.  ";
 
-        // TODO
         public const string DISCRIMINATOR = "DOS B with aux type $6400";
         public override string Tag => TAG;
         public override string Label => LABEL;
@@ -48,8 +47,6 @@ namespace FileConv.Gfx {
                     OptionDefinition.OptType.Boolean, "true"),
             };
 
-
-
         private const int CHAR_COUNT_LOCATION = 0x10;
         private const int FIRST_ASCII_CHAR_LOCATION = 0x11;
         private const int IS_PROPORTIONAL_LOCATION = 0x12;
@@ -63,20 +60,15 @@ namespace FileConv.Gfx {
         private const byte ID_BYTE_2_VAL = 0xF7;
         private const byte ID_BYTE_3_VAL = 0xB2;
 
-
         private const byte MAX_NUM_CHARACTERS = 94;
 
-
         private const int NUM_GRID_ROWS = 6;
-
 
         const int INTER_CHARACTER_SPACING_PX = 2;
         const int LEFT_PAD = 2;
         const int RIGHT_PAD = 2;
         const int TOP_PADDING = 2;
         const int BOTTOM_PADDING = 2;
-
-
 
         // The file data.  Give it a minimum size up front so it shouldn't be null later on.
         private byte[] DataBuf = new byte[1];
@@ -211,69 +203,6 @@ namespace FileConv.Gfx {
             return output;
         }
 
-        /// <summary>
-        /// Returns the number of characters in the current font.
-        /// </summary>
-        private byte GetCharacterCount() {
-            Debug.Assert(DataBuf.Length > CHAR_COUNT_LOCATION);
-
-            return DataBuf[CHAR_COUNT_LOCATION];
-        }
-
-
-        /// <summary>
-        /// Returns the true if the current font is proportional, false otherwise.
-        /// </summary>
-        private bool IsFontProportional() {
-            Debug.Assert(DataBuf.Length > IS_PROPORTIONAL_LOCATION);
-
-            return DataBuf[IS_PROPORTIONAL_LOCATION] > 0;
-        }
-
-
-        /// <summary>
-        /// Returns the ASCII code of the first character defined in the font.
-        /// </summary>
-        private byte GetFirstCharAsciiCode() {
-            Debug.Assert(DataBuf.Length > FIRST_ASCII_CHAR_LOCATION);
-
-            return DataBuf[FIRST_ASCII_CHAR_LOCATION];
-        }
-
-
-        /// <summary>
-        /// Returns the offset in the internal pointer table for the first character in the font.
-        /// It is calculated by subtracting 32 from the ASCII value of the first character.
-        /// ASCII 32 is space, and there is a pointer assigned for space, but it is generally
-        /// undefined or points to null data.  Per the documentation of Fontrix, the space 
-        /// character is not used in practice.
-        /// </summary>
-        private byte GetFirstCharacterOffset() {
-            const byte SPACE_VAL_OFFSET = 32;
-            return (byte)(GetFirstCharAsciiCode() - SPACE_VAL_OFFSET);
-        }
-
-
-
-        /// <summary>
-        /// This is a utility function for drawing the font bitmap. It returns the total number 
-        /// of pixels a series of encoded characters in the font require to display, taking into
-        /// consideration whether the font is proportional and whether the user wants to display
-        /// inter-character spacing. 
-        /// </summary>
-        private int GetWidthForRun(byte start, byte length, bool doSpacing) {
-
-            int totalWidth = 0;
-
-            for (int idx = start; idx < start + length; idx++) {
-
-                if (idx != start && doSpacing) totalWidth += INTER_CHARACTER_SPACING_PX;
-
-                totalWidth += GetWidthForCharacter(idx);
-            }
-            return totalWidth;
-        }
-
 
         /// <summary>
         /// Converts a Fontrix font file to a multi-row grid on a B&amp;W bitmap.
@@ -370,6 +299,69 @@ namespace FileConv.Gfx {
         }
 
         /// <summary>
+        /// Returns the number of characters in the current font.
+        /// </summary>
+        private byte GetCharacterCount() {
+            Debug.Assert(DataBuf.Length > CHAR_COUNT_LOCATION);
+
+            return DataBuf[CHAR_COUNT_LOCATION];
+        }
+
+
+        /// <summary>
+        /// Returns the true if the current font is proportional, false otherwise.
+        /// </summary>
+        private bool IsFontProportional() {
+            Debug.Assert(DataBuf.Length > IS_PROPORTIONAL_LOCATION);
+
+            return DataBuf[IS_PROPORTIONAL_LOCATION] > 0;
+        }
+
+
+        /// <summary>
+        /// Returns the ASCII code of the first character defined in the font.
+        /// </summary>
+        private byte GetFirstCharAsciiCode() {
+            Debug.Assert(DataBuf.Length > FIRST_ASCII_CHAR_LOCATION);
+
+            return DataBuf[FIRST_ASCII_CHAR_LOCATION];
+        }
+
+
+        /// <summary>
+        /// Returns the offset in the internal pointer table for the first character in the font.
+        /// It is calculated by subtracting 32 from the ASCII value of the first character.
+        /// ASCII 32 is space, and there is a pointer assigned for space, but it is generally
+        /// undefined or points to null data.  Per the documentation of Fontrix, the space 
+        /// character is not used in practice.
+        /// </summary>
+        private byte GetFirstCharacterOffset() {
+            const byte SPACE_VAL_OFFSET = 32;
+            return (byte)(GetFirstCharAsciiCode() - SPACE_VAL_OFFSET);
+        }
+
+
+        /// <summary>
+        /// This is a utility function for drawing the font bitmap. It returns the total number 
+        /// of pixels a series of encoded characters in the font require to display, taking into
+        /// consideration whether the font is proportional and whether the user wants to display
+        /// inter-character spacing. 
+        /// </summary>
+        private int GetWidthForRun(byte start, byte length, bool doSpacing) {
+
+            int totalWidth = 0;
+
+            for (int idx = start; idx < start + length; idx++) {
+
+                if (idx != start && doSpacing) totalWidth += INTER_CHARACTER_SPACING_PX;
+
+                totalWidth += GetWidthForCharacter(idx);
+            }
+            return totalWidth;
+        }
+
+
+        /// <summary>
         /// Get the height in pixels for all characters in the font.
         /// </summary>
         /// <returns>The pixel height of all characters.</returns>
@@ -377,6 +369,7 @@ namespace FileConv.Gfx {
             Debug.Assert(DataBuf != null);
             return DataBuf[0x14];
         }
+
 
         /// <summary>
         /// Get the practical width in pixels for the character at the given offset. Depending on
@@ -394,6 +387,7 @@ namespace FileConv.Gfx {
                 return GetFullWidthForCharacter(offset);
             }
         }
+
 
         /// <summary>
         /// This is a utility function for measuring the width of pixels in a character. Since the
@@ -416,8 +410,8 @@ namespace FileConv.Gfx {
                 >= 1 => 1,
                 _ => 0,
             };
-
         }
+
 
         /// <summary>
         /// Get the width in pixels for the character at the given offset.  Used for
@@ -505,7 +499,6 @@ namespace FileConv.Gfx {
             if (width == 0) return 0;
             return (byte)(((width - 1) / 8) + 1);
         }
-
     }
 
 }
