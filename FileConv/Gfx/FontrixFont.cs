@@ -18,6 +18,7 @@ using System.Diagnostics;
 
 using CommonUtil;
 using DiskArc;
+using DiskArc.FS;
 
 namespace FileConv.Gfx {
     /// <summary>
@@ -48,29 +49,37 @@ namespace FileConv.Gfx {
             };
 
 
+
+        private const int CHAR_COUNT_LOCATION = 0x10;
+        private const int FIRST_ASCII_CHAR_LOCATION = 0x11;
+        private const int IS_PROPORTIONAL_LOCATION = 0x12;
+
         private const int ID_BYTE_1 = 0x18;
-        private const byte ID_BYTE_1_VAL = 0x90;
         private const int ID_BYTE_2 = 0x19;
-        private const byte ID_BYTE_2_VAL = 0xF7;
         private const int ID_BYTE_3 = 0x1a;
+
+
+        private const byte ID_BYTE_1_VAL = 0x90;
+        private const byte ID_BYTE_2_VAL = 0xF7;
         private const byte ID_BYTE_3_VAL = 0xB2;
 
 
-        const int CHAR_COUNT_LOCATION = 0x10;
-        const int FIRST_ASCII_CHAR_LOCATION = 0x11;
-        const int IS_PROPORTIONAL_LOCATION = 0x12;
-
-        const int INTER_CHARACTER_SPACING_PX = 3;
+        private const byte MAX_NUM_CHARACTERS = 94;
 
 
-        const int LEFT_PADDING = 2;
-        const int RIGHT_PADDING = 2;
+        private const int NUM_GRID_ROWS = 6;
+
+
+        const int INTER_CHARACTER_SPACING_PX = 2;
+        const int LEFT_PAD = 2;
+        const int RIGHT_PAD = 2;
         const int TOP_PADDING = 2;
         const int BOTTOM_PADDING = 2;
 
 
-        // We have to unpack the data in order to validate it, so might as well keep a copy of it for later.
-        private byte[]? DataBuf;
+
+        // The file data.  Give it a minimum size up front so it shouldn't be null later on.
+        private byte[] DataBuf = new byte[1];
 
         private FontrixFont() { }
 
@@ -85,14 +94,23 @@ namespace FileConv.Gfx {
                 return Applicability.Not;
             }
 
+            if (DataStream.Length < ID_BYTE_3) {
+                return Applicability.Not;
+            }
+
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN) {
                 if (FileAttrs.AuxType == 0x6400) {
-                    UnpackData();
 
+                    // Only need to read up to ID_BYTE_3 to validate. +1 to get size from offset.
+                    var buffer = new byte[ID_BYTE_3 + 1];
 
-                    bool valid = DataBuf?[ID_BYTE_1] == ID_BYTE_1_VAL &&
-                                 DataBuf[ID_BYTE_2] == ID_BYTE_2_VAL &&
-                                 DataBuf[ID_BYTE_3] == ID_BYTE_3_VAL;
+                    DataStream.Position = 0;
+                    DataStream.ReadExactly(buffer, 0, ID_BYTE_3 + 1);
+
+                    bool valid = buffer[ID_BYTE_1] == ID_BYTE_1_VAL &&
+                                 buffer[ID_BYTE_2] == ID_BYTE_2_VAL &&
+                                 buffer[ID_BYTE_3] == ID_BYTE_3_VAL &&
+                                 buffer[CHAR_COUNT_LOCATION] <= MAX_NUM_CHARACTERS;
 
                     if (valid) {
                         return Applicability.Yes;
@@ -113,54 +131,48 @@ namespace FileConv.Gfx {
                 Debug.Assert(false);
                 return new ErrorText("ERROR");
             }
-
-            Debug.Assert(DataBuf != null);
-            Debug.Assert(DataBuf.Length >= 0);
             Debug.Assert(DataStream != null);
 
-            bool doMultirow = GetBoolOption(options, OPT_MULTIROW, false);
+            DataBuf = new byte[DataStream.Length];
+            DataStream.Position = 0;
+            DataStream.ReadExactly(DataBuf, 0, DataBuf.Length);
 
+            bool doMultirow = GetBoolOption(options, OPT_MULTIROW, false);
             bool doSpacing = GetBoolOption(options, OPT_SPACING, false);
 
             if (doMultirow) {
-                return ConvertMonoIntoGrid(DataBuf, Palette8.Palette_MonoBW, doSpacing);
+                return ConvertIntoGrid(DataBuf, Palette8.Palette_MonoBW, doSpacing);
             } else {
-                return ConvertMono(DataBuf, Palette8.Palette_MonoBW, doSpacing);
+                return Convert(DataBuf, Palette8.Palette_MonoBW, doSpacing);
             }
         }
 
         /// <summary>
         /// Converts a Fontrix font file to a B&amp;W bitmap.
         /// </summary>
-        public Bitmap8 ConvertMono(byte[] buf, Palette8 palette, bool doSpacing) {
+        public Bitmap8 Convert(byte[] buf, Palette8 palette, bool doSpacing) {
             Bitmap8 output;
 
             int totalWidth = 0;
             int maxHeight = 0;
 
-            bool isProportional = buf[IS_PROPORTIONAL_LOCATION] > 0;
-
-            int firstCharOffset = buf[FIRST_ASCII_CHAR_LOCATION] - 32;
-            var charCount = buf[CHAR_COUNT_LOCATION];
+            int firstCharOffset = GetFirstCharacterOffset();
+            var charCount = GetCharacterCount();
 
             for (int idx = firstCharOffset; idx < firstCharOffset + charCount; idx++) {
 
-
-                if (idx != firstCharOffset && doSpacing) totalWidth += INTER_CHARACTER_SPACING_PX;
-                if (isProportional) {
-                    totalWidth += GetMeasuredWidthForCharacter(idx);
-                } else {
-                    totalWidth += GetWidthForCharacter(idx);
+                if (idx != firstCharOffset && doSpacing) {
+                    totalWidth += INTER_CHARACTER_SPACING_PX;
                 }
+
+                totalWidth += GetWidthForCharacter(idx);
                 int height = GetFontHeight();
                 if (height > maxHeight) { maxHeight = height; }
 
             }
 
-
-            output = new Bitmap8(LEFT_PADDING + totalWidth + RIGHT_PADDING,
+            output = new Bitmap8(LEFT_PAD + totalWidth + RIGHT_PAD,
                                  TOP_PADDING + maxHeight + BOTTOM_PADDING);
-
 
             output.SetPalette(palette);
 
@@ -170,13 +182,10 @@ namespace FileConv.Gfx {
                 }
             }
 
-
-            int xOffset = LEFT_PADDING;
+            int xOffset = LEFT_PAD;
             for (int idx = firstCharOffset; idx < firstCharOffset + charCount; idx++) {
 
-
-                byte charWidth =
-                    isProportional ? GetMeasuredWidthForCharacter(idx) : GetWidthForCharacter(idx);
+                byte charWidth = GetWidthForCharacter(idx);
                 byte charHeight = GetFontHeight();
                 byte[] charData = GetDataForCharacter(idx);
 
@@ -188,12 +197,9 @@ namespace FileConv.Gfx {
                         for (int bit = 7; bit >= 0; bit--) {
                             // Bits are zero for background, one for foreground; leftmost pixel in LSB.
                             byte color = (byte)(1 - (bval >> 7));
-
-                            if (col * 8 + bit + xOffset < totalWidth + LEFT_PADDING + RIGHT_PADDING) {
-
-
-                                output.SetPixelIndex(col * 8 + bit + xOffset, row + TOP_PADDING, color);
-
+                            var hpos = col * 8 + bit + xOffset;
+                            if (hpos < totalWidth + LEFT_PAD + RIGHT_PAD) {
+                                output.SetPixelIndex(hpos, row + TOP_PADDING, color);
                             }
                             bval <<= 1;
                         }
@@ -201,99 +207,167 @@ namespace FileConv.Gfx {
                 }
                 xOffset += charWidth;
                 if (doSpacing) { xOffset += INTER_CHARACTER_SPACING_PX; }
-
-
             }
             return output;
         }
 
+        /// <summary>
+        /// Returns the number of characters in the current font.
+        /// </summary>
+        private byte GetCharacterCount() {
+            Debug.Assert(DataBuf.Length > CHAR_COUNT_LOCATION);
+
+            return DataBuf[CHAR_COUNT_LOCATION];
+        }
+
 
         /// <summary>
-        /// Converts a Fontrix font file to a B&amp;W bitmap.
+        /// Returns the true if the current font is proportional, false otherwise.
         /// </summary>
-        public Bitmap8 ConvertMonoIntoGrid(byte[] buf, Palette8 palette, bool doSpacing) {
-            Bitmap8 output;
+        private bool IsFontProportional() {
+            Debug.Assert(DataBuf.Length > IS_PROPORTIONAL_LOCATION);
+
+            return DataBuf[IS_PROPORTIONAL_LOCATION] > 0;
+        }
+
+
+        /// <summary>
+        /// Returns the ASCII code of the first character defined in the font.
+        /// </summary>
+        private byte GetFirstCharAsciiCode() {
+            Debug.Assert(DataBuf.Length > FIRST_ASCII_CHAR_LOCATION);
+
+            return DataBuf[FIRST_ASCII_CHAR_LOCATION];
+        }
+
+
+        /// <summary>
+        /// Returns the offset in the internal pointer table for the first character in the font.
+        /// It is calculated by subtracting 32 from the ASCII value of the first character.
+        /// ASCII 32 is space, and there is a pointer assigned for space, but it is generally
+        /// undefined or points to null data.  Per the documentation of Fontrix, the space 
+        /// character is not used in practice.
+        /// </summary>
+        private byte GetFirstCharacterOffset() {
+            const byte SPACE_VAL_OFFSET = 32;
+            return (byte)(GetFirstCharAsciiCode() - SPACE_VAL_OFFSET);
+        }
+
+
+
+        /// <summary>
+        /// This is a utility function for drawing the font bitmap. It returns the total number 
+        /// of pixels a series of encoded characters in the font require to display, taking into
+        /// consideration whether the font is proportional and whether the user wants to display
+        /// inter-character spacing. 
+        /// </summary>
+        private int GetWidthForRun(byte start, byte length, bool doSpacing) {
 
             int totalWidth = 0;
-            int maxHeight = 0;
 
-            var charCount = buf[CHAR_COUNT_LOCATION];
+            for (int idx = start; idx < start + length; idx++) {
 
-            // IF there aren't 3 items, there's no need to split them into three rows.
-            if (charCount <= 3) {
-                return ConvertMono(buf, palette, doSpacing);
+                if (idx != start && doSpacing) totalWidth += INTER_CHARACTER_SPACING_PX;
+
+                totalWidth += GetWidthForCharacter(idx);
+            }
+            return totalWidth;
+        }
+
+
+        /// <summary>
+        /// Converts a Fontrix font file to a multi-row grid on a B&amp;W bitmap.
+        /// </summary>
+        public Bitmap8 ConvertIntoGrid(byte[] buf, Palette8 palette, bool doSpacing) {
+            Bitmap8 output;
+
+            var charCount = GetCharacterCount();
+
+            // If there aren't at least NUM_GRID_ROW items, default to the linear display.
+            if (charCount < NUM_GRID_ROWS) {
+                return Convert(buf, palette, doSpacing);
             }
 
-            bool isProportional = buf[IS_PROPORTIONAL_LOCATION] > 0;
+            byte startingChar = GetFirstCharacterOffset();
 
-            int firstCharOffset = buf[FIRST_ASCII_CHAR_LOCATION] - 32;
+            int fullWidth = GetWidthForRun(startingChar, charCount, doSpacing);
 
-            for (int idx = firstCharOffset; idx < firstCharOffset + charCount; idx++) {
+            int idealRowWidth = fullWidth / NUM_GRID_ROWS;
 
+            int spacingVal = doSpacing ? INTER_CHARACTER_SPACING_PX : 0;
 
-                if (idx != firstCharOffset && doSpacing) totalWidth += INTER_CHARACTER_SPACING_PX;
-                if (isProportional) {
-                    totalWidth += GetMeasuredWidthForCharacter(idx);
-                } else {
-                    totalWidth += GetWidthForCharacter(idx);
+            var charCounts = new byte[NUM_GRID_ROWS];
+            var rowWidths = new int[NUM_GRID_ROWS];
+            int currRow = 0;
+
+            for (int idx = startingChar; idx < startingChar + charCount; idx++) {
+
+                int thisCharWidth = GetWidthForCharacter(idx);
+                charCounts[currRow]++;
+                rowWidths[currRow] += thisCharWidth + spacingVal;
+
+                if (rowWidths[currRow] >= idealRowWidth && currRow != NUM_GRID_ROWS - 1) {
+                    currRow++;
                 }
-                int height = GetFontHeight();
-                if (height > maxHeight) { maxHeight = height; }
-
             }
 
+            int totalWidth = 0;
+            foreach (var w in rowWidths) {
+                totalWidth = Math.Max(totalWidth, w);
+            }
 
-            output = new Bitmap8(LEFT_PADDING + totalWidth + RIGHT_PADDING,
+            int maxHeight = GetFontHeight() * NUM_GRID_ROWS +
+                            INTER_CHARACTER_SPACING_PX * (NUM_GRID_ROWS - 1);
+
+            output = new Bitmap8(LEFT_PAD + totalWidth + RIGHT_PAD,
                                  TOP_PADDING + maxHeight + BOTTOM_PADDING);
-
-
 
             output.SetPalette(palette);
 
+            // Clear the bitmap
             for (int idx = 0; idx < output.Width; idx++) {
                 for (int jdx = 0; jdx < output.Height; jdx++) {
                     output.SetPixelIndex(idx, jdx, 1);
                 }
             }
 
+            int currCharNum = startingChar;
 
-            int xOffset = LEFT_PADDING;
-            for (int idx = firstCharOffset; idx < firstCharOffset + charCount; idx++) {
+            int yOffset = TOP_PADDING;
 
+            for (var rowNum = 0; rowNum < NUM_GRID_ROWS; rowNum++) {
 
-                byte charWidth =
-                    isProportional ? GetMeasuredWidthForCharacter(idx) : GetWidthForCharacter(idx);
-                byte charHeight = GetFontHeight();
-                byte[] charData = GetDataForCharacter(idx);
+                int xOffset = LEFT_PAD;
 
-                int offset = 0;
+                for (int idx = 0; idx < charCounts[rowNum]; idx++) {
+                    byte charWidth = GetWidthForCharacter(currCharNum);
+                    byte charHeight = GetFontHeight();
+                    byte[] charData = GetDataForCharacter(currCharNum);
 
-                for (int row = 0; row < charHeight; row++) {
-                    for (int col = 0; col < WidthToBytes(charWidth); col++) {
-                        byte bval = charData[offset++];
-                        for (int bit = 7; bit >= 0; bit--) {
-                            // Bits are zero for background, one for foreground; leftmost pixel in LSB.
-                            byte color = (byte)(1 - (bval >> 7));
+                    int offset = 0;
 
-                            if (col * 8 + bit + xOffset < totalWidth + LEFT_PADDING + RIGHT_PADDING) {
-
-
-                                output.SetPixelIndex(col * 8 + bit + xOffset, row + TOP_PADDING, color);
-
+                    for (int row = 0; row < charHeight; row++) {
+                        for (int col = 0; col < WidthToBytes(charWidth); col++) {
+                            byte bval = charData[offset++];
+                            for (int bit = 7; bit >= 0; bit--) {
+                                // Bits are zero for background, one for foreground; leftmost pixel in LSB.
+                                byte color = (byte)(1 - (bval >> 7));
+                                var hpos = col * 8 + bit + xOffset;
+                                if (hpos < totalWidth + LEFT_PAD + RIGHT_PAD) {
+                                    output.SetPixelIndex(hpos, row + yOffset, color);
+                                }
+                                bval <<= 1;
                             }
-                            bval <<= 1;
                         }
                     }
+                    currCharNum++;
+                    xOffset += charWidth;
+                    if (doSpacing) { xOffset += INTER_CHARACTER_SPACING_PX; }
                 }
-                xOffset += charWidth;
-                if (doSpacing) { xOffset += INTER_CHARACTER_SPACING_PX; }
-
-
+                yOffset += INTER_CHARACTER_SPACING_PX + GetFontHeight();
             }
             return output;
         }
-
-
 
         /// <summary>
         /// Get the height in pixels for all characters in the font.
@@ -304,28 +378,58 @@ namespace FileConv.Gfx {
             return DataBuf[0x14];
         }
 
-
-
-        private static byte MeasureByteWidth(byte val) {
-            if (val >= 128) { return 8; }
-            if (val >= 64) { return 7; }
-            if (val >= 32) { return 6; }
-            if (val >= 16) { return 5; }
-            if (val >= 8) { return 4; }
-            if (val >= 4) { return 3; }
-            if (val >= 2) { return 2; }
-            if (val >= 1) { return 1; }
-            return 0;
+        /// <summary>
+        /// Get the practical width in pixels for the character at the given offset. Depending on
+        /// whether or not the font is proportional, it will return either the full byte-span width
+        /// or a measured width.
+        /// </summary>
+        /// <param name="offset">The character width to fetch</param>
+        /// <returns>
+        /// The most relevant pixel width of the character within the file. 
+        /// </returns>
+        private byte GetWidthForCharacter(int offset) {
+            if (IsFontProportional()) {
+                return GetMeasuredWidthForCharacter(offset);
+            } else {
+                return GetFullWidthForCharacter(offset);
+            }
         }
 
         /// <summary>
-        /// Get the width in pixels for the character at the  given offset.
+        /// This is a utility function for measuring the width of pixels in a character. Since the
+        /// data is stored LSB leading, the span of pixels can be measured by finding the width
+        /// between the 0th position and the hightest bit position in the byte.
+        /// </summary>
+        /// <param name="val">The byte being measured</param>
+        /// <returns>
+        /// The number of pixels the high bit of the byte is away from the 0th position.
+        /// </returns>
+        private static byte MeasureByteWidth(byte val) {
+            return val switch {
+                >= 128 => 8,
+                >= 64 => 7,
+                >= 32 => 6,
+                >= 16 => 5,
+                >= 8 => 4,
+                >= 4 => 3,
+                >= 2 => 2,
+                >= 1 => 1,
+                _ => 0,
+            };
+
+        }
+
+        /// <summary>
+        /// Get the width in pixels for the character at the given offset.  Used for
+        /// non=proportional fonts
         /// </summary>
         /// <param name="offset">The character width to fetch</param>
-        /// <returns>The pixel width of the character within the file.</returns>
-        private byte GetWidthForCharacter(int offset) {
-            Debug.Assert(DataBuf != null);
-
+        /// <returns>
+        /// The full-byte pixel width of the character within the file. (Char width in bytes * 8)
+        /// </returns>
+        private byte GetFullWidthForCharacter(int offset) {
+            // This is measured from the size of the block of contiguous bytes between this char and
+            //  the following character's data start, divided by the height of the character.
             var a1 = GetDataOffsetForCharacter(offset);
             var a2 = GetDataOffsetForCharacter(offset + 1);
             var byteWidth = (byte)(8 * (a2 - a1) / GetFontHeight()); ;
@@ -334,11 +438,18 @@ namespace FileConv.Gfx {
         }
 
 
+        /// <summary>
+        /// Get the exact maximum width in pixels for the character at the given offset. Used in
+        /// proportional fonts.
+        /// </summary>
+        /// <param name="offset">The character width to fetch</param>
+        /// <returns>
+        /// The width in pixels of this character, as measured from leftmost- to rightmost-pixel 
+        /// along each line.  This is generally smaller than the full width value.
+        /// </returns>
         private byte GetMeasuredWidthForCharacter(int offset) {
-            Debug.Assert(DataBuf != null);
-
             var height = GetFontHeight();
-            var byteWidth = GetWidthForCharacter(offset) / 8;
+            var byteWidth = GetFullWidthForCharacter(offset) / 8;
             var data = GetDataForCharacter(offset);
 
             byte width = 0;
@@ -346,8 +457,8 @@ namespace FileConv.Gfx {
             for (var h = 0; h < height; h++) {
                 for (var w = 0; w < byteWidth; w++) {
                     var b = data[h * byteWidth + w];
-                    byte thisbyte = (byte)(MeasureByteWidth(b) + (w * 8));
-                    if (thisbyte > width) { width = thisbyte; };
+                    byte thisByte = (byte)(MeasureByteWidth(b) + (w * 8));
+                    if (thisByte > width) { width = thisByte; };
                 }
             }
             return width;
@@ -360,8 +471,6 @@ namespace FileConv.Gfx {
         /// <param name="charOffset">The character offset to fetch</param>
         /// <returns>The pointer to the data within the file.</returns>
         private ushort GetDataOffsetForCharacter(int charOffset) {
-            Debug.Assert(DataBuf != null);
-
             byte loVal = DataBuf[0x20 + (2 * charOffset)];
             byte hiVal = DataBuf[0x21 + (2 * charOffset)];
             ushort dataOffset = (ushort)(loVal + 256 * hiVal);
@@ -374,9 +483,7 @@ namespace FileConv.Gfx {
         /// <param name="offset">The character offset to fetch.</param>
         /// <returns>A byte array containing the character data.</returns>
         private byte[] GetDataForCharacter(int offset) {
-            Debug.Assert(DataBuf != null);
-
-            byte width = GetWidthForCharacter(offset);
+            byte width = GetFullWidthForCharacter(offset);
 
             int dataLength = GetFontHeight() * WidthToBytes(width);
 
@@ -397,17 +504,6 @@ namespace FileConv.Gfx {
         private static byte WidthToBytes(byte width) {
             if (width == 0) return 0;
             return (byte)(((width - 1) / 8) + 1);
-        }
-
-        /// <summary>
-        ///  Reads the data from the datastream into a byte array.  
-        /// </summary>
-        private void UnpackData() {
-            Debug.Assert(DataStream != null);
-
-            DataBuf = new byte[DataStream.Length];
-            DataStream.Position = 0;
-            DataStream.ReadExactly(DataBuf, 0, DataBuf.Length);
         }
 
     }
