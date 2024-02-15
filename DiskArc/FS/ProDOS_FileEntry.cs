@@ -122,7 +122,9 @@ namespace DiskArc.FS {
             get { return mAuxType; }
             set {
                 CheckChangeAllowed();
-                if (IsDirectory) { return; }
+                // Setting a nonzero auxtype on a subdirectory is peculiar but not problematic.
+                // The volume dir has no such field, however.
+                if (IsVolumeDirectory) { return; }
                 mAuxType = value;
                 IsDirentDirty = true;
             }
@@ -1401,7 +1403,7 @@ namespace DiskArc.FS {
 
             if (IsDirectory && mFileType != FileAttribs.FILE_TYPE_DIR) {
                 FileSystem.Notes.AddW("Directory has non-DIR file type");
-                // not fatal; any value in checking the auxtype?
+                // not fatal
             }
 
             // Handle forked files.  The directory entry EOF will be 512, representing the

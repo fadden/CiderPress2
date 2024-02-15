@@ -453,14 +453,14 @@ namespace DiskArcTests {
                 const string NEW_DIR_NAME = "New.Sub.Dir";
                 subDir.FileName = NEW_DIR_NAME;
                 subDir.FileType = FileAttribs.FILE_TYPE_TXT;    // should be ignored
-                subDir.AuxType = 0x1234;                        // should be ignored
+                subDir.AuxType = 0x1234;                        // allowed
                 subDir.Access = 0x21;
                 subDir.CreateWhen = TEST_DATE2;
                 subDir.ModWhen = TEST_DATE1;
 
                 if (subDir.FileName != NEW_DIR_NAME ||
                         subDir.FileType != FileAttribs.FILE_TYPE_DIR ||
-                        subDir.AuxType != 0x0000 ||
+                        subDir.AuxType != 0x1234 ||
                         subDir.Access != 0x21 ||
                         subDir.CreateWhen != TEST_DATE2 ||
                         subDir.ModWhen != TEST_DATE1) {
@@ -481,7 +481,7 @@ namespace DiskArcTests {
 
                 if (subDir.FileName != NEW_DIR_NAME ||
                         subDir.FileType != FileAttribs.FILE_TYPE_DIR ||
-                        subDir.AuxType != 0x0000 ||
+                        subDir.AuxType != 0x1234 ||
                         subDir.Access != 0x21 ||
                         subDir.CreateWhen != TEST_DATE2 ||
                         subDir.ModWhen != TEST_DATE1) {

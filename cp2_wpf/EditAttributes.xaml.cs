@@ -520,7 +520,9 @@ namespace cp2_wpf {
                     ProTypeList.Add(new ProTypeListItem(label, (byte)type));
                 }
 
-                IsProTypeListEnabled = IsProAuxEnabled = (!mFileEntry.IsDirectory);
+                IsProTypeListEnabled = !mFileEntry.IsDirectory;
+                // It's okay to edit aux type for subdir entry, but not for volume dir.
+                IsProAuxEnabled = mFileEntry.ContainingDir != IFileEntry.NO_ENTRY;
             } else {
                 IsProTypeListEnabled = IsProAuxEnabled = false;
                 ProTypeVisibility = Visibility.Collapsed;

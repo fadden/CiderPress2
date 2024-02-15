@@ -47,6 +47,10 @@ To reduce verbiage in this document, disk images and file archives are
 collectively referred to as "archives" here.  A distinction is made for
 certain commands that only work with one or the other.
 
+This file is the reference manual for the command-line application.  A
+tutorial, as well as information about the Windows GUI application, can be
+found at https://ciderpress2.com/.
+
 ### Frequently Asked Questions ###
 
 *Q*: How do I list the contents of a disk image or file archive?
