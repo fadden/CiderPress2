@@ -15,7 +15,8 @@ Contents:
    - [Disk Image Sizes](#disk-image-sizes)
    - [Filename Extensions](#filename-extensions)
    - [Filesystem Types](#filesystem-types)
-   - [Import and Export](#import-and-export)
+   - [Export Specifications](#export-specifications)
+   - [Import Specifications](#import-specifications)
  - [Resource Fork and Attribute Preservation](#resource-fork-and-attribute-preservation)
    - [Finding Resource Forks](#finding-resource-forks)
    - [Access Flags](#access-flags)
@@ -1534,7 +1535,7 @@ The filesystems that may be formatted onto a disk image are:
 
 Creation of Gutenberg, MFS, and RDOS disks is not supported.
 
-### Import and Export ###
+### Export Specifications ###
 
 The export specification has the form `<conv-tag>[,name=value]...`.  The
 `conv-tag` specifies the converter to use, and the optional name/value pairs
@@ -1609,6 +1610,8 @@ Graphics:
  - `macpaint`: MacPaint graphics document
  - `psclip`: Print Shop clip art, monochrome and color
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
+ - `psfont`: Print Shop font
+   - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
  - `shr3201`: Apple IIgs compressed super hi-res 3200-color screen
@@ -1652,11 +1655,12 @@ doesn't require the resource fork, e.g. a hex dump, the resource fork will be
 ignored.  The only exception to this is the `rsrc` converter, which just
 formats the resource fork.
 
+### Import Specifications ###
 
-Import specifications work the same as export specifications, though there is
-no `best` conversion.  All attribute preservation parsing options (NAPS,
-AppleSingle, etc.) will be disabled, because the input files are expected to
-be host files.
+Import specifications have the same form as export specifications (described
+in the previous section), though there is no `best` conversion when importing.
+All attribute preservation parsing options (NAPS, AppleSingle, etc.) will be
+ignored, because the input files are expected to be host files.
 
 The available converters are:
  - `bas`: convert Applesoft BASIC listing back to a tokenized program (only
