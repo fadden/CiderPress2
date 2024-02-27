@@ -77,6 +77,8 @@ namespace FileConv {
             new ConverterEntry(typeof(Gfx.PrintShopFont)),
             new ConverterEntry(typeof(Gfx.HostImage)),
             new ConverterEntry(typeof(Gfx.MacPaint)),
+            new ConverterEntry(typeof(Gfx.FontrixFont)),
+
         };
 
         private static readonly Dictionary<string, ConverterEntry> sTagList = GenerateTagList();
