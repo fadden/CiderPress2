@@ -230,7 +230,8 @@ namespace cp2 {
             FileStream hostStream;
             try {
                 hostStream = new FileStream(hostFileName, FileMode.Open,
-                    isReadOnly ? FileAccess.Read : FileAccess.ReadWrite, FileShare.Read);
+                    isReadOnly ? FileAccess.Read : FileAccess.ReadWrite,
+                    isReadOnly ? FileShare.ReadWrite : FileShare.Read);
             } catch (Exception ex) {
                 Console.Error.WriteLine("Unable to open '" + hostFileName + "': " + ex.Message);
                 return false;

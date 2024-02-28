@@ -310,7 +310,9 @@ namespace AppCommon {
                     FileAccess access = asReadOnly ? FileAccess.Read : FileAccess.ReadWrite;
                     hostStream = new FileStream(hostPathName, FileMode.Open, access,
                         FileShare.Read);
-                } catch (UnauthorizedAccessException ex) {
+                } catch (Exception ex) when
+                        (ex is IOException ||                   // file is not shared read-write
+                         ex is UnauthorizedAccessException) {   // file is marked read-only
                     // Retry with read-only access unless we did that the first time around.
                     if (asReadOnly) {
                         throw;
@@ -318,7 +320,7 @@ namespace AppCommon {
                     mAppHook.LogI("R/W open failed (" + ex.Message + "), retrying R/O: '" +
                         hostPathName + "'");
                     hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.Read,
-                        FileShare.Read);
+                        FileShare.ReadWrite);
                 }
 
                 string ext = Path.GetExtension(hostPathName);

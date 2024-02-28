@@ -970,7 +970,7 @@ namespace cp2 {
                 }
                 try {
                     using FileStream arcFile = new FileStream(pathName, FileMode.Open,
-                        FileAccess.Read, FileShare.Read);
+                        FileAccess.Read, FileShare.ReadWrite);
                     string ext = Path.GetExtension(pathName)!;
                     if (parms.Classic) {
                         // Try to mimic the original.  Unfortunately the Linux and Windows
