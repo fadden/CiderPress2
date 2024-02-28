@@ -714,12 +714,18 @@ limitations under the License.
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <!-- information on currently-selected archive tree item -->
                             <TextBlock Grid.Row="0" Text="{Binding CenterInfoText1}"
                                        FontSize="16"/>
-                            <DataGrid Grid.Row="1" Name="centerInfoDataGrid" Margin="0,8,0,0"
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,4"
+                                        Visibility="{Binding CenterInfoText2Vis}">
+                                <TextBlock Text="NOTE: "  Foreground="Red" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding CenterInfoText2}"/>
+                            </StackPanel>
+                            <DataGrid Grid.Row="2" Name="centerInfoDataGrid" Margin="0,8,0,0"
                                       ItemsSource="{Binding CenterInfoList}"
                                       IsReadOnly="True"
                                       GridLinesVisibility="None"
@@ -736,7 +742,7 @@ limitations under the License.
                                 </DataGrid.Columns>
                             </DataGrid>
 
-                            <GroupBox Grid.Row="2" Padding="2,4" Margin="0,8,0,0" Width="350"
+                            <GroupBox Grid.Row="3" Padding="2,4" Margin="0,8,0,0" Width="350"
                                       Header="Disk / Partition Utilities" HorizontalAlignment="Left"
                                       Visibility="{Binding ShowDiskUtilityButtons, Converter={StaticResource BoolToVis}}">
                                 <Grid>
@@ -766,7 +772,7 @@ limitations under the License.
                                 </Grid>
                             </GroupBox>
 
-                            <StackPanel Grid.Row="3" Margin="2,8,0,0"
+                            <StackPanel Grid.Row="4" Margin="2,8,0,0"
                                         Visibility="{Binding ShowPartitionLayout, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Partition Layout:"/>
                                 <DataGrid Name="partitionLayoutDataGrid"
@@ -791,7 +797,7 @@ limitations under the License.
                                 </DataGrid>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="4" Margin="2,8,0,0"
+                            <StackPanel Grid.Row="5" Margin="2,8,0,0"
                                         Visibility="{Binding ShowMetadata, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Metadata:"/>
                                 <DataGrid Name="metadataDataGrid" Margin="0,4,0,0"
@@ -843,7 +849,7 @@ limitations under the License.
                                         Click="Metadata_AddEntryButtonClick"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="5" Margin="2,8,0,0"
+                            <StackPanel Grid.Row="6" Margin="2,8,0,0"
                                         Visibility="{Binding ShowNotes, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Notes:"/>
                                 <DataGrid Name="notesDataGrid"

@@ -233,6 +233,7 @@ namespace cp2 {
                     isReadOnly ? FileAccess.Read : FileAccess.ReadWrite,
                     isReadOnly ? FileShare.ReadWrite : FileShare.Read);
             } catch (Exception ex) {
+                // expecting IOException, UnauthorizedAccessException
                 Console.Error.WriteLine("Unable to open '" + hostFileName + "': " + ex.Message);
                 return false;
             }

@@ -287,7 +287,30 @@ namespace cp2_wpf {
             mMainWin.ClearCenterInfo();
 
             CurrentWorkObject = newSel.WorkTreeNode.DAObject;
+
+            Debug.Assert(mWorkTree != null);
             ConfigureCenterInfo(CurrentWorkObject, newSel.Name);
+            if (newSel.WorkTreeNode == mWorkTree.RootNode) {
+                if (mWorkTree.ReadWriteOpenFailure == null) {
+                    mMainWin.CenterInfoText2 = string.Empty;
+                } else {
+                    if (mWorkTree.ReadWriteOpenFailure is IOException &&
+                            (mWorkTree.ReadWriteOpenFailure.HResult & 0xffff) == 32) {
+                        // ERROR_SHARING_VIOLATION
+                        mMainWin.CenterInfoText2 = "Unable to open the file for writing, because " +
+                            "it's being used by another process.";
+                    } else if (mWorkTree.ReadWriteOpenFailure is UnauthorizedAccessException) {
+                        // File is marked read-only.
+                        mMainWin.CenterInfoText2 = "Unable to open the file for writing, because " +
+                            "it's marked read-only.";
+                    } else {
+                        mMainWin.CenterInfoText2 = "Unable to open the file for writing.";
+                    }
+                }
+            } else {
+                mMainWin.CenterInfoText2 = string.Empty;
+            }
+
             if (CurrentWorkObject is IFileSystem) {
                 ObservableCollection<DirectoryTreeItem> tvRoot = mMainWin.DirectoryTreeRoot;
                 IFileSystem fs = (IFileSystem)CurrentWorkObject;

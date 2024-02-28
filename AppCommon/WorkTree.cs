@@ -254,6 +254,13 @@ namespace AppCommon {
         /// </summary>
         public bool CanWrite { get; private set; }
 
+        /// <summary>
+        /// Exception that occurred when we tried to open the file read-write.  Will be null
+        /// if no exceptions were encountered.  (This object will not be constructed if the
+        /// file can't be opened at all, so file must be open read-only.)
+        /// </summary>
+        public Exception? ReadWriteOpenFailure { get; private set; } = null;
+
         private string mHostPathName;
         private DiskArcNode mHostNode;
         private BackgroundWorker? mWorker;
@@ -319,6 +326,7 @@ namespace AppCommon {
                     }
                     mAppHook.LogI("R/W open failed (" + ex.Message + "), retrying R/O: '" +
                         hostPathName + "'");
+                    ReadWriteOpenFailure = ex;
                     hostStream = new FileStream(hostPathName, FileMode.Open, FileAccess.Read,
                         FileShare.ReadWrite);
                 }

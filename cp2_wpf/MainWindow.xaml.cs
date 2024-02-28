@@ -956,6 +956,25 @@ namespace cp2_wpf {
             set { mCenterInfoText1 = value; OnPropertyChanged(); }
         }
         private string mCenterInfoText1 = string.Empty;
+        public string CenterInfoText2 {
+            get { return mCenterInfoText2; }
+            set {
+                mCenterInfoText2 = value;
+                OnPropertyChanged();
+                if (string.IsNullOrEmpty(value)) {
+                    CenterInfoText2Vis = Visibility.Collapsed;
+                } else {
+                    CenterInfoText2Vis = Visibility.Visible;
+                }
+            }
+        }
+        private string mCenterInfoText2 = string.Empty;
+        public Visibility CenterInfoText2Vis {
+            get { return mCenterInfoText2Vis; }
+            set { mCenterInfoText2Vis = value; OnPropertyChanged(); }
+        }
+        private Visibility mCenterInfoText2Vis = Visibility.Collapsed;
+
         public class CenterInfoItem {
             public string Name { get; private set; }
             public string Value { get; private set; }
