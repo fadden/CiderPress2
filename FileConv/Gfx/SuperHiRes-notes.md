@@ -12,7 +12,8 @@ File types:
  - PIC ($c1) / $8003: DreamGrafix unpacked image
 
 Primary references:
- - _Apple IIgs Hardware Reference_, chapter 4
+ - _Apple IIgs Hardware Reference_, chapter 4 (p.89+), and/or
+   _Apple IIgs Toobox Reference_, chapter 16 (vol 2, p.16-32+)
  - Apple II File Type Note $c0/0000, "Paintworks Packed Super Hi-Res Picture File"
  - Apple II File Type Note $c0/0001, "Packed Apple IIGS Super Hi-Res Image File"
  - Apple II File Type Note $c0/0002, "Apple IIgs Super Hi-Res Picture File"
@@ -88,7 +89,7 @@ repeat whatever the last color drawn was, providing a way to fill large areas of
 with color quickly.  This was used in a handful of games and demos, but not usually in static
 images.  If the leftmost pixel in a scanline is zero, the results are undefined.
 
-An 320-mode image that uses a single color palette is limited to 16 different colors, where
+A 320-mode image that uses a single color palette is limited to 16 different colors, where
 each color can be one of 4096 different values.  With 16 palettes of 16 colors, it's possible to
 have up to 256 colors in a single image, but only 16 on any given line.
 
