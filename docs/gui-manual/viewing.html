@@ -121,8 +121,11 @@ four types of output:</p>
   <li>Bitmap.  Used for anything graphical.  Exports as .PNG.</li>
 </ol>
 <p>Technically there is a fifth type, "host image", which is used for GIF, JPEG, and
-PNG files.  These can be displayed directly by the host system, so there's no need to
-convert them first.</p>
+PNG files.  These can be displayed directly by the Windows application, so there's no
+need to convert them first.  For <code>.pdf</code>, <code>.rtf</code>, and Word documents
+identified by HFS file type, the file will be extracted to a temporary file and displayed
+with the system's default handler for the <code>.pdf</code>, <code>.rtf</code>, or
+<code>.doc</code> filename extension.</p>
 
 <p>The set of conversions that can be applied to a file are determined automatically,
 and placed in the <samp>Conversion</samp> pop-up menu.  They will be sorted by

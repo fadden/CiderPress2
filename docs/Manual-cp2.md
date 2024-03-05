@@ -15,7 +15,8 @@ Contents:
    - [Disk Image Sizes](#disk-image-sizes)
    - [Filename Extensions](#filename-extensions)
    - [Filesystem Types](#filesystem-types)
-   - [Import and Export](#import-and-export)
+   - [Export Specifications](#export-specifications)
+   - [Import Specifications](#import-specifications)
  - [Resource Fork and Attribute Preservation](#resource-fork-and-attribute-preservation)
    - [Finding Resource Forks](#finding-resource-forks)
    - [Access Flags](#access-flags)
@@ -46,6 +47,10 @@ to the various disk image and archive "wrappers" are handled automatically.
 To reduce verbiage in this document, disk images and file archives are
 collectively referred to as "archives" here.  A distinction is made for
 certain commands that only work with one or the other.
+
+This file is the reference manual for the command-line application.  A
+tutorial, as well as information about the Windows GUI application, can be
+found at https://ciderpress2.com/.
 
 ### Frequently Asked Questions ###
 
@@ -1530,7 +1535,7 @@ The filesystems that may be formatted onto a disk image are:
 
 Creation of Gutenberg, MFS, and RDOS disks is not supported.
 
-### Import and Export ###
+### Export Specifications ###
 
 The export specification has the form `<conv-tag>[,name=value]...`.  The
 `conv-tag` specifies the converter to use, and the optional name/value pairs
@@ -1605,6 +1610,8 @@ Graphics:
  - `macpaint`: MacPaint graphics document
  - `psclip`: Print Shop clip art, monochrome and color
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
+ - `psfont`: Print Shop font
+   - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
  - `shr3201`: Apple IIgs compressed super hi-res 3200-color screen
@@ -1635,6 +1642,8 @@ The result of the conversion takes one of the following forms:
  - Formatted documents are output in Rich Text Format (.RTF).
  - Spreadsheets and other cell-grid formats are output as Comma-Separated
    Value (.CSV) files, UTF-8 encoded.
+ - Files that can be used on a modern system, such as GIF images and PDF
+   documents, are extracted without modification.
 
 Specifying the special value `best` as the converter tag will analyze the file
 and choose the conversion that seems most appropriate.  It's not possible to
@@ -1646,11 +1655,12 @@ doesn't require the resource fork, e.g. a hex dump, the resource fork will be
 ignored.  The only exception to this is the `rsrc` converter, which just
 formats the resource fork.
 
+### Import Specifications ###
 
-Import specifications work the same as export specifications, though there is
-no `best` conversion.  All attribute preservation parsing options (NAPS,
-AppleSingle, etc.) will be disabled, because the input files are expected to
-be host files.
+Import specifications have the same form as export specifications (described
+in the previous section), though there is no `best` conversion when importing.
+All attribute preservation parsing options (NAPS, AppleSingle, etc.) will be
+ignored, because the input files are expected to be host files.
 
 The available converters are:
  - `bas`: convert Applesoft BASIC listing back to a tokenized program (only
