@@ -23,7 +23,7 @@ Primary references:
  - IIgs TN #46, "DrawPicture Data Format"
  - DreamGrafix decompression code, provided by co-author Jason Andersen
 
-The Super Hi-Resolution graphics mode was introduced on the Apple IIgs.  It allowed 320x200 or
+The Super Hi-Resolution graphics mode was introduced on the Apple IIgs.  It allows 320x200 or
 640x200 images from a palette of 4096 colors.  The pixel and color data require a total of
 exactly 32KB of RAM.
 
@@ -58,7 +58,7 @@ entry is two consecutive bytes, holding an RGB444 value as `$0RGB`:
    7-4: reserved, must be zero
    3-0: red intensity
 ```
-For example, color 0 in palette 0 is at $9e00-9e01, while color 14 in palette 2 is at $9e5e-9e5f.
+For example, color 0 in palette 0 is at $9e00-9e01, while color 14 in palette 2 is at $9e5c-9e5d.
 
 In 320 mode, each byte specifies the colors of two pixels.  In 640 mode, each byte specifies the
 colors of four pixels.  The byte layout is:
@@ -234,7 +234,7 @@ Some files include a NOTE block.  This appears to hold ASCII text, preceded by a
 
 ### PNT/$8005 and PIC/$8003: DreamGrafix Image ###
 
-DreamGrafix was an Apple IIgs application that allowed editing of super hi-res images in 256-color
+DreamGrafix is an Apple IIgs application that allows editing of super hi-res images in 256-color
 mode and 3200-color mode.  The latter required overcoming some technical hurdles.
 
 DreamGrafix files end with a 17-byte footer (all multi-byte values are little-endian):
