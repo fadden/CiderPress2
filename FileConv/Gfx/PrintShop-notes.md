@@ -70,12 +70,12 @@ arbitrarily located within the file but is accessible through ordered pointers a
 
 The file format is:
 ```
-+$00/12:  ($5FF4) - Optional Print Shop Companion Font Header (From Font Editor)
-+$0C/59:  ($6000) - Character widths (in pixels). High bit indicates "Edited" in PSC. Should be stripped.
-+$3B/59:  ($603B) - Character heights in rows.
-+$47/59:  ($6076) - Low Bytes of character data pointers
-+$82/59:  ($60B1) - High Bytes of character data pointers
-+$BD/nn:  ($60EC) - Character data.
++$00 / 12 ($5FF4): Optional Print Shop Companion Font Header (From Font Editor)
++$0C / 59 ($6000): Character widths (in pixels). High bit indicates "Edited" in PSC. Should be stripped.
++$3B / 59 ($603B): Character heights in rows.
++$47 / 59 ($6076): Low Bytes of character data pointers
++$82 / 59 ($60B1): High Bytes of character data pointers
++$BD / nn ($60EC): Character data.
 ```
 If a 12-byte Print Shop Companion Header exists, the file is loaded at an earlier location in memory
 such that the Character Widths block always falls at $6000.  Pointers to font data are calculated
@@ -90,6 +90,6 @@ To check for validity, we can iterate through all 59 characters (excluding 0 and
 
 If all are within range, then acceptability should be flagged as Yes, if the pointers are in range,
 but some characters are out of the expected sizes, then the acceptability should be flagged as
-ProbablyYes
+ProbablyYes.
 
 Like the Print Shop graphic data, fonts are expanded 2x3 in usage.

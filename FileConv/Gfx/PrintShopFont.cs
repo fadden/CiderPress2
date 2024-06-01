@@ -52,7 +52,7 @@ namespace FileConv.Gfx
         private const int MAX_CHARACTER_DATA_SIZE = 152;
         private const int CLASSIC_MONO_LEN = 576;
 
-        // There are 59 characters in the font, but characters 0 and 32 are not standard. 
+        // There are 59 characters in the font, but characters 0 and 32 are not standard.
         // This is taken into conderation when calculating MAX_FONT_FILE_SIZE.
         private const int CHARACTER_COUNT = 59;
         private const int MAX_FONT_FILE_SIZE = PSC_FONT_HEADERS_SIZE +
@@ -172,7 +172,7 @@ namespace FileConv.Gfx
             }
             else
             {
-                output = new Bitmap8(LEFT_PADDING + totalWidth + RIGHT_PADDING, 
+                output = new Bitmap8(LEFT_PADDING + totalWidth + RIGHT_PADDING,
                                      TOP_PADDING+ maxHeight + BOTTOM_PADDING);
             }
             output.SetPalette(palette);
@@ -325,7 +325,7 @@ namespace FileConv.Gfx
         }
 
         /// <summary>
-        ///  Reads the data from the datastream into a byte array.  
+        /// Reads the data from the datastream into a byte array.
         /// </summary>
         private void UnpackData()
         {
@@ -337,7 +337,8 @@ namespace FileConv.Gfx
         }
 
         /// <summary>
-        /// Checks to see if the data offsets of each character in the file point to an internal data block within the file. 
+        /// Checks to see if the data offsets of each character in the file point to an internal
+        /// data block within the file.
         /// </summary>
         /// <returns>True, if the offsets are contained within the font file, False otherwise.</returns>
         private bool DataPointersAreValid()
@@ -372,10 +373,10 @@ namespace FileConv.Gfx
 
 
         /// <summary>
-        /// Checks to see if the widths and heights of each character in the file are 
-        /// consistent with those of a Print Shop font file. 
+        /// Checks to see if the widths and heights of each character in the file are
+        /// consistent with those of a Print Shop font file.
         /// </summary>
-        /// <returns>Count of the total characters that are larger than those that can be edited 
+        /// <returns>Count of the total characters that are larger than those that can be edited
         /// in the Print Shop Companion font editor.</returns>
         private int CountOversizedCharacters()
         {

@@ -37,7 +37,7 @@ namespace FileConv.Generic {
                 : base(attrs, dataStream, rsrcStream, resMgr, convFlags, appHook) {
             Applic = TestApplicability();
         }
-         
+
         protected override Applicability TestApplicability() {
             if (RsrcStream == null) {
                 return Applicability.Not;

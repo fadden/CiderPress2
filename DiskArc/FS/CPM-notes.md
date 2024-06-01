@@ -98,7 +98,7 @@ spans is specified by an extent number.  Each entry looks like this:
 The byte fields are:
  - `ST`: status.  Possible values:
 	- 0-15: user number.
-	- 16-31: could be user number, could be a password extent (CP/M v3).  Some 
+	- 16-31: could be user number, could be a password extent (CP/M v3).
 	- 32: disc label (CP/M v3).
 	- 33: timestamp (CP/M v3 or third-party mod to CP/M v2.2).
 	- 0xe5: entry is unused

@@ -2,11 +2,11 @@
  * This comes from an MSDN blog entry, posted by RandomEngy on March 8 2010:
  * https://blogs.msdn.microsoft.com/davidrickard/2010/03/08/saving-window-size-and-location-in-wpf-and-winforms/
  * (see https://stackoverflow.com/a/2406604/294248 for discussion)
- * 
+ *
  * Saving and restoring a window's size and position can be tricky when there are multiple
  * displays involved.  This uses the Win32 system functions to do the job properly and
  * consistently.  (In theory.)
- * 
+ *
  * The code works for WinForms (save on FormClosing, restore on Load, using the native handle
  * from the Handle property) and WPF (use the Window extension methods provided below, in
  * Closing and SourceInitialized).  Besides convenience, it has the added benefit of being able

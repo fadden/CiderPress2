@@ -31,7 +31,7 @@ and the Apple IIgs Programmer's Workshop (APW).  OMF can be used for four kinds 
     (ProDOS types S16, EXE, PIF, TIF, NDA, CDA, TOL, DVR, LDF, FST.)
  4. Run-time library files.  Defined by the OMF specification but not implemented by the
     loader?  (ProDOS type RTL.)
-  
+
 OMF files don't have an indication of which kind they are.  They are simply a series of segments,
 and it's up to the program reading them to decide how they should be handled.  OMF v1 defines
 a key field differently for load files and library files (BLKCNT / BYTECNT), so it's not always

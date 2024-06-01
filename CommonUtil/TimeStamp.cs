@@ -30,7 +30,7 @@ namespace CommonUtil {
     public static class TimeStamp {
         // Pick a couple of values to use for invalid dates.  This is sort of fun:
         // % cal 9 1752
-        //    September 1752   
+        //    September 1752
         // Su Mo Tu We Th Fr Sa
         //        1  2 14 15 16
         // 17 18 19 20 21 22 23

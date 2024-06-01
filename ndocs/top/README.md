@@ -1,4 +1,4 @@
-# CiderPress II # 
+# CiderPress II #
 
 CiderPress II is a software tool for working with disk images and file archives associated
 with vintage Apple computers, notably the Apple II line and early Macintoshes.  It runs on

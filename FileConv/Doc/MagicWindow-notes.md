@@ -72,4 +72,4 @@ For example, the first line in COMMAND CHART is underlined (Ctrl+^ is 0x1e):
 Note that centering was done manually with spaces.
 
 It's possible to enter printer-specific escape codes directly; see "GEMINI CODES.MW" on the
-Magic Window II disk for an example.  
+Magic Window II disk for an example.

@@ -93,7 +93,7 @@ namespace DiskArc.FS {
                         (Descs[0].xdrNumAblks + Descs[1].xdrNumAblks + Descs[2].xdrNumAblks);
                 }
             }
-            
+
             public ExtDataRec() {
                 Descs = new ExtDescriptor[NUM_RECS];
                 for (int i = 0; i < NUM_RECS; i++) {

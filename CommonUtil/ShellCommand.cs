@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 namespace CommonUtil {
     /// <summary>
     /// Execute a shell command and return stdout/stderr.
-    /// 
+    ///
     /// Returning stdout/stderr separately loses the interleave, but it's unclear whether
     /// that gets lost anyway with output buffering and the asynchronous I/O facility.
     /// </summary>

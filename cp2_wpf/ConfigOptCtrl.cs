@@ -358,7 +358,7 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="ctrls">List of controls.</param>
         /// <param name="ctrlType">Type of control to find.</param>
-        internal static ControlMapItem FindFirstAvailable(List<ControlMapItem> ctrls, 
+        internal static ControlMapItem FindFirstAvailable(List<ControlMapItem> ctrls,
                 Type ctrlType) {
             foreach (ControlMapItem item in ctrls) {
                 if (item.GetType() == ctrlType && item.IsAvailable) {

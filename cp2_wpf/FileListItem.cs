@@ -214,7 +214,7 @@ namespace cp2_wpf {
                     hasRsrc = false;
                 }
                 rsrcLen = adfAttrs.RsrcLength;      // ADF is not compressed
-            } else if (!entry.GetPartInfo(FilePart.RsrcFork, out rsrcLen, out rsrcSize, 
+            } else if (!entry.GetPartInfo(FilePart.RsrcFork, out rsrcLen, out rsrcSize,
                     out rsrcFmt)) {
                 hasRsrc = false;
             }

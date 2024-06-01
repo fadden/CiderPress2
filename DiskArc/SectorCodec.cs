@@ -1031,7 +1031,7 @@ namespace DiskArc {
             }
 
             // Output the checksum.
-            byte chktwos = 
+            byte chktwos =
                 (byte)(((chk0 & 0xc0) >> 6) | ((chk1 & 0xc0) >> 4) | ((chk2 & 0xc0) >> 2));
             trkData.WriteOctet(sDiskBytes62[chktwos]);
             trkData.WriteOctet(sDiskBytes62[chk2 & 0x3f]);
