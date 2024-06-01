@@ -138,7 +138,7 @@ namespace FileConv.Gfx {
             bool doMult = GetBoolOption(options, OPT_MULT, false);
 
             if (DataStream.Length < GS_COLOR_LEN) {
-                return ConvertMono(fullBuf, Palette8.Palette_MonoBW, doMult);
+                return ConvertMono(fullBuf, Palette8.Palette_MonoWB, doMult);
             } else {
                 return ConvertColor(fullBuf, Palette_PSGS, doMult);
             }
@@ -162,7 +162,7 @@ namespace FileConv.Gfx {
                     byte bval = buf[offset++];
                     for (int bit = 0; bit < 8; bit++) {
                         // Bits are zero for white, one for black; leftmost pixel in MSB.
-                        byte color = (byte)(1 - (bval >> 7));
+                        byte color = (byte)(bval >> 7);
                         // First row of bits is top row of pixels.
                         if (doMult) {
                             SetMultPixels(output, col * 8 + bit, row, color);

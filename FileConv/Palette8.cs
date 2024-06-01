@@ -190,6 +190,15 @@ namespace FileConv {
                 ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 1=white
             });
 
+        /// <summary>
+        /// Monochrome black &amp; white palette, with 0=white.
+        /// </summary>
+        public static readonly Palette8 Palette_MonoWB = new Palette8("W&B",
+            new int[] {
+                ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 0=white
+                ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 1=black
+            });
+
         #endregion Apple II Colors
     }
 }

@@ -162,7 +162,7 @@ namespace FileConv.Gfx {
         }
 
         private static Bitmap8 ConvertMacPaint(byte[] buf, int startOffset) {
-            Palette8 palette = Palette8.Palette_MonoBW;
+            Palette8 palette = Palette8.Palette_MonoWB;
             Bitmap8 output = new Bitmap8(BITMAP_WIDTH, BITMAP_HEIGHT);
             output.SetPalette(palette);
 
@@ -177,7 +177,7 @@ namespace FileConv.Gfx {
                 for (int col = 0; col < ROW_STRIDE; col++) {
                     byte pixelBits = uncRow[col];
                     for (int bit = 0; bit < 8; bit++) {
-                        output.SetPixelIndex(col * 8 + bit, row, (byte)(1 - (pixelBits >> 7)));
+                        output.SetPixelIndex(col * 8 + bit, row, (byte)(pixelBits >> 7));
                         pixelBits <<= 1;
                     }
                 }
