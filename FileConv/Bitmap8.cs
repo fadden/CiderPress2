@@ -111,6 +111,33 @@ namespace FileConv {
             mPixelData[x + y * Width] = colorIndex;
         }
 
+        /// <summary>
+        /// Draws an 8x8 character cell on the bitmap.
+        /// </summary>
+        /// <param name="ch">Character to draw.</param>
+        /// <param name="xc">X coord of upper-left pixel.</param>
+        /// <param name="yc">Y coord of upper-left pixel.</param>
+        /// <param name="foreColor">Foreground color index.</param>
+        /// <param name="backColor">Background color index.</param>
+        public void DrawChar(char ch, int xc, int yc, byte foreColor, byte backColor) {
+            int origXc = xc;
+            int[] charBits = Font8x8.GetBitData(ch);
+            for (int row = 0; row < 8; row++) {
+                int rowBits = charBits[row];
+                for (int col = 7; col >= 0; col--) {
+                    if ((rowBits & (1 << col)) != 0) {
+                        SetPixelIndex(xc, yc, foreColor);
+                    } else {
+                        SetPixelIndex(xc, yc, backColor);
+                    }
+                    xc++;
+                }
+
+                xc = origXc;
+                yc++;
+            }
+        }
+
         public override string ToString() {
             return "[Bitmap8: " + Width + "x" + Height + ", " + mPalette.Count + " colors]";
         }

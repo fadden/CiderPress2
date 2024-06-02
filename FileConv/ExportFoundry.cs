@@ -62,6 +62,7 @@ namespace FileConv {
             new ConverterEntry(typeof(Doc.RandomText)),
             new ConverterEntry(typeof(Doc.Teach)),
 
+            new ConverterEntry(typeof(Gfx.BitmapFont)),
             new ConverterEntry(typeof(Gfx.HiRes)),
             new ConverterEntry(typeof(Gfx.HiRes_Font)),
             new ConverterEntry(typeof(Gfx.HiRes_LZ4FH)),

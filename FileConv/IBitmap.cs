@@ -51,7 +51,7 @@ namespace FileConv {
         byte[] GetPixels();
 
         /// <summary>
-        /// Returns the color palette as a series of 32-bit ARGB values.  Will be null for
+        /// Gets the color palette as a series of 32-bit ARGB values.  Returns null for
         /// direct-color images.
         /// </summary>
         /// <remarks>

@@ -63,6 +63,7 @@ namespace DiskArc {
         public const int FILE_TYPE_FST = 0xbd;
         public const int FILE_TYPE_PNT = 0xc0;
         public const int FILE_TYPE_PIC = 0xc1;
+        public const int FILE_TYPE_FON = 0xc8;
         public const int FILE_TYPE_MDI = 0xd7;
         public const int FILE_TYPE_SND = 0xd8;
         public const int FILE_TYPE_LBR = 0xe0;

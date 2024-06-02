@@ -30,10 +30,15 @@ namespace FileConv.Doc {
         /// Macintosh, Volume I_.
         /// </remarks>
         public enum FontFamilyNum {
+            // Font family numbers with the high bit set are designed for the 5:12 aspect
+            // ratio of the Apple IIgs.  Family numbers with the high bit clear are designed
+            // for the 1:1 aspect ratio of the Macintosh.  Font numbers 1000-1200 ($3e8-4b0)
+            // do not adhere to this convention.
             System = 0x0000,        // system font
             ApplFont = 0x0001,      // application font (Mac only?)
 
-            // Font families defined by Apple IIgs Toolbox Reference (page 8-4):
+            // Font families defined by Apple IIgs Toolbox Reference (page 8-4) and IIgs
+            // tech note #41.
             NewYork = 0x0002,
             Geneva = 0x0003,
             Monaco = 0x0004,
@@ -44,11 +49,18 @@ namespace FileConv.Doc {
             Toronto = 0x0009,
             Cairo = 0x000b,
             LosAngeles = 0x000c,
+            // ZapfDingbats = 0x000d,
+            // Bookman = 0x000e,
+            // Helvetica Narrow = 0x000f,
+            // Palatino = 0x0010,
+            // ZapfChancery = 0x0012,
             Times = 0x0014,
             Helvetica = 0x0015,
             Courier = 0x0016,
             Symbol = 0x0017,
             Taliesin = 0x0018,
+            // AvantGarde = 0x0021,
+            // Chicago = 0xfffd,
             Shaston = 0xfffe,
 
             // Some additional families found in the wild (e.g. from Pointless or an app).
@@ -56,7 +68,7 @@ namespace FileConv.Doc {
             Western = 0x088e,
             Genoa = 0x0bcb,
             Classical = 0x2baa,
-            Chicago = 0x3fff,
+            ChicagoAlt = 0x3fff,
             Genesys = 0x7530,
             PCMonospace = 0x7f58,
             AppleM = 0x7fdc,
@@ -124,7 +136,7 @@ namespace FileConv.Doc {
                 new FontFamily("Genoa", isMono: false, isSerif: false)),
             new FontDesc(FontFamilyNum.Classical,
                 new FontFamily("Classical", isMono: false, isSerif: false)),
-            new FontDesc(FontFamilyNum.Chicago,
+            new FontDesc(FontFamilyNum.ChicagoAlt,
                 new FontFamily("Chicago", isMono: false, isSerif: false)),
             new FontDesc(FontFamilyNum.Genesys,                     // mono, sans-serif
                 new FontFamily("Genesys", isMono: true, isSerif: false)),
@@ -180,7 +192,7 @@ namespace FileConv.Doc {
                     return 0.85f;           // 0.8 makes some things too small
                 case FontFamilyNum.Times:
                     return 0.9f;
-                case FontFamilyNum.Chicago:
+                case FontFamilyNum.ChicagoAlt:
                 case FontFamilyNum.Courier:
                 case FontFamilyNum.Geneva:
                 case FontFamilyNum.Helvetica:
