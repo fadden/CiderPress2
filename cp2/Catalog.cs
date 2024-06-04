@@ -1417,7 +1417,8 @@ namespace cp2 {
 
         /// <summary>
         /// Generates file type strings for the file entry.  HFS file types are given priority
-        /// over ProDOS file types.  ProDOS types stored in HFS fields are converted.
+        /// over ProDOS file types, except on ProDOS disks.  ProDOS types stored in HFS fields are
+        /// converted.
         /// </summary>
         /// <param name="entry">File entry.</param>
         /// <param name="type">Result: file type string (ProDOS type / HFS file type).</param>
@@ -1433,6 +1434,16 @@ namespace cp2 {
                 aux = string.Empty;
             } else if (entry is DOS_FileEntry) {
                 type = " " + FileTypes.GetDOSTypeAbbrev(entry.FileType);
+                aux = string.Format("${0:X4}", entry.AuxType);
+            } else if (entry is ProDOS_FileEntry &&
+                    entry.FileType != FileAttribs.FILE_TYPE_NON &&
+                    entry.FileType != FileAttribs.FILE_TYPE_TXT &&
+                    entry.FileType != FileAttribs.FILE_TYPE_BIN) {
+                // ProDOS disk, entry has an interesting file type.  Ignore HFS in resource fork,
+                // which could be irrelevant (e.g. FFIL/DMOV for a converted FON) or slightly off
+                // (e.g. S16 without the aux type).
+                type = FileTypes.GetFileTypeAbbrev(entry.FileType) +
+                    (entry.HasRsrcFork ? '+' : ' ');
                 aux = string.Format("${0:X4}", entry.AuxType);
             } else if (entry.HasHFSTypes) {
                 // See if ProDOS types are buried in the HFS types.
@@ -1455,6 +1466,9 @@ namespace cp2 {
                 } else {
                     // Stringify the HFS types.  No need to show as hex.
                     // All HFS files have a resource fork, so only show a '+' if it has data in it.
+                    // This could be a ProDOS disk with HFS types in the resource fork, e.g.
+                    // a Mac "Desktop" file (FNDR/ERIK), though we should be favoring the ProDOS
+                    // type unless it's NON/TXT/BIN.
                     type = MacChar.StringifyMacConstant(entry.HFSFileType) +
                         (entry.RsrcLength > 0 ? '+' : ' ');
                     aux = ' ' + MacChar.StringifyMacConstant(entry.HFSCreator);

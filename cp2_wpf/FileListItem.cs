@@ -119,6 +119,7 @@ namespace cp2_wpf {
                 Access = fmt.FormatAccessFlags(entry.Access);
             }
 
+            // Should be very similar to GetFileTypeStrings() in Catalog.cs
             if (entry.IsDiskImage) {
                 Type = "Disk";
                 AuxType = string.Format("{0}KB", entry.DataLength / 1024);
@@ -127,6 +128,16 @@ namespace cp2_wpf {
                 AuxType = string.Empty;
             } else if (entry is DOS_FileEntry) {
                 Type = " " + FileTypes.GetDOSTypeAbbrev(entry.FileType);
+                AuxType = string.Format("${0:X4}", entry.AuxType);
+            } else if (entry is ProDOS_FileEntry &&
+                    entry.FileType != FileAttribs.FILE_TYPE_NON &&
+                    entry.FileType != FileAttribs.FILE_TYPE_TXT &&
+                    entry.FileType != FileAttribs.FILE_TYPE_BIN) {
+                // ProDOS disk, entry has an interesting file type.  Ignore HFS in resource fork,
+                // which could be irrelevant (e.g. FFIL/DMOV for a converted FON) or slightly off
+                // (e.g. S16 without the aux type).
+                Type = FileTypes.GetFileTypeAbbrev(entry.FileType) +
+                    (entry.HasRsrcFork ? '+' : ' ');
                 AuxType = string.Format("${0:X4}", entry.AuxType);
             } else if (entry.HasHFSTypes) {
                 // See if ProDOS types are buried in the HFS types.
@@ -139,6 +150,9 @@ namespace cp2_wpf {
                     // Stringify the HFS types.  No need to show as hex.
                     // All HFS files have a resource fork, so only show a '+' if it has data in it.
                     // (Or maybe just don't bother?)
+                    // This could be a ProDOS disk with HFS types in the resource fork, e.g.
+                    // a Mac "Desktop" file (FNDR/ERIK), though we should be favoring the ProDOS
+                    // type unless it's NON ($00).
                     Type = MacChar.StringifyMacConstant(entry.HFSFileType) /*+
                         (entry.RsrcLength > 0 ? '+' : ' ')*/;
                     AuxType = ' ' + MacChar.StringifyMacConstant(entry.HFSCreator);
