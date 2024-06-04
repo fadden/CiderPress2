@@ -234,7 +234,13 @@ namespace DiskArc.FS {
 
             uint prevStart = 0;
             for (uint sct = 0; sct < fs.NumCatSectors; sct++) {
-                fs.ChunkAccess.ReadSector(RDOS.CAT_TRACK, sct, sctBuf, 0, fs.FSOrder);
+                try {
+                    fs.ChunkAccess.ReadSector(RDOS.CAT_TRACK, sct, sctBuf, 0, fs.FSOrder);
+                } catch (BadBlockException) {
+                    fs.Notes.AddE("Failed reading catalog sector " + RDOS.CAT_TRACK + "/" + sct);
+                    fs.IsDubious = true;
+                    continue;
+                }
                 bool done = false;
                 for (int offset = 0; offset < SECTOR_SIZE; offset += RDOS.CAT_ENTRY_LEN) {
                     if (sctBuf[offset] == 0x00) {

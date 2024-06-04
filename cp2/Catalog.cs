@@ -952,7 +952,11 @@ namespace cp2 {
             DateTime endWhen = DateTime.Now;
             Console.WriteLine("Scan completed at " + endWhen.ToString("yyyy-MMM-dd HH:mm:ss") +
                 ", elapsed time " +
-                (endWhen - startWhen).TotalSeconds.ToString("N2") + " seconds.");
+                (endWhen - startWhen).TotalSeconds.ToString("N2") + " seconds."
+#if DEBUG
+                + " [DEBUG]"
+#endif
+                );
             return true;
         }
 

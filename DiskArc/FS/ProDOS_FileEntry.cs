@@ -1124,6 +1124,11 @@ namespace DiskArc.FS {
             uint start = entry.KeyBlock;
             uint count = entry.BlocksUsed;
             for (uint i = 0; i < count; i++) {
+                if (start + i >= FileSystem.TotalBlocks) {
+                    FileSystem.Notes.AddW("Invalid Pascal volume range: start=" + start +
+                        ", count=" + count + ", total blocks " + FileSystem.TotalBlocks);
+                    break;
+                }
                 vu.SetUsage(start + i, entry);
             }
         }
@@ -1201,6 +1206,11 @@ namespace DiskArc.FS {
                 // We won't find all of the fields we expect.
                 notes.AddE("Dir entry len is too short (" + dirHeader.mEntryLength + ")");
                 isDamaged = true;
+
+                // Fix this or we get a divide-by-zero later.
+                if (dirHeader.mEntryLength == 0) {
+                    dirHeader.mEntryLength = ProDOS.EXPECT_DIR_ENTRY_LENGTH;
+                }
             }
             if (dirHeader.mNameLength == 0) {
                 notes.AddE("File name length must not be zero");
@@ -1409,15 +1419,16 @@ namespace DiskArc.FS {
             // Handle forked files.  The directory entry EOF will be 512, representing the
             // extended key block.
             if (StorageType == ProDOS.StorageType.Extended) {
+                ExtInfo = new ExtendedInfo();   // on exception, will just hold default values
                 try {
                     FileSystem.ChunkAccess.ReadBlock(KeyBlock, mTmpBlockBuf, 0);
-                    ExtInfo = new ExtendedInfo();
                     if (!ExtInfo.ParseBlock(mTmpBlockBuf, 0, FileSystem)) {
                         FileSystem.Notes.AddE("Extended info appears damaged: " + FullPathName);
                         IsDamaged = true;
                     }
-                } catch (IOException) {
-                    FileSystem.Notes.AddE("Unable to read extended info block: " + FullPathName);
+                } catch (Exception) {
+                    FileSystem.Notes.AddE("Unable to read extended info block (" +
+                        KeyBlock + "): " + FullPathName);
                     IsDamaged = true;
                 }
             }
