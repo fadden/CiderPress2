@@ -23,9 +23,11 @@ namespace CommonUtil {
     /// </summary>
     public static class RawData {
         /// <summary>
-        /// Zero-length array, useful for initializing properties to a non-null value.
+        /// Zero-length array, useful for initializing properties to a non-null value without
+        /// allocating anything.
         /// </summary>
         public static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
+        public static readonly ushort[] EMPTY_USHORT_ARRAY = new ushort[0];
         public static readonly int[] EMPTY_INT_ARRAY = new int[0];
 
         /// <summary>
