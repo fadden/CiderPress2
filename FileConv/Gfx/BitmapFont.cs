@@ -26,16 +26,38 @@ namespace FileConv.Gfx {
     public class BitmapFont : Converter {
         public const string TAG = "qdfont";
         public const string LABEL = "QuickDraw II Font";
-        public const string DESCRIPTION = "Converts a QuickDraw II font file to a bitmap.";
+        public const string DESCRIPTION =
+            "Converts a QuickDraw II bitmap font file to a bitmap, either as a grid with all " +
+            "possible glyphs, or a sample string drawn with the font.";
         public const string DISCRIMINATOR = "ProDOS FON with auxtype $0000.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
         public override string Discriminator => DISCRIMINATOR;
 
+        public const string OPT_MODE = "mode";
+
+        public const string MODE_GRID = "grid";
+        public const string MODE_SAMPLE = "sample";
+        public static readonly string[] ModeTags = new string[] {
+            MODE_SAMPLE, MODE_GRID
+        };
+        public static readonly string[] ModeDescrs = new string[] {
+            "Sample string", "Grid of glyphs"
+        };
+        internal enum ConvMode {
+            Unknown = 0, Sample, Grid
+        }
+
+        public override List<OptionDefinition> OptionDefs { get; protected set; } =
+            new List<OptionDefinition>() {
+                new OptionDefinition(OPT_MODE, "Conversion Mode",
+                    OptionDefinition.OptType.Multi, MODE_SAMPLE, ModeTags, ModeDescrs),
+        };
+
         /// <summary>
-        /// Font rendering palette.  Light gray background that provides a frame, dark gray
-        /// background for character cells, black-on-white characters.
+        /// Font rendering palette.  Black-on-white characters, various others for the grid
+        /// labels and framing.
         /// </summary>
         private static readonly Palette8 FONT_PALETTE = new Palette8("Font",
             new int[] {
@@ -44,12 +66,12 @@ namespace FileConv.Gfx {
                 ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 2=white (glyph background)
                 ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 3=black (glyph foreground)
                 ConvUtil.MakeRGB(0x30, 0x30, 0xe0),     // 4=blue (hex labels)
-                ConvUtil.MakeRGB(0xb0, 0x30, 0x30),     // 5=red (no char)
+                ConvUtil.MakeRGB(0xb0, 0x30, 0x30),     // 5=red (char not in font)
             });
         private const int COLOR_CELL_BG = 0;
         private const int COLOR_FRAME = 1;
-        private const int COLOR_CHAR_BG = 2;
-        private const int COLOR_CHAR_FG = 3;
+        private const int COLOR_GLYPH_BG = 2;
+        private const int COLOR_GLYPH_FG = 3;
         private const int COLOR_LABEL = 4;
         private const int COLOR_NO_CHAR = 5;
 
@@ -320,7 +342,14 @@ namespace FileConv.Gfx {
             //DrawFontStrike(output, macHeader);
             //return output;
 
-            return RenderFontGrid(gsHeader, macHeader, cellWidth, tmpNotes);
+            string modeStr = GetStringOption(options, OPT_MODE, MODE_SAMPLE);
+            switch (modeStr) {
+                case MODE_GRID:
+                    return RenderFontGrid(gsHeader, macHeader, cellWidth, tmpNotes);
+                case MODE_SAMPLE:
+                default:
+                    return RenderFontSample(gsHeader, macHeader, tmpNotes);
+            }
         }
 
         /// <summary>
@@ -527,9 +556,9 @@ namespace FileConv.Gfx {
                     ushort mask = 0x8000;
                     for (int bit = 0; bit < 16; bit++) {
                         if ((word & mask) != 0) {
-                            output.SetPixelIndex(col16 * 16 + bit, row, COLOR_CHAR_FG);
+                            output.SetPixelIndex(col16 * 16 + bit, row, COLOR_GLYPH_FG);
                         } else {
-                            output.SetPixelIndex(col16 * 16 + bit, row, COLOR_CHAR_BG);
+                            output.SetPixelIndex(col16 * 16 + bit, row, COLOR_GLYPH_BG);
                         }
                         mask >>= 1;
                     }
@@ -564,7 +593,7 @@ namespace FileConv.Gfx {
                 // appear to the left of the rectangle.  Dead characters (those with zero width)
                 // won't have a background.
                 grid.DrawRect(ch, -macHeader.KernMax, 0, charWidth, macHeader.FRectHeight,
-                    COLOR_CHAR_BG);
+                    COLOR_GLYPH_BG);
 
                 // Draw the glyph.
                 int imageWidth = macHeader.GetImageWidth(ch);
@@ -581,7 +610,7 @@ namespace FileConv.Gfx {
                         int bitOffset = strikeOffset & 0x0f;
                         ushort bits = macHeader.BitImage[yc * macHeader.RowWords + wordOffset];
                         if ((bits & (0x8000 >> bitOffset)) != 0) {
-                            grid.DrawPixel(ch, xc, yc, COLOR_CHAR_FG);
+                            grid.DrawPixel(ch, xc, yc, COLOR_GLYPH_FG);
                         }
                         xc++;
                     }
@@ -589,6 +618,102 @@ namespace FileConv.Gfx {
             }
 
             return grid.Bitmap;
+        }
+
+        /// <summary>
+        /// Generates a rendering of a sample string in the current font.
+        /// </summary>
+        /// <param name="gsHeader">IIgs font header.</param>
+        /// <param name="macHeader">Macintosh font header.</param>
+        /// <param name="tmpNotes">Notes generated during calculations.</param>
+        /// <returns>Bitmap with rendering.</returns>
+        private static IBitmap RenderFontSample(GSFontHeader gsHeader, MacFontHeader macHeader,
+                Notes tmpNotes) {
+            string testStr = "The quick brown fox jumps over the lazy dog.";
+
+            int width = DrawString(macHeader, testStr, null);
+
+            Bitmap8 bitmap = new Bitmap8(width, macHeader.FRectHeight);
+            bitmap.SetPalette(FONT_PALETTE);
+            bitmap.Notes.MergeFrom(tmpNotes);
+
+            // Color 0 is the grid background color.  Set to white.
+            bitmap.SetAllPixels(COLOR_GLYPH_BG);
+            DrawString(macHeader, testStr, bitmap);
+
+            return bitmap;
+        }
+
+        /// <summary>
+        /// Draws a string with the current font.  If "bitmap" is null, the string's length
+        /// is computed.
+        /// </summary>
+        private static int DrawString(MacFontHeader macHeader, string str, Bitmap8? bitmap) {
+            int penOffset = 0;
+            for (int i = 0; i < str.Length; i++) {
+                char ch = str[i];
+                if (!macHeader.HasChar(ch)) {
+                    // Character is not part of font.  Use the "missing character" entry instead.
+                    ch = (char)(macHeader.LastChar + 1);
+                }
+                int charOffset = macHeader.GetOffset(ch);
+                int origin = charOffset + macHeader.KernMax;
+
+                if (penOffset + origin < 0) {
+                    // This is probably the first character, and it has leftward kerning.
+                    // Scoot over.  (Could also be the second character with a big kern after
+                    // an initial very narrow non-kerned character; that'll look a little funny.)
+                    Debug.Assert(origin < 0);
+                    //Debug.WriteLine("Adjusting pen offset from " + penOffset + " to " +
+                    //    (penOffset - origin));
+                    penOffset += -origin;
+                }
+
+                // Initial rendering position.  May be to the left of the pen offset if the
+                // character kerns leftward.
+                int renderLeft = penOffset + origin;
+
+                int nextPenOffset;
+                if (i != str.Length - 1) {
+                    // Advance by character width.
+                    nextPenOffset = penOffset + macHeader.GetCharWidth(ch);
+                } else {
+                    // End of line, use image width rather than character width, in case the
+                    // glyph is wider than the character bounds rectangle.
+                    nextPenOffset = renderLeft + macHeader.GetImageWidth(ch);
+                }
+
+                if (bitmap != null) {
+                    DrawGlyph(macHeader, ch, renderLeft, 0, bitmap);
+                } else {
+                    //Debug.WriteLine("'" + ch + "': off=" + charOffset + " pen=" + penOffset +
+                    //    " rl=" + renderLeft + " nxt=" + nextPenOffset);
+                }
+                penOffset = nextPenOffset;
+            }
+
+            return penOffset;
+        }
+
+        /// <summary>
+        /// Draws a single character glyph at the specified position.
+        /// </summary>
+        private static void DrawGlyph(MacFontHeader macHeader, char ch, int xpos, int ypos,
+                Bitmap8 bitmap) {
+            int loc = macHeader.GetLocation(ch);
+            int imageWidth = macHeader.GetImageWidth(ch);
+            for (int yc = 0; yc < macHeader.FRectHeight; yc++) {
+                int xc = 0;
+                for (int strikeOffset = loc; strikeOffset < loc + imageWidth; strikeOffset++) {
+                    int wordOffset = strikeOffset >> 4;
+                    int bitOffset = strikeOffset & 0x0f;
+                    ushort bits = macHeader.BitImage[yc * macHeader.RowWords + wordOffset];
+                    if ((bits & (0x8000 >> bitOffset)) != 0) {
+                        bitmap.SetPixelIndex(xc + xpos, yc + ypos, COLOR_GLYPH_FG);
+                    }
+                    xc++;
+                }
+            }
         }
     }
 }

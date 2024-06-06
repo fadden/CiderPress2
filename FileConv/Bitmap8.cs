@@ -112,6 +112,20 @@ namespace FileConv {
         }
 
         /// <summary>
+        /// Fills the entire bitmap with a solid color.
+        /// </summary>
+        /// <remarks>
+        /// <para>Normally you'd skip this step by defining your desired background color as
+        /// color entry zero.</para>
+        /// </remarks>
+        /// <param name="colorIndex">Color index.</param>
+        public void SetAllPixels(byte colorIndex) {
+            for (int i = 0; i < mPixelData.Length; i++) {
+                mPixelData[i] = colorIndex;
+            }
+        }
+
+        /// <summary>
         /// Draws an 8x8 character cell on the bitmap.
         /// </summary>
         /// <param name="ch">Character to draw.</param>

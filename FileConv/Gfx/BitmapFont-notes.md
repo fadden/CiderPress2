@@ -108,8 +108,7 @@ with fonts supplied by Apple.  It's unclear what `nDescent` means or what purpos
 
 _IMv1_, p.I-230 declares that every font must have a "missing symbol", and the characters
 with ASCII codes $00 (NUL), $09 (horizontal tab), and $0d (carriage return) must not be missing
-from the font.  In practice, most but not all fonts define $09/$0d, fewer define $00, and the
-last glyph in every font is de facto the missing symbol glyph.
+from the font.  In practice, most but not all fonts define $09/$0d, and fewer define $00.
 
 ### Font Type ###
 
