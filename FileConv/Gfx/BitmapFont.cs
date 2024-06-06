@@ -39,15 +39,19 @@ namespace FileConv.Gfx {
         /// </summary>
         private static readonly Palette8 FONT_PALETTE = new Palette8("Font",
             new int[] {
-                ConvUtil.MakeRGB(0x80, 0x80, 0x80),     // 0=dark gray (frame around cells)
-                ConvUtil.MakeRGB(0xe0, 0xe0, 0xe0),     // 1=light gray (cell background)
+                ConvUtil.MakeRGB(0xe0, 0xe0, 0xe0),     // 0=light gray (cell background)
+                ConvUtil.MakeRGB(0x80, 0x80, 0x80),     // 1=dark gray (frame around cells)
                 ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 2=white (glyph background)
                 ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 3=black (glyph foreground)
+                ConvUtil.MakeRGB(0x30, 0x30, 0xe0),     // 4=blue (hex labels)
+                ConvUtil.MakeRGB(0xb0, 0x30, 0x30),     // 5=red (no char)
             });
-        private const int COLOR_FRAME = 0;
-        private const int COLOR_CELL_BG = 1;
+        private const int COLOR_CELL_BG = 0;
+        private const int COLOR_FRAME = 1;
         private const int COLOR_CHAR_BG = 2;
         private const int COLOR_CHAR_FG = 3;
+        private const int COLOR_LABEL = 4;
+        private const int COLOR_NO_CHAR = 5;
 
         private class GSFontHeader {
             // This is from the file header, and is not actually part of the font header.
@@ -218,7 +222,7 @@ namespace FileConv.Gfx {
             /// Returns the character width of the specified character.  This is how far the
             /// pen position should be advanced after drawing the glyph.
             /// </summary>
-            public int GetWidth(int ch) {
+            public int GetCharWidth(int ch) {
                 if (ch < FirstChar || ch > LastChar + 1) {
                     return -1;
                 }
@@ -240,6 +244,17 @@ namespace FileConv.Gfx {
                     return -1;
                 }
                 return LocTable[ch - FirstChar];
+            }
+
+            /// <summary>
+            /// Returns the image width of the specified character.  This is how many pixels wide
+            /// the glyph is in the font strike.
+            /// </summary>
+            public int GetImageWidth(int ch) {
+                if (ch < FirstChar || ch > LastChar + 1) {
+                    return -1;
+                }
+                return LocTable[ch - FirstChar + 1] - LocTable[ch - FirstChar];
             }
         }
 
@@ -295,29 +310,33 @@ namespace FileConv.Gfx {
                 return new ErrorText("Invalid Mac font header");
             }
 
-            Bitmap8 output = new Bitmap8(macHeader.RowWords * 16, macHeader.FRectHeight);
-            output.SetPalette(FONT_PALETTE);
-            AddFontNotes(gsHeader, macHeader, output.Notes);
-            CheckFontMetrics(gsHeader, macHeader, output.Notes);
-            DrawFontStrike(output, macHeader);
+            Notes tmpNotes = new Notes();
+            AddFontNotes(gsHeader, macHeader, tmpNotes);
+            int cellWidth = CalculateFontMetrics(gsHeader, macHeader, tmpNotes);
 
-            //output.DrawChar('Z', 1, 1, COLOR_CHAR_FG, COLOR_CHAR_BG);
-            return output;
+            //Bitmap8 output = new Bitmap8(macHeader.RowWords * 16, macHeader.FRectHeight);
+            //output.SetPalette(FONT_PALETTE);
+            //output.Notes.MergeFrom(tmpNotes);
+            //DrawFontStrike(output, macHeader);
+            //return output;
+
+            return RenderFontGrid(gsHeader, macHeader, cellWidth, tmpNotes);
         }
 
         /// <summary>
         /// Calculates the Font Bounds Rectangle and other metrics.  The computed values are
-        /// compared to the stored values.
+        /// compared to the stored values, and warnings added to the Notes as needed.
         /// </summary>
         /// <param name="gsHeader">GS font header.</param>
         /// <param name="macHeader">Mac font header.</param>
         /// <param name="notes">Notes holder.</param>
-        /// <returns>Calculated width.</returns>
-        private static void CheckFontMetrics(GSFontHeader gsHeader, MacFontHeader macHeader,
+        /// <returns>Maximum character cell width.</returns>
+        private static int CalculateFontMetrics(GSFontHeader gsHeader, MacFontHeader macHeader,
                 Notes notes) {
             int charWidMax = 0, fbrLeftExtent = 0, fbrRightExtent = 0;
             int fontLeft = 0, fontRight = 0;
             int imageWidthMax = 0/*, offsetMax = 0*/;
+            int cellLeft = 0, cellRight = 0;
 
             // Iterate over all characters, including the missing character glyph.
             for (int ch = macHeader.FirstChar; ch <= macHeader.LastChar + 1; ch++) {
@@ -346,7 +365,11 @@ namespace FileConv.Gfx {
                 // Font bounds rectangle: like the font rectangle, but uses the character width.
                 //   The union of all character bounds rectangles.  Stored in fbrExtent.
 
-                int charWidth = macHeader.GetWidth(ch);
+                // This function computes the "character cell width", which uses the maximum
+                // values for the image width and character width to define a cell width that
+                // will contain any glyph's foreground and background pixels, including kerning.
+
+                int charWidth = macHeader.GetCharWidth(ch);
                 if (charWidth > charWidMax) {
                     charWidMax = charWidth;
                 }
@@ -362,21 +385,21 @@ namespace FileConv.Gfx {
                 //if (charOffset > offsetMax) {
                 //    offsetMax = charOffset;
                 //}
+
+                // I strongly suspect stuff here will break if kernMax is positive.  I've never
+                // actually found such a font though.
                 int origin = macHeader.KernMax + charOffset;
 
-                //notes.AddI("C=$" + ch.ToString("x2") +
-                //    " off=" + charOffset +
-                //    " iw=" + imageWidth +
-                //    " -> " + (charOffset + imageWidth) +
-                //    " cw=" + charWidth
-                //    );
-
-                // Update left/right edges for fRectWidth.
-                if (origin < fontLeft) {
-                    fontLeft = origin;
-                }
-                if (origin + imageWidth > fontRight) {
-                    fontRight = origin + imageWidth;
+                // Update left/right edges for fRectWidth.  This is based on the image width,
+                // so don't do this when imageWidth==0 (it'll probably have a zero origin,
+                // which will give us the wrong idea about the left edge).
+                if (imageWidth != 0) {
+                    if (origin < fontLeft) {
+                        fontLeft = origin;
+                    }
+                    if (origin + imageWidth > fontRight) {
+                        fontRight = origin + imageWidth;
+                    }
                 }
 
                 // Update left/right edges for fbrExtent.
@@ -386,6 +409,16 @@ namespace FileConv.Gfx {
                 if (charWidth > fbrRightExtent) {
                     fbrRightExtent = charWidth;
                     // should this be Max(charWidth, imageWidth) ?
+                }
+
+                // Update our internal cell width calculation.
+                int minLeft = Math.Min(fontLeft, fbrLeftExtent);
+                if (minLeft < cellLeft) {
+                    cellLeft = minLeft;
+                }
+                int maxRight = Math.Max(fontRight, fbrRightExtent);
+                if (maxRight > cellRight) {
+                    cellRight = maxRight;
                 }
             }
             // "It would seem that fbrLeftExtent == -kernMax. [...] If kernMax is positive (that
@@ -400,6 +433,12 @@ namespace FileConv.Gfx {
             // Something is wrong with the way I'm calculating this.  Or lots of fonts are wrong.
             int calcRectWidth = -fontLeft + fontRight;
 
+            // The width of a cell that can hold a character is equal to the maximum kern plus
+            // the rightward extent.  It doesn't matter whether any glyph actually kerns that
+            // far to the left.  We need to size the cell for the font metrics.
+            //int cellWidth = -cellLeft + cellRight;
+            int cellWidth = -macHeader.KernMax + cellRight;
+
             // "The fbrExtent value is the farthest possible horizontal distance from the pen
             // location to the far edge of any pixel that can be altered by drawing any character
             // in the font."  This includes foreground and background pixels.
@@ -412,15 +451,17 @@ namespace FileConv.Gfx {
             // larger.
             int fbrExtent = Math.Max(fbrLeftExtent, fbrRightExtent);
 
-            if (charWidMax != macHeader.WidMax) {
-                notes.AddW("Value for widMax (" + macHeader.WidMax +
-                    ") does not match calculated value (" + charWidMax + ")");
-            }
+            notes.AddI("Calculated cellWidth l=" + cellLeft + " r=" + cellRight +
+                " -> " + cellWidth);
             if (calcRectWidth != macHeader.FRectWidth) {
                 notes.AddW("Value for fRectWidth (" + macHeader.FRectWidth +
                     ") does not match calculated value (" + calcRectWidth +
                     "); l=" + fontLeft + " r=" + fontRight +
                     ", max image width is " + imageWidthMax);
+            }
+            if (charWidMax != macHeader.WidMax) {
+                notes.AddW("Value for widMax (" + macHeader.WidMax +
+                    ") does not match calculated value (" + charWidMax + ")");
             }
             if (fbrExtent != gsHeader.FbrExtent) {
                 notes.AddW("Value for fbrExtent (" + gsHeader.FbrExtent +
@@ -431,6 +472,8 @@ namespace FileConv.Gfx {
                     ") does not equal ascent (" + macHeader.Ascent + ") + descent (" +
                     macHeader.Descent + ")");
             }
+
+            return cellWidth;
         }
 
         /// <summary>
@@ -459,7 +502,7 @@ namespace FileConv.Gfx {
             notes.AddI("Family #" +
                 (gsHeader.Family < 0 ?
                     "$" + ((ushort)gsHeader.Family).ToString("x4") : gsHeader.Family) +
-                " \"" + gsHeader.FontFamilyName + "\", " + " " + gsHeader.Size +
+                " \"" + gsHeader.FontFamilyName + "\", " + gsHeader.Size +
                 " pts, styles: " + styleStr);
             notes.AddI("File format v" + (gsHeader.Version >> 8) + "." +
                 (gsHeader.Version & 0xff) + ", fbrExtent=" + gsHeader.FbrExtent +
@@ -492,6 +535,60 @@ namespace FileConv.Gfx {
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Generates a font rendering in grid form.
+        /// </summary>
+        /// <param name="gsHeader">IIgs font header.</param>
+        /// <param name="macHeader">Macintosh font header.</param>
+        /// <param name="cellWidth">Calculated maximum cell width.</param>
+        /// <param name="tmpNotes">Notes generated during calculations.</param>
+        /// <returns>Bitmap with grid.</returns>
+        private static IBitmap RenderFontGrid(GSFontHeader gsHeader, MacFontHeader macHeader,
+                int cellWidth, Notes tmpNotes) {
+            ImageGrid grid = new ImageGrid(macHeader.FirstChar,
+                macHeader.LastChar - macHeader.FirstChar + 2, cellWidth, macHeader.FRectHeight,
+                FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
+            grid.Bitmap.Notes.MergeFrom(tmpNotes);
+
+            for (int ch = macHeader.FirstChar; ch <= macHeader.LastChar + 1; ch++) {
+                if (!macHeader.HasChar(ch)) {
+                    grid.DrawRect(ch, 0, 0, cellWidth, macHeader.FRectHeight, COLOR_NO_CHAR);
+                    continue;
+                }
+                int charWidth = macHeader.GetCharWidth(ch);
+
+                // Draw the character background rectangle.  This starts at the origin and
+                // has width equal to the character width.  Pixels in the leftward kern will
+                // appear to the left of the rectangle.  Dead characters (those with zero width)
+                // won't have a background.
+                grid.DrawRect(ch, -macHeader.KernMax, 0, charWidth, macHeader.FRectHeight,
+                    COLOR_CHAR_BG);
+
+                // Draw the glyph.
+                int imageWidth = macHeader.GetImageWidth(ch);
+                if (imageWidth == 0) {
+                    continue;       // nothing to draw
+                }
+                int loc = macHeader.GetLocation(ch);
+                int charOffset = macHeader.GetOffset(ch);
+                int startXc = charOffset;
+                for (int yc = 0; yc < macHeader.FRectHeight; yc++) {
+                    int xc = startXc;
+                    for (int strikeOffset = loc; strikeOffset < loc + imageWidth; strikeOffset++) {
+                        int wordOffset = strikeOffset >> 4;
+                        int bitOffset = strikeOffset & 0x0f;
+                        ushort bits = macHeader.BitImage[yc * macHeader.RowWords + wordOffset];
+                        if ((bits & (0x8000 >> bitOffset)) != 0) {
+                            grid.DrawPixel(ch, xc, yc, COLOR_CHAR_FG);
+                        }
+                        xc++;
+                    }
+                }
+            }
+
+            return grid.Bitmap;
         }
     }
 }
