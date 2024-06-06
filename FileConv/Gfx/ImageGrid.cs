@@ -18,26 +18,32 @@ using System.Diagnostics;
 
 namespace FileConv.Gfx {
     /// <summary>
-    /// Grid of equal-sized images, framed with index values in hex.
+    /// Grid of equal-sized images, framed with index values in hex.  Intended for fonts and
+    /// sprite atlases.
     /// </summary>
     /// <remarks>
     /// <para>Each line in the grid has 16 cells.  We don't include empty lines, or draw
-    /// partial lines.  It's valid for a grid to hold indices $38-$89, in which case it
-    /// will provide rows for $30 through $80, inclusive.</para>
+    /// partial lines.  It's valid for a grid to hold, say, indices $38-$89, in which case it
+    /// will provide rows $30 through $80, spanning $30-$8f.  The padding cells are drawn in
+    /// a different color.</para>
     /// <para>Rendering within a cell is bounds-checked, so we don't throw exceptions even
     /// if we get crazy values.  Instead, errors are noted in the log.  This allows us to
     /// provide best-effort output for partially broken inputs.</para>
     /// </remarks>
     internal class ImageGrid {
+        // Input parameters.
         private int mFirstIndex;                // index of first "real" item
         private int mNumItems;                  // number of items in set
-        private int mCellWidth;
-        private int mCellHeight;
-        private byte mLabelFg;
-        private byte mLabelBg;
-        private byte mGridColor;
-        private byte mPadCellColor;
+        private int mCellWidth;                 // width of a cell
+        private int mCellHeight;                // height of a cell
+        private byte mLabelFg;                  // foreground color for labels
+        private byte mLabelBg;                  // background color for labels
+        private byte mGridColor;                // grid line color
+        private byte mPadCellColor;             // color for cells that pad the lines out
 
+        /// <summary>
+        /// Bitmap that we render into.
+        /// </summary>
         public Bitmap8 Bitmap { get; private set; }
 
         private int mStartIndex;                // index of item in top-left cell (may be padding)
@@ -46,11 +52,11 @@ namespace FileConv.Gfx {
         private int mGridLeft;                  // horizontal pixel offset of leftmost grid line
         private int mGridTop;                   // vertical pixel offset of top grid line
 
-        private const int LABEL_CHAR_WIDTH = 8;     // 8x8 font
-        private const int LABEL_CHAR_HEIGHT = 8;    // 8x8 font
-        private const int ITEMS_PER_ROW = 16;       // labels don't work for larger values
-        private const int GRID_THICKNESS = 1;
-        private const int EDGE_PAD = 1;
+        private const int LABEL_CHAR_WIDTH = 8;     // 8x8 font width
+        private const int LABEL_CHAR_HEIGHT = 8;    // 8x8 font height
+        private const int ITEMS_PER_ROW = 16;       // note: labels don't work for larger values
+        private const int GRID_THICKNESS = 1;       // note: not fully implemented
+        private const int EDGE_PAD = 1;             // extra padding on top/left edges
 
         /// <summary>
         /// Constructor.
@@ -116,6 +122,9 @@ namespace FileConv.Gfx {
             '0', '1', '2', '3', '4', '5', '6', '7',
             '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
+        /// <summary>
+        /// Draws the hex labels across the top and down the left edge.
+        /// </summary>
         private void DrawLabels(int numDigits, int endIndex) {
             Debug.Assert(mStartIndex % ITEMS_PER_ROW == 0);
             Debug.Assert(endIndex % ITEMS_PER_ROW == 0);
@@ -175,6 +184,7 @@ namespace FileConv.Gfx {
             Debug.Assert(GRID_THICKNESS == 1);
             int gridHeight = (mCellHeight + GRID_THICKNESS) * mNumRows;
             for (int yc = mGridTop; yc < mGridTop + gridHeight; yc++) {
+                // TODO: handle non-1 values of GRID_THICKNESS
                 Bitmap.SetPixelIndex(xc, yc, mGridColor);
             }
         }
@@ -183,6 +193,7 @@ namespace FileConv.Gfx {
             Debug.Assert(GRID_THICKNESS == 1);
             int gridWidth = (mCellWidth + GRID_THICKNESS) * ITEMS_PER_ROW;
             for (int xc = mGridLeft; xc < mGridLeft + gridWidth; xc++) {
+                // TODO: handle non-1 values of GRID_THICKNESS
                 Bitmap.SetPixelIndex(xc, yc, mGridColor);
             }
         }
@@ -237,7 +248,7 @@ namespace FileConv.Gfx {
         }
 
         /// <summary>
-        /// Draws a rectangle in a cell.
+        /// Draws a filled rectangle in a cell.
         /// </summary>
         /// <param name="cellIndex">Index of cell.</param>
         /// <param name="left">Left coordinate.</param>
@@ -263,6 +274,7 @@ namespace FileConv.Gfx {
             DoDrawRect(cellIndex, left, top, width, height, color);
         }
 
+        // Do the drawing.  Can be called directly if we want to avoid the range checks.
         private void DoDrawRect(int cellIndex, int left, int top, int width, int height,
                 byte color) {
             CalcCellPosn(cellIndex, out int cellLeft, out int cellTop);

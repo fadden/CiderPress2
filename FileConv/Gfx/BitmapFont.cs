@@ -23,6 +23,14 @@ namespace FileConv.Gfx {
     /// <summary>
     /// Converts a QuickDraw bitmap font to a bitmap, as a character grid or sample text.
     /// </summary>
+    /// <remarks>
+    /// <para>In theory this works for Mac fonts, though those are stored as a collection of
+    /// resources.</para>
+    /// TODO: figure out if Mac fonts were commonly distributed individually in single files.  If
+    /// there's only one font in the resource fork, we can display it.  The default converter
+    /// should still be "resources", but this could be allowed as a "maybe" conversion when
+    /// we detect FONT/NFNT resources.
+    /// </remarks>
     public class BitmapFont : Converter {
         public const string TAG = "qdfont";
         public const string LABEL = "QuickDraw II Font";
@@ -130,8 +138,8 @@ namespace FileConv.Gfx {
             // Macintosh font header fields.  On the Mac these are stored big-endian, on the
             // Apple IIgs they're little-endian.
             public short FontType { get; private set; }
-            public short FirstChar { get; private set; }
-            public short LastChar { get; private set; }
+            public char FirstChar { get; private set; }
+            public char LastChar { get; private set; }
             public short WidMax { get; private set; }
             public short KernMax { get; private set; }
             public short NDescent { get; private set; }
@@ -152,8 +160,8 @@ namespace FileConv.Gfx {
             public bool Load(byte[] buf, ref int offset) {
                 int startOffset = offset;
                 FontType = (short)RawData.ReadU16LE(buf, ref offset);
-                FirstChar = (short)RawData.ReadU16LE(buf, ref offset);
-                LastChar = (short)RawData.ReadU16LE(buf, ref offset);
+                FirstChar = (char)RawData.ReadU16LE(buf, ref offset);
+                LastChar = (char)RawData.ReadU16LE(buf, ref offset);
                 WidMax = (short)RawData.ReadU16LE(buf, ref offset);
                 KernMax = (short)RawData.ReadU16LE(buf, ref offset);
                 NDescent = (short)RawData.ReadU16LE(buf, ref offset);
@@ -566,6 +574,9 @@ namespace FileConv.Gfx {
             }
         }
 
+        // Pixel draw delegate, so we can render glyphs on Bitmaps and ImageGrids with one func.
+        private delegate void SetPixelFunc(int xc, int yc, byte color);
+
         /// <summary>
         /// Generates a font rendering in grid form.
         /// </summary>
@@ -581,7 +592,12 @@ namespace FileConv.Gfx {
                 FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
             grid.Bitmap.Notes.MergeFrom(tmpNotes);
 
-            for (int ch = macHeader.FirstChar; ch <= macHeader.LastChar + 1; ch++) {
+            char ch = (char)0;      // referenced from closure
+            SetPixelFunc setPixel = delegate (int xc, int yc, byte color) {
+                grid.DrawPixel(ch, xc, yc, color);
+            };
+
+            for (ch = macHeader.FirstChar; ch <= macHeader.LastChar + 1; ch++) {
                 if (!macHeader.HasChar(ch)) {
                     grid.DrawRect(ch, 0, 0, cellWidth, macHeader.FRectHeight, COLOR_NO_CHAR);
                     continue;
@@ -595,25 +611,10 @@ namespace FileConv.Gfx {
                 grid.DrawRect(ch, -macHeader.KernMax, 0, charWidth, macHeader.FRectHeight,
                     COLOR_GLYPH_BG);
 
-                // Draw the glyph.
+                // Draw the glyph, if it has an image.
                 int imageWidth = macHeader.GetImageWidth(ch);
-                if (imageWidth == 0) {
-                    continue;       // nothing to draw
-                }
-                int loc = macHeader.GetLocation(ch);
-                int charOffset = macHeader.GetOffset(ch);
-                int startXc = charOffset;
-                for (int yc = 0; yc < macHeader.FRectHeight; yc++) {
-                    int xc = startXc;
-                    for (int strikeOffset = loc; strikeOffset < loc + imageWidth; strikeOffset++) {
-                        int wordOffset = strikeOffset >> 4;
-                        int bitOffset = strikeOffset & 0x0f;
-                        ushort bits = macHeader.BitImage[yc * macHeader.RowWords + wordOffset];
-                        if ((bits & (0x8000 >> bitOffset)) != 0) {
-                            grid.DrawPixel(ch, xc, yc, COLOR_GLYPH_FG);
-                        }
-                        xc++;
-                    }
+                if (imageWidth != 0) {
+                    DrawGlyph(macHeader, ch, 0, 0, setPixel);
                 }
             }
 
@@ -649,6 +650,10 @@ namespace FileConv.Gfx {
         /// is computed.
         /// </summary>
         private static int DrawString(MacFontHeader macHeader, string str, Bitmap8? bitmap) {
+            SetPixelFunc setPixel = delegate (int xc, int yc, byte color) {
+                bitmap!.SetPixelIndex(xc, yc, COLOR_GLYPH_FG);
+            };
+
             int penOffset = 0;
             for (int i = 0; i < str.Length; i++) {
                 char ch = str[i];
@@ -684,7 +689,7 @@ namespace FileConv.Gfx {
                 }
 
                 if (bitmap != null) {
-                    DrawGlyph(macHeader, ch, renderLeft, 0, bitmap);
+                    DrawGlyph(macHeader, ch, renderLeft, 0, setPixel);
                 } else {
                     //Debug.WriteLine("'" + ch + "': off=" + charOffset + " pen=" + penOffset +
                     //    " rl=" + renderLeft + " nxt=" + nextPenOffset);
@@ -698,8 +703,13 @@ namespace FileConv.Gfx {
         /// <summary>
         /// Draws a single character glyph at the specified position.
         /// </summary>
+        /// <param name="macHeader">Macintosh font header.</param>
+        /// <param name="ch">Character to draw.</param>
+        /// <param name="xpos">Horizontal pixel offset of top-left corner.</param>
+        /// <param name="ypos">Vertical pixel offset of top-left corner.</param>
+        /// <param name="setPixel">Delegate that sets a pixel to a particular color index.</param>
         private static void DrawGlyph(MacFontHeader macHeader, char ch, int xpos, int ypos,
-                Bitmap8 bitmap) {
+                SetPixelFunc setPixel) {
             int loc = macHeader.GetLocation(ch);
             int imageWidth = macHeader.GetImageWidth(ch);
             for (int yc = 0; yc < macHeader.FRectHeight; yc++) {
@@ -709,7 +719,7 @@ namespace FileConv.Gfx {
                     int bitOffset = strikeOffset & 0x0f;
                     ushort bits = macHeader.BitImage[yc * macHeader.RowWords + wordOffset];
                     if ((bits & (0x8000 >> bitOffset)) != 0) {
-                        bitmap.SetPixelIndex(xc + xpos, yc + ypos, COLOR_GLYPH_FG);
+                        setPixel(xc + xpos, yc + ypos, COLOR_GLYPH_FG);
                     }
                     xc++;
                 }
