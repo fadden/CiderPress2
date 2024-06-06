@@ -27,7 +27,7 @@ namespace AppCommon {
         /// Overall application version.
         /// </summary>
         public static readonly CommonUtil.Version AppVersion =
-            new CommonUtil.Version(1, 0, 1, CommonUtil.Version.PreRelType.Final, 0);
+            new CommonUtil.Version(1, 0, 2, CommonUtil.Version.PreRelType.Dev, 1);
         // NOTE: there's an independent version in DiskArc/Defs.cs
     }
 }
