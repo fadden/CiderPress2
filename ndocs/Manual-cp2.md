@@ -1667,6 +1667,7 @@ ignored, because the input files are expected to be host files.
 The available converters are:
  - `bas`: convert Applesoft BASIC listing back to a tokenized program (only
    works on .txt output, not .rtf output)
+ - `merlin`: convert a plain text file to Merlin's ProDOS file format
  - `text`: convert host text file, replacing end-of-line markers and
    converting characters
    - `inchar` (multi): define input (host) character set

@@ -25,8 +25,12 @@ Assembly source files have four columns:
  4. comment
 
 To save space in memory and on disk, the contents of each column are separated by a single
-character.  Each column starts at a specific column on-screen.  Lines starting with '*'
+space character.  Each column starts at a specific column on-screen.  Lines starting with '*'
 are treated as full-line comments.
+
+End-of-line comments start with a semi-colon.  The editor doesn't require multiple separator
+spaces before a comment, but if you type them, they will be part of the file.  A line that
+begins with ';' is considered an end-of-line comment.
 
 The Apple II screen was 80 columns wide, so the code was generally formatted to fit in that
 space.  The default placement of the four columns positioned them at screen positions
