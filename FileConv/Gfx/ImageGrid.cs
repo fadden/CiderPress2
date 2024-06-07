@@ -111,6 +111,11 @@ namespace FileConv.Gfx {
             int height = EDGE_PAD + LABEL_CHAR_HEIGHT + (mNumRows * cellHeight) +
                 (GRID_THICKNESS * (mNumRows + 1));
 
+            if (width > Bitmap8.MAX_DIMENSION || height > Bitmap8.MAX_DIMENSION) {
+                throw new BadImageFormatException("bitmap would be " + width + "x" + height +
+                    ", exceeding maximum allowed size");
+            }
+
             Bitmap = new Bitmap8(width, height);
             Bitmap.SetPalette(palette);
             DrawLabels(numDigits, mEndIndex);

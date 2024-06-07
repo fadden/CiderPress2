@@ -104,7 +104,7 @@ namespace FileConv.Gfx {
                 Bold = 0x01, Italic = 0x02, Underline = 0x04, Outline = 0x08, Shadow = 0x10
             }
 
-            public bool Load(byte[] buf, ref int offset) {
+            public bool Load(byte[] buf, ref int offset, Notes notes) {
                 byte strLen = buf[offset++];
                 if (offset + strLen > buf.Length) {
                     return false;
@@ -124,7 +124,7 @@ namespace FileConv.Gfx {
                 Debug.Assert(offset - startOffset == BASE_LENGTH);
                 int extraLen = OffsetToMF * 2 - BASE_LENGTH;
                 if (extraLen < 0) {
-                    Debug.WriteLine("Warning: invalid OffsetToMF " + OffsetToMF);
+                    notes.AddW("Warning: invalid OffsetToMF " + OffsetToMF);
                     // keep going
                 } else if (OffsetToMF > BASE_LENGTH) {
                     ExtraData = new byte[extraLen];
@@ -157,7 +157,7 @@ namespace FileConv.Gfx {
 
             private const int BASE_LENGTH = 13 * 2;
 
-            public bool Load(byte[] buf, ref int offset) {
+            public bool Load(byte[] buf, ref int offset, Notes notes) {
                 int startOffset = offset;
                 FontType = (short)RawData.ReadU16LE(buf, ref offset);
                 FirstChar = (char)RawData.ReadU16LE(buf, ref offset);
@@ -175,20 +175,20 @@ namespace FileConv.Gfx {
                 Debug.Assert(offset - startOffset == BASE_LENGTH);
 
                 if (LastChar < 0 || LastChar > 255 || FirstChar > LastChar) {
-                    Debug.WriteLine("Error: bad first/last char " + FirstChar + " / " + LastChar);
+                    notes.AddE("Error: bad first/last char " + FirstChar + " / " + LastChar);
                     return false;
                 }
                 if (FRectWidth <= 0 || FRectHeight <= 0 || RowWords <= 0) {
-                    Debug.WriteLine("Error: bad strike width/height/words " +
+                    notes.AddE("Error: bad strike width/height/words " +
                         FRectWidth + " / " + FRectHeight + " / " + RowWords);
                     return false;
                 }
                 if (WidMax <= 0) {
-                    Debug.WriteLine("Warning: WidMax=" + WidMax);
+                    notes.AddW("Warning: WidMax=" + WidMax);
                     // keep going
                 }
                 if (FRectHeight != Ascent + Descent) {
-                    Debug.WriteLine("Warning: ascent " + Ascent + " + descent " + Descent +
+                    notes.AddW("Warning: ascent " + Ascent + " + descent " + Descent +
                         " != fRectHeight " + FRectHeight);
                     // keep going?
                 }
@@ -198,11 +198,11 @@ namespace FileConv.Gfx {
                 int expectedLen = (bitImageWordLen + charCount * 2) * 2;
 
                 if (offset + expectedLen > buf.Length) {
-                    Debug.WriteLine("Error: expectedLen is " + expectedLen +
-                        ", offset=" + offset + ", bufLen=" + buf.Length);
+                    notes.AddE("Error: file must be " + (offset + expectedLen) +
+                        " bytes long, but is only " + buf.Length);
                     return false;
                 } else if (offset + expectedLen != buf.Length) {
-                    Debug.WriteLine("Note: excess bytes at end of file: " +
+                    notes.AddW("Note: excess bytes at end of file: " +
                         (buf.Length - offset - expectedLen));
                     // keep going
                 }
@@ -220,6 +220,39 @@ namespace FileConv.Gfx {
                 OWTable = new ushort[charCount];
                 for (int i = 0; i < charCount; i++) {
                     OWTable[i] = RawData.ReadU16LE(buf, ref offset);
+                }
+
+                // Validate table contents.
+                int strikeWidth = RowWords * 16;
+                for (int ch = 0; ch < charCount; ch++) {
+                    if (!HasChar(ch)) {
+                        if (ch == charCount) {
+                            // The last entry holds the glyph for the missing character, and is
+                            // required to exist.
+                            notes.AddE("Error: the 'missing character' glyph is undefined");
+                            return false;
+                        }
+                        continue;
+                    }
+                    int imageWidth = GetImageWidth(ch);
+                    if (imageWidth == 0) {
+                        // Nothing to draw, don't try to validate pixel data location.
+                        continue;
+                    }
+
+                    // Confirm that the glyph image is actually in the table.  Instead of
+                    // rejecting the entire font, we can just mark it as missing, unless
+                    // it's at the very end.
+                    int loc = GetLocation(ch);
+                    if (loc >= strikeWidth) {
+                        notes.AddW("Warning: location of index " + ch + " is " + loc +
+                            " (strike width=" + strikeWidth + ")");
+                        return false;
+                    } else if (loc + imageWidth > strikeWidth) {
+                        notes.AddW("Warning: index " + ch + " extends off end: loc=" + loc +
+                            " imageWidth=" + imageWidth + " strikeWidth=" + strikeWidth);
+                        return false;
+                    }
                 }
 
                 Debug.Assert(offset - startOffset <= BASE_LENGTH + expectedLen);    // overrun?
@@ -330,17 +363,17 @@ namespace FileConv.Gfx {
             DataStream.Position = 0;
             DataStream.ReadExactly(fullBuf, 0, (int)DataStream.Length);
 
+            Notes tmpNotes = new Notes();
             int offset = 0;
             GSFontHeader gsHeader = new GSFontHeader();
-            if (!gsHeader.Load(fullBuf, ref offset)) {
-                return new ErrorText("Invalid GS font header");
+            if (!gsHeader.Load(fullBuf, ref offset, tmpNotes)) {
+                return new ErrorText("Invalid GS font header", tmpNotes);
             }
             MacFontHeader macHeader = new MacFontHeader();
-            if (!macHeader.Load(fullBuf, ref offset)) {
-                return new ErrorText("Invalid Mac font header");
+            if (!macHeader.Load(fullBuf, ref offset, tmpNotes)) {
+                return new ErrorText("Invalid Mac font header", tmpNotes);
             }
 
-            Notes tmpNotes = new Notes();
             AddFontNotes(gsHeader, macHeader, tmpNotes);
             int cellWidth = CalculateFontMetrics(gsHeader, macHeader, tmpNotes);
 
@@ -544,8 +577,9 @@ namespace FileConv.Gfx {
             notes.AddI("File format v" + (gsHeader.Version >> 8) + "." +
                 (gsHeader.Version & 0xff) + ", fbrExtent=" + gsHeader.FbrExtent +
                 ", offsetToMF=" + gsHeader.OffsetToMF);
-            notes.AddI("Font type=$" + macHeader.FontType.ToString("x4") + ", firstChar=" +
-                macHeader.FirstChar + ", lastChar=" + macHeader.LastChar);
+            notes.AddI("Font type=$" + macHeader.FontType.ToString("x4") +
+                ", firstChar=$" + ((ushort)macHeader.FirstChar).ToString("x2") +
+                ", lastChar=$" + ((ushort)macHeader.LastChar).ToString("x2"));
             notes.AddI("widMax=" + macHeader.WidMax + ", kernMax=" + macHeader.KernMax +
                 ", ascent=" + macHeader.Ascent + ", descent=" + macHeader.Descent +
                 ", nDescent=" + macHeader.NDescent + ", leading=" + macHeader.Leading);
@@ -585,11 +619,16 @@ namespace FileConv.Gfx {
         /// <param name="cellWidth">Calculated maximum cell width.</param>
         /// <param name="tmpNotes">Notes generated during calculations.</param>
         /// <returns>Bitmap with grid.</returns>
-        private static IBitmap RenderFontGrid(GSFontHeader gsHeader, MacFontHeader macHeader,
+        private static IConvOutput RenderFontGrid(GSFontHeader gsHeader, MacFontHeader macHeader,
                 int cellWidth, Notes tmpNotes) {
-            ImageGrid grid = new ImageGrid(macHeader.FirstChar,
-                macHeader.LastChar - macHeader.FirstChar + 2, cellWidth, macHeader.FRectHeight,
-                FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
+            ImageGrid grid;
+            try {
+                grid = new ImageGrid(macHeader.FirstChar,
+                    macHeader.LastChar - macHeader.FirstChar + 2, cellWidth, macHeader.FRectHeight,
+                    FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
+            } catch (BadImageFormatException ex) {
+                return new ErrorText("Unable to generate grid: " + ex.Message);
+            }
             grid.Bitmap.Notes.MergeFrom(tmpNotes);
 
             char ch = (char)0;      // referenced from closure
@@ -614,7 +653,7 @@ namespace FileConv.Gfx {
                 // Draw the glyph, if it has an image.
                 int imageWidth = macHeader.GetImageWidth(ch);
                 if (imageWidth != 0) {
-                    DrawGlyph(macHeader, ch, 0, 0, setPixel);
+                    DrawGlyph(macHeader, ch, macHeader.GetOffset(ch), 0, setPixel);
                 }
             }
 
@@ -628,7 +667,7 @@ namespace FileConv.Gfx {
         /// <param name="macHeader">Macintosh font header.</param>
         /// <param name="tmpNotes">Notes generated during calculations.</param>
         /// <returns>Bitmap with rendering.</returns>
-        private static IBitmap RenderFontSample(GSFontHeader gsHeader, MacFontHeader macHeader,
+        private static IConvOutput RenderFontSample(GSFontHeader gsHeader, MacFontHeader macHeader,
                 Notes tmpNotes) {
             string testStr = "The quick brown fox jumps over the lazy dog.";
 
@@ -655,10 +694,12 @@ namespace FileConv.Gfx {
             };
 
             int penOffset = 0;
+            int lineWidth = 0;
             for (int i = 0; i < str.Length; i++) {
                 char ch = str[i];
                 if (!macHeader.HasChar(ch)) {
-                    // Character is not part of font.  Use the "missing character" entry instead.
+                    // Character is not part of font.  Use the "missing character" entry instead,
+                    // which is required to exist.
                     ch = (char)(macHeader.LastChar + 1);
                 }
                 int charOffset = macHeader.GetOffset(ch);
@@ -674,30 +715,31 @@ namespace FileConv.Gfx {
                     penOffset += -origin;
                 }
 
-                // Initial rendering position.  May be to the left of the pen offset if the
-                // character kerns leftward.
-                int renderLeft = penOffset + origin;
+                int charWidth = macHeader.GetCharWidth(ch);
+                int imageWidth = macHeader.GetImageWidth(ch);
 
-                int nextPenOffset;
-                if (i != str.Length - 1) {
-                    // Advance by character width.
-                    nextPenOffset = penOffset + macHeader.GetCharWidth(ch);
-                } else {
-                    // End of line, use image width rather than character width, in case the
-                    // glyph is wider than the character bounds rectangle.
-                    nextPenOffset = renderLeft + macHeader.GetImageWidth(ch);
-                }
+                // The pen advances by the character width (which might be zero).
+                int nextPenOffset = penOffset + charWidth;
+
+                // The total width of the line rendering bitmap increases by the area covered
+                // by drawn pixels.  If the glyph is fully in the leftward kern, it might not
+                // expand at all.
+                int renderLeft = penOffset + origin;
+                int rightBound = renderLeft + imageWidth;
+                lineWidth = Math.Max(lineWidth, rightBound);
 
                 if (bitmap != null) {
+                    Debug.Assert(renderLeft + imageWidth <= bitmap.Width);
                     DrawGlyph(macHeader, ch, renderLeft, 0, setPixel);
                 } else {
                     //Debug.WriteLine("'" + ch + "': off=" + charOffset + " pen=" + penOffset +
                     //    " rl=" + renderLeft + " nxt=" + nextPenOffset);
                 }
+                Debug.Assert(nextPenOffset >= penOffset);
                 penOffset = nextPenOffset;
             }
 
-            return penOffset;
+            return lineWidth;
         }
 
         /// <summary>

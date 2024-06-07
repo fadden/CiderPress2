@@ -103,12 +103,19 @@ are garbage.
 Later versions of Mac OS added kerning tables that allow the amount to vary based on which
 characters are adjacent.
 
-You might expect `nDescent` == `-descent`, but in practice this is not always the case, even
-with fonts supplied by Apple.  It's unclear what `nDescent` means or what purpose it serves.
-
 _IMv1_, p.I-230 declares that every font must have a "missing symbol", and the characters
 with ASCII codes $00 (NUL), $09 (horizontal tab), and $0d (carriage return) must not be missing
 from the font.  In practice, most but not all fonts define $09/$0d, and fewer define $00.
+
+Generally speaking, it's unwise to fully trust values in the headers that aren't definitive.
+`firstChar`, `lastChar`, `fRectHeight`, `kernMax`, `rowWords`, and the contents of the tables
+define the font and are accurate by definition.  (They still need to be validated to avoid
+crashing on bad data.)  Fields like `ascent` and `descent` are probably fine, but don't assume
+ascent+descent==height.  Computed fields like `fbrExtent` and `widMax` can and should be
+computed from the contents.
+
+You might expect `nDescent` == `-descent`, but in practice this is not always the case, even
+with fonts supplied by Apple.  It's unclear what `nDescent` means or what purpose it serves.
 
 ### Font Type ###
 

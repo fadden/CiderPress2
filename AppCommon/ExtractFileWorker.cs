@@ -656,7 +656,7 @@ namespace AppCommon {
                 IConvOutput convOutput = conv.ConvertFile(exportSpec.Options);
                 // TODO: show converter notes if --show-notes is set
                 if (convOutput is ErrorText) {
-                    ReportConvFailure("conversion failed: " +
+                    ReportConvFailure("conversion failed for '" + extractPath + "': " +
                         ((ErrorText)convOutput).Text.ToString());
                     return false;
                 } else if (convOutput is FancyText && !((FancyText)convOutput).PreferSimple) {

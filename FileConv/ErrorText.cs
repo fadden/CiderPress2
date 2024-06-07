@@ -15,6 +15,8 @@
  */
 using System;
 
+using CommonUtil;
+
 namespace FileConv {
     /// <summary>
     /// SimpleText subclass that should be recognized as containing an error message.  This
@@ -23,5 +25,8 @@ namespace FileConv {
     /// </summary>
     public class ErrorText : SimpleText {
         public ErrorText(string msg) : base(msg) { }
+        public ErrorText(string msg, Notes notes) : base(msg) {
+            Notes.MergeFrom(notes);
+        }
     }
 }
