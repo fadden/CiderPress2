@@ -60,7 +60,7 @@ TextEdit `TEStyle` structures (defined on page 49-41) are:
 The current Teach application doesn't provide a way to set the color, but documents with colored
 text have been found.
 
-The _Apple IIgs Toolbox Reference, Volume 2_ describes `foreColor` values thusly:
+The _Apple IIgs Toolbox Reference, Volume 3_ describes `foreColor` values thusly (p.49-41):
 > Foreground color for the text.  Note that all bits in TextEdit color words are significant.
 > TextEdit generates QuickDraw II color patterns by replicating a color word the appropriate
 > number of times for the current resolution (8 times for 640 mode, 16 times for 320 mode).

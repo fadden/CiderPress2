@@ -338,7 +338,9 @@ namespace FileConv.Gfx {
 
             // Look for a MASK block.
             if (blocks.TryGetValue(BLOCK_NAME_MASK, out Block? maskBlock)) {
-                Debug.Assert(false, "Found a MASK!");
+                loadNotes.AddI("Found an APF MASK block: off=$" + maskBlock.Offset.ToString("x") +
+                    ", len=" + maskBlock.Length);
+                // TODO: something useful with this; looks like Platinum Paint can create these?
             }
 
             // Look for a NOTE block.

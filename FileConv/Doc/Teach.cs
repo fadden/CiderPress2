@@ -19,6 +19,7 @@ using System.Diagnostics;
 using CommonUtil;
 using DiskArc;
 using FileConv.Generic;
+using FileConv.Gfx;
 
 namespace FileConv.Doc {
     /// <summary>
@@ -168,8 +169,8 @@ namespace FileConv.Doc {
 
             // The Spy Hunter GS "Read.Me" has a word in color $4444.  Haven't seen others,
             // probably because the Teach app itself doesn't provide a way to set the color.
-            output.SetForeColor(GSDocCommon.GetStdColor(style.ForeColor, true));
-            output.SetBackColor(GSDocCommon.GetStdColor(style.BackColor, true));
+            output.SetForeColor(QuickDrawII.GetStdColor(style.ForeColor, true));
+            output.SetBackColor(QuickDrawII.GetStdColor(style.BackColor, true));
         }
     }
 

@@ -1,4 +1,4 @@
-# Bitmap Fonts #
+# Bitmap Font #
 
 File types:
  - ProDOS FON ($c8) / $0000: Apple IIgs QuickDraw II font
@@ -6,7 +6,7 @@ File types:
 Primary references:
  - Apple II File Type Note $c8/0000, "Apple IIGS Font File"
  - IIgs TN #41: "Font Family Numbers"
- - _Apple IIgs Toolbox Reference_, chapter 16 (vol 2, p.16-41)
+ - _Apple IIgs Toolbox Reference, Volume 2_, chapter 16 "QuickDraw II", p.16-41
  - _Inside Macintosh, volume I_, chapter 7 "The Font Manager", p.I-227
  - _Inside Macintosh, volume IV_, chapter 5 "The Font Manager", p.IV-29
 
@@ -52,6 +52,9 @@ The IIgs font header is:
 The `fbrExtent` field is essentially the maximum width of all characters in the font, taking
 kerning into account, but it's more complicated than that.  See p.16-53 in the IIgs Toolbox
 Reference manual.
+
+Later versions of the IIgs toolbox added `highowTLoc` at +$0c.  This holds the high-order word
+of the `owTLoc` field in the Mac header, allowing an offset > 32767.
 
 The `style` field is a bit map:
 ```

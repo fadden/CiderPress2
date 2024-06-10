@@ -19,6 +19,15 @@ using CommonUtil;
 using DiskArc;
 
 namespace FileConv.Generic {
+    /// <summary>
+    /// Generate a text listing of a file's resource fork.  Does not attempt to expand the
+    /// resource contents.  Works for any forked file.
+    /// </summary>
+    /// <remarks>
+    /// The test function returns "not selectable", because we don't want this appearing in
+    /// the GUI, which always formats resource forks into a separate tab.  This is intended
+    /// for the use of the CLI, in case somebody just wants to format the resource fork.
+    /// </remarks>
     public class Resources : Converter {
         public const string TAG = "rsrc";
         public const string LABEL = "Resource Listing";

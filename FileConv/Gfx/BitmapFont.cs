@@ -107,12 +107,18 @@ namespace FileConv.Gfx {
             public bool Load(byte[] buf, ref int offset, Notes notes) {
                 byte strLen = buf[offset++];
                 if (offset + strLen > buf.Length) {
+                    notes.AddE("Error: family name string is longer than font file");
                     return false;
                 }
                 // The tech note doesn't say whether it's ASCII or MOR.  Handle MOR to be on
                 // the safe side.
                 FontFamilyName = MacChar.MacToUnicode(buf, offset, strLen, MacChar.Encoding.Roman);
                 offset += strLen;
+
+                if (offset + BASE_LENGTH > buf.Length) {
+                    notes.AddE("Error: ran out of file while reading GS header");
+                    return false;
+                }
 
                 int startOffset = offset;
                 OffsetToMF = (short)RawData.ReadU16LE(buf, ref offset);
@@ -158,6 +164,11 @@ namespace FileConv.Gfx {
             private const int BASE_LENGTH = 13 * 2;
 
             public bool Load(byte[] buf, ref int offset, Notes notes) {
+                if (offset + BASE_LENGTH > buf.Length) {
+                    notes.AddE("Error: ran out of file while reading Mac header");
+                    return false;
+                }
+
                 int startOffset = offset;
                 FontType = (short)RawData.ReadU16LE(buf, ref offset);
                 FirstChar = (char)RawData.ReadU16LE(buf, ref offset);
@@ -331,7 +342,7 @@ namespace FileConv.Gfx {
         }
 
         protected override Applicability TestApplicability() {
-            if (DataStream == null || IsRawDOS) {
+            if (DataStream == null) {
                 return Applicability.Not;
             }
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FON) {
