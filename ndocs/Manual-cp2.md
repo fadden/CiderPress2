@@ -1603,6 +1603,7 @@ Graphics:
  - `dhgr`: Apple II double-hi-res screen
    - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
      (default is `latch`)
+ - `gsicon`: Apple IIgs Finder icon file
  - `hgr`: Apple II hi-res screen
    - `bw` (bool): false=color (default), true=black & white
  - `hgrfont`: Apple II or /// hi-res screen font

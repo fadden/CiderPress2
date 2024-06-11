@@ -632,11 +632,14 @@ namespace FileConv.Gfx {
         /// <returns>Bitmap with grid.</returns>
         private static IConvOutput RenderFontGrid(GSFontHeader gsHeader, MacFontHeader macHeader,
                 int cellWidth, Notes tmpNotes) {
+            ImageGrid.Builder bob = new ImageGrid.Builder();
+            bob.SetGeometry(cellWidth, macHeader.FRectHeight, 16);
+            bob.SetRange(macHeader.FirstChar, macHeader.LastChar - macHeader.FirstChar + 2);
+            bob.SetColors(FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
+            bob.SetLabels(hasLeftLabels: true, hasTopLabels: true, leftLabelIsRow: false);
             ImageGrid grid;
             try {
-                grid = new ImageGrid(macHeader.FirstChar,
-                    macHeader.LastChar - macHeader.FirstChar + 2, cellWidth, macHeader.FRectHeight,
-                    FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
+                grid = bob.Create();    // this will throw if bitmap would be too big
             } catch (BadImageFormatException ex) {
                 return new ErrorText("Unable to generate grid: " + ex.Message);
             }

@@ -16,6 +16,8 @@ The icon file includes small and large versions of each icon, as well as metadat
 determine which icon to use with which files.  Patterns for matching on the file type,
 auxiliary type, and filename are handled.
 
+All multi-byte integers are in little-endian order.
+
 The icon file has some empty holes that are expected to be filled in by the Finder after being
 loaded into memory.
 ```
@@ -47,8 +49,10 @@ call.  The structure is:
 +$08 /nn: icon image, 4 bits per pixel; each row is `1 + (iconWidth - 1) / 2` bytes wide
 +$xx /nn: icon mask, same dimensions as image
 ```
-
-All multi-byte integers are in little-endian order.
+The `iconType` field declares whether the icon's contents are color or black and white, but in
+practice most icons (including those for the icon editor DIcEd) have a type of $0000, even when
+they're clearly intended to be colorful.  It appears that it could affect the way the icon is
+drawn in different modes, e.g. when selected in the Finder.
 
 ## Rendering ##
 

@@ -22,13 +22,15 @@ namespace FileConv.Gfx {
     /// sprite atlases.
     /// </summary>
     /// <remarks>
-    /// <para>Each line in the grid has 16 cells.  We don't include empty lines, or draw
-    /// partial lines.  It's valid for a grid to hold, say, indices $38-$89, in which case it
-    /// will provide rows $30 through $80, spanning $30-$8f.  The padding cells are drawn in
-    /// a different color.</para>
+    /// <para>Each line in the grid has a fixed number of cells (say, 16).  Items are indexed, but
+    /// the indices don't have to start from zero.  We don't include empty lines, or draw partial
+    /// lines.  It's valid for a grid to hold, say, indices $38-$89, in which case it will
+    /// provide rows $30 through $80, spanning $30-$8f.  The padding cells are drawn in a
+    /// different color.</para>
     /// <para>Rendering within a cell is bounds-checked, so we don't throw exceptions even
     /// if we get crazy values.  Instead, errors are noted in the log.  This allows us to
     /// provide best-effort output for partially broken inputs.</para>
+    /// <para>The grid cells are initially filled with color 0.</para>
     /// </remarks>
     internal class ImageGrid {
         // Input parameters.
@@ -36,15 +38,21 @@ namespace FileConv.Gfx {
         private int mNumItems;                  // number of items in set
         private int mCellWidth;                 // width of a cell
         private int mCellHeight;                // height of a cell
+        private int mMaxPerRow;                 // max number of items in a row
         private byte mLabelFg;                  // foreground color for labels
         private byte mLabelBg;                  // background color for labels
-        private byte mGridColor;                // grid line color
+        private byte mBorderColor;              // grid border line color
         private byte mPadCellColor;             // color for cells that pad the lines out
+        private bool mHasLeftLabels;            // if true, draw labels on left
+        private bool mHasTopLabels;             // if true, draw labels across top
+        private bool mLeftLabelIsRow;           // if true, left labels are *row* num (vs. item)
 
         /// <summary>
         /// Bitmap that we render into.
         /// </summary>
         public Bitmap8 Bitmap { get; private set; }
+        public int CellWidth => mCellWidth;
+        public int CellHeight => mCellHeight;
 
         private int mStartIndex;                // index of item in top-left cell (may be padding)
         private int mEndIndex;                  // index of item past bottom-right cell (may be pad)
@@ -52,32 +60,110 @@ namespace FileConv.Gfx {
         private int mGridLeft;                  // horizontal pixel offset of leftmost grid line
         private int mGridTop;                   // vertical pixel offset of top grid line
 
+        // Constants.  These can become variables.
         private const int LABEL_CHAR_WIDTH = 8;     // 8x8 font width
         private const int LABEL_CHAR_HEIGHT = 8;    // 8x8 font height
-        private const int ITEMS_PER_ROW = 16;       // note: labels don't work for larger values
-        private const int GRID_THICKNESS = 1;       // note: not fully implemented
-        private const int EDGE_PAD = 1;             // extra padding on top/left edges
+        private const int GRID_THICKNESS = 1;       // note: values != 1 are not implemented
+        private const int EDGE_PAD = 1;             // extra padding before top/left labels
 
         /// <summary>
-        /// Constructor.
+        /// Builder class, so we don't have to call a constructor with tons of arguments.
         /// </summary>
-        /// <param name="firstIndex">Index of first item.</param>
-        /// <param name="numItems">Number of items in the list.</param>
-        /// <param name="cellWidth">Width of a cell, in pixels.</param>
-        /// <param name="cellHeight">Height of a cell, in pixels.</param>
-        /// <param name="palette">Color palette.</param>
-        /// <param name="labelFgColor">Color index to use for label foreground.</param>
-        /// <param name="labelBgColor">Color index to use for label background.</param>
-        /// <param name="gridColor">Color index to use for grid lines.</param>
-        /// <param name="padCellColor">Color index to use for cells before/after actual.</param>
-        public ImageGrid(int firstIndex, int numItems, int cellWidth, int cellHeight,
-                Palette8 palette, byte labelFgColor, byte labelBgColor, byte gridColor,
-                byte padCellColor) {
-            Debug.Assert(firstIndex >= 0);
-            Debug.Assert(numItems > 0);
-            Debug.Assert(cellWidth > 0);
-            Debug.Assert(cellHeight > 0);
+        public class Builder {
+            public Builder() { }
 
+            public ImageGrid Create() {
+                Debug.Assert(FirstIndex >= 0 && CellWidth >= 0 && LabelFgColor != 255);
+                return new ImageGrid(FirstIndex, NumItems,
+                    CellWidth, CellHeight, MaxPerRow,
+                    Palette, LabelFgColor, LabelBgColor, BorderColor, PadCellColor,
+                    HasLeftLabels, HasTopLabels, LeftLabelIsRow);
+            }
+
+            public int FirstIndex { get; private set; } = -1;
+            public int NumItems { get; private set; }
+            public int CellWidth { get; private set; } = -1;
+            public int CellHeight { get; private set; }
+            public int MaxPerRow { get; private set; }
+            public Palette8 Palette { get; private set; } = Palette8.EMPTY_PALETTE;
+            public byte LabelFgColor { get; private set; } = 255;
+            public byte LabelBgColor { get; private set; }
+            public byte BorderColor { get; private set; }
+            public byte PadCellColor { get; private set; }
+            public bool HasLeftLabels { get; private set; }
+            public bool HasTopLabels { get; private set; }
+            public bool LeftLabelIsRow { get; private set; }
+
+            /// <summary>
+            /// Sets the geometry entries.  Mandatory
+            /// </summary>
+            /// <param name="cellWidth">Width of a cell, in pixels.</param>
+            /// <param name="cellHeight">Height of a cell, in pixels.</param>
+            /// <param name="maxPerRow">Maximum cells per row of the grid.</param>
+            public void SetGeometry(int cellWidth, int cellHeight, int maxPerRow) {
+                Debug.Assert(cellWidth > 0);
+                Debug.Assert(cellHeight > 0);
+                Debug.Assert(maxPerRow > 0);
+                CellWidth = cellWidth;
+                CellHeight = cellHeight;
+                MaxPerRow = maxPerRow;
+            }
+
+            /// <summary>
+            /// Sets the item range entries.  Mandatory.
+            /// </summary>
+            /// <param name="firstIndex">Index of first item.</param>
+            /// <param name="numItems">Number of items in the list.</param>
+            public void SetRange(int firstIndex, int numItems) {
+                Debug.Assert(firstIndex >= 0);
+                Debug.Assert(numItems > 0);
+                FirstIndex = firstIndex;
+                NumItems = numItems;
+            }
+
+            /// <summary>
+            /// Sets the color entries.  Mandatory.
+            /// </summary>
+            /// <param name="palette">Color palette.</param>
+            /// <param name="labelFgColor">Color index to use for label foreground.</param>
+            /// <param name="labelBgColor">Color index to use for label background.</param>
+            /// <param name="borderColor">Color index to use for grid border lines.</param>
+            /// <param name="padCellColor">Color index to use for cells before/after actual.</param>
+            public void SetColors(Palette8 palette, byte labelFgColor, byte labelBgColor,
+                    byte borderColor, byte padCellColor) {
+                Palette = palette;
+                LabelFgColor = labelFgColor;
+                LabelBgColor = labelBgColor;
+                BorderColor = borderColor;
+                PadCellColor = padCellColor;
+
+                if (labelFgColor == labelBgColor ||
+                        palette.GetColor(labelFgColor) == palette.GetColor(labelBgColor)) {
+                    Debug.Assert(false, "label foreground/background colors are the same");
+                }
+            }
+
+            /// <summary>
+            /// Configures the labels.  Optional.
+            /// </summary>
+            /// <param name="hasLeftLabels">If true, show labels down left side.</param>
+            /// <param name="hasTopLabels">If true, show labels across top.</param>
+            /// <param name="leftLabelIsRow">If true, the left label is the row number
+            ///   rather than the item number.</param>
+            public void SetLabels(bool hasLeftLabels, bool hasTopLabels, bool leftLabelIsRow) {
+                HasLeftLabels = hasLeftLabels;
+                HasTopLabels = hasTopLabels;
+                LeftLabelIsRow = leftLabelIsRow;
+            }
+        }
+
+        /// <summary>
+        /// Internal constructor.
+        /// </summary>
+        private ImageGrid(int firstIndex, int numItems, int cellWidth, int cellHeight,
+                int maxPerRow, Palette8 palette, byte labelFgColor, byte labelBgColor,
+                byte borderColor, byte padCellColor, bool hasLeftLabels, bool hasTopLabels,
+                bool leftLabelIsRow) {
             // If the items are smaller than the frame labels, increase the size.
             if (cellWidth < LABEL_CHAR_WIDTH) {
                 cellWidth = LABEL_CHAR_WIDTH;
@@ -90,26 +176,42 @@ namespace FileConv.Gfx {
             mNumItems = numItems;
             mCellWidth = cellWidth;
             mCellHeight = cellHeight;
+            mMaxPerRow = maxPerRow;
             mLabelFg = labelFgColor;
             mLabelBg = labelBgColor;
-            mGridColor = gridColor;
+            mBorderColor = borderColor;
             mPadCellColor = padCellColor;
+            mHasLeftLabels = hasLeftLabels;
+            mHasTopLabels = hasTopLabels;
+            mLeftLabelIsRow = leftLabelIsRow;
+
+            mStartIndex = firstIndex - (firstIndex % mMaxPerRow);
+            int lastIndex = firstIndex + numItems - 1;
+            mEndIndex = (lastIndex + mMaxPerRow) - (lastIndex % mMaxPerRow);
+            mNumRows = (mEndIndex - mStartIndex) / mMaxPerRow;
 
             // Width must include the left-side label, plus one space for padding, and a full
             // row of cells separated with grid lines.
-            int lastIndex = firstIndex + numItems - 1;
-            int numDigits = lastIndex.ToString("x").Length;     // a/k/a log16(numDigits)
-            int width = EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH) + (cellWidth * ITEMS_PER_ROW) +
-                (GRID_THICKNESS * (ITEMS_PER_ROW + 1));
+            int numDigits;
+            if (leftLabelIsRow) {
+                numDigits = mNumRows.ToString("x").Length;
+            } else {
+                numDigits = lastIndex.ToString("x").Length;     // a/k/a log16(lastIndex)
+            }
 
-            mStartIndex = firstIndex - (firstIndex % ITEMS_PER_ROW);
-            mGridLeft = EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
-            mGridTop = EDGE_PAD + LABEL_CHAR_HEIGHT;
+            mGridLeft = 0;
+            int width = (cellWidth * mMaxPerRow) + (GRID_THICKNESS * (mMaxPerRow + 1));
+            if (hasLeftLabels) {
+                width += EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
+                mGridLeft = EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
+            }
 
-            mEndIndex = (lastIndex + ITEMS_PER_ROW) - (lastIndex % ITEMS_PER_ROW);
-            mNumRows = (mEndIndex - mStartIndex) / ITEMS_PER_ROW;
-            int height = EDGE_PAD + LABEL_CHAR_HEIGHT + (mNumRows * cellHeight) +
-                (GRID_THICKNESS * (mNumRows + 1));
+            mGridTop = 0;
+            int height = (mNumRows * cellHeight) + (GRID_THICKNESS * (mNumRows + 1));
+            if (hasTopLabels) {
+                height += EDGE_PAD + LABEL_CHAR_HEIGHT;
+                mGridTop = EDGE_PAD + LABEL_CHAR_HEIGHT;
+            }
 
             if (width > Bitmap8.MAX_DIMENSION || height > Bitmap8.MAX_DIMENSION) {
                 throw new BadImageFormatException("bitmap would be " + width + "x" + height +
@@ -131,42 +233,71 @@ namespace FileConv.Gfx {
         /// Draws the hex labels across the top and down the left edge.
         /// </summary>
         private void DrawLabels(int numDigits, int endIndex) {
-            Debug.Assert(mStartIndex % ITEMS_PER_ROW == 0);
-            Debug.Assert(endIndex % ITEMS_PER_ROW == 0);
+            Debug.Assert(mStartIndex % mMaxPerRow == 0);
+            Debug.Assert(endIndex % mMaxPerRow == 0);
 
-            // Draw the labels down the left edge.
-            int startRow = EDGE_PAD + LABEL_CHAR_HEIGHT + GRID_THICKNESS;
-            startRow += (mCellHeight - LABEL_CHAR_HEIGHT) / 2;      // center
-            int numRows = (endIndex - mStartIndex) / ITEMS_PER_ROW;
-            for (int row = 0; row < numRows; row++) {
-                int ypos = startRow + (mCellHeight + GRID_THICKNESS) * row;
-                int xpos = EDGE_PAD + (numDigits - 1) * LABEL_CHAR_WIDTH;
-                int rowLabel = mStartIndex + row * ITEMS_PER_ROW;
+            if (mHasLeftLabels) {
+                // Draw the labels down the left edge.
+                int startRow = 0;
+                if (mHasTopLabels) {
+                    startRow += EDGE_PAD + LABEL_CHAR_HEIGHT;
+                }
+                Bitmap.FillRect(0, startRow, EDGE_PAD + LABEL_CHAR_WIDTH * numDigits,
+                    Bitmap.Height - startRow, mLabelBg);
+                startRow += GRID_THICKNESS;
 
-                // Draw label digits, right to left.
-                for (int dg = 0; dg < numDigits; dg++) {
-                    char digit = sHexDigit[rowLabel & 0x0f];
-                    Bitmap.DrawChar(digit, xpos, ypos, mLabelFg, mLabelBg);
+                startRow += (mCellHeight - LABEL_CHAR_HEIGHT) / 2;      // center
+                int numRows = (endIndex - mStartIndex) / mMaxPerRow;
+                for (int row = 0; row < numRows; row++) {
+                    int ypos = startRow + (mCellHeight + GRID_THICKNESS) * row;
+                    int xpos = EDGE_PAD + (numDigits - 1) * LABEL_CHAR_WIDTH;
+                    int rowLabel;
+                    if (mLeftLabelIsRow) {
+                        rowLabel = row;
+                    } else {
+                        rowLabel = mStartIndex + row * mMaxPerRow;
+                    }
 
-                    xpos -= LABEL_CHAR_WIDTH;
-                    rowLabel >>= 4;
+                    // Draw label digits, right to left.
+                    for (int dg = 0; dg < numDigits; dg++) {
+                        char digit = sHexDigit[rowLabel & 0x0f];
+                        Bitmap.DrawChar(digit, xpos, ypos, mLabelFg, mLabelBg);
+
+                        xpos -= LABEL_CHAR_WIDTH;
+                        rowLabel >>= 4;
+                    }
                 }
             }
 
-            // Draw the labels across the top edge.
-            // NOTE: this only works for ITEMS_PER_ROW <= 16.  To handle more we'd want to
-            // stack the label vertically, so we don't force the cells to be wider.
-            int startCol = EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH) + GRID_THICKNESS;
-            startCol += (mCellWidth - LABEL_CHAR_WIDTH) / 2;        // center
-            for (int col = 0; col < ITEMS_PER_ROW; col++) {
-                char labelCh;
-                if (col < sHexDigit.Length) {
-                    labelCh = sHexDigit[col];
-                } else {
-                    labelCh = '*';
+            if (mHasTopLabels) {
+                // Draw the labels across the top edge.
+                // NOTE: this only works for ITEMS_PER_ROW <= 16.  To handle more we'd want to
+                // stack the label vertically, so we don't force the cells to be wider.
+                int startCol = 0;
+                if (mHasLeftLabels) {
+                    startCol += EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
                 }
-                Bitmap.DrawChar(labelCh, startCol + col * (mCellWidth + GRID_THICKNESS),
-                    EDGE_PAD, mLabelFg, mLabelBg);
+                Bitmap.FillRect(startCol, 0, Bitmap.Width - startCol,
+                    EDGE_PAD + LABEL_CHAR_HEIGHT, mLabelBg);
+                startCol += GRID_THICKNESS;
+
+                startCol += (mCellWidth - LABEL_CHAR_WIDTH) / 2;        // center
+                for (int col = 0; col < Math.Min(mMaxPerRow, 16); col++) {
+                    char labelCh;
+                    if (col < sHexDigit.Length) {
+                        labelCh = sHexDigit[col];
+                    } else {
+                        labelCh = '*';
+                    }
+                    Bitmap.DrawChar(labelCh, startCol + col * (mCellWidth + GRID_THICKNESS),
+                        EDGE_PAD, mLabelFg, mLabelBg);
+                }
+            }
+
+            if (mHasLeftLabels && mHasTopLabels) {
+                // Fill in the top-left corner, if we have both vertical and horizontal labels.
+                Bitmap.FillRect(0, 0, EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH) + GRID_THICKNESS,
+                    EDGE_PAD + LABEL_CHAR_HEIGHT + GRID_THICKNESS, mLabelBg);
             }
         }
 
@@ -177,12 +308,15 @@ namespace FileConv.Gfx {
             int xc = mGridLeft;
             int yc = mGridTop;
 
-            for (int col = 0; col <= ITEMS_PER_ROW; col++) {
+            for (int col = 0; col <= mMaxPerRow; col++) {
                 DrawVerticalGridLine(xc + col * (mCellWidth + GRID_THICKNESS));
             }
             for (int row = 0; row <= mNumRows; row++) {
                 DrawHorizontalGridLine(yc + row * (mCellHeight + GRID_THICKNESS));
             }
+
+            // Set the bottom-right pixel.
+            Bitmap.SetPixelIndex(Bitmap.Width - 1, Bitmap.Height - 1, mBorderColor);
         }
 
         private void DrawVerticalGridLine(int xc) {
@@ -190,16 +324,16 @@ namespace FileConv.Gfx {
             int gridHeight = (mCellHeight + GRID_THICKNESS) * mNumRows;
             for (int yc = mGridTop; yc < mGridTop + gridHeight; yc++) {
                 // TODO: handle non-1 values of GRID_THICKNESS
-                Bitmap.SetPixelIndex(xc, yc, mGridColor);
+                Bitmap.SetPixelIndex(xc, yc, mBorderColor);
             }
         }
 
         private void DrawHorizontalGridLine(int yc) {
             Debug.Assert(GRID_THICKNESS == 1);
-            int gridWidth = (mCellWidth + GRID_THICKNESS) * ITEMS_PER_ROW;
+            int gridWidth = (mCellWidth + GRID_THICKNESS) * mMaxPerRow;
             for (int xc = mGridLeft; xc < mGridLeft + gridWidth; xc++) {
                 // TODO: handle non-1 values of GRID_THICKNESS
-                Bitmap.SetPixelIndex(xc, yc, mGridColor);
+                Bitmap.SetPixelIndex(xc, yc, mBorderColor);
             }
         }
 
@@ -219,8 +353,8 @@ namespace FileConv.Gfx {
         /// Calculates the pixel position of the specified cell.
         /// </summary>
         private void CalcCellPosn(int cellIndex, out int cellLeft, out int cellTop) {
-            int cellCol = (cellIndex - mStartIndex) % ITEMS_PER_ROW;
-            int cellRow = (cellIndex - mStartIndex) / ITEMS_PER_ROW;
+            int cellCol = (cellIndex - mStartIndex) % mMaxPerRow;
+            int cellRow = (cellIndex - mStartIndex) / mMaxPerRow;
             cellLeft = mGridLeft + GRID_THICKNESS + (mCellWidth + GRID_THICKNESS) * cellCol;
             cellTop = mGridTop + GRID_THICKNESS + (mCellHeight + GRID_THICKNESS) * cellRow;
         }
@@ -253,6 +387,15 @@ namespace FileConv.Gfx {
         }
 
         /// <summary>
+        /// Fills all pixels in a cell with the specified color.
+        /// </summary>
+        /// <param name="cellIndex">Index of cell.</param>
+        /// <param name="color">Color index.</param>
+        public void FillCell(int cellIndex, byte color) {
+            DrawRect(cellIndex, 0, 0, mCellWidth, mCellHeight, color);
+        }
+
+        /// <summary>
         /// Draws a filled rectangle in a cell.
         /// </summary>
         /// <param name="cellIndex">Index of cell.</param>
@@ -279,17 +422,14 @@ namespace FileConv.Gfx {
             DoDrawRect(cellIndex, left, top, width, height, color);
         }
 
-        // Do the drawing.  Can be called directly if we want to avoid the range checks.
+        // Do the drawing.  Can be called directly if we want to avoid the cell range checks,
+        // which disallow drawing in pad cells.
         private void DoDrawRect(int cellIndex, int left, int top, int width, int height,
                 byte color) {
             CalcCellPosn(cellIndex, out int cellLeft, out int cellTop);
             Debug.Assert(cellLeft + mCellWidth <= Bitmap.Width);
             Debug.Assert(cellTop + mCellHeight <= Bitmap.Height);
-            for (int row = 0; row < height; row++) {
-                for (int col = 0; col < width; col++) {
-                    Bitmap.SetPixelIndex(cellLeft + left + col, cellTop + top + row, color);
-                }
-            }
+            Bitmap.FillRect(cellLeft + left, cellTop + top, width, height, color);
         }
     }
 }

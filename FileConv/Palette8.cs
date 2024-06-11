@@ -22,6 +22,8 @@ namespace FileConv {
     public class Palette8 {
         private const int PALETTE_SIZE = 256;
 
+        public static readonly Palette8 EMPTY_PALETTE = new Palette8("empty");
+
         /// <summary>
         /// Human-readable identification label.
         /// </summary>

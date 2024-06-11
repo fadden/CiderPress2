@@ -112,6 +112,22 @@ namespace FileConv {
         }
 
         /// <summary>
+        /// Fills a rectangular area with a color.
+        /// </summary>
+        /// <param name="left">Left edge of rect.</param>
+        /// <param name="top">Top edge of rect.</param>
+        /// <param name="width">Width of rect.</param>
+        /// <param name="height">Height of rect.</param>
+        /// <param name="colorIndex">Color index.</param>
+        public void FillRect(int left, int top, int width, int height, byte colorIndex) {
+            for (int row = top; row < top + height; row++) {
+                for (int col = left; col < left + width; col++) {
+                    mPixelData[col + row * Width] = colorIndex;
+                }
+            }
+        }
+
+        /// <summary>
         /// Fills the entire bitmap with a solid color.
         /// </summary>
         /// <remarks>
