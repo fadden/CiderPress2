@@ -1,7 +1,7 @@
 # Apple IIgs Finder Icon File #
 
 File types:
- - ProDOS ICN ($CA): Finder Icons File
+ - ProDOS ICN ($CA)
 
 Primary references:
  - Apple II File Type Note $ca/xxxx, "Finder Icons File"

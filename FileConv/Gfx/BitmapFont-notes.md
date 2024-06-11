@@ -1,7 +1,7 @@
 # Bitmap Font #
 
 File types:
- - ProDOS FON ($c8) / $0000: Apple IIgs QuickDraw II font
+ - ProDOS FON ($c8) / $0000
 
 Primary references:
  - Apple II File Type Note $c8/0000, "Apple IIGS Font File"

@@ -275,6 +275,9 @@ namespace FileConv.Gfx {
 
         private const int NUM_COLS = 4;
 
+        /// <summary>
+        /// Renders the icons into a bitmap.
+        /// </summary>
         private static IConvOutput RenderIconGrid(IconFile iconFile, Notes loadNotes) {
             ScanIcons(iconFile, loadNotes, out int maxIconWidth, out int maxIconHeight);
 

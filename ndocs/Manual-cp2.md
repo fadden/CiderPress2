@@ -1600,6 +1600,7 @@ Text documents:
  - `teach`: Apple IIgs Teach Document
 
 Graphics:
+ - `ashape`: Applesoft shape table
  - `dhgr`: Apple II double-hi-res screen
    - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
      (default is `latch`)
