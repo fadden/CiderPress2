@@ -128,19 +128,19 @@ updating versions and running a final set of tests on the app.
     GlobalAppVersion.  It's stored redundantly because the library is
     intended to be separable from the application.  (You don't need to
     update this for a non-final release.)
- 1. Build the project in Visual Studio, in Debug mode.  It's important
-    to build for Debug to enable assertions and extended checks.  Note this
-    step builds MakeDist with the updated version number.
+ 1. Do a full build of the project in Visual Studio, in Debug mode.  It's
+    important to build for Debug to enable assertions and extended checks.
+    Note this step builds MakeDist with the updated version number.
  1. Launch the GUI application.  Verify the version number.  It's also good
     to do this because, in a Debug build, some library unit tests are
     executed during app startup.
  1. Run the command-line tests: `cp2 debug-test`, `cp2 debug-test-da`,
-    and `cp2 debug-test-fc`.  If you're not built for Debug mode, you
-    will see a warning at the end of the tests.
+    and `cp2 debug-test-fc`.  All tests must pass.  If you're not built for
+    Debug mode, you will see a warning at the end of the test runs.
 
 If this is a "final" release, you will need to publish updated documentation
 as well.  Don't do this for pre-releases; the web documentation should
-always match the current release.
+always match the latest final release.
 
  1. Update the `app_version` number in `ndocs/publish.py`.  This is used
     for text substitution in the descriptive text and installer links.
@@ -151,8 +151,9 @@ always match the current release.
 
 Finally, build the applications and submit the changes.
 
- 1. Run `makedist build` (it'll be in `MakeDist/bin/debug/NET6.0`).  This
-    builds the packages.  The output will be in the `DIST` directory.
+ 1. Run `makedist build` from the top level of the source tree (it'll be in
+    `MakeDist/bin/debug/NET6.0`).  This builds the distribution packages.
+    The output will be in the `DIST` directory.
  1. Submit all changes to git, push them to the server.
  1. Create a new release on github.  Drag `DIST/*.zip` into the release.
  1. Update/close any issues that have been addressed by the new release.
