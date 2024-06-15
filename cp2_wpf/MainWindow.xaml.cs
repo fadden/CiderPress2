@@ -1347,6 +1347,7 @@ namespace cp2_wpf {
                     mFileListRefocusNeeded + ")");
                 fileListDataGrid.Focus();
             }
+            mDragStartPosn = NO_POINT;      // see issue #20
         }
 
         #endregion Center Panel
@@ -1402,11 +1403,13 @@ namespace cp2_wpf {
             }
         }
 
+        private static readonly Point NO_POINT = new Point(-1, -1);
+
         // True if we're in the middle of a drag operation that started in the file list.
         private bool mIsDraggingFileList;
 
         // Screen position of drag start.
-        private Point mDragStartPosn;
+        private Point mDragStartPosn = NO_POINT;
 
         // Hack to make multi-file drag easier for the user.
         // https://stackoverflow.com/a/25123410/294248
@@ -1422,7 +1425,7 @@ namespace cp2_wpf {
         private void FileListDataGrid_PreviewMouseLeftButtonDown(object sender,
                 MouseButtonEventArgs e) {
             DataGrid grid = (DataGrid)sender;
-            mDragStartPosn = new Point(-1, -1);
+            mDragStartPosn = NO_POINT;
 
             // Identify the row that was clicked on.
             DataGridRow? row = FindVisualParent<DataGridRow>(e.OriginalSource as FrameworkElement);
@@ -1431,7 +1434,9 @@ namespace cp2_wpf {
                 // this allows the scroll bar to work.
                 return;
             }
-            mDragStartPosn = e.GetPosition(null);
+            mDragStartPosn = e.GetPosition(this);
+            //Debug.WriteLine("CLICK: posn=" + mDragStartPosn + " left=" + e.LeftButton +
+            //    " right=" + e.RightButton + " st=" + e.ButtonState + " src=" + e.OriginalSource);
             mPreSelection.Clear();
             if (row != null && row.IsSelected) {
                 // The user clicked on an entry that is already selected.  Capture the selection
@@ -1456,15 +1461,23 @@ namespace cp2_wpf {
         /// Handles mouse movement in the file list, watching for the start of a drag.
         /// </summary>
         private void FileListDataGrid_PreviewMouseMove(object sender, MouseEventArgs e) {
-            if (e.LeftButton != MouseButtonState.Pressed || mIsDraggingFileList) {
-                // Mouse button isn't being held down, or we're already in a drag op.
+            //Debug.WriteLine("MOVE to " + e.GetPosition(this));
+            if (e.LeftButton != MouseButtonState.Pressed) {
+                // Mouse button isn't being held down.  Clear the start position.  (Without this
+                // we get weird behavior when a right-click context menu is cleared by left-
+                // clicking on a different element; see issue #20.)
+                mDragStartPosn = NO_POINT;
+                return;
+            }
+            if (mIsDraggingFileList) {
+                // We're already in a drag op.
                 return;
             }
             if (mDragStartPosn.X < 0) {
                 // Initial click wasn't on an item in the file list.
                 return;
             }
-            Point posn = e.GetPosition(null);
+            Point posn = e.GetPosition(this);
             if (Math.Abs(mDragStartPosn.X - posn.X) >
                         SystemParameters.MinimumHorizontalDragDistance ||
                     Math.Abs(mDragStartPosn.Y - posn.Y) >

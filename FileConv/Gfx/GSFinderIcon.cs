@@ -70,7 +70,7 @@ namespace FileConv.Gfx {
 
             public string BlkNameStr { get; private set; } = string.Empty;
 
-            private const int BASE_LENGTH = 26;
+            public const int BASE_LENGTH = 26;
 
             public bool Load(byte[] buf, ref int offset, Notes notes) {
                 if (offset + BASE_LENGTH > buf.Length) {
@@ -237,6 +237,9 @@ namespace FileConv.Gfx {
 
         protected override Applicability TestApplicability() {
             if (DataStream == null) {
+                return Applicability.Not;
+            }
+            if (DataStream.Length < IconFile.BASE_LENGTH) {
                 return Applicability.Not;
             }
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_ICN) {
