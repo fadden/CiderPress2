@@ -60,8 +60,9 @@ namespace cp2_wpf.Actions {
         public object DoWork(BackgroundWorker bkWorker) {
             string curDir = Environment.CurrentDirectory;
 
+            ProgressUtil.PersistentChoices choices = new ProgressUtil.PersistentChoices();
             AddFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
-                return ProgressUtil.HandleCallback(what, "add", mLeafNode, bkWorker);
+                return ProgressUtil.HandleCallback(what, "add", choices, mLeafNode, bkWorker);
             };
             AddFileWorker addWorker = new AddFileWorker(mAddFileSet, cbFunc,
                 doCompress: DoCompress, macZip: EnableMacOSZip, stripPaths: StripPaths,

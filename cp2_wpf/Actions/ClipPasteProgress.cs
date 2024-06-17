@@ -64,8 +64,9 @@ namespace cp2_wpf.Actions {
         public object DoWork(BackgroundWorker bkWorker) {
             string curDir = Environment.CurrentDirectory;
 
+            ProgressUtil.PersistentChoices choices = new ProgressUtil.PersistentChoices();
             ClipPasteWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
-                return ProgressUtil.HandleCallback(what, "paste", mLeafNode, bkWorker);
+                return ProgressUtil.HandleCallback(what, "paste", choices, mLeafNode, bkWorker);
             };
             if (mClipInfo.ClipEntries == null) {
                 throw new NullReferenceException("No ClipEntries in ClipInfo");

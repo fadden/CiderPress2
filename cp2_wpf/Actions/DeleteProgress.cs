@@ -54,8 +54,9 @@ namespace cp2_wpf.Actions {
         /// <param name="bkWorker">Background worker object.</param>
         /// <returns>Operation results.</returns>
         public object DoWork(BackgroundWorker bkWorker) {
+            ProgressUtil.PersistentChoices choices = new ProgressUtil.PersistentChoices();
             DeleteFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
-                return ProgressUtil.HandleCallback(what, "deleting", mLeafNode, bkWorker);
+                return ProgressUtil.HandleCallback(what, "deleting", choices, mLeafNode, bkWorker);
             };
             DeleteFileWorker worker = new DeleteFileWorker(cbFunc, macZip: EnableMacOSZip,
                     mAppHook);

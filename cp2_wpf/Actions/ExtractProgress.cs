@@ -65,8 +65,9 @@ namespace cp2_wpf.Actions {
         public object DoWork(BackgroundWorker bkWorker) {
             string curDir = Environment.CurrentDirectory;
             try {
+                ProgressUtil.PersistentChoices choices = new ProgressUtil.PersistentChoices();
                 ExtractFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
-                    return ProgressUtil.HandleCallback(what, "extract", null, bkWorker);
+                    return ProgressUtil.HandleCallback(what, "extract", choices, null, bkWorker);
                 };
                 ExtractFileWorker extWorker = new ExtractFileWorker(cbFunc, macZip: EnableMacOSZip,
                     preserve: Preserve, rawMode: RawMode, stripPaths: StripPaths, DefaultSpecs,

@@ -1,0 +1,91 @@
+﻿<!--
+Copyright 2024 faddenSoft
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_wpf.Actions.OverwriteQueryDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_wpf.Actions"
+        mc:Ignorable="d"
+        Title="Overwrite Existing File?"
+        SizeToContent="Height" Width="600" ResizeMode="NoResize"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="There is already a file with the same name in the destination directory."/>
+
+        <Grid Grid.Row="1" Margin="0,8,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,4"
+                       Text="You can replace the existing file with the new one:"/>
+            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="4" Width="100" Height="100" Margin="0,0,8,0"
+                    HorizontalAlignment="Left" Content="Copy and&#x0a; Replace"
+                    Click="Replace_Click"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding SrcPathName, FallbackValue=SrcPath}" FontWeight="Bold"/>
+            <TextBlock Grid.Column="1" Grid.Row="2" Text="[pathname]"/>
+            <TextBlock Grid.Column="1" Grid.Row="3" Text="Size: [size]"/>
+            <TextBlock Grid.Column="1" Grid.Row="4" Text="Modified: [when]"/>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,4"
+                       Text="Or leave the existing file alone:"/>
+            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="4" Width="100" Height="100" Margin="0,0,8,0"
+                    HorizontalAlignment="Left" Content="Don't Copy"
+                    Click="Skip_Click"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding DstPathName, FallbackValue=DstPath}" FontWeight="Bold"/>
+            <TextBlock Grid.Column="1" Grid.Row="2" Text="[pathname]"/>
+            <TextBlock Grid.Column="1" Grid.Row="3" Text="Size: [size]"/>
+            <TextBlock Grid.Column="1" Grid.Row="4" Text="Modified: [when]"/>
+        </Grid>
+
+        <DockPanel Grid.Row="3" Margin="0,12,0,0" LastChildFill="False">
+            <CheckBox DockPanel.Dock="Left" Content="Do this for all conflicts"
+                      IsChecked="{Binding UseForAll}"/>
+            <Button DockPanel.Dock="Right" Name="cancelButton" Content="Cancel" IsCancel="True"
+                    Width="70" Margin="4,0,0,0"/>
+        </DockPanel>
+    </Grid>
+</Window>

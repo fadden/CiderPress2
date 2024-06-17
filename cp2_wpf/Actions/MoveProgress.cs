@@ -58,8 +58,9 @@ namespace cp2_wpf.Actions {
         /// <param name="bkWorker">Background worker object.</param>
         /// <returns>Operation results.</returns>
         public object DoWork(BackgroundWorker bkWorker) {
+            ProgressUtil.PersistentChoices choices = new ProgressUtil.PersistentChoices();
             MoveFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
-                return ProgressUtil.HandleCallback(what, "moving", mLeafNode, bkWorker);
+                return ProgressUtil.HandleCallback(what, "moving", choices, mLeafNode, bkWorker);
             };
             MoveFileWorker worker = new MoveFileWorker(cbFunc, mAppHook);
 

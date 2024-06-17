@@ -19,6 +19,8 @@ using System.Diagnostics;
 using System.Threading;
 using System.Windows;
 
+using AppCommon;
+
 namespace cp2_wpf.WPFCommon {
     /// <summary>
     /// Cancellable progress dialog.
@@ -62,6 +64,21 @@ namespace cp2_wpf.WPFCommon {
             private object mLockObj = new object();
 
             /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="text">String to show in the message box.</param>
+            /// <param name="caption">String to show in the caption.</param>
+            /// <param name="button">Enumerated value for buttons to show.</param>
+            /// <param name="image">Enumerated value for icons to show.</param>
+            public MessageBoxQuery(string text, string caption, MessageBoxButton button,
+                    MessageBoxImage image) {
+                Text = text;
+                Caption = caption;
+                Button = button;
+                Image = image;
+            }
+
+            /// <summary>
             /// Wait for a result to arrive on the worker side.  Call this after ReportProgress().
             /// </summary>
             /// <returns>Result from <see cref="MessageBox.Show"/>.</returns>
@@ -84,20 +101,52 @@ namespace cp2_wpf.WPFCommon {
                     Monitor.Pulse(mLockObj);
                 }
             }
+        }
+
+        /// <summary>
+        /// File overwrite query, sent from a non-GUI thread via the progress update mechanism.
+        /// </summary>
+        public class OverwriteQuery {
+            private CallbackFacts.Results mResult = CallbackFacts.Results.Unknown;
+            private bool mUseForAll = false;
+            private object mLockObj = new object();
+
+            public CallbackFacts Facts { get; private set; }
 
             /// <summary>
             /// Constructor.
             /// </summary>
-            /// <param name="text">String to show in the message box.</param>
-            /// <param name="caption">String to show in the caption.</param>
-            /// <param name="button">Enumerated value for buttons to show.</param>
-            /// <param name="image">Enumerated value for icons to show.</param>
-            public MessageBoxQuery(string text, string caption, MessageBoxButton button,
-                    MessageBoxImage image) {
-                Text = text;
-                Caption = caption;
-                Button = button;
-                Image = image;
+            public OverwriteQuery(CallbackFacts what) {
+                Facts = what;
+            }
+
+            /// <summary>
+            /// Wait for a result to arrive on the worker side.  Call this after ReportProgress().
+            /// </summary>
+            /// <param name="what">What happened.</param>
+            /// <param name="useForAll">Result: true if the user wants to use this choice for
+            ///   all conflicts.</param>
+            /// <returns>Result from query dialog.</returns>
+            public CallbackFacts.Results WaitForResult(out bool useForAll) {
+                lock (mLockObj) {
+                    while (mResult == CallbackFacts.Results.Unknown) {
+                        Monitor.Wait(mLockObj);
+                    }
+                    useForAll = mUseForAll;
+                    return mResult;
+                }
+            }
+
+            /// <summary>
+            /// Sets the result.  Call this from ReportProgress() on the GUI side.
+            /// </summary>
+            /// <param name="value">Result from query dialog.</param>
+            public void SetResult(CallbackFacts.Results value, bool useForAll) {
+                lock (mLockObj) {
+                    mResult = value;
+                    mUseForAll = useForAll;
+                    Monitor.Pulse(mLockObj);
+                }
             }
         }
 
@@ -169,6 +218,7 @@ namespace cp2_wpf.WPFCommon {
         /// can close, cancelling the MessageBox and confusing the window manager.</para>
         /// </remarks>
         private void ProgressChanged(object? sender, ProgressChangedEventArgs e) {
+            // Handle MessageBoxQuery.
             MessageBoxQuery? qq = e.UserState as MessageBoxQuery;
             if (qq != null) {
                 MessageBoxResult mbr =
@@ -177,6 +227,20 @@ namespace cp2_wpf.WPFCommon {
                 return;
             }
 
+            // Handle OverwriteQuery.
+            OverwriteQuery? oq = e.UserState as OverwriteQuery;
+            if (oq != null) {
+                Actions.OverwriteQueryDialog dialog =
+                    new Actions.OverwriteQueryDialog(this, oq.Facts);
+                if (dialog.ShowDialog() != true) {
+                    oq.SetResult(CallbackFacts.Results.Cancel, false);  // dialog cancelled
+                } else {
+                    oq.SetResult(dialog.Result, dialog.UseForAll);
+                }
+                return;
+            }
+
+            // Handle progress message.
             string? msg = e.UserState as string;
             if (!string.IsNullOrEmpty(msg)) {
                 messageText.Text = msg;
