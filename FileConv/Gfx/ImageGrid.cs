@@ -46,6 +46,7 @@ namespace FileConv.Gfx {
         private bool mHasLeftLabels;            // if true, draw labels on left
         private bool mHasTopLabels;             // if true, draw labels across top
         private bool mLeftLabelIsRow;           // if true, left labels are *row* num (vs. item)
+        private int mLabelRadix;                // label radix, 10 or 16
 
         /// <summary>
         /// Bitmap that we render into.
@@ -77,7 +78,7 @@ namespace FileConv.Gfx {
                 return new ImageGrid(FirstIndex, NumItems,
                     CellWidth, CellHeight, MaxPerRow,
                     Palette, LabelFgColor, LabelBgColor, BorderColor, PadCellColor,
-                    HasLeftLabels, HasTopLabels, LeftLabelIsRow);
+                    HasLeftLabels, HasTopLabels, LeftLabelIsRow, LabelRadix);
             }
 
             public int FirstIndex { get; private set; } = -1;
@@ -93,6 +94,7 @@ namespace FileConv.Gfx {
             public bool HasLeftLabels { get; private set; }
             public bool HasTopLabels { get; private set; }
             public bool LeftLabelIsRow { get; private set; }
+            public int LabelRadix { get; private set; }
 
             /// <summary>
             /// Sets the geometry entries.  Mandatory
@@ -150,10 +152,14 @@ namespace FileConv.Gfx {
             /// <param name="hasTopLabels">If true, show labels across top.</param>
             /// <param name="leftLabelIsRow">If true, the left label is the row number
             ///   rather than the item number.</param>
-            public void SetLabels(bool hasLeftLabels, bool hasTopLabels, bool leftLabelIsRow) {
+            /// <param name="labelRadix">Label radix, must be 10 or 16.</param>
+            public void SetLabels(bool hasLeftLabels, bool hasTopLabels, bool leftLabelIsRow,
+                    int labelRadix) {
+                Debug.Assert(labelRadix == 10 || labelRadix == 16);
                 HasLeftLabels = hasLeftLabels;
                 HasTopLabels = hasTopLabels;
                 LeftLabelIsRow = leftLabelIsRow;
+                LabelRadix = labelRadix;
             }
         }
 
@@ -163,7 +169,7 @@ namespace FileConv.Gfx {
         private ImageGrid(int firstIndex, int numItems, int cellWidth, int cellHeight,
                 int maxPerRow, Palette8 palette, byte labelFgColor, byte labelBgColor,
                 byte borderColor, byte padCellColor, bool hasLeftLabels, bool hasTopLabels,
-                bool leftLabelIsRow) {
+                bool leftLabelIsRow, int labelRadix) {
             // If the items are smaller than the frame labels, increase the size.
             if (cellWidth < LABEL_CHAR_WIDTH) {
                 cellWidth = LABEL_CHAR_WIDTH;
@@ -184,6 +190,7 @@ namespace FileConv.Gfx {
             mHasLeftLabels = hasLeftLabels;
             mHasTopLabels = hasTopLabels;
             mLeftLabelIsRow = leftLabelIsRow;
+            mLabelRadix = labelRadix;
 
             mStartIndex = firstIndex - (firstIndex % mMaxPerRow);
             int lastIndex = firstIndex + numItems - 1;
@@ -193,10 +200,11 @@ namespace FileConv.Gfx {
             // Width must include the left-side label, plus one space for padding, and a full
             // row of cells separated with grid lines.
             int numDigits;
+            string labelFmt = (mLabelRadix == 16) ? "x" : "";   // log10 or log16 of max num
             if (leftLabelIsRow) {
-                numDigits = mNumRows.ToString("x").Length;
+                numDigits = mNumRows.ToString(labelFmt).Length;
             } else {
-                numDigits = lastIndex.ToString("x").Length;     // a/k/a log16(lastIndex)
+                numDigits = lastIndex.ToString(labelFmt).Length;
             }
 
             mGridLeft = 0;
@@ -235,6 +243,7 @@ namespace FileConv.Gfx {
         private void DrawLabels(int numDigits, int endIndex) {
             Debug.Assert(mStartIndex % mMaxPerRow == 0);
             Debug.Assert(endIndex % mMaxPerRow == 0);
+            string labelFmt = (mLabelRadix == 16) ? "X" : "";
 
             if (mHasLeftLabels) {
                 // Draw the labels down the left edge.
@@ -249,22 +258,19 @@ namespace FileConv.Gfx {
                 startRow += (mCellHeight - LABEL_CHAR_HEIGHT) / 2;      // center
                 int numRows = (endIndex - mStartIndex) / mMaxPerRow;
                 for (int row = 0; row < numRows; row++) {
-                    int ypos = startRow + (mCellHeight + GRID_THICKNESS) * row;
-                    int xpos = EDGE_PAD + (numDigits - 1) * LABEL_CHAR_WIDTH;
-                    int rowLabel;
+                    // Generate the label string.
+                    string rowLabelStr;
                     if (mLeftLabelIsRow) {
-                        rowLabel = row;
+                        rowLabelStr = row.ToString(labelFmt);
                     } else {
-                        rowLabel = mStartIndex + row * mMaxPerRow;
+                        rowLabelStr = (mStartIndex + row * mMaxPerRow).ToString(labelFmt);
                     }
 
-                    // Draw label digits, right to left.
-                    for (int dg = 0; dg < numDigits; dg++) {
-                        char digit = sHexDigit[rowLabel & 0x0f];
-                        Bitmap.DrawChar(digit, xpos, ypos, mLabelFg, mLabelBg);
-
-                        xpos -= LABEL_CHAR_WIDTH;
-                        rowLabel >>= 4;
+                    int ypos = startRow + (mCellHeight + GRID_THICKNESS) * row;
+                    int xpos = EDGE_PAD;
+                    foreach (char ch in rowLabelStr) {
+                        Bitmap.DrawChar(ch, xpos, ypos, mLabelFg, mLabelBg);
+                        xpos += LABEL_CHAR_WIDTH;
                     }
                 }
             }

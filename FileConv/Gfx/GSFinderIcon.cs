@@ -289,7 +289,7 @@ namespace FileConv.Gfx {
             bob.SetGeometry(maxIconWidth, maxIconHeight, NUM_COLS);
             bob.SetRange(0, iconFile.IconRecords.Count * NUM_COLS);
             bob.SetColors(ICON_PALETTE, COLOR_FRAME, COLOR_BKGND, COLOR_FRAME, COLOR_FRAME);
-            bob.SetLabels(hasLeftLabels: true, hasTopLabels: false, leftLabelIsRow: true);
+            bob.SetLabels(hasLeftLabels: true, hasTopLabels: false, leftLabelIsRow: true, 10);
             ImageGrid grid;
             try {
                 grid = bob.Create();    // this will throw if bitmap would be too big

@@ -636,7 +636,7 @@ namespace FileConv.Gfx {
             bob.SetGeometry(cellWidth, macHeader.FRectHeight, 16);
             bob.SetRange(macHeader.FirstChar, macHeader.LastChar - macHeader.FirstChar + 2);
             bob.SetColors(FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
-            bob.SetLabels(hasLeftLabels: true, hasTopLabels: true, leftLabelIsRow: false);
+            bob.SetLabels(hasLeftLabels: true, hasTopLabels: true, leftLabelIsRow: false, 16);
             ImageGrid grid;
             try {
                 grid = bob.Create();    // this will throw if bitmap would be too big
