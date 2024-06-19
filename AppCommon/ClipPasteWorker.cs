@@ -205,8 +205,13 @@ namespace AppCommon {
                 // Check for a duplicate.  If it exists, ask the user if they want to overwrite
                 // or skip.
                 if (dupCheck.TryGetValue(adjPath, out IFileEntry? dupEntry)) {
-                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
-                        adjPath, clipEntry.Attribs.FullPathSep);
+                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists);
+                    facts.OrigPathName = dupEntry.FullPathName;
+                    facts.OrigDirSep = dupEntry.DirectorySeparatorChar;
+                    facts.OrigModWhen = dupEntry.ModWhen;
+                    facts.NewPathName = clipEntry.Attribs.FullPathName;
+                    facts.NewDirSep = clipEntry.Attribs.FullPathSep;
+                    facts.NewModWhen = clipEntry.Attribs.ModWhen;
                     CallbackFacts.Results result = mFunc(facts);
                     switch (result) {
                         case CallbackFacts.Results.Cancel:
@@ -429,8 +434,14 @@ namespace AppCommon {
                         // File exists.  Skip or overwrite.
                         bool doSkip = false;
                         CallbackFacts facts =
-                            new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
-                                newEntry.FullPathName, newEntry.DirectorySeparatorChar);
+                            new CallbackFacts(CallbackFacts.Reasons.FileNameExists);
+                        facts.OrigPathName = newEntry.FullPathName;
+                        facts.OrigDirSep = newEntry.DirectorySeparatorChar;
+                        facts.OrigModWhen = newEntry.ModWhen;
+                        facts.NewPathName = clipEntry.Attribs.FullPathName;
+                        facts.NewDirSep = clipEntry.Attribs.FullPathSep;
+                        facts.NewModWhen = clipEntry.Attribs.ModWhen;
+
                         CallbackFacts.Results result = mFunc(facts);
                         switch (result) {
                             case CallbackFacts.Results.Cancel:

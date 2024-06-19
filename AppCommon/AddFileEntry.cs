@@ -179,7 +179,7 @@ namespace AppCommon {
                 "' type=$" + FileType.ToString("x2") + " aux=$" + AuxType.ToString("x4") +
                 " hfsType=" + MacChar.StringifyMacConstant(HFSFileType) +
                 " hfsCreator=" + MacChar.StringifyMacConstant(HFSCreator) +
-                " stPath='" + StorageDir + "' stName='" + StorageName + "']";
+                " stPath='" + StorageDir + "' stName='" + StorageName + "' mod=" + ModWhen + "]";
         }
     }
 }

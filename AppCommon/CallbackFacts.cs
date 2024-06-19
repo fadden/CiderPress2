@@ -15,6 +15,7 @@
  */
 using System;
 
+using CommonUtil;
 using DiskArc;
 using static DiskArc.Defs;
 
@@ -90,9 +91,11 @@ namespace AppCommon {
 
         public string OrigPathName { get; set; } = string.Empty;
         public char OrigDirSep { get; set; } = IFileEntry.NO_DIR_SEP;
+        public DateTime OrigModWhen { get; set; } = TimeStamp.NO_DATE;
 
         public string NewPathName { get; set; } = string.Empty;
         public char NewDirSep { get; set; } = IFileEntry.NO_DIR_SEP;
+        public DateTime NewModWhen { get; set; } = TimeStamp.NO_DATE;
 
         public FilePart Part { get; set; } = FilePart.Unknown;
 

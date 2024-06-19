@@ -162,14 +162,18 @@ namespace AppCommon {
                 ArcReadStream? rsrcStream = null;
                 AppleSingle? adfArchive = null;
                 Stream? adfStream = null;
+                IFileEntry dataProgEnt = IFileEntry.NO_ENTRY;
+                IFileEntry rsrcProgEnt = IFileEntry.NO_ENTRY;
                 try {
                     if (entry.HasDataFork) {
                         dataStream = archive.OpenPart(entry, FilePart.DataFork);
+                        dataProgEnt = entry;
                     } else if (entry.IsDiskImage) {
                         // This allows the user to extract a disk image from a NuFX .SDK archive
                         // as a file, rather than as a disk image.  Because we don't add the 'i'
                         // suffix to extracted NAPS images, this is not very useful.
                         dataStream = archive.OpenPart(entry, FilePart.DiskImage);
+                        dataProgEnt = entry;
                     }
 
                     if (adfEntry != IFileEntry.NO_ENTRY) {
@@ -185,6 +189,7 @@ namespace AppCommon {
                             if (adfArchiveEntry.HasRsrcFork && adfArchiveEntry.RsrcLength > 0) {
                                 rsrcStream =
                                     adfArchive.OpenPart(adfArchiveEntry, FilePart.RsrcFork);
+                                rsrcProgEnt = adfEntry;     // adfArchiveEntry has no filename
                             }
                         } catch (Exception ex) {
                             // Never mind.
@@ -200,6 +205,7 @@ namespace AppCommon {
                         if (entry.HasRsrcFork &&
                                 (entry is NuFX_FileEntry || entry.RsrcLength > 0)) {
                             rsrcStream = archive.OpenPart(entry, FilePart.RsrcFork);
+                            rsrcProgEnt = entry;
                         }
                     }
 
@@ -209,10 +215,10 @@ namespace AppCommon {
                         bool doContinue;
                         if (exportSpec == null) {
                             doContinue = DoExtract(extractPath, attrs, dataStream, rsrcStream,
-                                dataPerc, rsrcPerc);
+                                dataPerc, rsrcPerc, dataProgEnt, rsrcProgEnt);
                         } else {
                             doContinue = DoExport(extractPath, attrs, dataStream, rsrcStream,
-                                dataPerc, exportSpec);
+                                dataPerc, exportSpec, dataProgEnt);
                         }
                         if (!doContinue) {
                             // Cancel requested.
@@ -320,10 +326,10 @@ namespace AppCommon {
                         bool ok;
                         if (exportSpec == null) {
                             ok = DoExtract(extractPath, attrs, dataStream, rsrcStream,
-                                dataPerc, rsrcPerc);
+                                dataPerc, rsrcPerc, entry, entry);
                         } else {
                             ok = DoExport(extractPath, attrs, dataStream, rsrcStream,
-                                dataPerc, exportSpec);
+                                dataPerc, exportSpec, entry);
                         }
                         if (!ok) {
                             // Cancel requested.
@@ -359,10 +365,13 @@ namespace AppCommon {
         /// <param name="rsrcStream">Resource fork stream, doesn't have to be seekable.</param>
         /// <param name="dataPercent">Percent completion of operation for data fork (0-99).</param>
         /// <param name="rsrcPercent">Percent completion of operation for rsrc fork (0-99).</param>
+        /// <param name="dataProgEnt">IFileEntry for data fork for progress messages.</param>
+        /// <param name="rsrcProgEnt">IFileEntry for rsrc fork for progress messages.</param>
         /// <returns>True if we should continue, false if we should cancel.</returns>
         /// <exception cref="IOException">Error creating or writing to file.</exception>
         private bool DoExtract(string extractPath, FileAttribs attrs, Stream? dataStream,
-                Stream? rsrcStream, int dataPercent, int rsrcPercent) {
+                Stream? rsrcStream, int dataPercent, int rsrcPercent,
+                IFileEntry dataProgEnt, IFileEntry rsrcProgEnt) {
             // Cleanup list, in case we fail partway through.
             string? cleanPath1 = null;
             string? cleanPath2 = null;
@@ -378,7 +387,7 @@ namespace AppCommon {
                         // Extract data fork to named file.  Ignore rsrc fork.
                         // Set dates and access.
                         if (dataStream != null) {
-                            if (!PrepareOutputFile(extractPath, out doCancel)) {
+                            if (!PrepareOutputFile(extractPath, dataProgEnt, out doCancel)) {
                                 return !doCancel;
                             }
                             cleanPath1 = extractPath;
@@ -402,7 +411,7 @@ namespace AppCommon {
                         // Create named file, extract data fork if it exists.
                         // If has resource fork or file type attributes, create ADF header file.
                         // Set dates and access on BOTH files.
-                        if (!PrepareOutputFile(extractPath, out doCancel)) {
+                        if (!PrepareOutputFile(extractPath, dataProgEnt, out doCancel)) {
                             return !doCancel;
                         }
                         cleanPath1 = extractPath;
@@ -417,7 +426,7 @@ namespace AppCommon {
                             // Form ADF header file name.
                             string adfPath = Path.Combine(Path.GetDirectoryName(extractPath)!,
                                 AppleSingle.ADF_PREFIX + Path.GetFileName(extractPath));
-                            if (!PrepareOutputFile(adfPath, out doCancel)) {
+                            if (!PrepareOutputFile(adfPath, rsrcProgEnt, out doCancel)) {
                                 return !doCancel;
                             }
                             cleanPath2 = adfPath;
@@ -456,7 +465,7 @@ namespace AppCommon {
                         // Set dates on file.  Don't set access, it's an archive.
                         doSetAccess = false;
                         string asPath = extractPath + AppleSingle.AS_EXT;
-                        if (!PrepareOutputFile(asPath, out doCancel)) {
+                        if (!PrepareOutputFile(asPath, dataProgEnt, out doCancel)) {
                             return !doCancel;
                         }
                         cleanPath1 = asPath;
@@ -505,7 +514,7 @@ namespace AppCommon {
                         // Create named file, extract data fork if it exists.  Extract resource
                         // to {name}/..namedfork/rsrc (we assume Mac OS filesystem behavior).
                         // Set dates and access.
-                        if (!PrepareOutputFile(extractPath, out doCancel)) {
+                        if (!PrepareOutputFile(extractPath, dataProgEnt, out doCancel)) {
                             return !doCancel;
                         }
                         cleanPath1 = extractPath;
@@ -537,7 +546,7 @@ namespace AppCommon {
                         string napsExt = attrs.GenerateNAPSExt();
                         if (dataStream != null) {
                             string napsPath = extractPath + napsExt;
-                            if (!PrepareOutputFile(napsPath, out doCancel)) {
+                            if (!PrepareOutputFile(napsPath, dataProgEnt, out doCancel)) {
                                 return !doCancel;
                             }
                             cleanPath1 = napsPath;
@@ -548,8 +557,12 @@ namespace AppCommon {
                             }
                         }
                         if (rsrcStream != null) {
+                            // TODO: if they agreed to overwrite the data fork, we should also
+                            //   overwrite the resource fork.  Alternatively, choosing not to
+                            //   overwrite the data fork shouldn't automatically cancel overwrite
+                            //   of the resource fork.
                             string napsPath = extractPath + napsExt + "r";
-                            if (!PrepareOutputFile(napsPath, out doCancel)) {
+                            if (!PrepareOutputFile(napsPath, rsrcProgEnt, out doCancel)) {
                                 return !doCancel;
                             }
                             cleanPath2 = napsPath;
@@ -605,10 +618,13 @@ namespace AppCommon {
         /// <param name="rsrcStream">Resource fork stream, doesn't have to be seekable.</param>
         /// <param name="dataPercent">Percent completion of operation (0-99).</param>
         /// <param name="exportSpec">Converter tag and options.</param>
+        /// <param name="dataProgEnt">IFileEntry for data fork for progress messages.</param>
+        /// <param name="rsrcProgEnt">IFileEntry for rsrc fork for progress messages.</param>
         /// <returns>True if we should continue, false if we should cancel.</returns>
         /// <exception cref="IOException">Error creating or writing to file.</exception>
         private bool DoExport(string extractPath, FileAttribs attrs, Stream? dataStream,
-                Stream? rsrcStream, int dataPercent, ConvConfig.FileConvSpec exportSpec) {
+                Stream? rsrcStream, int dataPercent, ConvConfig.FileConvSpec exportSpec,
+                IFileEntry dataProgEnt) {
             // Cleanup list, in case we fail partway through.
             string? cleanPath1 = null;
             Stream? dataCopy = null;
@@ -661,7 +677,7 @@ namespace AppCommon {
                     return false;
                 } else if (convOutput is FancyText && !((FancyText)convOutput).PreferSimple) {
                     string rtfPath = extractPath + RTFGenerator.FILE_EXT;
-                    if (!PrepareOutputFile(rtfPath, out bool doCancel)) {
+                    if (!PrepareOutputFile(rtfPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = rtfPath;
@@ -671,7 +687,7 @@ namespace AppCommon {
                     }
                 } else if (convOutput is SimpleText) {
                     string txtPath = extractPath + TXTGenerator.FILE_EXT;
-                    if (!PrepareOutputFile(txtPath, out bool doCancel)) {
+                    if (!PrepareOutputFile(txtPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = txtPath;
@@ -681,7 +697,7 @@ namespace AppCommon {
                     }
                 } else if (convOutput is CellGrid) {
                     string csvPath = extractPath + CSVGenerator.FILE_EXT;
-                    if (!PrepareOutputFile(csvPath, out bool doCancel)) {
+                    if (!PrepareOutputFile(csvPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = csvPath;
@@ -691,7 +707,7 @@ namespace AppCommon {
                     }
                 } else if (convOutput is IBitmap) {
                     string pngPath = extractPath + PNGGenerator.FILE_EXT;
-                    if (!PrepareOutputFile(pngPath, out bool doCancel)) {
+                    if (!PrepareOutputFile(pngPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = pngPath;
@@ -705,7 +721,7 @@ namespace AppCommon {
                         ReportConvFailure("weird: HostConv but no data fork");
                         return false;
                     }
-                    if (!PrepareOutputFile(extractPath, out bool doCancel)) {
+                    if (!PrepareOutputFile(extractPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
                     cleanPath1 = extractPath;
@@ -767,11 +783,12 @@ namespace AppCommon {
         /// Clears an existing file when extracting, or throws an exception.
         /// </summary>
         /// <param name="pathName">Pathname to extract to.</param>
+        /// <param name="progEnt">File entry for source data, used for progress message.</param>
         /// <param name="doCancel">True if the user has asked to cancel the operation, or
         ///   a severe problem was detected.</param>
         /// <returns>True if the way is clear.</returns>
         /// <exception cref="IOException">File operation failed.</exception>
-        private bool PrepareOutputFile(string pathName, out bool doCancel) {
+        private bool PrepareOutputFile(string pathName, IFileEntry progEnt, out bool doCancel) {
             doCancel = false;
 
             if (Directory.Exists(pathName)) {
@@ -787,8 +804,17 @@ namespace AppCommon {
                 return CreateDirectories(pathName, out doCancel);
             }
 
-            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
-                pathName, Path.DirectorySeparatorChar);
+            // Set up a file overwrite dialog.  We want to show the attributes for both files.
+            // For export actions, the attributes other than the filename are meaningless.
+            CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists);
+            facts.OrigPathName = pathName;
+            facts.OrigDirSep = Path.DirectorySeparatorChar;
+            facts.OrigModWhen = info.LastWriteTime;
+            if (progEnt != IFileEntry.NO_ENTRY) {
+                facts.NewPathName = progEnt.FullPathName;
+                facts.NewDirSep = progEnt.DirectorySeparatorChar;
+                facts.NewModWhen = progEnt.ModWhen;
+            }
             CallbackFacts.Results result = mFunc(facts);
             switch (result) {
                 case CallbackFacts.Results.Cancel:
@@ -803,7 +829,8 @@ namespace AppCommon {
                     break;
             }
 
-            // Mark the file read-write and delete it.
+            // Mark the file read-write and delete it.  (Don't just truncate and overwrite,
+            // especially if we're in "host" mode and it has a resource fork.)
             if ((info.Attributes & FileAttributes.ReadOnly) != 0) {
                 info.Attributes &= ~FileAttributes.ReadOnly;
             }

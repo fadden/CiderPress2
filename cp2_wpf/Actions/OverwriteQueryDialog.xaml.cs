@@ -17,7 +17,7 @@ using System;
 using System.Windows;
 
 using AppCommon;
-using cp2_wpf.WPFCommon;
+using CommonUtil;
 
 namespace cp2_wpf.Actions {
     /// <summary>
@@ -40,8 +40,12 @@ namespace cp2_wpf.Actions {
         // Dialog pieces.
         //
 
-        public string SrcPathName { get; set; }
-        public string DstPathName { get; set; }
+        public string NewFileName { get; set; }
+        public string NewDirName { get; set; }
+        public string NewModWhen { get; set; }
+        public string ExistFileName { get; set; }
+        public string ExistDirName { get; set; }
+        public string ExistModWhen { get; set; }
 
 
         public OverwriteQueryDialog(Window parent, CallbackFacts facts) {
@@ -49,9 +53,31 @@ namespace cp2_wpf.Actions {
             Owner = parent;
             DataContext = this;
 
-            SrcPathName = facts.OrigPathName;
-            DstPathName = facts.NewPathName;
-            // TODO: remaining fields
+            NewFileName = PathName.GetFileName(facts.NewPathName, facts.NewDirSep);
+            string ndn = PathName.GetDirectoryName(facts.NewPathName, facts.NewDirSep);
+            if (!string.IsNullOrEmpty(ndn)) {
+                NewDirName = "Directory: " + ndn;
+            } else {
+                NewDirName = string.Empty;
+            }
+            if (TimeStamp.IsValidDate(facts.NewModWhen)) {
+                NewModWhen = "Modified: " + facts.NewModWhen.ToString();
+            } else {
+                NewModWhen = "Modified: (unknown)";
+            }
+
+            ExistFileName = PathName.GetFileName(facts.OrigPathName, facts.OrigDirSep);
+            string edn = PathName.GetDirectoryName(facts.OrigPathName, facts.OrigDirSep);
+            if (!string.IsNullOrEmpty(edn)) {
+                ExistDirName = "Directory: " + edn;
+            } else {
+                ExistDirName = string.Empty;
+            }
+            if (TimeStamp.IsValidDate(facts.OrigModWhen)) {
+                ExistModWhen = "Modified: " + facts.OrigModWhen.ToString();
+            } else {
+                ExistModWhen = "Modified: (unknown)";
+            }
         }
 
         private void Replace_Click(object sender, RoutedEventArgs e) {

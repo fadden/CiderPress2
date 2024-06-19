@@ -175,6 +175,9 @@ namespace cp2 {
                     } else if (parms.Interactive) {
                         // TODO: can implement overwrite-all or skip-all by changing the values
                         //   of parms.Overwrite and parms.Interactive
+                        //Console.WriteLine("Overwrite '" +
+                        //    what.OrigPathName + "' mod=" + what.OrigModWhen + " with '" +
+                        //    what.NewPathName + "' mod=" + what.NewModWhen);
                         Console.WriteLine("Overwrite '" + what.OrigPathName + "'");
                         Console.Write("  Yes, no, cancel? ");
                         string? input = Console.ReadLine();

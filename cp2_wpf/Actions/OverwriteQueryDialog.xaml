@@ -41,7 +41,6 @@ limitations under the License.
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -49,18 +48,16 @@ limitations under the License.
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,4"
                        Text="You can replace the existing file with the new one:"/>
-            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="4" Width="100" Height="100" Margin="0,0,8,0"
+            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="4" Width="80" Height="60" Margin="0,0,8,0"
                     HorizontalAlignment="Left" Content="Copy and&#x0a; Replace"
                     Click="Replace_Click"/>
-            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding SrcPathName, FallbackValue=SrcPath}" FontWeight="Bold"/>
-            <TextBlock Grid.Column="1" Grid.Row="2" Text="[pathname]"/>
-            <TextBlock Grid.Column="1" Grid.Row="3" Text="Size: [size]"/>
-            <TextBlock Grid.Column="1" Grid.Row="4" Text="Modified: [when]"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding NewFileName, FallbackValue=NewFile}" FontWeight="Bold"/>
+            <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding NewDirName, FallbackValue=NewDir}"/>
+            <TextBlock Grid.Column="1" Grid.Row="3" Text="{Binding NewModWhen, FallbackValue=Modified:today}"/>
         </Grid>
 
         <Grid Grid.Row="2" Margin="0,8,0,0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -72,16 +69,15 @@ limitations under the License.
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,4"
                        Text="Or leave the existing file alone:"/>
-            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="4" Width="100" Height="100" Margin="0,0,8,0"
+            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="4" Width="80" Height="60" Margin="0,0,8,0"
                     HorizontalAlignment="Left" Content="Don't Copy"
                     Click="Skip_Click"/>
-            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding DstPathName, FallbackValue=DstPath}" FontWeight="Bold"/>
-            <TextBlock Grid.Column="1" Grid.Row="2" Text="[pathname]"/>
-            <TextBlock Grid.Column="1" Grid.Row="3" Text="Size: [size]"/>
-            <TextBlock Grid.Column="1" Grid.Row="4" Text="Modified: [when]"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding ExistFileName, FallbackValue=ExistFile}" FontWeight="Bold"/>
+            <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding ExistDirName, FallbackValue=ExistDir}"/>
+            <TextBlock Grid.Column="1" Grid.Row="3" Text="{Binding ExistModWhen, FallbackValue=Modified:yesterday}"/>
         </Grid>
 
-        <DockPanel Grid.Row="3" Margin="0,12,0,0" LastChildFill="False">
+        <DockPanel Grid.Row="3" Margin="0,16,0,0" LastChildFill="False">
             <CheckBox DockPanel.Dock="Left" Content="Do this for all conflicts"
                       IsChecked="{Binding UseForAll}"/>
             <Button DockPanel.Dock="Right" Name="cancelButton" Content="Cancel" IsCancel="True"

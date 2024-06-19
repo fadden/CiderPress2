@@ -168,8 +168,13 @@ namespace AppCommon {
                 }
 
                 if (dupCheck.TryGetValue(adjPath, out IFileEntry? dupEntry)) {
-                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists,
-                        adjPath, dstArchive.Characteristics.DefaultDirSep);
+                    CallbackFacts facts = new CallbackFacts(CallbackFacts.Reasons.FileNameExists);
+                    facts.OrigPathName = dupEntry.FullPathName;
+                    facts.OrigDirSep = dupEntry.DirectorySeparatorChar;
+                    facts.OrigModWhen = dupEntry.ModWhen;
+                    facts.NewPathName = srcEntry.FullPathName;
+                    facts.NewDirSep = srcEntry.DirectorySeparatorChar;
+                    facts.NewModWhen = srcEntry.ModWhen;
                     CallbackFacts.Results result = mFunc(facts, null);
                     switch (result) {
                         case CallbackFacts.Results.Cancel:
@@ -615,9 +620,15 @@ namespace AppCommon {
                     if (dstFs.TryFindFileEntry(subDirEnt, adjFileName, out IFileEntry existEntry)) {
                         // File exists.  Skip or overwrite.
                         bool doSkip = false;
-                        CallbackFacts facts = new CallbackFacts(
-                            CallbackFacts.Reasons.FileNameExists,
-                            existEntry.FullPathName, existEntry.DirectorySeparatorChar);
+                        CallbackFacts facts =
+                            new CallbackFacts(CallbackFacts.Reasons.FileNameExists);
+                        facts.OrigPathName = existEntry.FullPathName;
+                        facts.OrigDirSep = existEntry.DirectorySeparatorChar;
+                        facts.OrigModWhen = existEntry.ModWhen;
+                        facts.NewPathName = srcEntry.FullPathName;
+                        facts.NewDirSep = srcEntry.DirectorySeparatorChar;
+                        facts.NewModWhen = srcEntry.ModWhen;
+
                         CallbackFacts.Results result = mFunc(facts, null);
                         switch (result) {
                             case CallbackFacts.Results.Cancel:
