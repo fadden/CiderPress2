@@ -126,9 +126,11 @@ namespace MakeDist {
             cmd.Execute();
             Console.WriteLine("Exit code: " + cmd.ExitCode);
             Console.WriteLine("stdout:");
-            Console.Write(cmd.Stdout.ToString());
-            Console.WriteLine("stderr:");
-            Console.Write(cmd.Stderr.ToString());
+            Console.Write(cmd.Stdout);
+            if (cmd.Stderr.Length > 2) {        // more than just a token CRLF
+                Console.WriteLine("stderr:");
+                Console.Write(cmd.Stderr);
+            }
 
             return (cmd.ExitCode == 0);
         }
