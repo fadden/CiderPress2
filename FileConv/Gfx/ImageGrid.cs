@@ -27,6 +27,9 @@ namespace FileConv.Gfx {
     /// lines.  It's valid for a grid to hold, say, indices $38-$89, in which case it will
     /// provide rows $30 through $80, spanning $30-$8f.  The padding cells are drawn in a
     /// different color.</para>
+    /// <para>Some files, like Finder icons, can be very large in one dimension.  It makes sense
+    /// to render these as multiple independent grids on the same bitmap, each with their own
+    /// set of side labels.  These are called "chunks".</para>
     /// <para>Rendering within a cell is bounds-checked, so we don't throw exceptions even
     /// if we get crazy values.  Instead, errors are noted in the log.  This allows us to
     /// provide best-effort output for partially broken inputs.</para>
@@ -39,6 +42,8 @@ namespace FileConv.Gfx {
         private int mCellWidth;                 // width of a cell
         private int mCellHeight;                // height of a cell
         private int mMaxPerRow;                 // max number of items in a row
+        private int mMaxRowsPerChunk;           // max number of rows in a chunk
+        private int mHorizChunkSep;             // horizontal pixel distance between chunks
         private byte mLabelFg;                  // foreground color for labels
         private byte mLabelBg;                  // background color for labels
         private byte mBorderColor;              // grid border line color
@@ -55,17 +60,33 @@ namespace FileConv.Gfx {
         public int CellWidth => mCellWidth;
         public int CellHeight => mCellHeight;
 
-        private int mStartIndex;                // index of item in top-left cell (may be padding)
-        private int mEndIndex;                  // index of item past bottom-right cell (may be pad)
-        private int mNumRows;                   // number of grid rows
-        private int mGridLeft;                  // horizontal pixel offset of leftmost grid line
-        private int mGridTop;                   // vertical pixel offset of top grid line
+        /// <summary>
+        /// One chunk of the grid.
+        /// </summary>
+        /// <remarks>
+        /// Most things only need one chunk.  For Finder icons, which are very tall and narrow,
+        /// we want to split large files into multiple grids to avoid blowing out the 4096x4096
+        /// limit on the bitmap.
+        /// </remarks>
+        private class Chunk {
+            public int mStartIndex;             // index of item in top-left cell (may be padding)
+            public int mEndIndex;               // index of item past bottom-right cell (may be pad)
+            public int mNumRows;                // number of grid rows
+            public int mLeft;                   // horizontal pixel offset of left edge of chunk
+            public int mTop;                    // vertical pixel offet of top edge of chunk
+            public int mGridLeft;               // horizontal pixel offset of leftmost grid line
+            public int mGridTop;                // vertical pixel offset of top grid line
+        }
+
+        private Chunk[] mChunks;
 
         // Constants.  These can become variables.
         private const int LABEL_CHAR_WIDTH = 8;     // 8x8 font width
         private const int LABEL_CHAR_HEIGHT = 8;    // 8x8 font height
         private const int GRID_THICKNESS = 1;       // note: values != 1 are not implemented
         private const int EDGE_PAD = 1;             // extra padding before top/left labels
+
+        #region Builder
 
         /// <summary>
         /// Builder class, so we don't have to call a constructor with tons of arguments.
@@ -76,7 +97,7 @@ namespace FileConv.Gfx {
             public ImageGrid Create() {
                 Debug.Assert(FirstIndex >= 0 && CellWidth >= 0 && LabelFgColor != 255);
                 return new ImageGrid(FirstIndex, NumItems,
-                    CellWidth, CellHeight, MaxPerRow,
+                    CellWidth, CellHeight, MaxPerRow, MaxRowsPerChunk, HorizChunkSep,
                     Palette, LabelFgColor, LabelBgColor, BorderColor, PadCellColor,
                     HasLeftLabels, HasTopLabels, LeftLabelIsRow, LabelRadix);
             }
@@ -86,6 +107,8 @@ namespace FileConv.Gfx {
             public int CellWidth { get; private set; } = -1;
             public int CellHeight { get; private set; }
             public int MaxPerRow { get; private set; }
+            public int MaxRowsPerChunk { get; private set; } = int.MaxValue;
+            public int HorizChunkSep { get; private set; }
             public Palette8 Palette { get; private set; } = Palette8.EMPTY_PALETTE;
             public byte LabelFgColor { get; private set; } = 255;
             public byte LabelBgColor { get; private set; }
@@ -109,6 +132,19 @@ namespace FileConv.Gfx {
                 CellWidth = cellWidth;
                 CellHeight = cellHeight;
                 MaxPerRow = maxPerRow;
+            }
+
+            /// <summary>
+            /// Sets the chunk geometry.  Optional.
+            /// </summary>
+            /// <param name="maxRowsPerChunk">Maximum number of rows we display in each
+            ///   chunk.</param>
+            /// <param name="horizSep">Horizontal pixel distance between chunks.</param>
+            public void SetChunkGeometry(int maxRowsPerChunk, int horizSep) {
+                Debug.Assert(maxRowsPerChunk > 0);
+                Debug.Assert(horizSep > 0);
+                MaxRowsPerChunk = maxRowsPerChunk;
+                HorizChunkSep = horizSep;
             }
 
             /// <summary>
@@ -163,11 +199,14 @@ namespace FileConv.Gfx {
             }
         }
 
+        #endregion Builder
+
         /// <summary>
         /// Internal constructor.
         /// </summary>
         private ImageGrid(int firstIndex, int numItems, int cellWidth, int cellHeight,
-                int maxPerRow, Palette8 palette, byte labelFgColor, byte labelBgColor,
+                int maxPerRow, int maxRowsPerChunk, int horizChunkSep,
+                Palette8 palette, byte labelFgColor, byte labelBgColor,
                 byte borderColor, byte padCellColor, bool hasLeftLabels, bool hasTopLabels,
                 bool leftLabelIsRow, int labelRadix) {
             // If the items are smaller than the frame labels, increase the size.
@@ -183,6 +222,8 @@ namespace FileConv.Gfx {
             mCellWidth = cellWidth;
             mCellHeight = cellHeight;
             mMaxPerRow = maxPerRow;
+            mMaxRowsPerChunk = maxRowsPerChunk;
+            mHorizChunkSep = horizChunkSep;
             mLabelFg = labelFgColor;
             mLabelBg = labelBgColor;
             mBorderColor = borderColor;
@@ -192,45 +233,94 @@ namespace FileConv.Gfx {
             mLeftLabelIsRow = leftLabelIsRow;
             mLabelRadix = labelRadix;
 
-            mStartIndex = firstIndex - (firstIndex % mMaxPerRow);
+            // First index, padded to fill row.
+            int startIndex = firstIndex - (firstIndex % mMaxPerRow);
+            // Last index (inclusive), not padded.
             int lastIndex = firstIndex + numItems - 1;
-            mEndIndex = (lastIndex + mMaxPerRow) - (lastIndex % mMaxPerRow);
-            mNumRows = (mEndIndex - mStartIndex) / mMaxPerRow;
+            // Last index (exclusive), padded to fill row.
+            int endIndex = (lastIndex + mMaxPerRow) - (lastIndex % mMaxPerRow);
+            // Total number of rows needed.
+            int totalNumRows = (endIndex - startIndex) / mMaxPerRow;
+            // Number of chunks.
+            if (mMaxRowsPerChunk > totalNumRows) {
+                mMaxRowsPerChunk = totalNumRows;
+            }
+            int numChunks = 1 + (totalNumRows - 1) / mMaxRowsPerChunk;
+            Debug.Assert(numChunks > 0);
 
             // Width must include the left-side label, plus one space for padding, and a full
             // row of cells separated with grid lines.
             int numDigits;
             string labelFmt = (mLabelRadix == 16) ? "x" : "";   // log10 or log16 of max num
             if (leftLabelIsRow) {
-                numDigits = mNumRows.ToString(labelFmt).Length;
+                numDigits = totalNumRows.ToString(labelFmt).Length;
             } else {
                 numDigits = lastIndex.ToString(labelFmt).Length;
             }
 
-            mGridLeft = 0;
-            int width = (cellWidth * mMaxPerRow) + (GRID_THICKNESS * (mMaxPerRow + 1));
-            if (hasLeftLabels) {
-                width += EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
-                mGridLeft = EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
+            int totalWidth = 0;
+            int totalHeight = 0;
+            int leftOffset = 0;
+            int topOffset = 0;
+
+            // Create chunks.
+            mChunks = new Chunk[numChunks];
+            for (int chn = 0; chn < numChunks; chn++) {
+                Chunk chunk = mChunks[chn] = new Chunk();
+                if (chn != 0) {
+                    leftOffset += mHorizChunkSep;
+                }
+
+                chunk.mStartIndex = startIndex;
+                chunk.mEndIndex = startIndex + mMaxRowsPerChunk * mMaxPerRow;
+                chunk.mNumRows = (chunk.mEndIndex - chunk.mStartIndex) / mMaxPerRow;
+                // Last chunk may have a partial set of rows.
+                if (mMaxRowsPerChunk * (chn + 1) > totalNumRows) {
+                    Debug.Assert(chn > 0);
+                    chunk.mNumRows = totalNumRows - mMaxRowsPerChunk * chn;
+                    // Adjust the end index so we don't draw padding cells in unused rows.
+                    chunk.mEndIndex = startIndex + chunk.mNumRows * mMaxPerRow;
+                }
+
+                chunk.mLeft = chunk.mGridLeft = leftOffset;
+                int width = (cellWidth * mMaxPerRow) + (GRID_THICKNESS * (mMaxPerRow + 1));
+                if (hasLeftLabels) {
+                    width += EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
+                    chunk.mGridLeft += EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
+                }
+
+                chunk.mTop = chunk.mGridTop = topOffset;
+                int height = (chunk.mNumRows * cellHeight) + (GRID_THICKNESS * (chunk.mNumRows + 1));
+                if (hasTopLabels) {
+                    height += EDGE_PAD + LABEL_CHAR_HEIGHT;
+                    chunk.mGridTop += EDGE_PAD + LABEL_CHAR_HEIGHT;
+                }
+
+                if (chn != 0) {
+                    totalWidth += mHorizChunkSep;
+                }
+                totalWidth += width;
+                totalHeight = Math.Max(totalHeight, height);
+
+                leftOffset += width;
+
+                startIndex += chunk.mEndIndex - chunk.mStartIndex;
             }
 
-            mGridTop = 0;
-            int height = (mNumRows * cellHeight) + (GRID_THICKNESS * (mNumRows + 1));
-            if (hasTopLabels) {
-                height += EDGE_PAD + LABEL_CHAR_HEIGHT;
-                mGridTop = EDGE_PAD + LABEL_CHAR_HEIGHT;
+            // Create bitmap.
+            if (totalWidth > Bitmap8.MAX_DIMENSION || totalHeight > Bitmap8.MAX_DIMENSION) {
+                throw new BadImageFormatException("bitmap would be " + totalWidth + "x" +
+                    totalHeight + ", exceeding maximum allowed size");
             }
-
-            if (width > Bitmap8.MAX_DIMENSION || height > Bitmap8.MAX_DIMENSION) {
-                throw new BadImageFormatException("bitmap would be " + width + "x" + height +
-                    ", exceeding maximum allowed size");
-            }
-
-            Bitmap = new Bitmap8(width, height);
+            Bitmap = new Bitmap8(totalWidth, totalHeight);
             Bitmap.SetPalette(palette);
-            DrawLabels(numDigits, mEndIndex);
-            DrawGrid();
-            DrawPadFiller();
+
+            // Draw labels, grids, and filler for each chunk.
+            foreach (Chunk chunk in mChunks) {
+                DrawLabels(chunk, numDigits);
+                DrawGrid(chunk);
+                DrawPadFiller(chunk);
+            }
         }
 
         private static readonly char[] sHexDigit = {
@@ -240,34 +330,35 @@ namespace FileConv.Gfx {
         /// <summary>
         /// Draws the hex labels across the top and down the left edge.
         /// </summary>
-        private void DrawLabels(int numDigits, int endIndex) {
-            Debug.Assert(mStartIndex % mMaxPerRow == 0);
-            Debug.Assert(endIndex % mMaxPerRow == 0);
+        private void DrawLabels(Chunk chunk, int numDigits) {
+            Debug.Assert(chunk.mStartIndex % mMaxPerRow == 0);
+            Debug.Assert(chunk.mEndIndex % mMaxPerRow == 0);
             string labelFmt = (mLabelRadix == 16) ? "X" : "";
+
+            int labelBase = chunk.mStartIndex / mMaxPerRow;
 
             if (mHasLeftLabels) {
                 // Draw the labels down the left edge.
-                int startRow = 0;
+                int startLine = chunk.mTop;
                 if (mHasTopLabels) {
-                    startRow += EDGE_PAD + LABEL_CHAR_HEIGHT;
+                    startLine += EDGE_PAD + LABEL_CHAR_HEIGHT;
                 }
-                Bitmap.FillRect(0, startRow, EDGE_PAD + LABEL_CHAR_WIDTH * numDigits,
-                    Bitmap.Height - startRow, mLabelBg);
-                startRow += GRID_THICKNESS;
+                Bitmap.FillRect(chunk.mLeft, startLine, EDGE_PAD + LABEL_CHAR_WIDTH * numDigits,
+                    chunk.mNumRows * (mCellHeight + GRID_THICKNESS) + 1, mLabelBg);
+                startLine += GRID_THICKNESS;
 
-                startRow += (mCellHeight - LABEL_CHAR_HEIGHT) / 2;      // center
-                int numRows = (endIndex - mStartIndex) / mMaxPerRow;
-                for (int row = 0; row < numRows; row++) {
+                startLine += (mCellHeight - LABEL_CHAR_HEIGHT) / 2;      // center
+                for (int row = 0; row < chunk.mNumRows; row++) {
                     // Generate the label string.
                     string rowLabelStr;
                     if (mLeftLabelIsRow) {
-                        rowLabelStr = row.ToString(labelFmt);
+                        rowLabelStr = (labelBase + row).ToString(labelFmt);
                     } else {
-                        rowLabelStr = (mStartIndex + row * mMaxPerRow).ToString(labelFmt);
+                        rowLabelStr = (chunk.mStartIndex + row * mMaxPerRow).ToString(labelFmt);
                     }
 
-                    int ypos = startRow + (mCellHeight + GRID_THICKNESS) * row;
-                    int xpos = EDGE_PAD;
+                    int ypos = startLine + (mCellHeight + GRID_THICKNESS) * row;
+                    int xpos = chunk.mLeft + EDGE_PAD;
                     foreach (char ch in rowLabelStr) {
                         Bitmap.DrawChar(ch, xpos, ypos, mLabelFg, mLabelBg);
                         xpos += LABEL_CHAR_WIDTH;
@@ -279,11 +370,11 @@ namespace FileConv.Gfx {
                 // Draw the labels across the top edge.
                 // NOTE: this only works for ITEMS_PER_ROW <= 16.  To handle more we'd want to
                 // stack the label vertically, so we don't force the cells to be wider.
-                int startCol = 0;
+                int startCol = chunk.mLeft;
                 if (mHasLeftLabels) {
                     startCol += EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH);
                 }
-                Bitmap.FillRect(startCol, 0, Bitmap.Width - startCol,
+                Bitmap.FillRect(startCol, chunk.mTop, Bitmap.Width - startCol,
                     EDGE_PAD + LABEL_CHAR_HEIGHT, mLabelBg);
                 startCol += GRID_THICKNESS;
 
@@ -296,13 +387,14 @@ namespace FileConv.Gfx {
                         labelCh = '*';
                     }
                     Bitmap.DrawChar(labelCh, startCol + col * (mCellWidth + GRID_THICKNESS),
-                        EDGE_PAD, mLabelFg, mLabelBg);
+                        chunk.mTop + EDGE_PAD, mLabelFg, mLabelBg);
                 }
             }
 
             if (mHasLeftLabels && mHasTopLabels) {
                 // Fill in the top-left corner, if we have both vertical and horizontal labels.
-                Bitmap.FillRect(0, 0, EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH) + GRID_THICKNESS,
+                Bitmap.FillRect(chunk.mLeft, chunk.mTop,
+                    EDGE_PAD + (numDigits * LABEL_CHAR_WIDTH) + GRID_THICKNESS,
                     EDGE_PAD + LABEL_CHAR_HEIGHT + GRID_THICKNESS, mLabelBg);
             }
         }
@@ -310,34 +402,33 @@ namespace FileConv.Gfx {
         /// <summary>
         /// Draws a grid around the cells.
         /// </summary>
-        private void DrawGrid() {
-            int xc = mGridLeft;
-            int yc = mGridTop;
-
+        private void DrawGrid(Chunk chunk) {
             for (int col = 0; col <= mMaxPerRow; col++) {
-                DrawVerticalGridLine(xc + col * (mCellWidth + GRID_THICKNESS));
+                DrawVerticalGridLine(chunk, chunk.mGridLeft + col * (mCellWidth + GRID_THICKNESS));
             }
-            for (int row = 0; row <= mNumRows; row++) {
-                DrawHorizontalGridLine(yc + row * (mCellHeight + GRID_THICKNESS));
+            for (int row = 0; row <= chunk.mNumRows; row++) {
+                DrawHorizontalGridLine(chunk,chunk.mGridTop + row * (mCellHeight + GRID_THICKNESS));
             }
 
             // Set the bottom-right pixel.
-            Bitmap.SetPixelIndex(Bitmap.Width - 1, Bitmap.Height - 1, mBorderColor);
+            int xc = chunk.mGridLeft + mMaxPerRow * (mCellWidth + GRID_THICKNESS);
+            int yc = chunk.mGridTop + chunk.mNumRows * (mCellHeight + GRID_THICKNESS);
+            Bitmap.SetPixelIndex(xc, yc, mBorderColor);
         }
 
-        private void DrawVerticalGridLine(int xc) {
+        private void DrawVerticalGridLine(Chunk chunk, int xc) {
             Debug.Assert(GRID_THICKNESS == 1);
-            int gridHeight = (mCellHeight + GRID_THICKNESS) * mNumRows;
-            for (int yc = mGridTop; yc < mGridTop + gridHeight; yc++) {
+            int gridHeight = (mCellHeight + GRID_THICKNESS) * chunk.mNumRows;
+            for (int yc = chunk.mGridTop; yc < chunk.mGridTop + gridHeight; yc++) {
                 // TODO: handle non-1 values of GRID_THICKNESS
                 Bitmap.SetPixelIndex(xc, yc, mBorderColor);
             }
         }
 
-        private void DrawHorizontalGridLine(int yc) {
+        private void DrawHorizontalGridLine(Chunk chunk,int yc) {
             Debug.Assert(GRID_THICKNESS == 1);
             int gridWidth = (mCellWidth + GRID_THICKNESS) * mMaxPerRow;
-            for (int xc = mGridLeft; xc < mGridLeft + gridWidth; xc++) {
+            for (int xc = chunk.mGridLeft; xc < chunk.mGridLeft + gridWidth; xc++) {
                 // TODO: handle non-1 values of GRID_THICKNESS
                 Bitmap.SetPixelIndex(xc, yc, mBorderColor);
             }
@@ -346,11 +437,11 @@ namespace FileConv.Gfx {
         /// <summary>
         /// Fills in the cells at the start and end that are just there for padding.
         /// </summary>
-        private void DrawPadFiller() {
-            for (int i = mStartIndex; i < mFirstIndex; i++) {
+        private void DrawPadFiller(Chunk chunk) {
+            for (int i = chunk.mStartIndex; i < mFirstIndex; i++) {
                 DoDrawRect(i, 0, 0, mCellWidth, mCellHeight, mPadCellColor);
             }
-            for (int i = mFirstIndex + mNumItems; i < mEndIndex; i++) {
+            for (int i = mFirstIndex + mNumItems; i < chunk.mEndIndex; i++) {
                 DoDrawRect(i, 0, 0, mCellWidth, mCellHeight, mPadCellColor);
             }
         }
@@ -359,10 +450,13 @@ namespace FileConv.Gfx {
         /// Calculates the pixel position of the specified cell.
         /// </summary>
         private void CalcCellPosn(int cellIndex, out int cellLeft, out int cellTop) {
-            int cellCol = (cellIndex - mStartIndex) % mMaxPerRow;
-            int cellRow = (cellIndex - mStartIndex) / mMaxPerRow;
-            cellLeft = mGridLeft + GRID_THICKNESS + (mCellWidth + GRID_THICKNESS) * cellCol;
-            cellTop = mGridTop + GRID_THICKNESS + (mCellHeight + GRID_THICKNESS) * cellRow;
+            int chunkNum = (cellIndex / mMaxPerRow) / mMaxRowsPerChunk;
+            Debug.Assert(chunkNum < mChunks.Length);
+            Chunk chunk = mChunks[chunkNum];
+            int cellCol = (cellIndex - chunk.mStartIndex) % mMaxPerRow;
+            int cellRow = (cellIndex - chunk.mStartIndex) / mMaxPerRow;
+            cellLeft = chunk.mGridLeft + GRID_THICKNESS + (mCellWidth + GRID_THICKNESS) * cellCol;
+            cellTop = chunk.mGridTop + GRID_THICKNESS + (mCellHeight + GRID_THICKNESS) * cellRow;
         }
 
         /// <summary>

@@ -287,8 +287,9 @@ namespace FileConv.Gfx {
             // One row per icon entry, 4 columns each.
             ImageGrid.Builder bob = new ImageGrid.Builder();
             bob.SetGeometry(maxIconWidth, maxIconHeight, NUM_COLS);
+            bob.SetChunkGeometry(20, 16);
             bob.SetRange(0, iconFile.IconRecords.Count * NUM_COLS);
-            bob.SetColors(ICON_PALETTE, COLOR_FRAME, COLOR_BKGND, COLOR_FRAME, COLOR_FRAME);
+            bob.SetColors(ICON_PALETTE, COLOR_FRAME, COLOR_BKGND, COLOR_FRAME, COLOR_BKGND);
             bob.SetLabels(hasLeftLabels: true, hasTopLabels: false, leftLabelIsRow: true, 10);
             ImageGrid grid;
             try {

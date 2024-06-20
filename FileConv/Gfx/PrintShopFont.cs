@@ -356,7 +356,7 @@ namespace FileConv.Gfx
 
                     if (!(addr >= 0x6000 && addr < FileAttrs.AuxType + DataBuf.Length))
                     {
-                        Debug.WriteLine("Address out of range for Character " + idx);
+                        Debug.WriteLine("PSF: address out of range for character " + idx);
                     }
 
                     valid &= addr >= 0x6000 && addr < FileAttrs.AuxType + DataBuf.Length;
@@ -365,7 +365,7 @@ namespace FileConv.Gfx
 
             if (!valid)
             {
-                Debug.WriteLine("Valid is not set for this font.");
+                Debug.WriteLine("PSF: valid is not set for this font");
             }
 
             return valid;
