@@ -1600,9 +1600,11 @@ Text documents:
  - `teach`: Apple IIgs Teach Document
 
 Graphics:
+ - `ashape`: Applesoft shape table
  - `dhgr`: Apple II double-hi-res screen
    - `conv` (multi): color conversion: `bw`, `latch`, `window`, or `simple`
      (default is `latch`)
+ - `gsicon`: Apple IIgs Finder icon file
  - `hgr`: Apple II hi-res screen
    - `bw` (bool): false=color (default), true=black & white
  - `hgrfont`: Apple II or /// hi-res screen font
@@ -1612,6 +1614,8 @@ Graphics:
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `psfont`: Print Shop font
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
+ - `qdfont`: Apple IIgs QuickDraw II bitmap font file
+   - `mode` (multi): output type: `sample`, `grid`
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
  - `shr3201`: Apple IIgs compressed super hi-res 3200-color screen
@@ -1665,6 +1669,7 @@ ignored, because the input files are expected to be host files.
 The available converters are:
  - `bas`: convert Applesoft BASIC listing back to a tokenized program (only
    works on .txt output, not .rtf output)
+ - `merlin`: convert a plain text file to Merlin's ProDOS file format
  - `text`: convert host text file, replacing end-of-line markers and
    converting characters
    - `inchar` (multi): define input (host) character set
