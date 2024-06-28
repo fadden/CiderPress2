@@ -51,11 +51,11 @@ Movement is:
   11: left
 ```
 When drawing, vectors are handled in the order A-B-C.  If the plot flag bit is set to 1, a point
-will be plotted before the cursor is moved.
+will be plotted before the cursor is moved.  Note that vector C does not have a plot flag, so it
+can only move without plotting.
 
-Note that vector C does not have a plot flag, so it can only move without plotting.  Additionally,
-the value 00 is treated as a no-op, so vector C cannot move upward.  Setting all bits to zero
-marks the end of the shape.
+If all bits are zero, the byte marks the end of the shape.  If C is zero then it is ignored, and if
+B and C are both zero then both are ignored.
 
 See page 93 in the Applesoft manual for an example.
 

@@ -318,12 +318,22 @@ namespace FileConv.Gfx {
                     break;      // done!
                 }
 
-                DrawVector(val & 0x07,              // A
-                    false, ref xc, ref yc, ref xmin, ref xmax, ref ymin, ref ymax, setPixel);
-                DrawVector((val >> 3) & 0x07,       // B
-                    false, ref xc, ref yc, ref xmin, ref xmax, ref ymin, ref ymax, setPixel);
-                DrawVector((val >> 6) & 0x03,       // C
-                    true, ref xc, ref yc, ref xmin, ref xmax, ref ymin, ref ymax, setPixel);
+                // "If all the remaining sections of the byte contain only zeroes, then those
+                // sections are ignored."  We ignore C if it's zero, and if B and C are both zero
+                // then both parts are ignored.
+                int abits = val & 0x07;
+                int bbits = (val >> 3) & 0x07;
+                int cbits = val >> 6;
+
+                DrawVector(abits, ref xc, ref yc, ref xmin, ref xmax, ref ymin, ref ymax, setPixel);
+                if (bbits != 0 || cbits != 0) {
+                    DrawVector(bbits, ref xc, ref yc, ref xmin, ref xmax, ref ymin, ref ymax,
+                        setPixel);
+                }
+                if (cbits != 0) {
+                    DrawVector(cbits, ref xc, ref yc, ref xmin, ref xmax, ref ymin, ref ymax,
+                        setPixel);
+                }
             }
             shInfo.mMinX = xmin;
             shInfo.mMaxX = xmax;
@@ -332,7 +342,7 @@ namespace FileConv.Gfx {
             return true;
         }
 
-        private static void DrawVector(int bits, bool isC, ref int xc, ref int yc,
+        private static void DrawVector(int bits, ref int xc, ref int yc,
                 ref int xmin, ref int xmax, ref int ymin, ref int ymax, SetPixelFunc? func) {
             if ((bits & 0x04) != 0) {
                 // Plot point, then update bounds.
@@ -354,11 +364,7 @@ namespace FileConv.Gfx {
             }
             switch (bits & 0x03) {
                 case 0x00:  // move up
-                    if (isC) {
-                        // vector C, do nothing
-                    } else {
-                        yc--;
-                    }
+                    yc--;
                     break;
                 case 0x01:  // move right
                     xc++;
