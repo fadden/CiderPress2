@@ -456,7 +456,11 @@ namespace cp2_wpf.WPFCommon {
         /// </summary>
         public static void BringIndexIntoView_Public(this VirtualizingPanel virtPanel, int index) {
             Debug.Assert(virtPanel != null);
-            BringIndexIntoViewMethodInfo.Invoke(virtPanel, new object[] { index });
+            try {
+                BringIndexIntoViewMethodInfo.Invoke(virtPanel, new object[] { index });
+            } catch (TargetInvocationException ex) {
+                Debug.WriteLine("BringIndexIntoView_Public GLITCH: " + ex);
+            }
         }
     }
 

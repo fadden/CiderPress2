@@ -202,7 +202,12 @@ namespace cp2_wpf {
                 }
                 var tvItem = containerControl.ItemContainerGenerator.ContainerFromItem(dtItem);
                 containerControl = (ItemsControl)tvItem;
-                Debug.Assert(containerControl != null || stack.Count == 0);
+                if (containerControl == null && stack.Count != 0) {
+                    // This happens in weird circumstances, notably when the "find" feature
+                    // is blowing up.
+                    Debug.WriteLine("GLITCH while bringing TreeView item into view");
+                    break;
+                }
             }
         }
 
