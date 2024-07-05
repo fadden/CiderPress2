@@ -5,33 +5,31 @@ runtime is available for download from Microsoft for a variety of platforms, inc
 Mac OS, and Linux.  It's even available for the
 [Raspberry PI](https://learn.microsoft.com/en-us/dotnet/iot/deployment).
 
-Not everyone wants to install the .NET runtime on their system, so CiderPress II is available
-as both "framework-dependent" and "self-contained" downloads.  The former is much smaller
-(by 30+MB), but the latter will work without having the runtime installed.  Windows users
-will likely already have the runtime.
-
-If you want to install the .NET runtime, get it here: https://dotnet.microsoft.com/en-us/download .
-Click on "all .NET 6.0 downloads" (or whatever version is current), then in the
-".NET Runtime" section (or, for Windows, ".NET Desktop Runtime" section), download the
-appropriate item from the Installers column.  You can also download a more complete package,
-such as the SDK or the ASP.NET Core Runtime, but they're larger and have things you won't need
-if you just want to run CiderPress II.  The downloads in the Binaries column will give you a
-"dotnet" executable and libraries without an installer, which means you'll have the runtime
-but may not have it automatically configured in your shell path.
+There are two types of downloads here: self-contained and framework-dependent.  The former
+includes all necessary parts of the .NET runtime in the package, so there's no need to have .NET
+installed on your system.  If you happen to have .NET Core 6 or later already installed, the
+framework-dependent package is significantly smaller.
 
 You can pick a file to download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
-or use one of these links to download a recent stable release:
+or use one of the links below to download the most recent stable release.
 
-System        | Self-Cont'd? | Link
-------------- | ------------ | ----
-Windows x86   | no           | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x86_fd.zip
-Windows x86   | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x86_sc.zip
-Windows x64   | no           | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64_fd.zip
-Windows x64   | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64_sc.zip
-Mac OS x64    | no           | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_fd.zip
-Mac OS x64    | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_sc.zip
-Linux x64     | no           | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_fd.zip
-Linux x64     | yes          | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_sc.zip
+**Self-Contained**
+
+System        | Link
+------------- | ----
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x86_sc.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64_sc.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_sc.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_sc.zip
+
+**Framework-Dependent**
+
+System        | Link
+------------- | ----
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x86_fd.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64_fd.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_fd.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_fd.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they are unzipped.
@@ -65,6 +63,19 @@ The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 colu
 of viewing in a terminal window.  The file is in "Markdown" format, which is perfectly readable
 as a plain text file.  The manual for the GUI, and tutorials for both applications, can
 be found on the [web site](https://ciderpress2.com/).
+
+### Installing .NET ###
+
+Should you wish to use the framework-dependent packages, you'll need to install the .NET runtime.
+Get it here: https://dotnet.microsoft.com/en-us/download .  Find the "all .NET 8.0 downloads"
+link (or whatever version is current) and click on it.  In the ".NET Runtime" section (or, for
+Windows, ".NET Desktop Runtime" section), download the appropriate item from the Installers column.
+You can also download a more complete package, such as the SDK or the ASP.NET Core Runtime, but
+they're larger and have things you won't need if you just want to run CiderPress II.  The
+downloads in the Binaries column will give you a "dotnet" executable and libraries without an
+installer, which means you'll have the runtime but may not have it automatically configured in
+your shell path.
+
 
 ## Tested Systems ##
 
