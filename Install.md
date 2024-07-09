@@ -13,7 +13,7 @@ framework-dependent package is significantly smaller.
 You can pick a file to download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
 or use one of the links below to download the most recent stable release.
 
-**Self-Contained**
+**Self-Contained** (30-65 MB)
 
 System        | Link
 ------------- | ----
@@ -22,7 +22,7 @@ Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.2/c
 Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.2/cp2_1.0.2_osx-x64_sc.zip
 Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.2/cp2_1.0.2_linux-x64_sc.zip
 
-**Framework-Dependent**
+**Framework-Dependent** (~1 MB)
 
 System        | Link
 ------------- | ----
@@ -112,10 +112,10 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
 ### Linux and Wine ###
 
 It's possible to run the GUI application under Linux using the Wine compatibility layer.
-However, with Wine v8.0.2 on Ubuntu 20.04, it was not difficult to make the application crash.
+With Wine v9 the application works somewhat, but crashes in some common operations.
 
 If you want to try it, download the 32-bit (x86) self-contained package for Windows.  On my
 system, the 64-bit version hangs during startup (for both GUI and CLI), and the framework-dependent
 package requires downloading additional Wine components, so `win-x86_sc` is your best bet.
 
-(I am not a Wine expert.  It's possible I'm doing it wrong.)
+(I am not a Wine expert.  It's possible I'm missing something obvious.)
