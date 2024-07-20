@@ -616,6 +616,11 @@ namespace DiskArc.FS {
                         Debug.Assert(mIndexBlock != null);
                         int firstNonLegit = (mEndOfFile + BLOCK_SIZE - 1) / BLOCK_SIZE;
                         ValidateBlocks(vu, mIndexBlock, firstNonLegit, out isDamaged);
+                        if (!isDamaged && mIndexBlock.GetBlockPtr(0) == 0) {
+                            // We only check if not damaged, to reduce overall noise.
+                            FileSystem.Notes.AddW("First block of sapling file is sparse: " +
+                                FileEntry.FullPathName);
+                        }
                     }
                     break;
                 case ProDOS.StorageType.Tree: {
@@ -642,6 +647,16 @@ namespace DiskArc.FS {
                                     firstNonLegit = PTRS_PER_IBLOCK;
                                 }
                                 ValidateBlocks(vu, mCachedIndexBlock, firstNonLegit, out isDamaged);
+
+                                if (i == 0 && !isDamaged) {
+                                    if (mCachedIndexBlock.GetBlockPtr(0) == 0) {
+                                        // Not a problem for us, but can confuse GS/OS.
+                                        // e.g. https://github.com/fadden/ciderpress/issues/49
+                                        FileSystem.Notes.AddW(
+                                            "First block of tree file is sparse: " +
+                                            FileEntry.FullPathName);
+                                    }
+                                }
                             }
                             eofRemaining -= BLOCK_SIZE * PTRS_PER_IBLOCK;    // 128KB per index
                             if (eofRemaining < 0) {
