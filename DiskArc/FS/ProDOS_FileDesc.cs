@@ -618,7 +618,8 @@ namespace DiskArc.FS {
                         ValidateBlocks(vu, mIndexBlock, firstNonLegit, out isDamaged);
                         if (!isDamaged && mIndexBlock.GetBlockPtr(0) == 0) {
                             // We only check if not damaged, to reduce overall noise.
-                            FileSystem.Notes.AddW("First block of sapling file is sparse: " +
+                            FileSystem.Notes.AddW("First block of sapling file" +
+                                (IsRsrcFork ? " resource fork" : "") + " is sparse: " +
                                 FileEntry.FullPathName);
                         }
                     }
@@ -652,8 +653,8 @@ namespace DiskArc.FS {
                                     if (mCachedIndexBlock.GetBlockPtr(0) == 0) {
                                         // Not a problem for us, but can confuse GS/OS.
                                         // e.g. https://github.com/fadden/ciderpress/issues/49
-                                        FileSystem.Notes.AddW(
-                                            "First block of tree file is sparse: " +
+                                        FileSystem.Notes.AddW("First block of tree file" +
+                                            (IsRsrcFork ? " resource fork" : "") + " is sparse: " +
                                             FileEntry.FullPathName);
                                     }
                                 }
