@@ -761,7 +761,7 @@ namespace cp2 {
                 }
                 if (srcLeaf is not Partition) {
                     Console.Error.WriteLine(
-                        "Error: this only works with disk images and partitions");
+                        "Error: this only works with partitions in disk images");
                     return false;
                 }
 

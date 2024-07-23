@@ -11,8 +11,8 @@ The DiskCopy disk image format was developed by Apple for internal use in duplic
 distributing 3.5" disk images.  The version described here is for DiskCopy v4.2.
 
 On the Apple II, the files should use type $e0/8005.  On the Mac, type 'dImg', usually with
-creator 'dCpy'.  On systems without file types, these were usually ".image", ".img", ".dc", or
-sometimes ".dsk".
+creator 'dCpy'.  On systems without file types, these were usually ".image", ".img", ".dc",
+".dc42", or sometimes ".dsk".
 
 ## File Structure ##
 
@@ -45,3 +45,8 @@ The header is:
 The exact set of values for `formatByte` are debatable -- the Mac 400KB disk should probably
 be $02 rather than $12 -- but the exact value doesn't seem to be critical.  Some additional
 research into the subject can be found in the [nibble-notes](Nibble-notes.md) document.
+
+The tag checksum must be zero if no tag data is present.  A note on the discferret site says that
+the first 12 bytes of the tag data are not included in the checksum, to maintain backward
+compatibility with an older version of DiskCopy.  Some experiments with old disk images
+confirmed this behavior.

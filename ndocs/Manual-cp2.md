@@ -1482,7 +1482,7 @@ of the extensions are allowed to mean more than one thing.
  - ".woz" - WOZ format nibble image, for 5.25" (35- or 40-track)
    or 3.5" (SSDD or DSDD) disks
  - ".2mg", ".2img" - DOS-order 16-sector disks, or ProDOS-order blocks
- - ".dc", ".image" - DiskCopy 4.2 3.5" floppy (400KB, 720KB, 800KB, or 1440KB)
+ - ".dc", ".dc42", ".image" - DiskCopy 4.2 3.5" floppy (400KB, 720KB, 800KB, or 1440KB)
  - ".app" - Trackstar 5.25" (35- or 40-track) disk nibble image
  - ".sdk" - NuFX (ShrinkIt) disk archive
  - ".zip" - ZIP file archive

@@ -33,7 +33,7 @@ namespace AppCommon {
             // Not including ".raw", which is too generic.  This includes NuFX, which might
             // or might not hold a disk image, so special handling is required by the caller.
             ".do", ".po", ".iso", ".hdv", ".img", ".d13", ".dsk", ".nib", ".nb2", ".woz",
-            ".2mg", ".2img", ".dc", ".dc6", ".image", ".app", ".ddd", ".sdk", ".shk"
+            ".2mg", ".2img", ".dc", ".dc42", ".dc6", ".image", ".app", ".ddd", ".sdk", ".shk"
         };
 
         /// <summary>

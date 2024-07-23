@@ -115,7 +115,7 @@ namespace DiskArc {
             UnadornedNibble525,         // .nib, .nb2, .raw*
             Woz,                        // .woz
             TwoIMG,                     // .2mg, .2img
-            DiskCopy,                   // .dsk*, .dc
+            DiskCopy,                   // .dsk*, .dc, .dc42
             Trackstar,                  // .app
             // ? Sim //e HDV
             // ? FDI

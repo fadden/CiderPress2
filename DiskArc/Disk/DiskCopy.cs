@@ -295,10 +295,16 @@ namespace DiskArc.Disk {
                 disk.Notes.AddW("Data checksum mismatch: expected 0x" +
                     hdr.mDataChecksum.ToString("x8") + ", got 0x" + checksum.ToString("x8"));
             }
-            checksum = ComputeChecksum(disk.mTagData, 0, (int)hdr.mTagSize);
-            if (checksum != hdr.mTagChecksum) {
-                disk.Notes.AddW("Tag checksum mismatch: expected 0x" +
-                    hdr.mTagChecksum.ToString("x8") + ", got 0x" + checksum.ToString("x8"));
+
+            // According to https://www.discferret.com/wiki/Apple_DiskCopy_4.2, the first 12
+            // bytes of the tag area are not included in the checksum, to maintain backward
+            // compatibility with an older, broken version of the program.
+            if (hdr.mTagSize > 12) {
+                checksum = ComputeChecksum(disk.mTagData, 12, (int)hdr.mTagSize - 12);
+                if (checksum != hdr.mTagChecksum) {
+                    disk.Notes.AddW("Tag checksum mismatch: expected 0x" +
+                        hdr.mTagChecksum.ToString("x8") + ", got 0x" + checksum.ToString("x8"));
+                }
             }
 
             return disk;

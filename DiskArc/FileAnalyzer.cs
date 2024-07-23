@@ -342,6 +342,7 @@ namespace DiskArc {
                     fileKind1 = FileKind.TwoIMG;
                     break;
                 case ".dc":
+                case ".dc42":
                 case ".dc6":
                 case ".image":
                     fileKind1 = FileKind.DiskCopy;
