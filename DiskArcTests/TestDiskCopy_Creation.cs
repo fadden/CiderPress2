@@ -65,6 +65,7 @@ namespace DiskArcTests {
 
             // Verify disk and file contents.
             using (DiskCopy disk = DiskCopy.OpenDisk(diskStream, appHook)) {
+                Helper.CheckNotes(disk, 0, 0);
                 disk.AnalyzeDisk();
                 IFileSystem fs = (IFileSystem)disk.Contents!;
                 Helper.ExpectInt(0, fs.RawAccess.CountUnreadableChunks(), "bad chunks found");
@@ -85,6 +86,42 @@ namespace DiskArcTests {
 
                 string? meta = disk.GetMetaValue(DiskCopy.DESCRIPTION_NAME, false);
                 Helper.ExpectString(TEST_DESC_STR, meta, "wrong metadata");
+            }
+        }
+
+        // Create a 400KB HFS disk and modify the tag data.
+        public static void Test400KB(AppHook appHook) {
+            MemoryStream diskStream = new MemoryStream();
+            using (DiskCopy disk = DiskCopy.CreateDisk(diskStream, MediaKind.GCR_SSDD35, appHook)) {
+                using (IFileSystem newFs = new HFS(disk.ChunkAccess!, appHook)) {
+                    newFs.Format("DC42.400", 0, true);
+
+                    newFs.PrepareFileAccess(true);
+                    IFileEntry volDir = newFs.GetVolDirEntry();
+                    newFs.CreateFile(volDir, "NewFile", CreateMode.File);
+                }
+            }
+
+            // Modify the tag bytes.
+            using (DiskCopy disk = DiskCopy.OpenDisk(diskStream, appHook)) {
+                // The first 12 bytes aren't included in the checksum.
+                disk.AnalyzeDisk();
+                disk.SetTagByte(0, 0x55);
+                disk.SetTagByte(12, 0x56);
+            }
+
+            // Verify disk change.
+            using (DiskCopy disk = DiskCopy.OpenDisk(diskStream, appHook)) {
+                Helper.CheckNotes(disk, 0, 0);
+                disk.AnalyzeDisk();
+                IFileSystem fs = (IFileSystem)disk.Contents!;
+                Helper.ExpectInt(0, fs.RawAccess.CountUnreadableChunks(), "bad chunks found");
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+
+                if (disk.GetTagByte(0) != 0x55 || disk.GetTagByte(12) != 0x56) {
+                    throw new Exception("Incorrect tag data");
+                }
             }
         }
     }

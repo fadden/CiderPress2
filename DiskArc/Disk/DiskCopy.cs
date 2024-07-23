@@ -57,7 +57,7 @@ namespace DiskArc.Disk {
         public bool IsDirty {
             get {
                 return (ChunkAccess != null && ChunkAccess.WriteCount != mLastFlushWriteCount) ||
-                    mDescriptionChanged;
+                    mDescriptionChanged || mTagDataChanged;
             }
         }
 
@@ -93,6 +93,7 @@ namespace DiskArc.Disk {
         private byte[] mUserData;
         private byte[] mTagData;
         private bool mDescriptionChanged;
+        private bool mTagDataChanged;
         private long mLastFlushWriteCount;
 
         protected class Header {
@@ -467,7 +468,10 @@ namespace DiskArc.Disk {
                 Debug.WriteLine("DiskCopy flush (dirty) ...");
                 // Update checksums.  The checksum might not match if it was damaged before.
                 uint dataChecksum = ComputeChecksum(mUserData, 0, mUserData.Length);
-                uint tagChecksum = ComputeChecksum(mTagData, 0, mTagData.Length);
+                uint tagChecksum = 0;
+                if (mTagData.Length > 12) {
+                    tagChecksum = ComputeChecksum(mTagData, 12, mTagData.Length - 12);
+                }
                 if (dataChecksum != mHeader.mDataChecksum) {
                     Debug.WriteLine("DiskCopy: data checksum updated");
                     mHeader.mDataChecksum = dataChecksum;
@@ -485,9 +489,10 @@ namespace DiskArc.Disk {
                 mStream.Write(hdrBuf, 0, Header.LENGTH);
                 mDescriptionChanged = false;
 
-                // If the chunk write count has been incremented, write the disk data.
+                // If the chunk write count has been incremented, or the tag data was altered,
+                // write the entire thing out.
                 Debug.Assert(ChunkAccess != null);
-                if (mLastFlushWriteCount != ChunkAccess.WriteCount) {
+                if (mTagDataChanged || mLastFlushWriteCount != ChunkAccess.WriteCount) {
                     Debug.WriteLine("DiskCopy: writing disk data");
                     mStream.Write(mUserData, 0, mUserData.Length);
                     mStream.Write(mTagData, 0, mTagData.Length);
@@ -495,6 +500,8 @@ namespace DiskArc.Disk {
                 } else {
                     Debug.WriteLine("DiskCopy: skipping disk data write");
                 }
+
+                mTagDataChanged = false;
             }
 
             mStream.Flush();
@@ -513,6 +520,36 @@ namespace DiskArc.Disk {
                 checksum = checksum >> 1 | ((checksum & 0x00000001) << 31);
             }
             return checksum;
+        }
+
+
+        /// <summary>
+        /// Returns one byte from the tag data.  An exception is thrown if the offset is out
+        /// of range.
+        /// </summary>
+        /// <remarks>
+        /// This is intended for internal testing.
+        /// </remarks>
+        /// <param name="offset">Offset to value.</param>
+        /// <returns>Value.</returns>
+        public byte GetTagByte(int offset) {
+            return mTagData[offset];
+        }
+
+        /// <summary>
+        /// Sets one byte in the tag data.  An exception is thrown if the offset is out of range.
+        /// </summary>
+        /// <remarks>
+        /// This is intended for internal testing.
+        /// </remarks>
+        /// <param name="offset">Offset to value.</param>
+        /// <param name="value">Value to set.</param>
+        public void SetTagByte(int offset, byte value) {
+            if (IsReadOnly) {
+                return;
+            }
+            mTagData[offset] = value;
+            mTagDataChanged = true;
         }
 
         #region Metadata
