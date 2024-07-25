@@ -588,6 +588,7 @@ namespace AppCommon {
                     CallbackFacts rfacts = new CallbackFacts(CallbackFacts.Reasons.AttrFailure,
                         extractPath, Path.DirectorySeparatorChar);
                     mFunc(rfacts);
+                    // warning only
                 }
             } catch {
                 // Try to clean up partial work, then re-throw exception.
@@ -734,6 +735,14 @@ namespace AppCommon {
                     Debug.Assert(false, "unknown IConvOutput impl " + convOutput);
                     ReportConvFailure("got weird output object: " + convOutput);
                     return false;
+                }
+
+                // Set the file dates to match the original.
+                if (!SetFileAttributes(cleanPath1, attrs, false)) {
+                    CallbackFacts rfacts = new CallbackFacts(CallbackFacts.Reasons.AttrFailure,
+                        cleanPath1, Path.DirectorySeparatorChar);
+                    mFunc(rfacts);
+                    // warning only
                 }
             } catch {
                 // Try to clean up partial work, then re-throw exception.
@@ -892,9 +901,13 @@ namespace AppCommon {
         /// Sets file attributes, such as the modification date and read-only flag.  In "host"
         /// preservation mode this also attempts to set the file types.
         /// </summary>
+        /// <remarks>
+        /// If the dates in "attrs" are invalid, the file date will not be altered.
+        /// </remarks>
         /// <param name="pathName">Full or partial pathname of file.</param>
         /// <param name="attrs">File attributes.</param>
         /// <param name="doSetAccess">If true, set the read-only flag if file is locked.</param>
+        /// <returns>True on success.</returns>
         private bool SetFileAttributes(string pathName, FileAttribs attrs, bool doSetAccess) {
             FileInfo info = new FileInfo(pathName);
             if (TimeStamp.IsValidDate(attrs.CreateWhen)) {
