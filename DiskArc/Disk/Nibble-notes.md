@@ -307,9 +307,9 @@ by the operating system, the rest are standard sector data.  Sectors are encoded
 +$030 / 3: data prolog ($d5 $aa $ad)
 +$033 / 1: duplicate 6&2enc copy of sector number (0-21)
 +$034 /699: 6&2enc nibblized sector data (524 -> 698.67 bytes, rounded up to 699)
-+$2ef / 3: 24-bit checksum
-+$2f2 / 2: data epilog ($de $aa)
-+$2f4 / 1: pad byte ($ff), "where head is turned off"
++$2ef / 4: 6&2enc 24-bit checksum
++$2f3 / 2: data epilog ($de $aa)
++$2f5 / 1: pad byte ($ff), "where head is turned off"
 ```
 
 Total disk storage capacity was around 871 kB.
