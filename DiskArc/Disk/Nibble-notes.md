@@ -13,8 +13,9 @@
   "Macintosh Versus IIgs Sector Sizes and Two-to-One Interleave" (2-May-1988 memo) and
   sheets 33-36 of 699-0285-A "Specification for 3.5 Inch Single Sided Disk Drive" (which
   describes the sector format in detail)
+- _Lisa Hardware Manual_, chapter 6
 
-## Encoding ##
+## GCR Encoding ##
 
 The Apple II receives a stream of bits from the floppy disk controller.  For a variety of reasons
 (see _Beneath Apple DOS_ for an introduction, or _Understanding the Apple IIe_ chapter 9 for a
@@ -48,7 +49,7 @@ is referred to as "4&4" encoding.
 
 ### Storage ###
 
-There are two basic approaches for capturing "raw" data from a floppy:
+There are two basic approaches for capturing "raw" data from a floppy into a disk image file:
   1. Record all bits.  This correctly captures regular data and self-sync bytes, but is
      difficult to do accurately with unmodified floppy drive hardware.  WOZ and FDI do this.
   2. Record full bytes only.  This is easy to do with standard drive hardware, but loses the
@@ -127,7 +128,7 @@ on with proper timing could position the head even more finely, allowing "quarte
 
 ## 400KB/800KB 3.5" Floppy Disks ##
 
-The 3.5" drives sold by Apple for the Apple II and Macintosh used a ZCAV (Zoned Constant
+The 3.5" drives sold by Apple for the Lisa, Macintosh, and Apple II used a ZCAV (Zoned Constant
 Angular Velocity) approach, which changes the speed at which the drive rotates to allow more
 data to be stored on the longer tracks at the outside of the disk.  This allows a greater storage
 capacity than CAV (Constant Angular Velocity) drives that spin at a fixed speed, without requiring
@@ -143,7 +144,7 @@ one sector for every 16 tracks closer to the center.  This forms 5 speed zones:
  - track 48-63: 9 sectors
  - track 64-79: 8 sectors
 
-(Math: 12\*16 + 11\*16 + 10\*16 + 9\*16 + 8\*16 = 800 per side)
+(Math: 12\*16 + 11\*16 + 10\*16 + 9\*16 + 8\*16 = 800 sectors per side.)
 
 Each sector holds 524 bytes of data.  They look like this:
 ```
@@ -178,10 +179,11 @@ it's not clear what hardware was used to format the disk.  The 699-0258-A docume
 self-sync bytes at a minimum, though strictly speaking only 4 are required to achieve bit
 synchronization.
 
-The first 12 bytes in the 524-byte sector are "tag" bytes, used by the original Macintosh MFS
-filesystem to hold data used by disk recovery applications.  These bytes are also available to
-HFS, but they don't appear to be used there, presumably because HFS was used on a wider range
-of disk devices and couldn't rely on the presence of the tags.
+The first 12 bytes in the 524-byte sector are "tag" bytes, which were used by the Lisa OS
+to hold filesystem structures, and later used by the Macintosh MFS filesystem to hold redundant
+data that could be used by disk recovery applications.  These bytes are also available to HFS,
+but they don't appear to be used there, presumably because HFS was used on a wider range of disk
+devices and couldn't rely on the presence of the tags.
 
 The 24-bit checksum on the data area is calculated with a fairly complicated algorithm.  The
 AppleDisk 3.5" driver for GS/OS has a text string indicating that the software is protected
@@ -263,6 +265,54 @@ The MAME ap_dsk35.cpp source code has a completely different take:
 It's unclear whether anything actually relies on the value as anything but a hint.  The number
 of sides physically present is not determined by the address field of a given disk sector, and
 the sector interleave could be determined by just looking at the order in which sectors appear.
+
+## 5.25" "Twiggy" Disks ##
+
+The first Apple Lisa computers came with [FileWare](https://en.wikipedia.org/wiki/Apple_FileWare)
+floppy disk drives, commonly referred to as "Twiggy" drives.  These used special 5.25" disks that
+had two windows instead of one.  The drives were intended to be made available for the Apple II
+and ///, but were never shipped.  Later versions of the Lisa used 3.5" disks.
+
+The disks were encoded in GCR, using ZCAV (Zoned Constant Angular Velocity) to get additional
+sectors near the outside of the disk.  Disks were double-sided and had 46 tracks.  The speed
+changed every few tracks:
+
+Tracks | Sectors | RPM
+------ | ------- | -----
+ 0-3   | 22      | 218.3
+ 4-10  | 21      | 228.7
+ 11-16 | 20      | 240.1
+ 17-22 | 19      | 252.7
+ 23-28 | 18      | 266.8
+ 29-34 | 17      | 282.5
+ 35-41 | 16      | 300.1
+ 42-45 | 15      | 320.1
+
+(Math: 4\*22 + 7\*21 + 6\*20 + 6\*19 + 6\*18 + 6\*17 + 7\*16 + 4\*15 = 851 sectors per side.)
+
+Each sector holds 524 bytes of data.  The first 12 bytes are the "tag" bytes that are handled
+by the operating system, the rest are standard sector data.  Sectors are encoded:
+```
++$000 /32: self-sync pattern: 32 10-bit $ff bytes (spans 45 octets in bit stream)
++$020 /10: (only before sector 0) 10 $a9 bytes for speed synchronization
++$020 / 3: address prolog ($d5 $aa $96)
++$023 / 1: 6&2enc track number (0-45)
++$024 / 1: 6&2enc sector number (0-21)
++$025 / 1: 6&2enc side number ($00 or $01)
++$026 / 1: 6&2enc volume ($00=Apple II or ///, $01=Lisa, $02=Mac)
++$027 / 1: 6&2enc address checksum: (track ^ sector ^ side ^ format) & $3f
++$028 / 2: address epilog ($de $aa)
++$02a / 1: pad byte ($ff), "where head is turned off"
++$02b / 5: self-sync pattern: 5 10-bit $ff bytes (spans 6.25 octets in bit stream)
++$030 / 3: data prolog ($d5 $aa $ad)
++$033 / 1: duplicate 6&2enc copy of sector number (0-21)
++$034 /699: 6&2enc nibblized sector data (524 -> 698.67 bytes, rounded up to 699)
++$2ef / 3: 24-bit checksum
++$2f2 / 2: data epilog ($de $aa)
++$2f4 / 1: pad byte ($ff), "where head is turned off"
+```
+
+Total disk storage capacity was around 871 kB.
 
 ## Miscellaneous ##
 
