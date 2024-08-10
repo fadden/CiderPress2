@@ -1096,9 +1096,9 @@ the word "locked", or the word "unlocked".
 timestamps, respectively.  Date/time strings will be parsed according
 to local conventions.  It's best to use an unambiguous format like
 [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt)
-(e.g. "yyyy-MM-ddTHH:mm:ssZ"), though other common formats like "dd-MMM-yyyy
-HH:mm:ss" will also work.  Bear in mind that most formats store timestamps
-in local time, without time zone information.
+(e.g. `yyyy-MM-ddTHH:mm:ssZ`), though other common formats like
+`dd-MMM-yyyy HH:mm:ss` will also work.  Bear in mind that most disk and file
+archive formats store timestamps as local time, without time zone information.
 
 Not all filesystems and archive formats support all attributes, or all
 possible values for a given attribute.  Attempting to set an unsupported
@@ -1709,6 +1709,13 @@ part of the same file, and it will be included automatically.
 When files are added without file type information, default types are
 provided.  For ProDOS this is NON/$0000, for HFS 'BINA'/'CPII' is used
 (generic binary).
+
+The add, extract, import, and export operations attempt to preserve the file
+timestamps, even when the preservation mode is set to "none".  Some timestamps
+cannot be stored or can only be partially represented, e.g. the ProDOS file
+creation time has no equivalent on Linux systems, and ProDOS timestamps have
+1-minute granularity.  Many systems are unable to store dates with years that
+will be reached soon, e.g. HFS can't represent dates after February 2040.
 
 #### None (default) ####
 

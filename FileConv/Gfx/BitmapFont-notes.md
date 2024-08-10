@@ -9,6 +9,7 @@ Primary references:
  - _Apple IIgs Toolbox Reference, Volume 2_, chapter 16 "QuickDraw II", p.16-41
  - _Inside Macintosh, volume I_, chapter 7 "The Font Manager", p.I-227
  - _Inside Macintosh, volume IV_, chapter 5 "The Font Manager", p.IV-29
+ - _Inside Macintosh: Text_, chapter 4 "Font Manager", p.4-66
 
 On vintage Mac OS, fonts were not stored in individual files.  Instead, they were stored as
 resources with type `FONT` in `System Folder:System`, and `Font/DA Mover` was used to manage
@@ -117,8 +118,13 @@ crashing on bad data.)  Fields like `ascent` and `descent` are probably fine, bu
 ascent+descent==height.  Computed fields like `fbrExtent` and `widMax` can and should be
 computed from the contents.
 
-You might expect `nDescent` == `-descent`, but in practice this is not always the case, even
-with fonts supplied by Apple.  It's unclear what `nDescent` means or what purpose it serves.
+The `nDescent` field was intended to be `nDescent = -descent`, but in practice this is not always
+the case, even with fonts supplied by Apple.  The field was originally added for the convenience
+of the font manager, but was eventually repurposed to hold the high word of the offset to the
+width/offset table (i.e. `offset = nDescent << 16 | owTLoc`) for larger fonts.  If the field holds
+a negative value, it should be ignored (see _IM:T_, page 4-71).  On the Apple IIgs, the
+`highowTLoc` in the IIgs header holds the high 16 bits, so the `nDescent` field should always be
+ignored.
 
 ### Font Type ###
 
@@ -155,13 +161,13 @@ indicates that they are present.
 Font family numbers were listed in a Nov 1990 tech note (IIgs #41).  These also apply to
 various LaserWriter printers.
 
-| ID    | Family Name            |
-|-------|------------------------|
+| ID    | Family Name               |
+|-------|---------------------------|
 | $fffd | Chicago
 | $fffe | Shaston
 | $ffff | (no font)
 | 0     | System Font
-| 1     | System Font
+| 1     | System (Application) Font
 | 2     | New York
 | 3     | Geneva
 | 4     | Monaco
@@ -181,7 +187,7 @@ various LaserWriter printers.
 | 21    | Helvetica
 | 22    | Courier
 | 23    | Symbol
-| 24    | Taliesin
+| 24    | Taliesin (became "Mobile")
 | 33    | Avant Garde
 | 34    | New Century Schoolbook
 

@@ -102,8 +102,13 @@ The file begins with the 16-byte resource header and some reserved space:
 +$10 / 112: reserved
 +$80 / 128: available for application data
 ```
+The resource data usually begins at +$0100.
 
-The resource data usually begins at +$0100.  Each resource is stored sequentially in a list:
+The contents of the "reserved" area aren't defined in the reference material, but at least some
+of the area [appears to be used](https://retrocomputing.stackexchange.com/a/30351/56) by AppleShare
+file servers to hold file metadata.
+
+Each resource is stored sequentially in a list:
 ```
 +$00 / 4: length of resource data that follows
 +$04 / N: resource data
