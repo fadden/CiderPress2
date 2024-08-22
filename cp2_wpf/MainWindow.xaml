@@ -89,7 +89,11 @@ limitations under the License.
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
             <RoutedUICommand x:Key="EditAppSettingsCmd" Text="Settings..."/>
-            <RoutedUICommand x:Key="EditAttributesCmd" Text="Edit Attributes..."/>
+            <RoutedUICommand x:Key="EditAttributesCmd" Text="Edit Attributes...">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Alt+Enter</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
             <RoutedUICommand x:Key="EditBlocksCmd" Text="Edit Blocks..."/>
             <RoutedUICommand x:Key="EditBlocksCPMCmd" Text="Edit Blocks (CP/M)..."/>
             <RoutedUICommand x:Key="EditDirAttributesCmd" Text="Edit Directory Attributes..."/>
@@ -169,13 +173,13 @@ limitations under the License.
         <CommandBinding Command="{StaticResource EditAppSettingsCmd}"
                         Executed="EditAppSettingsCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditAttributesCmd}"
-                        CanExecute="IsWritableSingleEntrySelected" Executed="EditAttributesCmd_Executed"/>
+                        CanExecute="IsSingleEntrySelected" Executed="EditAttributesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditBlocksCmd}"
                         CanExecute="CanEditBlocks" Executed="EditBlocksCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditBlocksCPMCmd}"
                         CanExecute="CanEditBlocksCPM" Executed="EditBlocksCPMCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditDirAttributesCmd}"
-                        CanExecute="IsEditableFileSystemSelected" Executed="EditDirAttributesCmd_Executed"/>
+                        CanExecute="IsFileSystemSelected" Executed="EditDirAttributesCmd_Executed"/>
         <CommandBinding Command="{StaticResource EditSectorsCmd}"
                         CanExecute="CanEditSectors" Executed="EditSectorsCmd_Executed"/>
         <CommandBinding Command="{StaticResource ExitCmd}"

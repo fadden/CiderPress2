@@ -681,11 +681,13 @@ namespace AppCommon {
                     dataCopy = TempFile.CopyToTemp(dataStream, attrs.DataLength);
                 } else {
                     dataCopy = dataStream;
+                    dataStream = null;      // don't close twice
                 }
                 if (rsrcStream != null && !rsrcStream.CanSeek) {
                     rsrcCopy = TempFile.CopyToTemp(rsrcStream, attrs.RsrcLength);
                 } else {
                     rsrcCopy = rsrcStream;
+                    rsrcStream = null;      // don't close twice
                 }
 
                 // Find the converter.  If we don't find one, don't export the file.  This allows

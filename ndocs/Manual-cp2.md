@@ -475,7 +475,7 @@ archive specifiers does not match, the copy process is cancelled.
 
 The destination may not be a single-file archive like AppleSingle or gzip.
 
-The `--raw-mode` option is not used here.  Files copied from DOS volumes
+The `--raw` option is not handled here.  Files copied from DOS volumes
 are always treated as "cooked" unless they are being copied to another
 DOS volume, in which case the files are transferred "raw", with the sparse
 structure preserved.
@@ -1984,6 +1984,7 @@ Some ideas for the future:
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add `get-attr` to get file attributes in machine-readable form.
  - Add a better way to set access flags in `set-attr`, e.g. by letter.
+ - Add a way to set attributes for multiple files, e.g. mark as read-only.
  - Add `show-vol-bitmap` to display free/in-use blocks.
  - Allow `test` to descend into the archive (use `--depth` option).
  - Add command to zero out unused blocks on disk images, and perhaps the
@@ -1994,3 +1995,4 @@ Additional short options to consider:
  - `-v` for `--verbose`?  (Not needed, verbose is default)
  - `-r` for `--recurse`?  (Not needed, recurse is default)
  - `-w` for `--wide`?  (Rarely used)
+ - `-0` for `--no-compress`?

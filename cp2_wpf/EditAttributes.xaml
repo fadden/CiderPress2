@@ -55,7 +55,7 @@ limitations under the License.
                 <TextBox Grid.Column="1" Name="fileNameTextBox" Margin="8,0,0,0"
                          Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource GeneralMonoFont}"
-                         MaxLength="1024"/>
+                         MaxLength="1024" IsReadOnly="{Binding IsAllReadOnly}"/>
             </Grid>
             <TextBlock Grid.Row="1" Margin="0,2,0,0" TextWrapping="Wrap"
                        Text="{Binding SyntaxRulesText, FallbackValue=o Syntax rules here.}"
@@ -96,7 +96,8 @@ limitations under the License.
                          HorizontalAlignment="Left" MaxLength="4"
                          IsEnabled="{Binding IsProAuxEnabled}"
                          Text="{Binding ProAuxString, UpdateSourceTrigger=PropertyChanged}"
-                         FontFamily="{StaticResource GeneralMonoFont}"/>
+                         FontFamily="{StaticResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
                 <TextBlock Grid.Row="1" Grid.Column="2" Margin="8,4,0,0"
                            Text="(hexadecimal)"/>
 
@@ -126,22 +127,26 @@ limitations under the License.
                 <TextBox Grid.Row="0" Grid.Column="1" Width="40" Margin="8,0,0,0"
                          MaxLength="4"
                          Text="{Binding HFSTypeCharsString, UpdateSourceTrigger=PropertyChanged}"
-                         FontFamily="{StaticResource GeneralMonoFont}"/>
+                         FontFamily="{StaticResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
                 <TextBox Grid.Row="0" Grid.Column="2" Width="65" Margin="8,0,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          Text="{Binding HFSTypeHexString, UpdateSourceTrigger=PropertyChanged}"
-                         FontFamily="{StaticResource GeneralMonoFont}"/>
+                         FontFamily="{StaticResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Creator:" Margin="0,4,0,0"
                            Foreground="{Binding HFSCreatorForeground}"/>
                 <TextBox Grid.Row="1" Grid.Column="1" Width="40" Margin="8,4,0,0"
                          MaxLength="4"
                          Text="{Binding HFSCreatorCharsString, UpdateSourceTrigger=PropertyChanged}"
-                         FontFamily="{StaticResource GeneralMonoFont}"/>
+                         FontFamily="{StaticResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
                 <TextBox Grid.Row="1" Grid.Column="2" Width="65" Margin="8,4,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          Text="{Binding HFSCreatorHexString, UpdateSourceTrigger=PropertyChanged}"
-                         FontFamily="{StaticResource GeneralMonoFont}"/>
+                         FontFamily="{StaticResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
                            Text="&#x2022; Enter four-character string or hexadecimal value."/>
@@ -183,13 +188,16 @@ limitations under the License.
                            Text="Modification:" Foreground="{Binding ModWhenForeground}"/>
                 <DatePicker Grid.Row="1" Grid.Column="1" Margin="8,2,0,0"
                             Width="140" SelectedDateFormat="Short"
+                            IsEnabled="{Binding ModWhenEnabled}"
                             DisplayDateStart="{Binding TimestampStart}"
                             DisplayDateEnd="{Binding TimestampEnd}"
                             SelectedDate="{Binding ModDate}"/>
                 <TextBox Grid.Row="1" Grid.Column="2" Width="60" Margin="16,2,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          VerticalContentAlignment="Center"
-                         Text="{Binding ModTimeString, UpdateSourceTrigger=PropertyChanged}"/>
+                         IsEnabled="{Binding ModWhenEnabled}"
+                         Text="{Binding ModTimeString, UpdateSourceTrigger=PropertyChanged}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
                            Text="&#x2022; Dates are in local format."/>
@@ -217,7 +225,8 @@ limitations under the License.
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <CheckBox Grid.Row="0" Content="Locked (read-only)"
-                              IsChecked="{Binding AccessLocked}"/>
+                              IsChecked="{Binding AccessLocked}"
+                              IsEnabled="{Binding AccessLockedEnabled}"/>
                     <CheckBox Grid.Row="1" Margin="0,4,0,0" Content="Invisible"
                               IsEnabled="{Binding AccessInvisibleEnabled}"
                               IsChecked="{Binding AccessInvisible}"/>
@@ -236,17 +245,20 @@ limitations under the License.
                               IsChecked="{Binding AccessRead}"
                               IsEnabled="{Binding AccessReadEnabled}"/>
                     <CheckBox Grid.Row="1" Grid.Column="0" Content="Write"
-                              IsChecked="{Binding AccessWrite}"/>
+                              IsChecked="{Binding AccessWrite}"
+                              IsEnabled="{Binding AccessWriteEnabled}"/>
                     <CheckBox Grid.Row="2" Grid.Column="0" Content="Rename"
                               IsChecked="{Binding AccessRename}"
                               IsEnabled="{Binding AccessRenameEnabled}"/>
                     <CheckBox Grid.Row="0" Grid.Column="1" Content="Backup"
-                              IsChecked="{Binding AccessBackup}"/>
+                              IsChecked="{Binding AccessBackup}"
+                              IsEnabled="{Binding AccessBackupEnabled}"/>
                     <CheckBox Grid.Row="1" Grid.Column="1" Content="Delete"
                               IsChecked="{Binding AccessDelete}"
                               IsEnabled="{Binding AccessDeleteEnabled}"/>
                     <CheckBox Grid.Row="2" Grid.Column="1" Content="Invisible"
-                              IsChecked="{Binding AccessInvisible}"/>
+                              IsChecked="{Binding AccessInvisible}"
+                              IsEnabled="{Binding AccessInvisibleEnabled}"/>
                 </Grid>
             </Grid>
         </GroupBox>
@@ -259,7 +271,7 @@ limitations under the License.
                 </Grid.RowDefinitions>
                 <TextBox Grid.Row="0" Height="120"
                          Text="{Binding CommentText, UpdateSourceTrigger=PropertyChanged}"
-                         MaxLength="65535"
+                         MaxLength="65535" IsReadOnly="{Binding IsAllReadOnly}"
                          VerticalScrollBarVisibility="Auto"
                          AcceptsReturn="True" TextWrapping="Wrap"/>
             </Grid>

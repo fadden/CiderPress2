@@ -397,10 +397,14 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen);
         }
 
-        private void IsWritableSingleEntrySelected(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+        private void IsSingleEntrySelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsSingleEntrySelected);
         }
+        //private void IsWritableSingleEntrySelected(object sender, CanExecuteRoutedEventArgs e) {
+        //    e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && mMainCtrl.CanWrite &&
+        //        mMainCtrl.IsSingleEntrySelected);
+        //}
         private void AreFileEntriesSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen && ShowCenterFileList &&
                 mMainCtrl.AreFileEntriesSelected);

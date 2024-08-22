@@ -1617,8 +1617,18 @@ namespace cp2_wpf {
                 curAttribs.FullPathName = entry.FullPathName;
             }
 
+            bool isReadOnly;
+            if (archiveOrFileSystem is IFileSystem) {
+                isReadOnly = ((IFileSystem)archiveOrFileSystem).IsReadOnly;
+            } else if (archiveOrFileSystem is IArchive) {
+                isReadOnly = ((IArchive)archiveOrFileSystem).IsReadOnly;
+            } else {
+                Debug.Assert(false, "what is " + archiveOrFileSystem);
+                isReadOnly = false;
+            }
+
             EditAttributes dialog = new EditAttributes(mMainWin, archiveOrFileSystem, entry,
-                adfArchiveEntry, curAttribs);
+                adfArchiveEntry, curAttribs, isReadOnly);
             if (dialog.ShowDialog() != true) {
                 return;
             }

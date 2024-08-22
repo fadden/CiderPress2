@@ -50,6 +50,15 @@ namespace cp2_wpf {
         }
         private bool mIsValid;
 
+        /// <summary>
+        /// Set to true when attributes can't be edited.
+        /// </summary>
+        public bool IsAllReadOnly {
+            get { return mIsAllReadOnly; }
+            set { mIsAllReadOnly = value; OnPropertyChanged(); }
+        }
+        private bool mIsAllReadOnly;
+
         private Brush mDefaultLabelColor = SystemColors.WindowTextBrush;
         private Brush mErrorLabelColor = Brushes.Red;
 
@@ -74,8 +83,9 @@ namespace cp2_wpf {
         /// <param name="adfEntry">For MacZip, the ADF header entry; otherwise NO_ENTRY.</param>
         /// <param name="attribs">Current file attributes, from <paramref name="entry"/> or
         ///   MacZip header contents.</param>
+        /// <param name="isReadOnly">True if the source is read-only.</param>
         public EditAttributes(Window parent, object archiveOrFileSystem, IFileEntry entry,
-                IFileEntry adfEntry, FileAttribs attribs) {
+                IFileEntry adfEntry, FileAttribs attribs, bool isReadOnly) {
             InitializeComponent();
             Owner = parent;
             DataContext = this;
@@ -84,6 +94,7 @@ namespace cp2_wpf {
             mFileEntry = entry;
             mADFEntry = adfEntry;
             mOldAttribs = attribs;
+            IsAllReadOnly = isReadOnly;
 
             if (archiveOrFileSystem is IArchive) {
                 IArchive arc = (IArchive)archiveOrFileSystem;
@@ -171,8 +182,12 @@ namespace cp2_wpf {
             CreateWhenForeground = mCreateWhenValid ? mDefaultLabelColor : mErrorLabelColor;
             ModWhenForeground = mModWhenValid ? mDefaultLabelColor : mErrorLabelColor;
 
-            IsValid = mIsFileNameValid && mIsFileNameUnique && mProAuxValid &&
-                mHFSTypeValid && mHFSCreatorValid && mCreateWhenValid && mModWhenValid;
+            if (IsAllReadOnly) {
+                IsValid = false;
+            } else {
+                IsValid = mIsFileNameValid && mIsFileNameUnique && mProAuxValid &&
+                    mHFSTypeValid && mHFSCreatorValid && mCreateWhenValid && mModWhenValid;
+            }
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e) {
@@ -521,8 +536,12 @@ namespace cp2_wpf {
                 }
 
                 IsProTypeListEnabled = !mFileEntry.IsDirectory;
-                // It's okay to edit aux type for subdir entry, but not for volume dir.
-                IsProAuxEnabled = mFileEntry.ContainingDir != IFileEntry.NO_ENTRY;
+                if (mArchiveOrFileSystem is IFileSystem) {
+                    // It's okay to edit aux type for subdir entry, but not for volume dir.
+                    IsProAuxEnabled = mFileEntry.ContainingDir != IFileEntry.NO_ENTRY;
+                } else {
+                    IsProAuxEnabled = true;
+                }
             } else {
                 IsProTypeListEnabled = IsProAuxEnabled = false;
                 ProTypeVisibility = Visibility.Collapsed;
@@ -531,6 +550,10 @@ namespace cp2_wpf {
             if (mFileEntry.IsDirectory && mFileEntry.ContainingDir == IFileEntry.NO_ENTRY) {
                 // Editing volume dir name or VTOC volume number.
                 UniqueTextVisibility = Visibility.Collapsed;
+            }
+
+            if (IsAllReadOnly) {
+                IsProTypeListEnabled = false;
             }
         }
 
@@ -624,6 +647,7 @@ namespace cp2_wpf {
         private bool mCreateWhenValid = true;
 
         public bool CreateWhenEnabled { get; private set; } = true;
+        public bool ModWhenEnabled { get; private set; } = true;
 
         public DateTime? ModDate {
             get { return mModDate; }
@@ -759,6 +783,11 @@ namespace cp2_wpf {
                 mModTimeString = string.Empty;
             }
             mCreateWhenValid = mModWhenValid = true;
+
+            if (IsAllReadOnly) {
+                CreateWhenEnabled = false;
+                ModWhenEnabled = false;
+            }
         }
 
         #endregion Timestamps
@@ -796,6 +825,7 @@ namespace cp2_wpf {
             }
         }
         private bool mAccessLocked;
+        public bool AccessLockedEnabled { get; private set; } = true;
 
         public bool AccessRead {
             get { return mAccessRead; }
@@ -827,6 +857,7 @@ namespace cp2_wpf {
             }
         }
         private bool mAccessWrite;
+        public bool AccessWriteEnabled { get; private set; } = true;
 
         public bool AccessRename {
             get { return mAccessRename; }
@@ -860,7 +891,6 @@ namespace cp2_wpf {
         private bool mAccessDelete;
         public bool AccessDeleteEnabled { get; private set; } = true;
 
-
         public bool AccessBackup {
             get { return mAccessBackup; }
             set {
@@ -875,6 +905,7 @@ namespace cp2_wpf {
             }
         }
         private bool mAccessBackup;
+        public bool AccessBackupEnabled { get; private set; } = true;
 
         public bool AccessInvisible {
             get { return mAccessInvisible; }
@@ -896,7 +927,6 @@ namespace cp2_wpf {
         /// Prepares the access flag UI during construction.
         /// </summary>
         private void PrepareAccess() {
-            AccessInvisibleEnabled = false;
 
             // No access flags in plain ZIP or gzip.  Technically they could have some
             // system-specific permissions in the "extra" data, but DiskArc doesn't currently
@@ -920,7 +950,8 @@ namespace cp2_wpf {
                 ShowAllFlagsVisibility = Visibility.Visible;
                 ShowLockedOnlyVisibility = Visibility.Collapsed;
                 if (mArchiveOrFileSystem is CPM) {
-                    AccessReadEnabled = AccessRenameEnabled = AccessDeleteEnabled = false;
+                    AccessReadEnabled = AccessRenameEnabled = AccessDeleteEnabled =
+                        AccessInvisibleEnabled = false;
                 }
                 mAccessRead = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Read) != 0;
                 mAccessWrite = (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Write) != 0;
@@ -945,6 +976,12 @@ namespace cp2_wpf {
                     mADFEntry != IFileEntry.NO_ENTRY;
                 mAccessInvisible =
                     (NewAttribs.Access & (byte)FileAttribs.AccessFlags.Invisible) != 0;
+            }
+
+            if (IsAllReadOnly) {
+                AccessLockedEnabled = AccessInvisibleEnabled = AccessReadEnabled =
+                    AccessWriteEnabled = AccessRenameEnabled = AccessBackupEnabled =
+                    AccessDeleteEnabled = false;
             }
         }
 
