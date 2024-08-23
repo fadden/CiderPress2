@@ -154,6 +154,7 @@ namespace cp2_wpf {
                             SectorOrder.DOS_Sector, mAppHook);
                         break;
                     case FileTypeValue.ProDOSBlock:
+                    case FileTypeValue.SimpleBlock:
                         // Try to create as sectors, since this could be a DOS filesystem.
                         if (GetNumTracksSectors(out tracks, out sectors)) {
                             diskImage = UnadornedSector.CreateSectorImage(stream, tracks, sectors,
@@ -312,50 +313,55 @@ namespace cp2_wpf {
         /// <param name="is13Sector">True if this is a 13-sector disk image.</param>
         /// <returns>Fullly-qualified pathname.</returns>
         internal static string SelectOutputFile(FileTypeValue fileType, bool is13Sector) {
-            string filter, ext;
+            string filter;
+            string[] exts;
             switch (fileType) {
                 case FileTypeValue.DOSSector:
                     if (is13Sector) {
                         filter = WinUtil.FILE_FILTER_D13;
-                        ext = ".d13";
+                        exts = new string[] { ".d13" };
                     } else {
                         filter = WinUtil.FILE_FILTER_DO;
-                        ext = ".do";
+                        exts = new string[] { ".do" };
                     }
                     break;
                 case FileTypeValue.ProDOSBlock:
                     filter = WinUtil.FILE_FILTER_PO;
-                    ext = ".po";
+                    exts = new string[] { ".po" };
+                    break;
+                case FileTypeValue.SimpleBlock:
+                    filter = WinUtil.FILE_FILTER_ISOHDV;
+                    exts = new string[] { ".iso", ".hdv" };
                     break;
                 case FileTypeValue.TwoIMG:
                     filter = WinUtil.FILE_FILTER_2MG;
-                    ext = ".2mg";
+                    exts = new string[] { ".2mg" };
                     break;
                 case FileTypeValue.NuFX:
                     filter = WinUtil.FILE_FILTER_SDK;
-                    ext = ".sdk";
+                    exts = new string[] { ".sdk" };
                     break;
                 case FileTypeValue.DiskCopy42:
                     filter = WinUtil.FILE_FILTER_DC42;
-                    ext = ".image";
+                    exts = new string[] { ".image" };
                     break;
                 case FileTypeValue.Woz:
                     filter = WinUtil.FILE_FILTER_WOZ;
-                    ext = ".woz";
+                    exts = new string[] { ".woz" };
                     break;
                 case FileTypeValue.Nib:
                     filter = WinUtil.FILE_FILTER_NIB;
-                    ext = ".nib";
+                    exts = new string[] { ".nib" };
                     break;
                 case FileTypeValue.Trackstar:
                     filter = WinUtil.FILE_FILTER_APP;
-                    ext = ".app";
+                    exts = new string[] { ".app" };
                     break;
                 default:
                     throw new NotImplementedException("Not implemented: " + fileType);
             }
 
-            string fileName = "NewDisk" + ext;
+            string fileName = "NewDisk" + exts[0];
 
             // AddExtension, ValidateNames, CheckPathExists, OverwritePrompt are enabled by default
             SaveFileDialog fileDlg = new SaveFileDialog() {
@@ -368,8 +374,15 @@ namespace cp2_wpf {
                 return string.Empty;
             }
             string pathName = Path.GetFullPath(fileDlg.FileName);
-            if (!pathName.ToLowerInvariant().EndsWith(ext)) {
-                pathName += ext;
+            bool isExtValid = false;
+            foreach (string ext in exts) {
+                if (pathName.ToLowerInvariant().EndsWith(ext)) {
+                    isExtValid = true;
+                    break;
+                }
+            }
+            if (!isExtValid) {
+                pathName += exts[0];
             }
 
             return pathName;
@@ -402,6 +415,8 @@ namespace cp2_wpf {
             nameof(IsChecked_FT_DOSSector),
             nameof(IsEnabled_FT_ProDOSBlock),
             nameof(IsChecked_FT_ProDOSBlock),
+            nameof(IsEnabled_FT_SimpleBlock),
+            nameof(IsChecked_FT_SimpleBlock),
             nameof(IsEnabled_FT_TwoIMG),
             nameof(IsChecked_FT_TwoIMG),
             nameof(IsEnabled_FT_NuFX),
@@ -492,6 +507,9 @@ namespace cp2_wpf {
                     case FileTypeValue.ProDOSBlock:
                         needNewType = !IsEnabled_FT_ProDOSBlock;
                         break;
+                    case FileTypeValue.SimpleBlock:
+                        needNewType = !IsEnabled_FT_SimpleBlock;
+                        break;
                     case FileTypeValue.TwoIMG:
                         needNewType = !IsEnabled_FT_TwoIMG;
                         break;
@@ -517,6 +535,8 @@ namespace cp2_wpf {
                 if (needNewType) {
                     if (IsEnabled_FT_ProDOSBlock) {
                         mFileType = FileTypeValue.ProDOSBlock;
+                    } else if (IsEnabled_FT_SimpleBlock) {
+                        mFileType = FileTypeValue.SimpleBlock;
                     } else if (IsEnabled_FT_DOSSector) {
                         mFileType = FileTypeValue.DOSSector;
                     } else if (IsEnabled_FT_Woz) {
@@ -913,6 +933,7 @@ namespace cp2_wpf {
             Unknown = 0,
             DOSSector,
             ProDOSBlock,
+            SimpleBlock,        // functionally equivalent to ProDOSBlock, but different extension
             TwoIMG,
             DiskCopy42,
             NuFX,
@@ -960,6 +981,15 @@ namespace cp2_wpf {
                 return true;
             }
         }
+
+        public bool IsChecked_FT_SimpleBlock {
+            get { return mFileType == FileTypeValue.SimpleBlock; }
+            set {
+                if (value) { mFileType = FileTypeValue.SimpleBlock; }
+                UpdateControls();
+            }
+        }
+        public bool IsEnabled_FT_SimpleBlock => IsEnabled_FT_ProDOSBlock;
 
         public bool IsChecked_FT_TwoIMG {
             get { return mFileType == FileTypeValue.TwoIMG; }

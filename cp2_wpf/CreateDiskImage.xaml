@@ -182,12 +182,15 @@ limitations under the License.
                 <TextBlock Text="File Type" HorizontalAlignment="Center"/>
             </StackPanel>
             <StackPanel Grid.Row="1">
-                <RadioButton GroupName="FileType" Content="Unadorned DOS-order (.do/.d13)" Margin="0,2,0,0"
-                             IsEnabled="{Binding IsEnabled_FT_DOSSector}"
-                             IsChecked="{Binding IsChecked_FT_DOSSector}"/>
+                <RadioButton GroupName="FileType" Content="Simple block image (.iso/.hdv)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_SimpleBlock}"
+                             IsChecked="{Binding IsChecked_FT_SimpleBlock}"/>
                 <RadioButton GroupName="FileType" Content="Unadorned ProDOS-order (.po)" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FT_ProDOSBlock}"
                              IsChecked="{Binding IsChecked_FT_ProDOSBlock}"/>
+                <RadioButton GroupName="FileType" Content="Unadorned DOS-order (.do/.d13)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_DOSSector}"
+                             IsChecked="{Binding IsChecked_FT_DOSSector}"/>
                 <RadioButton GroupName="FileType" Content="2IMG (ProDOS-order) (.2mg)" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FT_TwoIMG}"
                              IsChecked="{Binding IsChecked_FT_TwoIMG}"/>

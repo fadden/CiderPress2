@@ -107,14 +107,15 @@ with the specified disk size will be available.</p>
 
 <p>Briefly:</p>
 <ul>
+  <li>Simple block image (.iso/.hdv): this stores a disk as a series of 512-byte blocks.
+    This is the most common format for 3.5" disks, hard drives, and other
+    block-oriented media.</li>
+  <li>Unadorned ProDOS-order (.po): same as .iso/.hdv.  The ".po" extension is
+    recognized by many Apple II emulators, so this is here for convenience.
   <li>Unadorned DOS-order (.do/.d13): this stores an Apple II 5.25" floppy disk as a
     series of 256-byte sectors.  This is probably the most common format used for 5.25"
     disks, often used with the ambiguous ".dsk" extension.  ".do" is used for 16-sector
     disks, ".d13" for 13-sector disks.</li>
-  <li>Unadorned ProDOS-order (.po): this stores a disk as a series of 512-byte blocks.
-    The popular ".hdv" and ".iso" extensions are identical, and sometimes ".dsk" is
-    used for this as well.  This is the most common
-    format for 3.5" disks, hard drives, and other block-oriented media.</li>
   <li>2IMG (.2mg): this can store data the same way a .do, .po, or .nib image would, but
     it also adds a file header that allows the receiving application to recognize
     the contents unambiguously.  This format is widely supported by Apple II emulators.

@@ -41,6 +41,7 @@ namespace cp2_wpf {
         public const string FILE_FILTER_D13 = "Unadorned 13-sector disk (*.d13)|*.d13";
         public const string FILE_FILTER_DO = "Unadorned DOS sectors (*.do)|*.do";
         public const string FILE_FILTER_DC42 = "DiskCopy 4.2 image (*.image)|*.image";
+        public const string FILE_FILTER_ISOHDV = "Simple block image (*.iso/hdv)|*.iso;*.hdv";
         public const string FILE_FILTER_NIB = "Nibble disk image (*.nib)|*.nib";
         public const string FILE_FILTER_NUFX = "ShrinkIt (NuFX) archive (*.shk)|*.shk";
         public const string FILE_FILTER_PNG = "PNG images (*.png)|*.png";

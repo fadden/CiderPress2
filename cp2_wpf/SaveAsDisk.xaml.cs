@@ -95,6 +95,9 @@ namespace cp2_wpf {
                 case FileTypeValue.ProDOSBlock:
                     needNewType = !IsEnabled_FT_ProDOSBlock;
                     break;
+                case FileTypeValue.SimpleBlock:
+                    needNewType = !IsEnabled_FT_SimpleBlock;
+                    break;
                 case FileTypeValue.TwoIMG:
                     needNewType = !IsEnabled_FT_TwoIMG;
                     break;
@@ -123,6 +126,8 @@ namespace cp2_wpf {
 
             if (IsEnabled_FT_ProDOSBlock) {
                 mFileType = FileTypeValue.ProDOSBlock;
+            } else if (IsEnabled_FT_SimpleBlock) {
+                mFileType = FileTypeValue.SimpleBlock;
             } else if (IsEnabled_FT_DOSSector) {
                 mFileType = FileTypeValue.DOSSector;
             } else if (IsEnabled_FT_Woz) {
@@ -198,6 +203,7 @@ namespace cp2_wpf {
                             SectorOrder.DOS_Sector, mAppHook);
                         break;
                     case FileTypeValue.ProDOSBlock:
+                    case FileTypeValue.SimpleBlock:
                         if (GetNumTracksSectors(out tracks, out sectors)) {
                             diskImage = UnadornedSector.CreateSectorImage(stream, tracks, sectors,
                                 SectorOrder.ProDOS_Block, mAppHook);
@@ -470,6 +476,14 @@ namespace cp2_wpf {
                 }
             }
         }
+
+        public bool IsChecked_FT_SimpleBlock {
+            get { return mFileType == FileTypeValue.SimpleBlock; }
+            set {
+                if (value) { mFileType = FileTypeValue.SimpleBlock; }
+            }
+        }
+        public bool IsEnabled_FT_SimpleBlock => IsEnabled_FT_ProDOSBlock;
 
         public bool IsChecked_FT_TwoIMG {
             get { return mFileType == FileTypeValue.TwoIMG; }
