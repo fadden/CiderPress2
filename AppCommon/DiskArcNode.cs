@@ -394,7 +394,10 @@ namespace AppCommon {
         // Save updates to a file archive.
         public override void SaveUpdates(bool doCompress) {
             Debug.Assert(Parent != null);
-            Debug.Assert(CanWrite);
+            if (!CanWrite) {
+                Debug.Assert(false, "attempting to update read-only DiskArcNode");
+                throw new Exception("archive is not writable");
+            }
 
             // Create a new file on disk, or a temp file on the host filesystem.
             Stream outputStream = Parent.CreateArchiveOutputFile(EntryInParent);

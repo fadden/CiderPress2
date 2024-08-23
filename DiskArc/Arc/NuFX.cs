@@ -70,7 +70,7 @@ namespace DiskArc.Arc {
         public Stream? DataStream { get; private set; }
 
         public bool IsValid { get; private set; } = true;
-        public bool IsReadOnly => IsDubious;
+        public bool IsReadOnly => IsDubious || (DataStream != null && !DataStream.CanWrite);
         public bool IsDubious { get; internal set; }
 
         public Notes Notes { get; } = new Notes();

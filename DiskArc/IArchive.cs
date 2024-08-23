@@ -76,6 +76,11 @@ namespace DiskArc {
         /// stream, but they can be marked read-only if the contents are dubious (because
         /// generating a new one could lose something) or we simply don't know how to generate
         /// that type of archive.</para>
+        /// <para>Despite this, we want to mark the IArchive as read-only if the data stream is
+        /// read-only, because otherwise an update will generate a new file and discard the old,
+        /// violating the reason the user marked it read-only in the first place.  Note that
+        /// archives stored in disk images will only be treated as read-only if the filesystem
+        /// code forces adherence to the access permissions (which it currently doesn't).</para>
         /// </remarks>
         bool IsReadOnly { get; }
 
