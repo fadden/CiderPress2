@@ -254,6 +254,14 @@ namespace cp2_wpf.WPFCommon {
             mConfiguringPanel = false;
         }
 
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+            // Let the 4th mouse button do "nav up".  (Technically it should be a "back"
+            // button, but we don't have one of those.)
+            if (e.ChangedButton == MouseButton.XButton1) {
+                NavUp_Click(sender, e);
+            }
+        }
+
         private void OkButton_Click(object sender, RoutedEventArgs e) {
             AcceptSelection();
         }
@@ -266,6 +274,10 @@ namespace cp2_wpf.WPFCommon {
             if (dialog.ShowDialog() == true) {
                 // Move into the newly-created folder.
                 PathNameText = Path.Combine(PathNameText, dialog.NewFileName);
+                // Put the focus on the "ok" button, so they can hit Enter immediately.  Putting
+                // the focus on the file list DataGrid doesn't help because it has no elements
+                // and thus no selection.
+                okButton.Focus();
             }
         }
 
@@ -412,17 +424,35 @@ namespace cp2_wpf.WPFCommon {
                 // Header or empty area; ignore.
                 return;
             }
-            ListItem item = (ListItem)citem;
+            HandleFileListGoAction((ListItem)citem);
+        }
 
+        /// <summary>
+        /// Handles Enter being hit while focus is on the file list.
+        /// </summary>
+        /// <remarks>
+        /// There's probably some way to figure out where WPF thinks the keyboard focus is,
+        /// but I'm not sure it's worth figuring out.  It's easier to just accept Enter as
+        /// a shortcut for the "we're done" button, but one that only works when the focus
+        /// is on the file list.
+        /// </remarks>
+        private void FileList_PreviewKeyDown(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Enter && e.KeyboardDevice.Modifiers == ModifierKeys.None) {
+                HandleFileListGoAction(null);
+                e.Handled = true;
+            }
+        }
+
+        private void HandleFileListGoAction(ListItem? item) {
             //Debug.WriteLine("Double-click on '" + item.PathName + "'");
             if (fileListDataGrid.SelectedItems.Count == 0) {
                 // Nothing selected, nothing to do.
             } else if (fileListDataGrid.SelectedItems.Count == 1) {
-                if (item.IsFolder) {
+                if (item != null && item.IsFolder) {
                     // Single folder double-clicked, move into it.
                     PathNameText = item.PathName;
                 } else {
-                    // Single file double-clicked, accept.
+                    // Single file double-clicked, or Enter hit; accept.
                     AcceptSelection();
                 }
             } else {

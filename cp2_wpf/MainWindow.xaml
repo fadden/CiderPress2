@@ -82,9 +82,9 @@ limitations under the License.
             </RoutedUICommand>
             <RoutedUICommand x:Key="CreateDirectoryCmd" Text="Create Directory..."/>
             <RoutedUICommand x:Key="DefragmentCmd" Text="Defragment Filesystem"/>
-            <!-- DataGrids eat Delete, TreeViews don't -->
             <RoutedUICommand x:Key="DeleteFilesCmd" Text="_Delete Files">
                 <RoutedUICommand.InputGestures>
+                    <!-- DataGrids eat Delete, TreeViews don't. -->
                     <KeyGesture>Delete</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
@@ -135,7 +135,13 @@ limitations under the License.
                     <KeyGesture>Ctrl+I</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
-            <RoutedUICommand x:Key="ViewFilesCmd" Text="_View Files"/>
+            <RoutedUICommand x:Key="ViewFilesCmd" Text="_View Files">
+                <RoutedUICommand.InputGestures>
+                    <!-- This is used in the app menu and in file list DataGrid.CommandBindings.
+                         The DataGrid eats the key, but TreeView passes it along. -->
+                    <KeyGesture>Enter</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
 
             <RoutedUICommand x:Key="Debug_BulkCompressTestCmd" Text="Bulk Compression Test..."/>
             <RoutedUICommand x:Key="Debug_DiskArcLibTestCmd" Text="DiskArc Library Tests...">
@@ -641,11 +647,13 @@ limitations under the License.
                             <common:BindingProxy x:Key="proxy" Data="{Binding}"/>
                         </DataGrid.Resources>
                         <DataGrid.CommandBindings>
-                            <!-- DataGrid provides its own behavior for Ctrl+C and Del; override -->
+                            <!-- DataGrid provides its own behavior for Ctrl+C, Del, and Enter; override -->
                             <CommandBinding Command="Copy"
                                             CanExecute="AreFileEntriesSelected" Executed="CopyCmd_Executed"/>
                             <CommandBinding Command="{StaticResource DeleteFilesCmd}"
                                             CanExecute="CanDeleteFiles" Executed="DeleteFilesCmd_Executed"/>
+                            <CommandBinding Command="{StaticResource ViewFilesCmd}"
+                                            CanExecute="AreFileEntriesSelected" Executed="ViewFilesCmd_Executed"/>
                         </DataGrid.CommandBindings>
                         <!-- If the columns change, update the custom sort function in FileListItem. -->
                         <DataGrid.Columns>
