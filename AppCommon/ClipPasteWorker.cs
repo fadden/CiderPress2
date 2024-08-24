@@ -112,6 +112,8 @@ namespace AppCommon {
             mAppHook = appHook;
         }
 
+        #region File archive
+
         public void AddFilesToArchive(IArchive archive, out bool isCancelled) {
             Debug.Assert(!archive.Characteristics.HasSingleEntry);
             bool canRsrcFork = archive.Characteristics.HasResourceForks ||
@@ -332,6 +334,10 @@ namespace AppCommon {
             archive.AddPart(rsrcEntry, FilePart.DataFork, clSource, fmt);
         }
 
+        #endregion File archive
+
+        #region Disk image
+
         /// <summary>
         /// Adds files to a filesystem.
         /// </summary>
@@ -494,7 +500,12 @@ namespace AppCommon {
                 }
 
                 if (clipEntry.Attribs.IsDirectory) {
-                    // Directory already exists or we just created it.  Nothing else to do.
+                    // Directory already exists or we just created it.  Finish up by copying
+                    // the file dates and access flags.
+                    newEntry.CreateWhen = clipEntry.Attribs.CreateWhen;
+                    newEntry.ModWhen = clipEntry.Attribs.ModWhen;
+                    newEntry.Access = clipEntry.Attribs.Access;
+                    newEntry.SaveChanges();
                     continue;
                 }
 
@@ -623,5 +634,7 @@ namespace AppCommon {
                 }
             }
         }
+
+        #endregion Disk image
     }
 }
