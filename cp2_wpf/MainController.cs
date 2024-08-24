@@ -718,11 +718,11 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="recentIndex">Index of entry in recents list.</param>
         public void OpenRecentFile(int recentIndex) {
-            if (!CloseWorkFile()) {
+            if (recentIndex >= RecentFilePaths.Count) {
+                // Don't have that many recent files recorded yet.
                 return;
             }
-            if (recentIndex >= RecentFilePaths.Count) {
-                Debug.Assert(false);
+            if (!CloseWorkFile()) {
                 return;
             }
             DoOpenWorkFile(RecentFilePaths[recentIndex], false);

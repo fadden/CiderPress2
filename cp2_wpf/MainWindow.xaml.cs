@@ -180,6 +180,12 @@ namespace cp2_wpf {
             MenuItem recents = (MenuItem)sender;
             recents.Items.Clear();
 
+            CommandBinding[] recentFileCommands =
+                    new CommandBinding[MainController.MAX_RECENT_FILES] {
+                recentFileCmd1, recentFileCmd2, recentFileCmd3,
+                recentFileCmd4, recentFileCmd5, recentFileCmd6
+            };
+
             if (mMainCtrl.RecentFilePaths.Count == 0) {
                 MenuItem mi = new MenuItem();
                 mi.Header = "(none)";
@@ -189,8 +195,8 @@ namespace cp2_wpf {
                     MenuItem mi = new MenuItem();
                     mi.Header = EscapeMenuString(string.Format("{0}: {1}", i + 1,
                         mMainCtrl.RecentFilePaths[i]));
-                    mi.Command = recentFileCmd.Command;
-                    mi.CommandParameter = i;
+                    mi.Command = recentFileCommands[i].Command;
+                    //mi.CommandParameter = i;
                     recents.Items.Add(mi);
                 }
             }
@@ -587,19 +593,26 @@ namespace cp2_wpf {
             //mMainCtrl.PasteOrDrop(null, selEntry);
             mMainCtrl.PasteOrDrop(null, IFileEntry.NO_ENTRY);
         }
-        private void RecentFileCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            int recentIndex;
-            if (e.Parameter is int) {
-                recentIndex = (int)e.Parameter;
-            } else if (e.Parameter is string) {
-                recentIndex = int.Parse((string)e.Parameter);
-            } else {
-                throw new Exception("Bad parameter: " + e.Parameter);
-            }
-            if (recentIndex < 0 || recentIndex >= MainController.MAX_RECENT_FILES) {
-                throw new Exception("Bad parameter: " + e.Parameter);
-            }
-
+        private void RecentFileCmd1_Executed(object sender, ExecutedRoutedEventArgs e) {
+            RecentFileCmd_Executed(0);
+        }
+        private void RecentFileCmd2_Executed(object sender, ExecutedRoutedEventArgs e) {
+            RecentFileCmd_Executed(1);
+        }
+        private void RecentFileCmd3_Executed(object sender, ExecutedRoutedEventArgs e) {
+            RecentFileCmd_Executed(2);
+        }
+        private void RecentFileCmd4_Executed(object sender, ExecutedRoutedEventArgs e) {
+            RecentFileCmd_Executed(3);
+        }
+        private void RecentFileCmd5_Executed(object sender, ExecutedRoutedEventArgs e) {
+            RecentFileCmd_Executed(4);
+        }
+        private void RecentFileCmd6_Executed(object sender, ExecutedRoutedEventArgs e) {
+            RecentFileCmd_Executed(5);
+        }
+        private void RecentFileCmd_Executed(int recentIndex) {
+            Debug.Assert(recentIndex >= 0 && recentIndex < MainController.MAX_RECENT_FILES);
             Debug.WriteLine("Recent project #" + recentIndex);
             mMainCtrl.OpenRecentFile(recentIndex);
         }

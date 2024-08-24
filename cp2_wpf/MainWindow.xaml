@@ -69,7 +69,11 @@ limitations under the License.
             </Style>
 
             <RoutedUICommand x:Key="AboutCmd" Text="_About CiderPress II"/>
-            <RoutedUICommand x:Key="AddFilesCmd" Text="_Add Files..."/>
+            <RoutedUICommand x:Key="AddFilesCmd" Text="_Add Files...">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+A</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
             <RoutedUICommand x:Key="CloseCmd" Text="_Close">
                 <RoutedUICommand.InputGestures>
                     <KeyGesture>Ctrl+W</KeyGesture>
@@ -80,7 +84,11 @@ limitations under the License.
                     <KeyGesture>Ctrl+Shift+W</KeyGesture>
                 </RoutedUICommand.InputGestures>
             </RoutedUICommand>
-            <RoutedUICommand x:Key="CreateDirectoryCmd" Text="Create Directory..."/>
+            <RoutedUICommand x:Key="CreateDirectoryCmd" Text="Create Directory...">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+N</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
             <RoutedUICommand x:Key="DefragmentCmd" Text="Defragment Filesystem"/>
             <RoutedUICommand x:Key="DeleteFilesCmd" Text="_Delete Files">
                 <RoutedUICommand.InputGestures>
@@ -121,7 +129,36 @@ limitations under the License.
             <RoutedUICommand x:Key="NewFileArchiveCmd" Text="_New File Archive..."/>
             <RoutedUICommand x:Key="OpenPhysicalDriveCmd" Text="Open Physical Drive..."/>
             <RoutedUICommand x:Key="ReplacePartitionCmd" Text="Replace Partition Contents..."/>
-            <RoutedUICommand x:Key="RecentFileCmd"/>
+            <RoutedUICommand x:Key="RecentFileCmd1">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+1</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
+            <RoutedUICommand x:Key="RecentFileCmd2">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+2</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
+            <RoutedUICommand x:Key="RecentFileCmd3">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+3</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
+            <RoutedUICommand x:Key="RecentFileCmd4">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+4</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
+            <RoutedUICommand x:Key="RecentFileCmd5">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+5</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
+            <RoutedUICommand x:Key="RecentFileCmd6">
+                <RoutedUICommand.InputGestures>
+                    <KeyGesture>Ctrl+Shift+6</KeyGesture>
+                </RoutedUICommand.InputGestures>
+            </RoutedUICommand>
             <RoutedUICommand x:Key="ResetSortCmd" Text="Reset Sorting"/>
             <RoutedUICommand x:Key="SaveAsDiskImageCmd" Text="Save As Disk Image..."/>
             <RoutedUICommand x:Key="ScanForBadBlocksCmd" Text="Scan for Bad Blocks"/>
@@ -214,8 +251,18 @@ limitations under the License.
                         Executed="OpenPhysicalDriveCmd_Executed"/>
         <CommandBinding Command="Paste"
                         CanExecute="CanPasteFiles" Executed="PasteCmd_Executed"/>
-        <CommandBinding Command="{StaticResource RecentFileCmd}" x:Name="recentFileCmd"
-                        Executed="RecentFileCmd_Executed"/>
+        <CommandBinding Command="{StaticResource RecentFileCmd1}" x:Name="recentFileCmd1"
+                        Executed="RecentFileCmd1_Executed"/>
+        <CommandBinding Command="{StaticResource RecentFileCmd2}" x:Name="recentFileCmd2"
+                        Executed="RecentFileCmd2_Executed"/>
+        <CommandBinding Command="{StaticResource RecentFileCmd3}" x:Name="recentFileCmd3"
+                        Executed="RecentFileCmd3_Executed"/>
+        <CommandBinding Command="{StaticResource RecentFileCmd4}" x:Name="recentFileCmd4"
+                        Executed="RecentFileCmd4_Executed"/>
+        <CommandBinding Command="{StaticResource RecentFileCmd5}" x:Name="recentFileCmd5"
+                        Executed="RecentFileCmd5_Executed"/>
+        <CommandBinding Command="{StaticResource RecentFileCmd6}" x:Name="recentFileCmd6"
+                        Executed="RecentFileCmd6_Executed"/>
         <CommandBinding Command="{StaticResource ReplacePartitionCmd}"
                         CanExecute="IsWritablePartitionSelected" Executed="ReplacePartitionCmd_Executed"/>
         <CommandBinding Command="{StaticResource ResetSortCmd}"
@@ -458,7 +505,7 @@ limitations under the License.
                         <Button Width="300" Height="50" Margin="10"
                                 Visibility="{Binding ShowRecentFile1, Converter={StaticResource BoolToVis}}"
                                 ToolTip="{Binding RecentFilePath1}" ToolTipService.InitialShowDelay="750"
-                                Command="{DynamicResource RecentFileCmd}" CommandParameter="0">
+                                Command="{DynamicResource RecentFileCmd1}" CommandParameter="0">
                             <Button.Content>
                                 <StackPanel>
                                     <TextBlock HorizontalAlignment="Center">Recent file #1</TextBlock>
@@ -469,7 +516,7 @@ limitations under the License.
                         <Button Width="300" Height="50" Margin="10"
                                 Visibility="{Binding ShowRecentFile2, Converter={StaticResource BoolToVis}}"
                                 ToolTip="{Binding RecentFilePath2}" ToolTipService.InitialShowDelay="750"
-                                Command="{DynamicResource RecentFileCmd}" CommandParameter="1">
+                                Command="{DynamicResource RecentFileCmd2}" CommandParameter="1">
                             <Button.Content>
                                 <StackPanel>
                                     <TextBlock HorizontalAlignment="Center">Recent file #2</TextBlock>
