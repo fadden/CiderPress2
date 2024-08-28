@@ -475,7 +475,7 @@ archive specifiers does not match, the copy process is cancelled.
 
 The destination may not be a single-file archive like AppleSingle or gzip.
 
-The `--raw-mode` option is not used here.  Files copied from DOS volumes
+The `--raw` option is not handled here.  Files copied from DOS volumes
 are always treated as "cooked" unless they are being copied to another
 DOS volume, in which case the files are transferred "raw", with the sparse
 structure preserved.
@@ -1096,9 +1096,9 @@ the word "locked", or the word "unlocked".
 timestamps, respectively.  Date/time strings will be parsed according
 to local conventions.  It's best to use an unambiguous format like
 [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt)
-(e.g. "yyyy-MM-ddTHH:mm:ssZ"), though other common formats like "dd-MMM-yyyy
-HH:mm:ss" will also work.  Bear in mind that most formats store timestamps
-in local time, without time zone information.
+(e.g. `yyyy-MM-ddTHH:mm:ssZ`), though other common formats like
+`dd-MMM-yyyy HH:mm:ss` will also work.  Bear in mind that most disk and file
+archive formats store timestamps as local time, without time zone information.
 
 Not all filesystems and archive formats support all attributes, or all
 possible values for a given attribute.  Attempting to set an unsupported
@@ -1482,7 +1482,7 @@ of the extensions are allowed to mean more than one thing.
  - ".woz" - WOZ format nibble image, for 5.25" (35- or 40-track)
    or 3.5" (SSDD or DSDD) disks
  - ".2mg", ".2img" - DOS-order 16-sector disks, or ProDOS-order blocks
- - ".dc", ".image" - DiskCopy 4.2 3.5" floppy (400KB, 720KB, 800KB, or 1440KB)
+ - ".dc", ".dc42", ".image" - DiskCopy 4.2 3.5" floppy (400KB, 720KB, 800KB, or 1440KB)
  - ".app" - Trackstar 5.25" (35- or 40-track) disk nibble image
  - ".sdk" - NuFX (ShrinkIt) disk archive
  - ".zip" - ZIP file archive
@@ -1709,6 +1709,13 @@ part of the same file, and it will be included automatically.
 When files are added without file type information, default types are
 provided.  For ProDOS this is NON/$0000, for HFS 'BINA'/'CPII' is used
 (generic binary).
+
+The add, extract, import, and export operations attempt to preserve the file
+timestamps, even when the preservation mode is set to "none".  Some timestamps
+cannot be stored or can only be partially represented, e.g. the ProDOS file
+creation time has no equivalent on Linux systems, and ProDOS timestamps have
+1-minute granularity.  Many systems are unable to store dates with years that
+will be reached soon, e.g. HFS can't represent dates after February 2040.
 
 #### None (default) ####
 
@@ -1977,6 +1984,7 @@ Some ideas for the future:
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add `get-attr` to get file attributes in machine-readable form.
  - Add a better way to set access flags in `set-attr`, e.g. by letter.
+ - Add a way to set attributes for multiple files, e.g. mark as read-only.
  - Add `show-vol-bitmap` to display free/in-use blocks.
  - Allow `test` to descend into the archive (use `--depth` option).
  - Add command to zero out unused blocks on disk images, and perhaps the
@@ -1987,3 +1995,4 @@ Additional short options to consider:
  - `-v` for `--verbose`?  (Not needed, verbose is default)
  - `-r` for `--recurse`?  (Not needed, recurse is default)
  - `-w` for `--wide`?  (Rarely used)
+ - `-0` for `--no-compress`?

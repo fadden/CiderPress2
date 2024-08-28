@@ -76,11 +76,19 @@
 
 <div id="main">
 
+<h2>Disk Operations</h2>
+
+<p>The disk operations are available when a disk image or partition is selected
+in the archive tree.  They will not be visible when a filesystem or file
+archive is active.</p>
+<p>Block/sector editing is covered in the next section.</p>
+
+
 <h2>Save As Disk Image</h2>
 
-<p>This option is available for disk images and partitions (not filesystems).  It allows
-you to save the contents to a new disk image.  The new disk does not have to use the
-same format, so this is a quick way to convert a disk image from one format to another.</p>
+<p>This features allows you to save the contents of a disk image or disk
+partition to a new disk image.  The new disk does not have to use the same file
+format, so this is a quick way to convert a disk image from one format to another.</p>
 <p>Select the disk image or partition in the archive tree, then either click the
 <samp>Save As Disk Image</samp> button in the center panel, or use the corresponding
 item in the <samp>Actions</samp> menu.  This opens a window that lets you pick a
@@ -127,8 +135,9 @@ the disk image is opened.</p>
 
 <h2>Defragment Filesystem</h2>
 
-<p>This option is only available for filesystems that have serious problems with fragmentation
-(this is technically a filesystem utility, not a disk utility).  This is currently
+<p>This option is only available for filesystems that have serious problems with fragmentation.
+(This is technically a filesystem utility, not a disk utility, but it requires
+that all file access be disabled while running.)  This is currently
 implemented only for Apple Pascal.</p>
 <p>Select the filesystem, then select <samp>Actions &gt; Defragment Filesystem</samp> from
 the menu.  The operation runs immediately.</p>

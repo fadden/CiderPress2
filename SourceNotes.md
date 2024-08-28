@@ -8,14 +8,17 @@ for a 32-bit or 64-bit environment.
 
 When installing Visual Studio, be sure to include ".NET Desktop Development".
 
-See [MakeDist](MakeDist/README.md) for build and packaging.  You will need a
-full .NET SDK installation to do builds (with `dotnet build`).
+The [MakeDist](MakeDist/README.md) command handles building and packaging for
+releases.  You will need a full .NET SDK installation to do builds (with
+`dotnet build` if you want to use the command line).
 
-The source files that deal with disk and file formats have accompanying
-"-notes" documents that describes the format in some detail, and has
+The source files that implement disk and file formats have accompanying
+"-notes" documents that describe the formats in some detail, and have
 references to primary sources.
 
 ## Projects ##
+
+The "solution" is comprised of several projects.
 
 Libraries:
 
@@ -33,7 +36,8 @@ Libraries:
 
 Applications:
 
- - cp2: command-line application for Windows, Linux, Mac, et.al.
+ - cp2: command-line application for Windows, Linux, Mac, et.al. (regression
+   tests are built in).
  - cp2_wpf: GUI application for Windows.
 
 Other (not included in binary distribution):
@@ -41,8 +45,9 @@ Other (not included in binary distribution):
  - Examples/*: some simple command-line applications that demonstrate
    the use of the libraries.
  - MakeDist: build utility that creates distribution packages.
- - TestData: a collection of file archives and disk images, used by the
-   DiskArc library tests and the cp2 command-line application tests.
+ - TestData: not actually a project.  This is a collection of file archives
+   and disk images, used by the DiskArc library tests and the cp2
+   command-line application tests.
 
 ## Tests ##
 
@@ -62,18 +67,24 @@ for certain operations.  For example, `cp2 help --debug` also lists the
 commands used to run the tests, and `cp2 version --debug` will display
 additional information about the runtime environment.
 
+In addition, the GUI application has a "bulk compression test" in the DEBUG
+menu that will compress all files in a disk image or file archive with a
+specific compression algorithm, then decompress them and verify that the output
+matches the input.  This can be used for performance and correctness testing
+of compression code.
+
 ## GUI Tool Development ##
 
 During development, the command-line interface was developed first.  The
-graphical interface is currently being prototyped with WPF (Windows
-Presentation Foundation).  This might seem an odd choice, since WPF is several
-years old and Windows-only, and there are multi-platform UI toolkits. The
-motivations are:
+graphical interface is currently implemented with WPF (Windows Presentation
+Foundation).  This might seem an odd choice, since WPF is several years old
+and Windows-only, and there are multi-platform UI toolkits.  The motivations
+for using it are:
 
  1. Some multi-platform UI toolkits don't work on all of my target platforms.
     For example, Microsoft's MAUI doesn't currently work on Linux.
  2. Some UI toolkits emphasize mobile device interaction, making them less
-    suitable for what is intended as a desktop application.
+    suitable for what is primarily a desktop application.
  3. Some UI toolkits are missing important pieces, like robust display of
     formatted text.
  4. I'm familiar with WPF.
@@ -102,14 +113,14 @@ WPF version.  This will ensure that the various APIs work correctly with a GUI
 app, and demonstrate how I think the tool should behave.  Fortunately, the GUI
 application code is a relatively small part of the overall package.
 
-## Source Code Division ##
+## Source Code Proportions ##
 
 As of v1.0, the division of code between components is approximately:
 
  - 4% generic libraries (CommonUtil)
  - 54% app-specific libraries (DiskArc, FileConv, AppCommon)
  - 14% library tests (DiskArcTests and FileConvTests)
- - 13% CLI (includes regression tests)
+ - 13% CLI (about half of which is regression tests)
  - 13% WPF GUI
  - 1% miscellaneous (Examples, MakeDist)
 
@@ -119,7 +130,7 @@ Metrics" feature.)
 ## Publishing a New Release ##
 
 There are several steps involved in publishing a new release.  Start by
-updating versions and running a final set of tests on the app.
+updating version numbers and running a final set of tests on the app.
 
  1. Update the version number in `AppCommon/GlobalAppVersion.cs`.  This
     changes the version number displayed by the applications, and
@@ -137,18 +148,21 @@ updating versions and running a final set of tests on the app.
  5. Run the command-line tests: `cp2 debug-test`, `cp2 debug-test-da`,
     and `cp2 debug-test-fc`.  These require files in the TestData directory.
     All tests must pass.  If you're not built for Debug mode, you will see
-    a warning at the end of the test runs.
+    a warning at the end of the test runs.  Ideally these would be run on
+    all supported platforms (Win10+, macOS 11+, Linux).
 
-If this is a "final" release, you will need to publish updated documentation
-as well.  Don't do this for pre-releases; the web documentation should
-always match the latest final release.
+If this is a "final" release, you will need to publish updated documentation,
+from the "ndocs" directory to the live github website "docs" directory.  You
+should not do this for pre-releases, because the web site contents should
+always match the current "final" release.
 
  6. Update the `app_version` number in `ndocs/publish.py`.  This is used
     for text substitution in the descriptive text and installer links.
  7. From the command line, in the `ndocs` directory, run `publish.py`
-    (you may need to explicitly run python).  This will update the contents
-    of the `docs` directory and the top-level documentation (including
-    this file) with the contents of `ndocs`.  Check the diffs.
+    (you may need to explicitly run python if the shell isn't set up to
+    execute scripts directly).  This will update the contents of the `docs`
+    directory and the top-level documentation (including this file) with the
+    contents of `ndocs`.  Check the diffs.
 
 Finally, build the applications and submit the changes.
 
