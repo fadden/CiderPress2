@@ -90,6 +90,7 @@ namespace DiskArc {
         //  - Stream.Dispose() calls Close()
         //  - Stream.Close() calls Dispose(true) and GC.SuppressFinalize(this)
         // Subclasses should implement Dispose(bool) and (maybe) a finalizer.
+        // See https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-dispose#implement-the-dispose-pattern-for-a-derived-class
 
         /// <summary>
         /// Computes the combined length of the non-sparse sections of the file.

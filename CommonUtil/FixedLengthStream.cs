@@ -68,6 +68,7 @@ namespace CommonUtil {
                 mBaseStream.Dispose();
                 mLength = -1;
             }
+            base.Dispose(disposing);
         }
     }
 }

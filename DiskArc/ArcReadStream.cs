@@ -179,6 +179,7 @@ namespace DiskArc {
 #pragma warning disable CS8625
             mArchive = null;
 #pragma warning restore CS8625
+            base.Dispose(disposing);
         }
 
         // Stream

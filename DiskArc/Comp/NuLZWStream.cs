@@ -125,36 +125,29 @@ namespace DiskArc.Comp {
         //  - Stream.Dispose() calls Close()
         //  - Stream.Close() calls Dispose(true) and GC.SuppressFinalize(this)
 
-        // IDisposable
+        // IDisposable, from Stream
         protected override void Dispose(bool disposing) {
-            if (!disposing) {
-                return;     // GC at work, nothing useful to do
-            }
-            if (mCompDataStream == null) {
-                return;     // already disposed; could be Close + "using"
-            }
+            if (disposing && mCompDataStream != null) {
+                if (mCompressionMode == CompressionMode.Compress) {
+                    FinishCompression();
+                }
 
-            if (mCompressionMode == CompressionMode.Compress) {
-                FinishCompression();
-            }
-
-            if (!mLeaveOpen) {
-                mCompDataStream.Close();
-            }
+                if (!mLeaveOpen) {
+                    mCompDataStream.Close();
+                }
 
 #pragma warning disable CS8625
-            mCompDataStream = null;
+                mCompDataStream = null;
 #pragma warning restore CS8625
+            }
+            base.Dispose(disposing);
         }
 
-        // Single-byte buffer for ReadByte/WriteByte, allocated on first use.
-        private byte[]? mSingleBuf;
+        // Single-byte buffer for ReadByte/WriteByte.
+        private byte[] mSingleBuf = new byte[1];
 
         // Stream
         public override int ReadByte() {
-            if (mSingleBuf == null) {
-                mSingleBuf = new byte[1];
-            }
             if (Read(mSingleBuf, 0, 1) == 0) {
                 return -1;      // EOF reached
             }
@@ -163,9 +156,6 @@ namespace DiskArc.Comp {
 
         // Stream
         public override void WriteByte(byte value) {
-            if (mSingleBuf == null) {
-                mSingleBuf = new byte[1];
-            }
             mSingleBuf[0] = value;
             Write(mSingleBuf, 0, 1);
         }
@@ -783,7 +773,7 @@ namespace DiskArc.Comp {
 
                 // Fill our input buffer with compressed data.  The buffer is large enough to
                 // ensure that we have a compressed chunk (need 4KB + the header bytes).
-                if (!mExpInputEnded) {
+                while (!mExpInputEnded && mExpChunkCount < CHUNK_INPUT_BUF_LEN) {
                     int bytesNeeded = CHUNK_INPUT_BUF_LEN - mExpChunkCount;
                     int actual = mCompDataStream.Read(mExpChunkBuf, mExpChunkCount, bytesNeeded);
                     mExpInputEnded = (actual == 0);

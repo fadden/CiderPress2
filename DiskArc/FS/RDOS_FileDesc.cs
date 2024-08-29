@@ -213,6 +213,7 @@ namespace DiskArc.FS {
 
             // Mark the fd invalid so future calls will crash or do nothing.
             Invalidate();
+            base.Dispose(disposing);
         }
 
         /// <summary>

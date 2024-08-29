@@ -4,11 +4,11 @@ All codecs follow the same pattern as System.IO.Compression classes like Deflate
 codec is a Stream sub-class that can be read from or written to, but not both at once.
 
  - When compressing, the application provides a writable stream that will receive the compressed
-   output.  It writes the uncompressed input data to the codec stream.  The codec must be closed
-   to complete the operation.
+   output.  The application code writes the uncompressed input data to the codec stream.  The
+   codec stream must be closed to complete the operation.
  - When decompressing, the application provides a readable stream with the compressed input.
-   It reads the uncompressed data from the codec stream, until it receives an end-of-file signal
-   (zero-length Read).
+   The application reads the uncompressed data from the codec stream, until it receives an
+   end-of-file signal (zero-length Read() result).
 
 The codec Stream is not seekable, and the codecs do not change the position of the input or
 output streams.
@@ -19,7 +19,9 @@ know when all data has been decompressed, either by seeing a special symbol in t
 by having processed a certain amount of data.
 
 Some compression algorithms, such as Squeeze and NuFX LZW/1, are not fully streamable in one or
-both directions.  These will not be able to produce any output until all input has been provided.
+both directions.  These will not be able to produce any output until all input has been provided,
+so the codec will usually just hold the entire file in memory.  Files compressed with these
+algorithms tend to be small, so this is probably okay.
 
 If a stream has a built-in checksum, it will be verified automatically, with failures reported
 as an InvalidDataException.  Encountering corrupted data while decompressing will also cause
