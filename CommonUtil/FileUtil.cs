@@ -53,7 +53,7 @@ namespace CommonUtil {
         /// throws EndOfStreamException.
         /// </summary>
         /// <remarks>
-        /// <para>This will be part of the Stream class in .NET 7.  We're not building against
+        /// <para>This is part of the Stream class as of .NET Core 7.  We're not building against
         /// that yet, so use an extension method with an identical signature and behavior.  (If
         /// Stream defines an identical method, this will be ignored.)</para>
         /// <para>This call is needed because the Stream definition says, "An implementation is

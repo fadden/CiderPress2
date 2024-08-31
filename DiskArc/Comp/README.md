@@ -16,16 +16,17 @@ output streams.
 It's necessary to close the codec when compressing to provide a signal that all input has been
 provided.  This allows the codec to flush any pending data.  When expanding, the codec will
 know when all data has been decompressed, either by seeing a special symbol in the stream or
-by having processed a certain amount of data.
+by having processed a certain amount of data (but not necessarily by EOF, as the stream may be
+for the file archive as a whole).
 
 Some compression algorithms, such as Squeeze and NuFX LZW/1, are not fully streamable in one or
 both directions.  These will not be able to produce any output until all input has been provided,
 so the codec will usually just hold the entire file in memory.  Files compressed with these
-algorithms tend to be small, so this is probably okay.
+algorithms tend to be small, so this is usually not a problem.
 
-If a stream has a built-in checksum, it will be verified automatically, with failures reported
-as an InvalidDataException.  Encountering corrupted data while decompressing will also cause
-an exception.
+If a compressed data stream has a built-in checksum, it will be verified automatically, with
+failures reported as an `InvalidDataException`.  Encountering corrupted data while decompressing
+will also cause an exception.
 
 ## Design Notes ##
 
