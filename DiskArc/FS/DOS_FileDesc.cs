@@ -665,7 +665,7 @@ namespace DiskArc.FS {
             }
 
             // The file entry's DataLength value is equal to the explicit length (for I/A/B),
-            // the first scanned $00 (for T), or the raw data length (for S/R/A+/B+).  We may
+            // the first scanned $00 (for T), or the raw data length (for S/R/AA/BB).  We may
             // need to update the DataLength value:
             //
             // - If we're in raw mode, and we wrote to the first sector of the file, we need
@@ -708,7 +708,7 @@ namespace DiskArc.FS {
                     // Any modification to text files requires a re-scan.
                     break;
                 default:
-                    // S/R/A+/B+ just track the raw length.
+                    // S/R/AA/BB just track the raw length.
                     FileEntry.DataLength = mRawDataLength;
                     break;
             }

@@ -8,7 +8,8 @@
   https://archive.org/details/Understanding_the_Apple_IIe/page/n257/mode/2up
 - https://retrocomputing.stackexchange.com/a/664/56 (max nibbles per 5.25" track)
 - NEC uPD72070 Floppy Disk Controller datasheet (section 1.3.1)
-- MAME 3.5" disk driver: https://github.com/mamedev/mame/blob/master/src/lib/formats/ap_dsk35.cpp
+- MAME Apple 3.5" disk driver:
+  https://github.com/mamedev/mame/blob/master/src/lib/formats/ap_dsk35.cpp
 - various from: http://bitsavers.informatik.uni-stuttgart.de/pdf/apple/disk/sony/, notably
   "Macintosh Versus IIgs Sector Sizes and Two-to-One Interleave" (2-May-1988 memo) and
   sheets 33-36 of 699-0285-A "Specification for 3.5 Inch Single Sided Disk Drive" (which

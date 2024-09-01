@@ -661,7 +661,7 @@ namespace DiskArc.FS {
         /// <list type="bullet">
         ///   <item>I/A/B: data length is retrieved from first sector of file</item>
         ///   <item>T: file ends at first 0x00; requires reading entire file</item>
-        ///   <item>S/R/A+/B+: data length equals raw length</item>
+        ///   <item>S/R/AA/BB: data length equals raw length</item>
         /// </list>
         /// <para>The "cooked" length is clamped to the "raw" length.  If the first sector
         /// of an I/A/B file is missing, the "cooked" length will be set to zero.  (Note
@@ -868,7 +868,7 @@ namespace DiskArc.FS {
                 // Assume sequential text.
                 DataLength = seqTextLength;
             } else {
-                // S/R/A+/B+ just use the raw length.
+                // S/R/AA/BB just use the raw length.
                 DataLength = mRawDataLength;
             }
         }

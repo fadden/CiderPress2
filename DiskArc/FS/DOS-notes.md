@@ -100,8 +100,8 @@ File types and flags:
  $04: B - binary
  $08: S - "special"?; effectively typeless
  $10: R - relocatable object module
- $20: A+ - undefined 'A' type
- $40: B+ - undefined 'B' type
+ $20: AA - undefined 'A' type
+ $40: BB - undefined 'B' type
  $80: flag, indicates file is locked
 ```
 

@@ -354,7 +354,7 @@ namespace DiskArcTests {
                 IFileEntry volDir = fs.GetVolDirEntry();
                 string name = "Test File";
                 IFileEntry entry = fs.CreateFile(volDir, name, CreateMode.File);
-                entry.FileType = FileAttribs.FILE_TYPE_F4;  // B+, should work same as "raw"
+                entry.FileType = FileAttribs.FILE_TYPE_F4;  // BB, should work same as "raw"
 
                 byte[] wrBuf = new byte[1100];
                 for (int i = 0; i < wrBuf.Length; i++) {
