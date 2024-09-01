@@ -49,8 +49,8 @@ clears, so the first code used for data is 0x0101.
 If LZW fails to make the contents smaller, the output of the RLE pass is used instead.
 
 The output of the LZW/1 compressor includes a CRC at the *start* of the data, which makes it
-unsuited for streaming.  This was removed from LZW/2 (GS/ShrinkIt stores a CRC in the thread
-header instead).
+unsuited for streaming.  This was removed from LZW/2, and GS/ShrinkIt stores a CRC in the thread
+header instead.
 
 ## File Layout ##
 
@@ -79,9 +79,8 @@ LZW/2 header:
 
 LZW/2 chunk:
 ```
-+$00 / 2: bits [0,12]: length after RLE compression; bit [15]: LZW flag
-[if LZW succeeded]
- +$02 / 2: length of compressed chunk, including the 4 header bytes
++$00 / 2: bits [0,12]: length after RLE compression; bit [15]: LZW flag (set if LZW succeeded)
+ +$02 / 2: if LZW flag set: total length of compressed data, including the 4 header bytes
 +$xx /nn: (compressed data)
 ```
 

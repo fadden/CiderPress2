@@ -102,7 +102,7 @@ namespace DiskArc.Comp {
         /// <param name="blockMode">Compression: use block mode (recommended)?</param>
         public LZCStream(Stream compDataStream, CompressionMode mode, bool leaveOpen,
                 long compDataStreamLen, int maxBits, bool blockMode) {
-            if (maxBits < INIT_BITS || maxBits > BITS) {
+            if (mode == CompressionMode.Compress && (maxBits < INIT_BITS || maxBits > BITS)) {
                 throw new ArgumentOutOfRangeException(nameof(maxBits), maxBits, "must be [9,16]");
             }
             mCompDataStream = compDataStream;

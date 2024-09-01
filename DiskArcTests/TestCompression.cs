@@ -246,6 +246,24 @@ namespace DiskArcTests {
                         return new LZCStream(compStream, mode, true, compressedLength, 16, false);
                     };
             TestBasics(bufs, creator);
+
+#if false   // this takes about 8 seconds to run
+            //
+            // Test compression of 2GB of zeroes, to verify that the LZC buffers are large
+            // enough to handle the largest possible code.
+            //
+            // A single code can represent about 2^16-2^8=65280 bytes.  If the input stream is
+            // all zeroes, each code will be one byte longer than the previous code, so to max
+            // out the codes, we need (65280*65281)/2 bytes of input.  With block-mode disabled
+            // we get one extra code, so we actually need (65281*65282)/2.
+            //
+            long zeroLen = (65281L * 65282) / 2 + 256;
+            ZeroStream zs = new ZeroStream(zeroLen);
+            MemoryStream compStream = new MemoryStream();
+            LZCStream lzcs =
+                new LZCStream(compStream, CompressionMode.Compress, true, -1, 16, true);
+            zs.CopyTo(lzcs);
+#endif
         }
 
 
