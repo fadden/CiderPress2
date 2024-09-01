@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Media;
 
 using CommonUtil;
-using DiskArc;
 using static DiskArc.Defs;
 
 namespace cp2_wpf.LibTest {
@@ -161,6 +154,10 @@ namespace cp2_wpf.LibTest {
                 mFormat = CompressionFormat.NuLZW2;
             } else if (radioCompressDeflate.IsChecked == true) {
                 mFormat = CompressionFormat.Deflate;
+            } else if (radioCompressLZC12.IsChecked == true) {
+                mFormat = CompressionFormat.LZC12;
+            } else if (radioCompressLZC16.IsChecked == true) {
+                mFormat = CompressionFormat.LZC16;
             } else {
                 // Shouldn't happen unless nothing is checked.
                 mFormat = CompressionFormat.Uncompressed;

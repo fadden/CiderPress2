@@ -16,7 +16,6 @@
 using System;
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Text;
 
 using CommonUtil;
 
@@ -26,10 +25,12 @@ namespace DiskArc.Comp {
     /// UNIX "compress" command, v4.0.
     /// </summary>
     /// <remarks>
-    /// Compatibility is more important than performance or readability, so this follows the
+    /// <para>Compatibility is more important than performance or readability, so this follows the
     /// original source code fairly closely, retaining naming conventions and code structure.
     /// I have discarded the various memory-saving techniques, like hard-limiting the maximum
-    /// number of bits to less than 16.
+    /// number of bits to less than 16.</para>
+    /// <para>To function as a streaming class, rather than a file filter, the structure of the
+    /// main loops had to be altered significantly.</para>
     /// </remarks>
     public class LZCStream : Stream {
         // Stream characteristics.
@@ -81,8 +82,9 @@ namespace DiskArc.Comp {
         private const int BIT_MASK = 0x1f;
         private const int BLOCK_MASK = 0x80;
 
-        private int mComp_BitLimit;                 // caller-requested bit limit
-        private long mExpInputRemaining;
+        private int mCompBitLimit;                  // caller-requested bit limit
+        private bool mComp_block_compress;          // if true, issue CLEAR codes after table fills
+        private long mExpInputRemaining;            // compressed data length, when expanding
 
 
         /// <summary>
@@ -97,8 +99,9 @@ namespace DiskArc.Comp {
         /// <param name="compDataStreamLen">Decompression: length of compressed data.</param>
         /// <param name="maxBits">Compression: maximum code width, must be in the range
         ///   [9,16].</param>
+        /// <param name="blockMode">Compression: use block mode (recommended)?</param>
         public LZCStream(Stream compDataStream, CompressionMode mode, bool leaveOpen,
-                long compDataStreamLen, int maxBits) {
+                long compDataStreamLen, int maxBits, bool blockMode) {
             if (maxBits < INIT_BITS || maxBits > BITS) {
                 throw new ArgumentOutOfRangeException(nameof(maxBits), maxBits, "must be [9,16]");
             }
@@ -106,13 +109,17 @@ namespace DiskArc.Comp {
             mCompressionMode = mode;
             mLeaveOpen = leaveOpen;
             mExpInputRemaining = compDataStreamLen;
-            mComp_BitLimit = maxBits;
+            mCompBitLimit = maxBits;
+            mComp_block_compress = blockMode;
 
             if (mode == CompressionMode.Compress) {
                 Debug.Assert(compDataStream.CanWrite);
                 InitCompress();
             } else if (mode == CompressionMode.Decompress) {
                 Debug.Assert(compDataStream.CanRead);
+                if (compDataStreamLen < 0) {
+                    throw new ArgumentException("Invalid value for " + nameof(compDataStreamLen));
+                }
                 InitExpand();
             } else {
                 throw new ArgumentException("Invalid mode: " + mode);
@@ -177,26 +184,278 @@ namespace DiskArc.Comp {
 
         #region Compress
 
+        private int mComp_offset;
+        private int mComp_in_count;                // length of input (rolls over after 2GB)
+        private int mComp_bytes_out;               // length of compressed output
+        private int mComp_out_count;                // # of codes output (for debugging)
+
+        private bool mComp_clear_flg;
+        private int mComp_ratio;
+        private const int CHECK_GAP = 10000;        // ratio check interval
+        private int mComp_checkpoint;
+
+        private int mComp_n_bits;                   // number of bits/code
+        private int mComp_maxbits;                  // user settable max # bits/code
+        private int mComp_maxcode;                  // maximum code, given n_bits
+        private int mComp_maxmaxcode;
+        private int mComp_free_ent;                 // first unused entry
+        private int mComp_ent;
+
         // Tables used for compression.
         private int[]? mComp_htab;
         private ushort[]? mComp_codetab;
-        int mComp_hsize = HSIZE;                        // for dynamic table sizing [not used]
+        private byte[]? mComp_buf;
+
+        private int mComp_hsize;                    // for dynamic table sizing
+        private int mComp_hshift;
+
+        private bool mCompHeaderWritten;
+        private bool mFirstByteRead;
 
 
         /// <summary>
         /// Prepares object for compression.
         /// </summary>
         private void InitCompress() {
+            mComp_buf = new byte[BITS];
             mComp_htab = new int[HSIZE];
             mComp_codetab = new ushort[HSIZE];
-            // TODO
+            mComp_hsize = HSIZE;
+
+            mComp_maxbits = mCompBitLimit;
+            mComp_maxmaxcode = 1 << mCompBitLimit;
+
+            int hshift = 0;
+            for (int fcode = mComp_hsize; fcode < 65536; fcode *= 2) {
+                hshift++;
+            }
+            mComp_hshift = 8 - hshift;              // set hash code range bound
+            ClearHash(mComp_hsize);                 // clear hash table
+
+            mComp_ratio = 0;
+
+            mComp_offset = 0;
+            mComp_out_count = 0;
+            mComp_clear_flg = false;
+            mComp_ratio = 0;
+            mComp_in_count = 0;
+            mComp_checkpoint = CHECK_GAP;
+            mComp_n_bits = INIT_BITS;
+            mComp_maxcode = MAXCODE(mComp_n_bits);
+            mComp_free_ent = mComp_block_compress ? FIRST : 256;
+
+            mCompHeaderWritten = false;
+            mFirstByteRead = false;
         }
 
         /// <summary>
         /// Receives uncompressed data to be compressed.  (Stream call.)
         /// </summary>
-        public override void Write(byte[] data, int offset, int length) {
-                // TODO
+        public override void Write(byte[] buffer, int offset, int count) {
+            Debug.Assert(mComp_htab != null && mComp_codetab != null);
+
+            if (!mCompHeaderWritten) {
+                WriteHeader();
+                mCompHeaderWritten = true;
+            }
+
+            if (count == 0) {
+                return;                     // nothing to do
+            }
+
+            if (!mFirstByteRead) {
+                // First byte is handled specially.
+                mComp_ent = buffer[offset++];
+                count--;
+                mComp_in_count++;
+                mFirstByteRead = true;
+            }
+
+            // Iterate through all data in the write buffer.
+            while (count > 0) {
+                int c = buffer[offset++];
+                count--;
+                mComp_in_count++;
+
+                int fcode = (c << mComp_maxbits) + mComp_ent;
+                int i = ((c << mComp_hshift) ^ mComp_ent);      // xor hashing
+
+                if (mComp_htab[i] == fcode) {
+                    mComp_ent = mComp_codetab[i];               // matched existing entry
+                    continue;
+                } else if (mComp_htab[i] < 0) {
+                    goto nomatch;                               // empty slot
+                }
+                int disp = mComp_hsize - i;                     // secondary hash (after G. Knott)
+                if (i == 0) {
+                    disp = 1;
+                }
+            probe:
+                i -= disp;
+                if (i < 0) {
+                    i += mComp_hsize;
+                }
+                if (mComp_htab[i] == fcode) {
+                    mComp_ent = mComp_codetab[i];
+                    continue;
+                }
+                if (mComp_htab[i] > 0) {
+                    goto probe;
+                }
+            nomatch:
+                Output(mComp_ent);
+                mComp_out_count++;
+                mComp_ent = c;
+
+                if (mComp_free_ent < mComp_maxmaxcode) {
+                    // Table isn't full, so add the new entry.
+                    mComp_codetab[i] = (ushort)mComp_free_ent++;        // code -> hashtable
+                    mComp_htab[i] = fcode;
+                } else if (mComp_in_count >= mComp_checkpoint && mComp_block_compress) {
+                    ClearBlock();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Writes the LZC header.
+        /// </summary>
+        private void WriteHeader() {
+            byte flags = (byte)(mCompBitLimit | (mComp_block_compress ? BLOCK_MASK : 0));
+            mCompDataStream.WriteByte(HEADER0);
+            mCompDataStream.WriteByte(HEADER1);
+            mCompDataStream.WriteByte(flags);
+
+            mComp_bytes_out = 3;        // includes 3-byte header mojo
+        }
+
+        /// <summary>
+        /// Outputs the given code.
+        /// </summary>
+        /// <remarks>
+        /// This retains a buffer with room for 8 codes.  When the buffer fills up, the entire
+        /// thing is written at once.  This can cause alignment gaps in the output, especially
+        /// when outputting clear codes, because all codes in the buffer must be the same width.
+        /// </remarks>
+        /// <param name="code">Code to output, or -1 if input reached EOF.</param>
+        private void Output(int code) {
+            Debug.Assert(mComp_buf != null);
+
+            int r_off = mComp_offset;
+            int bits = mComp_n_bits;
+
+            if (code >= 0) {
+                // In the original code, a single VAX insv instruction does most of this next part.
+
+                // Get to the first byte.
+                int bp = (r_off >> 3);
+                r_off &= 7;
+
+                // Since code is always >= 8 bits, only need to mask the first hunk on the left.
+                byte rmask = (byte)(0xff >> (8 - r_off));   // 0x00, 0x01, 0x03, 0x07, ... 0xff
+                byte lmask = (byte)(0xff << r_off);         // 0xff, 0xfe, 0xfc, 0xf8, ... 0x00
+                mComp_buf[bp] = (byte)((mComp_buf[bp] & rmask) | (code << r_off) & lmask);
+                bp++;
+                bits -= (8 - r_off);
+                code >>= 8 - r_off;
+                // Get any 8 bit parts in the middle (<=1 for up to 16 bits).
+                if (bits >= 8) {
+                    mComp_buf[bp++] = (byte)code;
+                    code >>= 8;
+                    bits -= 8;
+                }
+                // Last bits.
+                if (bits != 0) {
+                    mComp_buf[bp] = (byte)code;
+                }
+
+                mComp_offset += mComp_n_bits;
+                if (mComp_offset == (mComp_n_bits << 3)) {
+                    // Buffer is full.  For some reason, the original does this one byte at a time;
+                    // apparently this was a performance improvement added in v2.1.
+                    mCompDataStream.Write(mComp_buf, 0, mComp_n_bits);
+                    mComp_bytes_out += mComp_n_bits;
+                    mComp_offset = 0;
+                }
+
+                // If the next entry is going to be too big for the code size, then increase
+                // it, if possible.
+                if (mComp_free_ent > mComp_maxcode || mComp_clear_flg) {
+                    // Write the whole buffer, because the input side won't discover the size
+                    // increase until after it has read it.
+                    // Note the number of bytes required to store 8 codes is equal to the
+                    // number of bits per code.
+                    if (mComp_offset > 0) {
+                        mCompDataStream.Write(mComp_buf, 0, mComp_n_bits);
+                        mComp_bytes_out += mComp_n_bits;
+                    }
+                    mComp_offset = 0;
+
+                    if (mComp_clear_flg) {
+                        mComp_n_bits = INIT_BITS;
+                        mComp_maxcode = MAXCODE(mComp_n_bits);
+                        mComp_clear_flg = false;
+                    } else {
+                        mComp_n_bits++;
+                        if (mComp_n_bits == mComp_maxbits) {
+                            mComp_maxcode = mComp_maxmaxcode;
+                        } else {
+                            mComp_maxcode = MAXCODE(mComp_n_bits);
+                        }
+                    }
+                }
+            } else {
+                // At EOF, write the rest of the buffer.
+                if (mComp_offset > 0) {
+                    mCompDataStream.Write(mComp_buf, 0, (mComp_offset + 7) / 8);
+                    mComp_bytes_out += (mComp_offset + 7) / 8;
+                    mComp_offset = 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clears the table for block compression mode, if the compression ratio appears to
+        /// be declining.
+        /// </summary>
+        /// <remarks>
+        /// The math is done with signed 32-bit integers, which will roll over after 2GB of
+        /// input.  We could fix this, but our primary goal is compatibility.
+        /// </remarks>
+        private void ClearBlock() {
+            mComp_checkpoint = mComp_in_count + CHECK_GAP;
+            int rat;
+            if (mComp_in_count > 0x007fffff) {
+                // Shift will overflow.
+                rat = mComp_bytes_out >> 8;
+                if (rat == 0) {
+                    rat = 0x7fffffff;       // don't divide by zero
+                } else {
+                    rat = mComp_in_count / rat;
+                }
+            } else {
+                rat = (mComp_in_count << 8) / mComp_bytes_out;      // 8 fractional bits
+            }
+            if (rat > mComp_ratio) {
+                mComp_ratio = rat;
+            } else {
+                mComp_ratio = 0;
+                ClearHash(mComp_hsize);
+                mComp_free_ent = FIRST;
+                mComp_clear_flg = true;
+                Output(CLEAR);
+            }
+        }
+
+        /// <summary>
+        /// Clears the compression hash table.
+        /// </summary>
+        /// <param name="hsize"></param>
+        private void ClearHash(int hsize) {
+            Debug.Assert(mComp_htab != null);
+            for (int i = 0; i < hsize; i++) {
+                mComp_htab[i] = -1;
+            }
         }
 
         /// <summary>
@@ -204,7 +463,17 @@ namespace DiskArc.Comp {
         /// indicating that all data has been provided.
         /// </summary>
         private void FinishCompression() {
-            // TODO
+            if (!mCompHeaderWritten) {
+                // This should only happen for zero-length input.  The file should be nothing
+                // but the header.
+                WriteHeader();
+                return;
+            }
+
+            // Put out the final code.
+            Output(mComp_ent);
+            mComp_out_count++;
+            Output(-1);
         }
 
         #endregion Compress
@@ -227,10 +496,10 @@ namespace DiskArc.Comp {
 
         // Tables used for expansion.  In the original, these were overlaid on the compression
         // tables.  (For some reason they didn't want to use malloc.)
-        private ushort[]? mExp_tab_prefix;
-        private byte[]? mExp_tab_suffix;
-        private byte[]? mExp_de_stack;
-        private byte[]? mExp_buf;
+        private ushort[]? mExp_tab_prefix;          // code (9-16 bits)
+        private byte[]? mExp_tab_suffix;            // byte suffix
+        private byte[]? mExp_de_stack;              // decompression stack
+        private byte[]? mExp_buf;                   // buffer that holds up to 8 codes
 
         private byte[]? mExpTempBuf;
         private int mExpTempBufOffset;
@@ -250,7 +519,7 @@ namespace DiskArc.Comp {
             mExp_buf = new byte[BITS + 1];      // original code would read past end of buf
             mExpTempBuf = new byte[MAX_STACK];
 
-            mExp_maxbits = mComp_BitLimit;
+            mExp_maxbits = mCompBitLimit;
             mExp_n_bits = INIT_BITS;
             mExp_maxcode = MAXCODE(mExp_n_bits);
             mExp_maxmaxcode = 1 << BITS;

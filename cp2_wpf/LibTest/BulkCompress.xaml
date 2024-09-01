@@ -37,6 +37,7 @@ limitations under the License.
         <Grid DockPanel.Dock="Top">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -47,7 +48,7 @@ limitations under the License.
             <Button Grid.Column="0" Grid.Row="0" Name="chooseFileButton" Margin="0,0,16,0"
                     Content="Select File..." Width="120"
                     Click="ChooseFileButton_Click"/>
-            <TextBox Grid.Column="1" Grid.Row="0" Name="pathNameBox" Width="500" HorizontalAlignment="Left"
+            <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" Name="pathNameBox" Width="500" HorizontalAlignment="Left"
                      Text="{Binding PathName, UpdateSourceTrigger=PropertyChanged}"/>
             <StackPanel Grid.Column="0" Grid.Row="2" Orientation="Vertical">
                 <RadioButton Name="radioCompressSqueeze" GroupName="Comp" Content="_Squeeze" Margin="0,4,0,0"
@@ -59,7 +60,13 @@ limitations under the License.
                 <RadioButton Name="radioCompressDeflate" GroupName="Comp" Content="_Deflate" Margin="0,4,0,0"
                              Checked="CompGroup_CheckedChanged"/>
             </StackPanel>
-            <Button Grid.Column="1" Grid.Row="2" Name="runButton" HorizontalAlignment="Left"
+            <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Vertical">
+                <RadioButton Name="radioCompressLZC12" GroupName="Comp" Content="LZC/12" Margin="0,4,0,0"
+                             Checked="CompGroup_CheckedChanged"/>
+                <RadioButton Name="radioCompressLZC16" GroupName="Comp" Content="LZC/16" Margin="0,4,0,0"
+                             Checked="CompGroup_CheckedChanged"/>
+            </StackPanel>
+            <Button Grid.Column="2" Grid.Row="2" Name="runButton" HorizontalAlignment="Left" Margin="16,0,0,0"
                     Content="{Binding RunButtonLabel, FallbackValue=Run Test}"
                     Width="120" Height="40" FontWeight="Bold" IsEnabled="{Binding CanStartRunning}"
                     Click="RunCancelButton_Click"/>

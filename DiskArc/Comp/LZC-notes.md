@@ -6,12 +6,12 @@
 
 ## General ##
 
-For several years, the [`compress` command](https://en.wikipedia.org/wiki/Compress_(software))
-was the primary way to compress files on UNIX systems.  It used an algorithm based on
-Lempel-Ziv-Welch (LZW) [encoding](https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch),
-which was faster and had better compression ratios than previous programs like `pack` and
-`compact`, which used RLE and Huffman encoding.  The specific implementation of the algorithm
-is sometimes referred to as `LZC`.
+First released in 1984, the `compress` [command](https://en.wikipedia.org/wiki/Compress_(software))
+was the preferred way to compress individual files on large systems for several years.  It uses an
+algorithm based on Lempel-Ziv-Welch (LZW)
+[encoding](https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch), which is faster and
+has better compression ratios than previous programs like `pack` and `compact`, which used RLE and
+Huffman encoding.  The specific implementation of the algorithm is sometimes referred to as `LZC`.
 
 `compress` marked its files by adding `.Z` to the filename.  It was largely supplanted by `gzip`,
 which has better compression ratios and wasn't subject to Unisys patents.
@@ -20,12 +20,12 @@ The program went through a few iterations, with primary development ending in 19
 the release of version 4.0.  Various minor versions were released by different authors, generally
 to improve compatibility with specific systems, or to tweak the way clear codes were issued.
 
-The maximum width of the LZW codes, which affects how much memory is required, could be
-configured at compile time and overridden to be lower at run time.  The value could be set
+The maximum width of the LZW codes, which affects how much memory is required by the program, could
+be configured at compile time and overridden to be lower at run time.  The value could be set
 between 9 and 16, inclusive.  This impacted decompression, meaning that an implementation limited
 to 12-bit codes could not decompress a file that used 16-bit codes.
 
-GS/ShrinkIt can decompress NuFX threads compressed with LZC, up to 16 bits.  It does not support
+GS/ShrinkIt can decompress NuFX threads compressed with LZC, up to 16 bits.  It does not perform
 compression in that format, but it is possible to create such archives with NuLib.
 
 ## Detail ##
@@ -45,8 +45,7 @@ decompression side also reads the input in 8-code chunks.  When operating in "bl
 transition to a new code with happens to occur at a multiple of 8 codes, so there are no
 alignment gaps in the output unless a block clear code is emitted.  With the older (v2) behavior,
 the clear code is not reserved, which increases the number of available 9-bit codes by 1, so a gap
-will appear at the first code width change.  This behavior, and the somewhat convoluted
-implementation in `compress` v4.0, has led to [bugs](https://github.com/vapier/ncompress/issues/5)
-in some implementations.
+will appear at the first code width change.  This somewhat obscure behavior has led to
+[bugs](https://github.com/vapier/ncompress/issues/5) in some implementations.
 
 The only time a partial chunk is written is at the end of the file.

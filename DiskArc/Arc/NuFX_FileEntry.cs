@@ -1290,7 +1290,7 @@ namespace DiskArc.Arc {
                 case CompressionFormat.LZC12:
                 case CompressionFormat.LZC16:
                     expander = new LZCStream(Archive.DataStream, CompressionMode.Decompress,
-                        true, thread.mCompThreadEof, 16);
+                        true, thread.mCompThreadEof, 16, true);
                     break;
                 default:
                     throw new NotSupportedException("Compression format not supported");
@@ -1329,6 +1329,8 @@ namespace DiskArc.Arc {
                 case CompressionFormat.Squeeze:
                 case CompressionFormat.NuLZW1:
                 case CompressionFormat.NuLZW2:
+                case CompressionFormat.LZC12:
+                case CompressionFormat.LZC16:
                     break;
                 default:
                     throw new ArgumentException("Compression format " + compressFmt +
@@ -1645,6 +1647,14 @@ namespace DiskArc.Arc {
                 case CompressionFormat.NuLZW2:
                     compStream = new NuLZWStream(outputStream, CompressionMode.Compress,
                         true, true, -1);
+                    break;
+                case CompressionFormat.LZC12:
+                    compStream = new LZCStream(outputStream, CompressionMode.Compress, true,
+                        -1, 12, true);
+                    break;
+                case CompressionFormat.LZC16:
+                    compStream = new LZCStream(outputStream, CompressionMode.Compress, true,
+                        -1, 16, true);
                     break;
                 default:
                     throw new ArgumentException("Invalid compression format " + format +

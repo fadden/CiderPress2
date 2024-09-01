@@ -30,10 +30,12 @@ using static DiskArc.IFileSystem;
 
 namespace cp2_wpf.LibTest {
     /// <summary>
-    /// Test a compression codec by extracting, compressing, and expanding every file in a
+    /// <para>Test a compression codec by extracting, compressing, and expanding every file in a
     /// disk image or file archive.  Ideally used on a large ShrinkIt archive to test
     /// compatibility.  This is meant to be run in the background, reporting progress through
-    /// a BackgroundWorker object.
+    /// a BackgroundWorker object.</para>
+    /// <para>This is not an ideal way to test compression ratios in mixed file archives, because
+    /// it does not ignore files that fail to get smaller.</para>
     /// </summary>
     internal class BulkCompressTest {
         private const int BUFFER_SIZE = 4 * 1024 * 1024;
@@ -235,7 +237,7 @@ namespace cp2_wpf.LibTest {
         }
 
         private static Stream CreateCodecStream(CompressionFormat format, Stream compStream,
-                CompressionMode mode, long expandedLength) {
+                CompressionMode mode, long compressedLength, long expandedLength) {
             switch (format) {
                 case CompressionFormat.Uncompressed:
                     throw new NotImplementedException("Nope");
@@ -252,6 +254,10 @@ namespace cp2_wpf.LibTest {
                     } else {
                         return new DeflateStream(compStream, CompressionMode.Decompress, true);
                     }
+                case CompressionFormat.LZC12:
+                    return new LZCStream(compStream, mode, true, compressedLength, 12, true);
+                case CompressionFormat.LZC16:
+                    return new LZCStream(compStream, mode, true, compressedLength, 16, true);
                 default:
                     throw new NotImplementedException("Compression format not implemented");
             }
@@ -288,7 +294,7 @@ namespace cp2_wpf.LibTest {
 
             // Create a compression stream.
             Stream compressor = CreateCodecStream(mFormat, compStream, CompressionMode.Compress,
-                -1);
+                -1, -1);
 
             // Rewind the source stream, and compress the data.
             srcStream.Position = 0;
@@ -301,7 +307,7 @@ namespace cp2_wpf.LibTest {
 
             // Create an expansion stream.
             Stream expander = CreateCodecStream(mFormat, compStream, CompressionMode.Decompress,
-                srcStream.Length);
+                compStream.Length, srcStream.Length);
 
             try {
                 // Expand the data.

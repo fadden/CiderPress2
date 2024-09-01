@@ -73,7 +73,8 @@ namespace DiskArcTests {
         public static void TestSqueeze(AppHook appHook) {
             WorkBuffers bufs = new WorkBuffers();
             CodecStreamCreator creator =
-                delegate (Stream compStream, CompressionMode mode, long expandedLength) {
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                        long expandedLength) {
                     return new SqueezeStream(compStream, mode, true, true, "NAME");
                 };
             TestBasics(bufs, creator);
@@ -81,7 +82,7 @@ namespace DiskArcTests {
             // Confirm that the checksum stored in the full header is being checked.
             bufs.ResetSrc(Patterns.sBytePattern, 0, Patterns.sBytePattern.Length);
 
-            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1);
+            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1, -1);
             bufs.Src.CopyTo(compressor);
             compressor.Close();
 
@@ -91,7 +92,7 @@ namespace DiskArcTests {
             bufs.CompBuf[515]++;
             // Reset output buffer.
             bufs.Exp.SetLength(0);
-            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Src.Length);
+            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, -1, bufs.Src.Length);
             try {
                 int actual = expander.Read(bufs.ExpBuf, 0, (int)bufs.Src.Length);
                 if (actual != bufs.Src.Length) {
@@ -108,8 +109,8 @@ namespace DiskArcTests {
             // Do a few more tests, without the file header.
             //
 
-            creator =
-                delegate (Stream compStream, CompressionMode mode, long expandedLength) {
+            creator = delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                        long expandedLength) {
                     return new SqueezeStream(compStream, mode, true, false, string.Empty);
                 };
 
@@ -134,14 +135,13 @@ namespace DiskArcTests {
             }
             bufs.Src.Position = 0;                  // rewind
             TestCopyStream(bufs, creator);
-
-
         }
 
         public static void TestNuLZW1(AppHook appHook) {
             WorkBuffers bufs = new WorkBuffers();
             CodecStreamCreator creator =
-                delegate (Stream compStream, CompressionMode mode, long expandedLength) {
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                        long expandedLength) {
                     return new NuLZWStream(compStream, mode, true, false, expandedLength);
                 };
             TestBasics(bufs, creator);
@@ -157,7 +157,7 @@ namespace DiskArcTests {
             bufs.ResetSrc(patBuf, 0, patBuf.Length);
 
             // Compress data.
-            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1);
+            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1, -1);
             bufs.Src.CopyTo(compressor);
             compressor.Close();
 
@@ -167,7 +167,8 @@ namespace DiskArcTests {
             bufs.CompBuf[7]++;
 
             bufs.Comp.Position = 0;     // rewind compressed data
-            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Src.Length);
+            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Comp.Length,
+                bufs.Src.Length);
             try {
                 expander.CopyTo(bufs.Exp);
                 throw new Exception("Damage went undetected");
@@ -177,7 +178,8 @@ namespace DiskArcTests {
             // the CRC check is triggered even if we don't read EOF.
             bufs.Comp.Position = 0;
             bufs.Exp.Position = 0;
-            expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Src.Length);
+            expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Comp.Length,
+                bufs.Src.Length);
             try {
                 int actual = expander.Read(bufs.ExpBuf, 0, patBuf.Length);
                 if (actual != patBuf.Length) {
@@ -190,7 +192,8 @@ namespace DiskArcTests {
         public static void TestNuLZW2(AppHook appHook) {
             WorkBuffers bufs = new WorkBuffers();
             CodecStreamCreator creator =
-                delegate (Stream compStream, CompressionMode mode, long expandedLength) {
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                        long expandedLength) {
                     return new NuLZWStream(compStream, mode, true, true, expandedLength);
                 };
             TestBasics(bufs, creator);
@@ -217,9 +220,37 @@ namespace DiskArcTests {
             TestCopyStream(bufs, creator);
         }
 
+        public static void TestLZC(AppHook appHook) {
+            WorkBuffers bufs = new WorkBuffers();
+            CodecStreamCreator creator =
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                    long expandedLength) {
+                        return new LZCStream(compStream, mode, true, compressedLength, 16, true);
+                    };
+            TestBasics(bufs, creator);
+
+            creator = delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                    long expandedLength) {
+                        return new LZCStream(compStream, mode, true, compressedLength, 12, true);
+                    };
+            TestBasics(bufs, creator);
+
+            creator = delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                    long expandedLength) {
+                        return new LZCStream(compStream, mode, true, compressedLength, 9, true);
+                    };
+            TestBasics(bufs, creator);
+
+            creator = delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                    long expandedLength) {
+                        return new LZCStream(compStream, mode, true, compressedLength, 16, false);
+                    };
+            TestBasics(bufs, creator);
+        }
+
 
         delegate Stream CodecStreamCreator(Stream compStream, CompressionMode mode,
-            long expandedLength);
+            long compressedLength, long expandedLength);
 
         private static void TestBasics(WorkBuffers bufs, CodecStreamCreator creator) {
             // Edge cases: no data or tiny amount of compressible data.
@@ -233,7 +264,7 @@ namespace DiskArcTests {
             // Simple but big.
             TestSimpleRun(bufs, creator, bufs.SrcBuf.Length);
 
-            // Exercise RLE encoders.
+            // Test patterns that exercise RLE encoders.
             TestRLE(bufs, creator);
 
             //
@@ -312,12 +343,13 @@ namespace DiskArcTests {
         }
 
         private static void TestCopyStream(WorkBuffers bufs, CodecStreamCreator creator) {
-            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1);
+            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1, -1);
             bufs.Src.CopyTo(compressor);
             compressor.Close();
 
             bufs.Comp.Position = 0;     // rewind compressed data
-            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Src.Length);
+            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Comp.Length,
+                bufs.Src.Length);
             expander.CopyTo(bufs.Exp);
 
             if (bufs.Exp.Length != bufs.Src.Length ||
@@ -327,14 +359,15 @@ namespace DiskArcTests {
         }
 
         private static void TestSingleStream(WorkBuffers bufs, CodecStreamCreator creator) {
-            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1);
+            Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1, -1);
             for (int i = 0; i < bufs.Src.Length; i++) {
                 compressor.WriteByte((byte)bufs.Src.ReadByte());
             }
             compressor.Close();
 
             bufs.Comp.Position = 0;     // rewind compressed data
-            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Src.Length);
+            Stream expander = creator(bufs.Comp, CompressionMode.Decompress, bufs.Comp.Length,
+                bufs.Src.Length);
             while (true) {
                 int val = expander.ReadByte();
                 if (val < 0) {
