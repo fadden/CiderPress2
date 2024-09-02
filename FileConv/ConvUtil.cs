@@ -82,7 +82,11 @@ namespace FileConv {
         }
 
 
-        // Strings used in import/export specs.
+        //
+        // Text conversion option handling.  This is used in more than one place, so we want to
+        // have a single implementation here to ensure consistency.
+        //
+
         public const string CHAR_MODE_ASCII = "ascii";
         public const string CHAR_MODE_CP1252 = "1252";
         public const string CHAR_MODE_HIGH_ASCII = "hiascii";
@@ -186,6 +190,23 @@ namespace FileConv {
             }
             return (mode != ImportCharDst.Unknown);
         }
+
+        //
+        // Font conversion option handling.
+        //
+
+        public const string FONT_MODE_SAMPLE = "sample";
+        public const string FONT_MODE_GRID = "grid";
+        public static readonly string[] FontModeTags = new string[] {
+            FONT_MODE_SAMPLE, FONT_MODE_GRID
+        };
+        public static readonly string[] FontModeDescrs = new string[] {
+            "Sample string", "Grid of glyphs"
+        };
+        public enum FontConvMode {
+            Unknown = 0, Sample, Grid
+        }
+
 
 #if false
         /// <summary>

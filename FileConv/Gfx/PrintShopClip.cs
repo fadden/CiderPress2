@@ -28,8 +28,8 @@ namespace FileConv.Gfx {
         public const string LABEL = "Print Shop Clip Art";
         public const string DESCRIPTION =
             "Converts a Print Shop or Print Shop GS clip art graphic file to an 88x52 bitmap.  " +
-            "These can optionally be pixel-multiplied x2/x3 to 176x156.  Monochrome and color " +
-            "formats are supported.";
+            "These can optionally be pixel-multiplied x2/x3 to 176x156, as they would when " +
+            "printed.  Monochrome and color formats are supported.";
         public const string DISCRIMINATOR =
             "ProDOS $f8 / $c313 and $c323, DOS B / $x800, length 572/576 or 1716 " +
             " (length may vary slightly).";

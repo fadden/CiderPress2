@@ -3,6 +3,7 @@
 File types:
  - BIN / $4800/5800/6800/7800, length 572 or 576: Print Shop 88x52 Monochrome Clip Art
  - BIN / $4800/5800/6800/7800, length 144 or 148: Print Shop 12x12 Monochrome Border
+ - BIN / $6000/5FF4, length > 576: Print Shop Font
  - $f8 / $c311: Print Shop GS ?x? Monochrome Pattern
  - $f8 / $c312: Print Shop GS ?x? Monochrome Border
  - $f8 / $c313: Print Shop GS 88x52 Monochrome Clip Art
@@ -61,7 +62,7 @@ In Print Shop, offset 32 points to the current graphic selected, which is not co
 file itself.
 
 The Space character is at offset 0, and in all the examples I've seen, has a height of 0 pixels.
-The data is calculated in the PSC font editor based off of an average of all other character
+The width is calculated in the PSC font editor based off of an average of all other character
 widths.
 
 Character data is stored one bit per pixel, where 0 indicated background and 1 is foreground.  LSB
@@ -93,3 +94,11 @@ but some characters are out of the expected sizes, then the acceptability should
 ProbablyYes.
 
 Like the Print Shop graphic data, fonts are expanded 2x3 in usage.
+
+The characters map directly to ASCII $20-3a; the special entry 32 replaces '@':
+```  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+$00 spc !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
+$10  0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
+$20 img A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+$30  P  Q  R  S  T  U  V  W  X  Y  Z
+```

@@ -1614,8 +1614,9 @@ Graphics:
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
  - `psfont`: Print Shop font
    - `mult` (bool): true=multiplies pixels 2x horiz, 3x vert (default)
+   - `mode` (multi): output type: `sample` (default), `grid`
  - `qdfont`: Apple IIgs QuickDraw II bitmap font file
-   - `mode` (multi): output type: `sample`, `grid`
+   - `mode` (multi): output type: `sample` (default), `grid`
  - `shr`: Apple IIgs super hi-res screen ($C1/0000)
  - `shr3200`: Apple IIgs super hi-res 3200-color screen ($C1/0002)
  - `shr3201`: Apple IIgs compressed super hi-res 3200-color screen

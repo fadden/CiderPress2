@@ -45,22 +45,11 @@ namespace FileConv.Gfx {
 
         public const string OPT_MODE = "mode";
 
-        public const string MODE_GRID = "grid";
-        public const string MODE_SAMPLE = "sample";
-        public static readonly string[] ModeTags = new string[] {
-            MODE_SAMPLE, MODE_GRID
-        };
-        public static readonly string[] ModeDescrs = new string[] {
-            "Sample string", "Grid of glyphs"
-        };
-        internal enum ConvMode {
-            Unknown = 0, Sample, Grid
-        }
-
         public override List<OptionDefinition> OptionDefs { get; protected set; } =
             new List<OptionDefinition>() {
                 new OptionDefinition(OPT_MODE, "Conversion Mode",
-                    OptionDefinition.OptType.Multi, MODE_SAMPLE, ModeTags, ModeDescrs),
+                    OptionDefinition.OptType.Multi, ConvUtil.FONT_MODE_SAMPLE,
+                        ConvUtil.FontModeTags, ConvUtil.FontModeDescrs),
         };
 
         /// <summary>
@@ -73,7 +62,7 @@ namespace FileConv.Gfx {
                 ConvUtil.MakeRGB(0x80, 0x80, 0x80),     // 1=dark gray (frame around cells)
                 ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 2=white (glyph background)
                 ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 3=black (glyph foreground)
-                ConvUtil.MakeRGB(0x30, 0x30, 0xe0),     // 4=blue (hex labels)
+                ConvUtil.MakeRGB(0x30, 0x30, 0xe0),     // 4=blue (labels)
                 ConvUtil.MakeRGB(0xb0, 0x30, 0x30),     // 5=red (char not in font)
             });
         private const int COLOR_CELL_BG = 0;
@@ -394,11 +383,11 @@ namespace FileConv.Gfx {
             //DrawFontStrike(output, macHeader);
             //return output;
 
-            string modeStr = GetStringOption(options, OPT_MODE, MODE_SAMPLE);
+            string modeStr = GetStringOption(options, OPT_MODE, ConvUtil.FONT_MODE_SAMPLE);
             switch (modeStr) {
-                case MODE_GRID:
+                case ConvUtil.FONT_MODE_GRID:
                     return RenderFontGrid(gsHeader, macHeader, cellWidth, tmpNotes);
-                case MODE_SAMPLE:
+                case ConvUtil.FONT_MODE_SAMPLE:
                 default:
                     return RenderFontSample(gsHeader, macHeader, tmpNotes);
             }
@@ -700,8 +689,9 @@ namespace FileConv.Gfx {
 
         /// <summary>
         /// Draws a string with the current font.  If "bitmap" is null, the string's length
-        /// is computed.
+        /// is computed without drawing anything.
         /// </summary>
+        /// <returns>Line length, in pixels.</returns>
         private static int DrawString(MacFontHeader macHeader, string str, Bitmap8? bitmap) {
             SetPixelFunc setPixel = delegate (int xc, int yc, byte color) {
                 bitmap!.SetPixelIndex(xc, yc, COLOR_GLYPH_FG);
