@@ -29,7 +29,8 @@ namespace FileConv.Gfx {
         public const string DESCRIPTION =
             "Converts a Fontrix font file to a bitmap, either as a grid with all possible " +
             "glyphs, or a sample string drawn with the font.";
-        public const string DISCRIMINATOR = "DOS B with aux type $6400.";
+        public const string DISCRIMINATOR =
+            "DOS B with aux type $6400; filenames usually start with \"SET.\".";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
@@ -77,9 +78,10 @@ namespace FileConv.Gfx {
 
         private const byte SPACE_VAL_OFFSET = 32;
         private const int MISSING_GLYPH_WIDTH = 8;
-        private const int SPACE_WIDTH = 8;
 
-        private const int MAX_FILE_LEN = 32 * 1024;     // editor is DOS + Applesoft + hi-res
+        // The maximum size is about 12KB (32*4*94 + headers).  This is just used to rule out
+        // files that can't possibly be Fontrix fonts, so it's okay to be a bit generous here.
+        private const int MAX_FILE_LEN = 20 * 1024;
 
         private const byte MAX_NUM_CHARACTERS = 94;
 
@@ -105,6 +107,8 @@ namespace FileConv.Gfx {
 
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN) {
                 if (FileAttrs.AuxType == 0x6400) {
+                    // Should we test the filename for the "SET." prefix?  Might be more
+                    // reliable than the aux type.
 
                     // Only need to read up to ID_BYTE_3 to validate. +1 to get size from offset.
                     var buffer = new byte[ID_BYTE_3 + 1];
@@ -112,7 +116,8 @@ namespace FileConv.Gfx {
                     DataStream.Position = 0;
                     DataStream.ReadExactly(buffer, 0, ID_BYTE_3 + 1);
 
-                    // We're expecting 90 f7 b2, but sometimes we find 6f 08 4d.
+                    // We're expecting 90 f7 b2, but sometimes we find 6f 08 4d.  This is the
+                    // signature XOR $ff, used while the font is being edited.
                     bool hasSig1 =
                         buffer[ID_BYTE_1] == SIG1[0] &&
                         buffer[ID_BYTE_2] == SIG1[1] &&
@@ -130,10 +135,8 @@ namespace FileConv.Gfx {
                         buffer[IS_PROPORTIONAL_LOCATION] >= 0 &&
                         buffer[IS_PROPORTIONAL_LOCATION] <= 1;
 
-                    if (hasSig1 && goodVals) {
+                    if ((hasSig1 || hasSig2) && goodVals) {
                         return Applicability.Yes;
-                    } else if (hasSig2 && goodVals) {
-                        return Applicability.Probably;
                     } else if (goodVals) {
                         // No matching ID bytes; put it on the list, but near the bottom.
                         // (Since the auxtype matches, an argument could be made for Maybe,
@@ -160,6 +163,10 @@ namespace FileConv.Gfx {
             DataStream.Position = 0;
             DataStream.ReadExactly(mDataBuf, 0, mDataBuf.Length);
 
+            if (!CheckBounds()) {
+                return new ErrorText("The file appears damaged");
+            }
+
             string modeStr = GetStringOption(options, OPT_MODE, ConvUtil.FONT_MODE_SAMPLE);
             switch (modeStr) {
                 case ConvUtil.FONT_MODE_GRID:
@@ -167,6 +174,19 @@ namespace FileConv.Gfx {
                 case ConvUtil.FONT_MODE_SAMPLE:
                 default:
                     return RenderFontSample();
+            }
+        }
+
+        /// <summary>
+        /// Verifies that the file is undamaged.
+        /// </summary>
+        private bool CheckBounds() {
+            try {
+                CalcMaxGlyphWidth();        // this seems to do the trick
+                return true;
+            } catch (Exception ex) {
+                Debug.WriteLine("Fontrix CheckBounds failed: " + ex.Message);
+                return false;
             }
         }
 
@@ -215,7 +235,7 @@ namespace FileConv.Gfx {
         private IConvOutput RenderFontSample() {
             string testStr = "The quick brown fox jumps over the lazy dog.";
 
-            int width = MeasureString(testStr);
+            int width = DrawString(testStr, null);
 
             Bitmap8 bitmap = new Bitmap8(width, GetFontHeight());
             bitmap.SetPalette(FONT_PALETTE);
@@ -228,48 +248,53 @@ namespace FileConv.Gfx {
         }
 
         /// <summary>
-        /// Measures the rendered width of a string, in pixels.
+        /// Draws a string on a bitmap.  If the bitmap argument is null, the drawing is skipped.
         /// </summary>
-        private int MeasureString(string str) {
-            int start = GetFirstCharAsciiCode();
-            int numChars = GetCharacterCount();
-            int width = 0;
-            for (int i = 0; i < str.Length; i++) {
-                int idx = MapChar(str[i]);
-                int charWidth;
-                if (idx >= 0) {
-                    charWidth = GetWidthForCharacter(idx);
-                } else {
-                    charWidth = MISSING_GLYPH_WIDTH;
-                }
-
-                // Add width of glyph, plus one pixel spacing before it unless it's the first.
-                width += charWidth + (i == 0 ? 0 : 1);
-            }
-            return width;
-        }
-
-        /// <summary>
-        /// Draws a string on a bitmap.
-        /// </summary>
-        private void DrawString(string str, Bitmap8 bitmap) {
+        /// <returns>Width, in pixels, of rendered string.</returns>
+        private int DrawString(string str, Bitmap8? bitmap) {
             // Configure pixel-set delegate.  This will take care of pixel size multiplication.
             SetPixelFunc setPixel = delegate (int unused, int col, int row, byte color) {
-                bitmap.SetPixelIndex(col, row, color);
+                bitmap!.SetPixelIndex(col, row, color);
             };
 
-            int xoff = 0;
-            foreach (char ch in str) {
-                int idx = MapChar(ch);
-                if (idx >= 0) {
-                    DrawGlyph(idx, xoff, 0, setPixel);
-                    xoff += GetWidthForCharacter(idx);
-                } else {
-                    xoff += MISSING_GLYPH_WIDTH;
-
-                }
-                xoff++;     // add one space between glyphs
+            // The width of a space character isn't stored in the font file.  According
+            // to the user documentation, it's determined by the width of the "last
+            // character accessed".  This looks funny for text like "brown fox jumps"
+            // when 'x' is much wider than 'n' (e.g. SET.OLD ENGLISH, which looks even worse
+            // because of the lack of kerning in the 'j').  We want to use a constant value,
+            // but it needs to be determined by the width of glyphs in the font.
+            int avgWidth = mDataBuf[0x13];      // guessing this byte is the average width
+            int spaceWidth = avgWidth / 3;
+            if (spaceWidth < 2) {
+                spaceWidth = 2;
             }
+            if (bitmap != null) {
+                Debug.WriteLine("IsProp=" + IsFontProportional() + ", avgWidth=" + avgWidth +
+                    ", spaceWidth=" + spaceWidth);
+            }
+
+            int xoff = 0;
+            for (int i = 0; i < str.Length; i++) {
+                if (i != 0) {
+                    xoff++;     // add one space between glyphs
+                }
+                int idx = MapChar(str[i]);
+                int width;
+                if (idx >= 0) {
+                    width = GetWidthForCharacter(idx);
+                    if (bitmap != null) {
+                        DrawGlyph(idx, xoff, 0, setPixel);
+                    }
+                } else if (str[i] == ' ') {
+                    width = spaceWidth;
+                } else {
+                    width = MISSING_GLYPH_WIDTH;
+                }
+
+                xoff += width;
+            }
+
+            return xoff;
         }
 
         /// <summary>
@@ -279,8 +304,10 @@ namespace FileConv.Gfx {
         private int MapChar(char ch) {
             int start = GetFirstCharAsciiCode();
             int numChars = GetCharacterCount();
-            if (ch < start || ch >= start + numChars) {
-                // Not present in font.  Try upper case.
+            bool hasLowerCase = (start <= 'a') && (start + numChars >= 'z');
+            if ((ch < start || ch >= start + numChars) || !hasLowerCase) {
+                // Not present in font, or is a lower-case letter but the font doesn't have a
+                // full set.  Convert to upper case.
                 ch = char.ToUpper(ch);
             }
             if (ch >= start && ch < start + numChars) {

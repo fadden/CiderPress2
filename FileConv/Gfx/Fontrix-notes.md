@@ -4,7 +4,7 @@ File types:
  - BIN / $6400: Fontrix Font File
 
 Primary references:
- - Reverse engineering
+ - Reverse engineering, primarily by Mark Long
 
 Font filenames generally start with "SET.".
 
@@ -15,7 +15,7 @@ it could generate large, detailed graphics ("16 times larger than the Apple scre
 graphics with text rendered in custom fonts.
 
 A series of "fontpaks" were released, each of which had ten fonts.  At one point the company
-was offering $100 for original font designs.
+was offering $100 for submissions of original font designs.
 
 ## Font File Structure ##
 
@@ -56,9 +56,12 @@ The file format is:
 +$020 /192: Character data offsets. 96 little-endian offsets from start of file. There are offsets
             for characters 32 (space) and 127 (del) although they are not used in Fontrix.
 +$0E2 / 96: Unknown bytes.  These may be width or spacing data for proportional fonts.
-+$142 / 62: Unknown bytes.  Usually 0 filled.
++$142 / 62: Unknown bytes.  Usually 0 filled, sometimes junk text.
 +$180 / nn: Character glyph data.
 ```
+
+When editing a font, the font editor replaces the signature with its bitwise inversion ($6F/08/4D).
+Files in this state can be found in fontpaks.
 
 ## Rendering Notes ##
 

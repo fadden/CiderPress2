@@ -34,6 +34,7 @@ namespace FileConv.Gfx {
         public override string Description => DESCRIPTION;
         public override string Discriminator => DISCRIMINATOR;
 
+        private const int MIN_FILE_LEN = 2;         // empty shape table
         private const int MAX_FILE_LEN = 32768;     // could fill all of $4000-bfff, in theory
 
         private static readonly Palette8 SHAPE_PALETTE = new Palette8("Shape",
@@ -61,7 +62,7 @@ namespace FileConv.Gfx {
                 return Applicability.Not;
             }
             if (FileAttrs.FileType != FileAttribs.FILE_TYPE_BIN ||
-                    DataStream.Length > MAX_FILE_LEN) {
+                    DataStream.Length < MIN_FILE_LEN || DataStream.Length > MAX_FILE_LEN) {
                 return Applicability.Not;
             }
 
