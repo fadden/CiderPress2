@@ -91,11 +91,6 @@ namespace FileConv.Gfx
         private const byte MAX_CHARACTER_WIDTH = 48;
         private const ushort IMAGE_CHARACTER = 32;
         private const int MISSING_GLYPH_WIDTH = 8;
-        //const int INTER_CHARACTER_SPACING_PX = 3;
-        //const int LEFT_PADDING = 2;
-        //const int RIGHT_PADDING = 2;
-        //const int TOP_PADDING = 2;
-        //const int BOTTOM_PADDING = 2;
         private const int XMULT = 2;
         private const int YMULT = 3;
 
@@ -117,7 +112,7 @@ namespace FileConv.Gfx
 
         protected override Applicability TestApplicability()
         {
-            if (DataStream == null)
+            if (DataStream == null || IsRawDOS)
             {
                 return Applicability.Not;
             }
@@ -256,7 +251,7 @@ namespace FileConv.Gfx
                 {
                     // Fill the cell with the missing-glyph color.
                     grid.DrawRect(idx, 0, 0, mMaxGlyphWidth * xmult, mMaxGlyphHeight * ymult,
-                        COLOR_NO_CHAR);
+                        COLOR_FRAME);
                 }
                 else
                 {

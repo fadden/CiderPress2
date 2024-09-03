@@ -18,7 +18,6 @@ using System.Diagnostics;
 
 using CommonUtil;
 using DiskArc;
-using DiskArc.FS;
 
 namespace FileConv.Gfx {
     /// <summary>
@@ -28,24 +27,42 @@ namespace FileConv.Gfx {
         public const string TAG = "fontrixfont";
         public const string LABEL = "Fontrix Font";
         public const string DESCRIPTION =
-            "Converts a Fontrix font file to a bitmap.  ";
-
-        public const string DISCRIMINATOR = "DOS B with aux type $6400";
+            "Converts a Fontrix font file to a bitmap, either as a grid with all possible " +
+            "glyphs, or a sample string drawn with the font.";
+        public const string DISCRIMINATOR = "DOS B with aux type $6400.";
         public override string Tag => TAG;
         public override string Label => LABEL;
         public override string Description => DESCRIPTION;
         public override string Discriminator => DISCRIMINATOR;
 
-        public const string OPT_MULTIROW = "multirow";
-        public const string OPT_SPACING = "spacing";
+        public const string OPT_MODE = "mode";
 
         public override List<OptionDefinition> OptionDefs { get; protected set; } =
             new List<OptionDefinition>() {
-                new (OPT_MULTIROW, "Display multiple rows",
-                    OptionDefinition.OptType.Boolean, "true"),
-                new (OPT_SPACING, "Show space between characters",
-                    OptionDefinition.OptType.Boolean, "true"),
+                new OptionDefinition(OPT_MODE, "Conversion Mode",
+                    OptionDefinition.OptType.Multi, ConvUtil.FONT_MODE_SAMPLE,
+                        ConvUtil.FontModeTags, ConvUtil.FontModeDescrs),
             };
+
+        /// <summary>
+        /// Font rendering palette.  Black-on-white characters, various others for the grid
+        /// labels and framing.
+        /// </summary>
+        private static readonly Palette8 FONT_PALETTE = new Palette8("Font",
+            new int[] {
+                ConvUtil.MakeRGB(0xe0, 0xe0, 0xe0),     // 0=light gray (cell background)
+                ConvUtil.MakeRGB(0x80, 0x80, 0x80),     // 1=dark gray (frame around cells)
+                ConvUtil.MakeRGB(0xff, 0xff, 0xff),     // 2=white (glyph background)
+                ConvUtil.MakeRGB(0x00, 0x00, 0x00),     // 3=black (glyph foreground)
+                ConvUtil.MakeRGB(0x30, 0x30, 0xe0),     // 4=blue (labels)
+                ConvUtil.MakeRGB(0xb0, 0x30, 0x30),     // 5=red (char not in font)
+            });
+        private const int COLOR_CELL_BG = 0;
+        private const int COLOR_FRAME = 1;
+        private const int COLOR_GLYPH_BG = 2;
+        private const int COLOR_GLYPH_FG = 3;
+        private const int COLOR_LABEL = 4;
+        private const int COLOR_NO_CHAR = 5;
 
         private const int CHAR_COUNT_LOCATION = 0x10;
         private const int FIRST_ASCII_CHAR_LOCATION = 0x11;
@@ -55,23 +72,20 @@ namespace FileConv.Gfx {
         private const int ID_BYTE_2 = 0x19;
         private const int ID_BYTE_3 = 0x1a;
 
+        private static readonly byte[] SIG1 = new byte[] { 0x90, 0xf7, 0xb2 };
+        private static readonly byte[] SIG2 = new byte[] { 0x6f, 0x08, 0x4d };
 
-        private const byte ID_BYTE_1_VAL = 0x90;
-        private const byte ID_BYTE_2_VAL = 0xF7;
-        private const byte ID_BYTE_3_VAL = 0xB2;
+        private const byte SPACE_VAL_OFFSET = 32;
+        private const int MISSING_GLYPH_WIDTH = 8;
+        private const int SPACE_WIDTH = 8;
+
+        private const int MAX_FILE_LEN = 32 * 1024;     // editor is DOS + Applesoft + hi-res
 
         private const byte MAX_NUM_CHARACTERS = 94;
 
-        private const int NUM_GRID_ROWS = 6;
-
-        const int INTER_CHARACTER_SPACING_PX = 2;
-        const int LEFT_PAD = 2;
-        const int RIGHT_PAD = 2;
-        const int TOP_PADDING = 2;
-        const int BOTTOM_PADDING = 2;
-
         // The file data.  Give it a minimum size up front so it shouldn't be null later on.
-        private byte[] DataBuf = new byte[1];
+        private byte[] mDataBuf = new byte[0];
+
 
         private FontrixFont() { }
 
@@ -82,11 +96,10 @@ namespace FileConv.Gfx {
         }
 
         protected override Applicability TestApplicability() {
-            if (DataStream == null) {
+            if (DataStream == null || IsRawDOS) {
                 return Applicability.Not;
             }
-
-            if (DataStream.Length < ID_BYTE_3) {
+            if (DataStream.Length < ID_BYTE_3 || DataStream.Length > MAX_FILE_LEN) {
                 return Applicability.Not;
             }
 
@@ -99,15 +112,33 @@ namespace FileConv.Gfx {
                     DataStream.Position = 0;
                     DataStream.ReadExactly(buffer, 0, ID_BYTE_3 + 1);
 
-                    bool valid = buffer[ID_BYTE_1] == ID_BYTE_1_VAL &&
-                                 buffer[ID_BYTE_2] == ID_BYTE_2_VAL &&
-                                 buffer[ID_BYTE_3] == ID_BYTE_3_VAL &&
-                                 buffer[CHAR_COUNT_LOCATION] <= MAX_NUM_CHARACTERS;
+                    // We're expecting 90 f7 b2, but sometimes we find 6f 08 4d.
+                    bool hasSig1 =
+                        buffer[ID_BYTE_1] == SIG1[0] &&
+                        buffer[ID_BYTE_2] == SIG1[1] &&
+                        buffer[ID_BYTE_3] == SIG1[2];
+                    bool hasSig2 =
+                        buffer[ID_BYTE_1] == SIG2[0] &&
+                        buffer[ID_BYTE_2] == SIG2[1] &&
+                        buffer[ID_BYTE_3] == SIG2[2];
+                    // Check some of the other values to confirm they're in the right range.
+                    bool goodVals =
+                        buffer[CHAR_COUNT_LOCATION] >= 1 &&
+                        buffer[CHAR_COUNT_LOCATION] <= MAX_NUM_CHARACTERS &&
+                        buffer[FIRST_ASCII_CHAR_LOCATION] > 32 &&
+                        buffer[FIRST_ASCII_CHAR_LOCATION] <= 127 &&
+                        buffer[IS_PROPORTIONAL_LOCATION] >= 0 &&
+                        buffer[IS_PROPORTIONAL_LOCATION] <= 1;
 
-                    if (valid) {
+                    if (hasSig1 && goodVals) {
                         return Applicability.Yes;
-                    } else {
-                        Debug.WriteLine("Valid is not set for this font.");
+                    } else if (hasSig2 && goodVals) {
+                        return Applicability.Probably;
+                    } else if (goodVals) {
+                        // No matching ID bytes; put it on the list, but near the bottom.
+                        // (Since the auxtype matches, an argument could be made for Maybe,
+                        // but we're really expecting the ID bytes to be there.)
+                        return Applicability.ProbablyNot;
                     }
                 }
             }
@@ -125,186 +156,180 @@ namespace FileConv.Gfx {
             }
             Debug.Assert(DataStream != null);
 
-            DataBuf = new byte[DataStream.Length];
+            mDataBuf = new byte[DataStream.Length];
             DataStream.Position = 0;
-            DataStream.ReadExactly(DataBuf, 0, DataBuf.Length);
+            DataStream.ReadExactly(mDataBuf, 0, mDataBuf.Length);
 
-            bool doMultirow = GetBoolOption(options, OPT_MULTIROW, false);
-            bool doSpacing = GetBoolOption(options, OPT_SPACING, false);
+            string modeStr = GetStringOption(options, OPT_MODE, ConvUtil.FONT_MODE_SAMPLE);
+            switch (modeStr) {
+                case ConvUtil.FONT_MODE_GRID:
+                    return RenderFontGrid();
+                case ConvUtil.FONT_MODE_SAMPLE:
+                default:
+                    return RenderFontSample();
+            }
+        }
 
-            if (doMultirow) {
-                return ConvertIntoGrid(DataBuf, Palette8.Palette_MonoBW, doSpacing);
+        /// <summary>
+        /// Renders a Fontrix font file to a glyph image grid.
+        /// </summary>
+        private IConvOutput RenderFontGrid() {
+            int maxGlyphWidth = CalcMaxGlyphWidth();
+            int maxGlyphHeight = GetFontHeight();
+            int start = GetFirstCharacterOffset();
+            int numChars = GetCharacterCount();
+
+            // Set up the grid, using the ASCII value rather than the glyph index as the
+            // cell number.  This makes the labels match ASCII.
+            ImageGrid.Builder bob = new ImageGrid.Builder();
+            bob.SetGeometry(maxGlyphWidth, maxGlyphHeight, 16);
+            bob.SetRange(start + SPACE_VAL_OFFSET, numChars);
+            bob.SetColors(FONT_PALETTE, COLOR_LABEL, COLOR_CELL_BG, COLOR_FRAME, COLOR_FRAME);
+            bob.SetLabels(hasLeftLabels: true, hasTopLabels: true, leftLabelIsRow: false, 16);
+            ImageGrid grid;
+            try {
+                grid = bob.Create();    // this will throw if bitmap would be too big
+            } catch (BadImageFormatException ex) {
+                return new ErrorText("Unable to generate grid: " + ex.Message);
+            }
+
+            SetPixelFunc setPixel = delegate (int glyphIndex, int col, int row, byte color) {
+                grid.DrawPixel(glyphIndex, col, row, color);
+            };
+
+            for (int i = start; i < start + numChars; i++) {
+                // Draw background.
+                grid.DrawRect(i + SPACE_VAL_OFFSET, 0, 0, GetWidthForCharacter(i),
+                    maxGlyphHeight, COLOR_GLYPH_BG);
+
+                // Draw glyph.
+                DrawGlyph(i, 0, 0, setPixel);
+            }
+
+            return grid.Bitmap;
+        }
+
+        /// <summary>
+        /// Renders a sample string with a Fontrix font.
+        /// </summary>
+        private IConvOutput RenderFontSample() {
+            string testStr = "The quick brown fox jumps over the lazy dog.";
+
+            int width = MeasureString(testStr);
+
+            Bitmap8 bitmap = new Bitmap8(width, GetFontHeight());
+            bitmap.SetPalette(FONT_PALETTE);
+
+            // Color 0 is the grid background color, which we don't want.  Set to white.
+            bitmap.SetAllPixels(COLOR_GLYPH_BG);
+            DrawString(testStr, bitmap);
+
+            return bitmap;
+        }
+
+        /// <summary>
+        /// Measures the rendered width of a string, in pixels.
+        /// </summary>
+        private int MeasureString(string str) {
+            int start = GetFirstCharAsciiCode();
+            int numChars = GetCharacterCount();
+            int width = 0;
+            for (int i = 0; i < str.Length; i++) {
+                int idx = MapChar(str[i]);
+                int charWidth;
+                if (idx >= 0) {
+                    charWidth = GetWidthForCharacter(idx);
+                } else {
+                    charWidth = MISSING_GLYPH_WIDTH;
+                }
+
+                // Add width of glyph, plus one pixel spacing before it unless it's the first.
+                width += charWidth + (i == 0 ? 0 : 1);
+            }
+            return width;
+        }
+
+        /// <summary>
+        /// Draws a string on a bitmap.
+        /// </summary>
+        private void DrawString(string str, Bitmap8 bitmap) {
+            // Configure pixel-set delegate.  This will take care of pixel size multiplication.
+            SetPixelFunc setPixel = delegate (int unused, int col, int row, byte color) {
+                bitmap.SetPixelIndex(col, row, color);
+            };
+
+            int xoff = 0;
+            foreach (char ch in str) {
+                int idx = MapChar(ch);
+                if (idx >= 0) {
+                    DrawGlyph(idx, xoff, 0, setPixel);
+                    xoff += GetWidthForCharacter(idx);
+                } else {
+                    xoff += MISSING_GLYPH_WIDTH;
+
+                }
+                xoff++;     // add one space between glyphs
+            }
+        }
+
+        /// <summary>
+        /// Maps a character to a glyph index.  Returns -1 if the character is not represented
+        /// in the font.
+        /// </summary>
+        private int MapChar(char ch) {
+            int start = GetFirstCharAsciiCode();
+            int numChars = GetCharacterCount();
+            if (ch < start || ch >= start + numChars) {
+                // Not present in font.  Try upper case.
+                ch = char.ToUpper(ch);
+            }
+            if (ch >= start && ch < start + numChars) {
+                return ch - SPACE_VAL_OFFSET;
             } else {
-                return Convert(DataBuf, Palette8.Palette_MonoBW, doSpacing);
+                return -1;
             }
         }
+
+        // Pixel draw delegate, so we can render glyphs on Bitmaps and ImageGrids with one func.
+        private delegate void SetPixelFunc(int glyphIndex, int xc, int yc, byte color);
 
         /// <summary>
-        /// Converts a Fontrix font file to a B&amp;W bitmap.
+        /// Draws a single glyph at the specified position.
         /// </summary>
-        public Bitmap8 Convert(byte[] buf, Palette8 palette, bool doSpacing) {
-            Bitmap8 output;
+        /// <param name="glyphIndex">Index of character to draw.</param>
+        /// <param name="xpos">Horizontal pixel offset of top-left corner.</param>
+        /// <param name="ypos">Vertical pixel offset of top-left corner.</param>
+        /// <param name="setPixel">Delegate that sets a pixel to a particular color index.</param>
+        private void DrawGlyph(int glyphIndex, int xpos, int ypos, SetPixelFunc setPixel) {
+            byte charWidth = GetWidthForCharacter(glyphIndex);
+            byte charHeight = GetFontHeight();
+            byte[] charData = GetDataForCharacter(glyphIndex);
 
-            int totalWidth = 0;
-            int maxHeight = 0;
+            int offset = 0;
 
-            int firstCharOffset = GetFirstCharacterOffset();
-            var charCount = GetCharacterCount();
-
-            for (int idx = firstCharOffset; idx < firstCharOffset + charCount; idx++) {
-
-                if (idx != firstCharOffset && doSpacing) {
-                    totalWidth += INTER_CHARACTER_SPACING_PX;
-                }
-
-                totalWidth += GetWidthForCharacter(idx);
-                int height = GetFontHeight();
-                if (height > maxHeight) { maxHeight = height; }
-
-            }
-
-            output = new Bitmap8(LEFT_PAD + totalWidth + RIGHT_PAD,
-                                 TOP_PADDING + maxHeight + BOTTOM_PADDING);
-
-            output.SetPalette(palette);
-
-            for (int idx = 0; idx < output.Width; idx++) {
-                for (int jdx = 0; jdx < output.Height; jdx++) {
-                    output.SetPixelIndex(idx, jdx, 1);
-                }
-            }
-
-            int xOffset = LEFT_PAD;
-            for (int idx = firstCharOffset; idx < firstCharOffset + charCount; idx++) {
-
-                byte charWidth = GetWidthForCharacter(idx);
-                byte charHeight = GetFontHeight();
-                byte[] charData = GetDataForCharacter(idx);
-
-                int offset = 0;
-
-                for (int row = 0; row < charHeight; row++) {
-                    for (int col = 0; col < WidthToBytes(charWidth); col++) {
-                        byte bval = charData[offset++];
-                        for (int bit = 7; bit >= 0; bit--) {
-                            // Bits are zero for background, one for foreground; leftmost pixel in LSB.
-                            byte color = (byte)(1 - (bval >> 7));
-                            var hpos = col * 8 + bit + xOffset;
-                            if (hpos < totalWidth + LEFT_PAD + RIGHT_PAD) {
-                                output.SetPixelIndex(hpos, row + TOP_PADDING, color);
-                            }
-                            bval <<= 1;
+            for (int row = 0; row < charHeight; row++) {
+                for (int col = 0; col < WidthToBytes(charWidth); col++) {
+                    byte bval = charData[offset++];
+                    for (int bit = 7; bit >= 0; bit--) {
+                        // Bits are zero for background, one for foreground; leftmost pixel in LSB.
+                        if ((bval >> 7) != 0) {
+                            setPixel(glyphIndex + SPACE_VAL_OFFSET,
+                                col * 8 + bit + xpos, row + ypos, COLOR_GLYPH_FG);
                         }
+                        bval <<= 1;
                     }
                 }
-                xOffset += charWidth;
-                if (doSpacing) { xOffset += INTER_CHARACTER_SPACING_PX; }
             }
-            return output;
         }
 
-
-        /// <summary>
-        /// Converts a Fontrix font file to a multi-row grid on a B&amp;W bitmap.
-        /// </summary>
-        public Bitmap8 ConvertIntoGrid(byte[] buf, Palette8 palette, bool doSpacing) {
-            Bitmap8 output;
-
-            var charCount = GetCharacterCount();
-
-            // If there aren't at least NUM_GRID_ROW items, default to the linear display.
-            if (charCount < NUM_GRID_ROWS) {
-                return Convert(buf, palette, doSpacing);
-            }
-
-            byte startingChar = GetFirstCharacterOffset();
-
-            int fullWidth = GetWidthForRun(startingChar, charCount, doSpacing);
-
-            int idealRowWidth = fullWidth / NUM_GRID_ROWS;
-
-            int spacingVal = doSpacing ? INTER_CHARACTER_SPACING_PX : 0;
-
-            var charCounts = new byte[NUM_GRID_ROWS];
-            var rowWidths = new int[NUM_GRID_ROWS];
-            int currRow = 0;
-
-            for (int idx = startingChar; idx < startingChar + charCount; idx++) {
-
-                int thisCharWidth = GetWidthForCharacter(idx);
-                charCounts[currRow]++;
-                rowWidths[currRow] += thisCharWidth + spacingVal;
-
-                if (rowWidths[currRow] >= idealRowWidth && currRow != NUM_GRID_ROWS - 1) {
-                    currRow++;
-                }
-            }
-
-            int totalWidth = 0;
-            foreach (var w in rowWidths) {
-                totalWidth = Math.Max(totalWidth, w);
-            }
-
-            int maxHeight = GetFontHeight() * NUM_GRID_ROWS +
-                            INTER_CHARACTER_SPACING_PX * (NUM_GRID_ROWS - 1);
-
-            output = new Bitmap8(LEFT_PAD + totalWidth + RIGHT_PAD,
-                                 TOP_PADDING + maxHeight + BOTTOM_PADDING);
-
-            output.SetPalette(palette);
-
-            // Clear the bitmap
-            for (int idx = 0; idx < output.Width; idx++) {
-                for (int jdx = 0; jdx < output.Height; jdx++) {
-                    output.SetPixelIndex(idx, jdx, 1);
-                }
-            }
-
-            int currCharNum = startingChar;
-
-            int yOffset = TOP_PADDING;
-
-            for (var rowNum = 0; rowNum < NUM_GRID_ROWS; rowNum++) {
-
-                int xOffset = LEFT_PAD;
-
-                for (int idx = 0; idx < charCounts[rowNum]; idx++) {
-                    byte charWidth = GetWidthForCharacter(currCharNum);
-                    byte charHeight = GetFontHeight();
-                    byte[] charData = GetDataForCharacter(currCharNum);
-
-                    int offset = 0;
-
-                    for (int row = 0; row < charHeight; row++) {
-                        for (int col = 0; col < WidthToBytes(charWidth); col++) {
-                            byte bval = charData[offset++];
-                            for (int bit = 7; bit >= 0; bit--) {
-                                // Bits are zero for background, one for foreground; leftmost pixel in LSB.
-                                byte color = (byte)(1 - (bval >> 7));
-                                var hpos = col * 8 + bit + xOffset;
-                                if (hpos < totalWidth + LEFT_PAD + RIGHT_PAD) {
-                                    output.SetPixelIndex(hpos, row + yOffset, color);
-                                }
-                                bval <<= 1;
-                            }
-                        }
-                    }
-                    currCharNum++;
-                    xOffset += charWidth;
-                    if (doSpacing) { xOffset += INTER_CHARACTER_SPACING_PX; }
-                }
-                yOffset += INTER_CHARACTER_SPACING_PX + GetFontHeight();
-            }
-            return output;
-        }
 
         /// <summary>
         /// Returns the number of characters in the current font.
         /// </summary>
         private byte GetCharacterCount() {
-            Debug.Assert(DataBuf.Length > CHAR_COUNT_LOCATION);
+            Debug.Assert(mDataBuf.Length > CHAR_COUNT_LOCATION);
 
-            return DataBuf[CHAR_COUNT_LOCATION];
+            return mDataBuf[CHAR_COUNT_LOCATION];
         }
 
 
@@ -312,9 +337,9 @@ namespace FileConv.Gfx {
         /// Returns the true if the current font is proportional, false otherwise.
         /// </summary>
         private bool IsFontProportional() {
-            Debug.Assert(DataBuf.Length > IS_PROPORTIONAL_LOCATION);
+            Debug.Assert(mDataBuf.Length > IS_PROPORTIONAL_LOCATION);
 
-            return DataBuf[IS_PROPORTIONAL_LOCATION] > 0;
+            return mDataBuf[IS_PROPORTIONAL_LOCATION] > 0;
         }
 
 
@@ -322,9 +347,9 @@ namespace FileConv.Gfx {
         /// Returns the ASCII code of the first character defined in the font.
         /// </summary>
         private byte GetFirstCharAsciiCode() {
-            Debug.Assert(DataBuf.Length > FIRST_ASCII_CHAR_LOCATION);
+            Debug.Assert(mDataBuf.Length > FIRST_ASCII_CHAR_LOCATION);
 
-            return DataBuf[FIRST_ASCII_CHAR_LOCATION];
+            return mDataBuf[FIRST_ASCII_CHAR_LOCATION];
         }
 
 
@@ -336,28 +361,24 @@ namespace FileConv.Gfx {
         /// character is not used in practice.
         /// </summary>
         private byte GetFirstCharacterOffset() {
-            const byte SPACE_VAL_OFFSET = 32;
             return (byte)(GetFirstCharAsciiCode() - SPACE_VAL_OFFSET);
         }
 
 
         /// <summary>
-        /// This is a utility function for drawing the font bitmap. It returns the total number 
-        /// of pixels a series of encoded characters in the font require to display, taking into
-        /// consideration whether the font is proportional and whether the user wants to display
-        /// inter-character spacing. 
+        /// Calculates the width of the widest glyph in the set.
         /// </summary>
-        private int GetWidthForRun(byte start, byte length, bool doSpacing) {
-
-            int totalWidth = 0;
-
-            for (int idx = start; idx < start + length; idx++) {
-
-                if (idx != start && doSpacing) totalWidth += INTER_CHARACTER_SPACING_PX;
-
-                totalWidth += GetWidthForCharacter(idx);
+        private int CalcMaxGlyphWidth() {
+            int count = GetCharacterCount();
+            int start = GetFirstCharacterOffset();
+            int maxWidth = 0;
+            for (int i = start; i < start + count; i++) {
+                int width = GetWidthForCharacter(i);
+                if (width > maxWidth) {
+                    maxWidth = width;
+                }
             }
-            return totalWidth;
+            return maxWidth;
         }
 
 
@@ -366,10 +387,8 @@ namespace FileConv.Gfx {
         /// </summary>
         /// <returns>The pixel height of all characters.</returns>
         private byte GetFontHeight() {
-            Debug.Assert(DataBuf != null);
-            return DataBuf[0x14];
+            return mDataBuf[0x14];
         }
-
 
         /// <summary>
         /// Get the practical width in pixels for the character at the given offset. Depending on
@@ -392,7 +411,7 @@ namespace FileConv.Gfx {
         /// <summary>
         /// This is a utility function for measuring the width of pixels in a character. Since the
         /// data is stored LSB leading, the span of pixels can be measured by finding the width
-        /// between the 0th position and the hightest bit position in the byte.
+        /// between the 0th position and the highest bit position in the byte.
         /// </summary>
         /// <param name="val">The byte being measured</param>
         /// <returns>
@@ -415,7 +434,7 @@ namespace FileConv.Gfx {
 
         /// <summary>
         /// Get the width in pixels for the character at the given offset.  Used for
-        /// non=proportional fonts
+        /// non-proportional fonts
         /// </summary>
         /// <param name="offset">The character width to fetch</param>
         /// <returns>
@@ -426,7 +445,7 @@ namespace FileConv.Gfx {
             //  the following character's data start, divided by the height of the character.
             var a1 = GetDataOffsetForCharacter(offset);
             var a2 = GetDataOffsetForCharacter(offset + 1);
-            var byteWidth = (byte)(8 * (a2 - a1) / GetFontHeight()); ;
+            var byteWidth = (byte)(8 * (a2 - a1) / GetFontHeight());
 
             return byteWidth;
         }
@@ -465,8 +484,8 @@ namespace FileConv.Gfx {
         /// <param name="charOffset">The character offset to fetch</param>
         /// <returns>The pointer to the data within the file.</returns>
         private ushort GetDataOffsetForCharacter(int charOffset) {
-            byte loVal = DataBuf[0x20 + (2 * charOffset)];
-            byte hiVal = DataBuf[0x21 + (2 * charOffset)];
+            byte loVal = mDataBuf[0x20 + (2 * charOffset)];
+            byte hiVal = mDataBuf[0x21 + (2 * charOffset)];
             ushort dataOffset = (ushort)(loVal + 256 * hiVal);
             return dataOffset;
         }
@@ -485,7 +504,7 @@ namespace FileConv.Gfx {
 
             byte[] retval = new byte[dataLength];
             for (int idx = 0; idx < dataLength; idx++) {
-                retval[idx] = DataBuf[dataOffset + idx];
+                retval[idx] = mDataBuf[dataOffset + idx];
             }
             return retval;
         }
@@ -500,7 +519,4 @@ namespace FileConv.Gfx {
             return (byte)(((width - 1) / 8) + 1);
         }
     }
-
 }
-
-

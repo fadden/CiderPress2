@@ -21,6 +21,12 @@ Primary references:
 
 The ProDOS files used a generic type, so no file type notes exist for these formats.
 
+## General ##
+
+The Print Shop is a desktop publishing application first published by Broderbund in 1984.
+Originally written for the Apple II, it's popularity led to it being ported to a variety of
+systems, and it was still being updated for Mac and Windows as recently as 2009.
+
 The web site https://theprintshop.club/ provides an emulated version of the original Apple II
 program that can print to PDF.
 

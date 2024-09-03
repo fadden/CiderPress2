@@ -450,7 +450,7 @@ namespace FileConv.Gfx {
         /// Calculates the pixel position of the specified cell.
         /// </summary>
         private void CalcCellPosn(int cellIndex, out int cellLeft, out int cellTop) {
-            int chunkNum = (cellIndex / mMaxPerRow) / mMaxRowsPerChunk;
+            int chunkNum = ((cellIndex - mChunks[0].mStartIndex) / mMaxPerRow) / mMaxRowsPerChunk;
             Debug.Assert(chunkNum < mChunks.Length);
             Chunk chunk = mChunks[chunkNum];
             int cellCol = (cellIndex - chunk.mStartIndex) % mMaxPerRow;
