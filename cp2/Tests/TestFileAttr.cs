@@ -22,11 +22,11 @@ using DiskArc.Disk;
 
 namespace cp2.Tests {
     /// <summary>
-    /// Tests the "set-attr" command.
+    /// Tests the "get-attr" and "set-attr" commands.
     /// </summary>
-    internal static class TestSetAttr {
+    internal static class TestFileAttr {
         public static void RunTest(ParamsBag parms) {
-            Controller.Stdout.WriteLine("  SetAttr...");
+            Controller.Stdout.WriteLine("  FileAttr...");
             Controller.PrepareTestTmp(parms);
 
             //
@@ -36,8 +36,13 @@ namespace cp2.Tests {
             // - Set mod date on ProDOS volume dir.
             // - MacZip edit
             //
+            // Use get-attr to verify that changes were made.
+            //
+            // TODO: test recursion on/off
+            //
 
             parms.MacZip = true;
+            parms.Recurse = true;
 
             TestEdits(parms);
             TestVolDir(parms);
@@ -66,14 +71,14 @@ namespace cp2.Tests {
 
                 string[] args = new string[] {
                     nufxTest,
-                    sampleFile,
-                    "Type=$12",
-                    "aux=0x3456",
-                    "hfstype=$112233aA",
-                    "creator=0x334455Ee",
-                    "access=$03",
-                    "CDATE=01-Jun-1977 09:05:25",
+                    "Type=$12," +
+                    "aux=0x3456," +
+                    "hfstype=$112233aA," +
+                    "creator=0x334455Ee," +
+                    "access=$03," +
+                    "CDATE=01-Jun-1977 09:05:25," +
                     "mdate=1986-09-15T17:05:27Z",
+                    sampleFile
                 };
                 if (!FileAttr.HandleSetAttr("sa", args, parms)) {
                     throw new Exception("sa " + nufxTest + " hex args failed");
@@ -95,11 +100,11 @@ namespace cp2.Tests {
 
                 args = new string[] {
                     nufxTest,
-                    sampleFile,
-                    "type=LBR",
-                    "hfstype=THIS",
-                    "creator=ROCK",
+                    "type=LBR," +
+                    "hfstype=THIS," +
+                    "creator=ROCK," +
                     "access=unlocked",
+                    sampleFile,
                 };
                 if (!FileAttr.HandleSetAttr("sa", args, parms)) {
                     throw new Exception("sa " + nufxTest + " text args failed");
@@ -115,6 +120,18 @@ namespace cp2.Tests {
                         }
                     }
                 }
+
+                // Try a get-attr with an attribute.  Output should be a single line.
+                args = new string[] {
+                    nufxTest,
+                    sampleFile,
+                    "type"
+                };
+                MemoryStream stdout = Controller.CaptureConsoleOut();
+                if (!FileAttr.HandleGetAttr("ga", args, parms)) {
+                    throw new Exception("ga " + nufxTest + " single check failed");
+                }
+                Controller.CompareLines(new string[] { "0xe0" }, stdout);
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;
             }
@@ -132,9 +149,9 @@ namespace cp2.Tests {
                 }
                 string[] args = new string[] {
                     proTest,
+                    "type=TXT," +               // not expected to have an effect
+                    "mdate=1986-09-15T17:06Z",  // can't represent seconds
                     "/",
-                    "type=TXT",                 // not expected to have an effect
-                    "mdate=1986-09-15T17:06Z"   // can't represent seconds
                 };
                 if (!FileAttr.HandleSetAttr("sa", args, parms)) {
                     throw new Exception("sa " + proTest + " root failed");
@@ -166,26 +183,26 @@ namespace cp2.Tests {
             string oldCurrentDir = Environment.CurrentDirectory;
             try {
                 Environment.CurrentDirectory = Controller.TEST_TMP;
-                const string TEST_TYPE_STR = "$18675309";
+                const string TEST_TYPE_STR = "0x18675309";
 
                 string[] args = new string[] {
                     zipFile,
-                    "GSHK",
-                    "creator=" + TEST_TYPE_STR
+                    "creator=" + TEST_TYPE_STR,
+                    "GSHK"
                 };
                 parms.MacZip = true;
                 if (!FileAttr.HandleSetAttr("sa", args, parms)) {
                     throw new Exception("sa " + zipFile + " enabled failed");
                 }
 
-                // Run without edit args to dump the full output, then scan for the string.
+                // Run without arg to dump the full output, then scan for the string.
                 args = new string[] {
                     zipFile,
                     "GSHK"
                 };
                 MemoryStream stdout = Controller.CaptureConsoleOut();
-                if (!FileAttr.HandleSetAttr("sa", args, parms)) {
-                    throw new Exception("sa " + zipFile + " enabled check failed");
+                if (!FileAttr.HandleGetAttr("ga", args, parms)) {
+                    throw new Exception("ga " + zipFile + " enabled check failed");
                 }
                 if (!Controller.HasText(TEST_TYPE_STR, stdout)) {
                     throw new Exception("Unable to find " + TEST_TYPE_STR);
@@ -199,8 +216,9 @@ namespace cp2.Tests {
                 // the copy in the ADF header.
                 args = new string[] {
                     zipFile,
-                    "GSHK",
-                    "mdate=28-Mar-2010"
+                    "type=S16," +
+                    "mdate=28-Mar-2010",
+                    "GSHK"
                 };
                 parms.MacZip = false;
                 if (!FileAttr.HandleSetAttr("sa", args, parms)) {
@@ -212,14 +230,17 @@ namespace cp2.Tests {
                     "GSHK"
                 };
                 stdout = Controller.CaptureConsoleOut();
-                if (!FileAttr.HandleSetAttr("sa", args, parms)) {
-                    throw new Exception("sa " + zipFile + " enabled check failed");
+                if (!FileAttr.HandleGetAttr("ga", args, parms)) {
+                    throw new Exception("ga " + zipFile + " enabled check failed");
                 }
                 if (Controller.HasText(TEST_TYPE_STR, stdout)) {
                     throw new Exception("Was able to find " + TEST_TYPE_STR);
                 }
                 if (!Controller.HasText("2010", stdout)) {
                     throw new Exception("Did not find new date");
+                }
+                if (Controller.HasText("S16", stdout)) {
+                    throw new Exception("Should not be able to see S16");
                 }
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;
@@ -239,21 +260,21 @@ namespace cp2.Tests {
             parms.StripPaths = true;
             string[] args = new string[] {
                 extArc,
+                "AUX=0X5150",
                 "hello.txt",
-                "AUX=0X5150"
             };
             if (!FileAttr.HandleSetAttr("sa", args, parms)) {
                 throw new Exception("sa " + extArc + " failed");
             }
 
-            // Run with no edits to dump contents, then search for the string.
+            // Run with no attr to dump contents, then search for the string.
             args = new string[] {
                 extArc,
                 "hello.txt",
             };
             MemoryStream stdout = Controller.CaptureConsoleOut();
-            if (!FileAttr.HandleSetAttr("sa", args, parms)) {
-                throw new Exception("sa " + extArc + " check disk failed");
+            if (!FileAttr.HandleGetAttr("ga", args, parms)) {
+                throw new Exception("ga " + extArc + " check disk failed");
             }
             if (!Controller.HasText("5150", stdout)) {
                 throw new Exception("Did not find new aux type");
@@ -264,15 +285,19 @@ namespace cp2.Tests {
                 "Some.Files.zip";
             args = new string[] {
                 extArc,
+                "MDATE=28-mar-2010",
                 "file2.txt",
-                "MDATE=28-mar-2010"
             };
             if (!FileAttr.HandleSetAttr("sa", args, parms)) {
                 throw new Exception("sa " + extArc + " failed");
             }
+            args = new string[] {
+                extArc,
+                "file2.txt",
+            };
             stdout = Controller.CaptureConsoleOut();
-            if (!FileAttr.HandleSetAttr("sa", args, parms)) {
-                throw new Exception("sa " + extArc + " check arc failed");
+            if (!FileAttr.HandleGetAttr("ga", args, parms)) {
+                throw new Exception("ga " + extArc + " check arc failed");
             }
             if (!Controller.HasText("2010", stdout)) {
                 throw new Exception("Did not find new date");

@@ -45,6 +45,7 @@ namespace AppCommon {
         /// Constructor.
         /// </summary>
         /// <param name="func">Callback function, for progress messages.</param>
+        /// <param name="macZip">True if MacZip is enabled.</param>
         /// <param name="appHook">Application hook reference.</param>
         public DeleteFileWorker(CallbackFunc func, bool macZip, AppHook appHook) {
             mFunc = func;

@@ -15,7 +15,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -23,7 +22,6 @@ using System.Windows.Input;
 
 using AppCommon;
 using CommonUtil;
-using cp2_wpf.WPFCommon;
 using DiskArc;
 using DiskArc.Arc;
 using static DiskArc.Defs;
@@ -33,6 +31,10 @@ namespace cp2_wpf.Actions {
     /// Manages file entry attribute update.  This will usually be simple enough that executing
     /// it on a background thread inside a WorkProgress dialog is unnecessary.
     /// </summary>
+    /// <remarks>
+    /// We now have SetAttrWorker, but there's no need to use it unless we allow edits to
+    /// be performed on multiple entries.
+    /// </remarks>
     internal class EditAttributesProgress {
         private Window mParent;
         private object mArchiveOrFileSystem;

@@ -67,7 +67,7 @@ namespace cp2.Tests {
                 TestMove.RunTest(parms);
                 TestMkdir.RunTest(parms);
                 TestDelete.RunTest(parms);
-                TestSetAttr.RunTest(parms);
+                TestFileAttr.RunTest(parms);
                 TestSectorEdit.RunTest(parms);
                 TestCopySectors.RunTest(parms);
                 TestCopyBlocks.RunTest(parms);
@@ -144,7 +144,7 @@ namespace cp2.Tests {
         }
 
         /// <summary>
-        /// Compares stream output to expected output.
+        /// Compares stream output to expected output.  Throws on mismatch.
         /// </summary>
         public static void CompareLines(string[] expected, MemoryStream stream) {
             stream.Position = 0;

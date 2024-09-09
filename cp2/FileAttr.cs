@@ -22,20 +22,24 @@ using CommonUtil;
 using DiskArc;
 using DiskArc.Arc;
 using static DiskArc.Defs;
+using AttrID = AppCommon.SetAttrWorker.AttrID;
+using AttrEdit = AppCommon.SetAttrWorker.AttrEdit;
 
 namespace cp2 {
     internal static class FileAttr {
         /// <summary>
-        /// Handles the "set-attr" command.
+        /// Handles the "get-attr" command.
         /// </summary>
-        public static bool HandleSetAttr(string cmdName, string[] args, ParamsBag parms) {
-            if (args.Length < 2) {
+        public static bool HandleGetAttr(string cmdName, string[] args, ParamsBag parms) {
+            if (args.Length < 2 || args.Length > 3) {
                 CP2Main.ShowUsage(cmdName);
                 return false;
             }
 
+            string attrName = args.Length > 2 ? args[2] : string.Empty;
+
             // Volume directories have dates, ZIP archives have top-level comments, so it's
-            // useful to be able to reference the top.  Currently not needed though.
+            // useful to be able to reference the top.
             bool isVolumeRef = false;
             string targetPath = args[1];
             if (targetPath == "/" || targetPath == ":") {
@@ -52,20 +56,14 @@ namespace cp2 {
                 return false;
             }
 
-            List<AttrEdit> editList;
-            if (!ParseAttrEdits(args, 2, out editList)) {
-                return false;
-            }
-            bool doViewOnly = (editList.Count == 0);
-
-            if (!ExtArchive.OpenExtArc(args[0], true, doViewOnly, parms, out DiskArcNode? rootNode,
+            if (!ExtArchive.OpenExtArc(args[0], true, true, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
                 return false;
             }
             using (rootNode) {
                 if (leaf is IArchive) {
                     IArchive arc = (IArchive)leaf;
-                    if (!Misc.StdChecks(arc, needWrite: !doViewOnly, needMulti: false)) {
+                    if (!Misc.StdChecks(arc, needWrite: false, needMulti: false)) {
                         return false;
                     }
 
@@ -86,7 +84,7 @@ namespace cp2 {
                         }
                         if (entries.Count != 1) {
                             Console.Error.WriteLine(
-                                "Error: can only set attributes on a single file");
+                                "Error: can only get attributes on a single file");
                             return false;
                         }
                         entry = entries[0];
@@ -95,47 +93,19 @@ namespace cp2 {
                     if (parms.MacZip && arc is Zip &&
                             Zip.HasMacZipHeader(arc, entry, out IFileEntry adfEntry)) {
                         try {
-                            if (!HandleMacZip(arc, adfEntry, editList, doViewOnly, parms,
-                                    out IFileEntry adfArchiveEntry)) {
+                            if (!HandleMacZip(arc, adfEntry, attrName, parms)) {
                                 return false;
-                            }
-                            if (!doViewOnly) {
-                                leafNode.SaveUpdates(parms.Compress);
-                                if (parms.Verbose) {
-                                    PrintAttrs(adfArchiveEntry, parms);
-                                }
                             }
                         } catch (Exception ex) {
                             Console.Error.WriteLine("Error: " + ex.Message);
                             return false;
-                        } finally {
-                            arc.CancelTransaction();    // no effect if transaction isn't open
                         }
                     } else {
-                        if (doViewOnly) {
-                            PrintAttrs(entry, parms);
-                        } else {
-                            try {
-                                arc.StartTransaction();
-                                if (!SetAttrs(entry, editList, parms)) {
-                                    return false;
-                                }
-
-                                leafNode.SaveUpdates(parms.Compress);
-                                if (parms.Verbose) {
-                                    PrintAttrs(entry, parms);
-                                }
-                            } catch (Exception ex) {
-                                Console.Error.WriteLine("Error: " + ex.Message);
-                                return false;
-                            } finally {
-                                arc.CancelTransaction();    // no effect if transaction isn't open
-                            }
-                        }
+                        PrintAttrs(entry, attrName, parms);
                     }
                 } else {
                     IFileSystem? fs = Misc.GetTopFileSystem(leaf);
-                    if (!Misc.StdChecks(fs, needWrite: !doViewOnly, parms.FastScan)) {
+                    if (!Misc.StdChecks(fs, needWrite: false, parms.FastScan)) {
                         return false;
                     }
                     IFileEntry entry;
@@ -156,24 +126,7 @@ namespace cp2 {
                         }
                         entry = entries[0];
                     }
-                    if (doViewOnly) {
-                        PrintAttrs(entry, parms);
-                    } else {
-                        bool success = SetAttrs(entry, editList, parms);
-                        try {
-                            leafNode.SaveUpdates(parms.Compress);
-                        } catch (Exception ex) {
-                            Console.Error.WriteLine("Error: update failed: " + ex.Message);
-                            return false;
-                        }
-                        if (!success) {
-                            return false;
-                        }
-
-                        if (parms.Verbose) {
-                            PrintAttrs(entry, parms);
-                        }
-                    }
+                    PrintAttrs(entry, attrName, parms);
                 }
             }
 
@@ -181,50 +134,267 @@ namespace cp2 {
         }
 
         /// <summary>
-        /// Handles all processing for a MacZip entry.
+        /// Prints attributes for a MacZip entry.
         /// </summary>
-        private static bool HandleMacZip(IArchive arc, IFileEntry adfEntry, List<AttrEdit> editList,
-                bool doViewOnly, ParamsBag parms, out IFileEntry adfArchiveEntry) {
-            // We need to extract the AppleDouble "header" data as an archive, update the first
-            // record, and record it back to the parent archive.  This currently holds the
-            // contents in a memory stream.  Might want to use a delete-on-exit temp file instead.
-            MemoryStream tmpMem;
-
-            // Extract the AppleSingle file, and display or update the attributes..
+        private static bool HandleMacZip(IArchive arc, IFileEntry adfEntry,
+                string attrName, ParamsBag parms) {
+            // Extract the AppleSingle file, and display or update the attributes.
             using (Stream adfStream = ArcTemp.ExtractToTemp(arc, adfEntry, FilePart.DataFork)) {
                 using (IArchive adfArchive = AppleSingle.OpenArchive(adfStream, parms.AppHook)) {
-                    adfArchiveEntry = adfArchive.GetFirstEntry();
-                    if (doViewOnly) {
-                        PrintAttrs(adfArchiveEntry, parms);
-                        return true;
-                    }
-
-                    // Make the edits.
-                    adfArchive.StartTransaction();
-                    SetAttrs(adfArchiveEntry, editList, parms);
-                    adfArchive.CommitTransaction(tmpMem = new MemoryStream());
+                    IFileEntry adfArchiveEntry = adfArchive.GetFirstEntry();
+                    PrintAttrs(adfArchiveEntry, attrName, parms);
                 }
             }
-
-            // Replace AppleSingle file.  Compression isn't relevant for AS.
-            arc.StartTransaction();
-            arc.DeletePart(adfEntry, FilePart.DataFork);
-            arc.AddPart(adfEntry, FilePart.DataFork, new SimplePartSource(tmpMem),
-                CompressionFormat.Default);
             return true;
         }
 
+        /// <summary>
+        /// Prints the entry's attributes.
+        /// </summary>
+        private static void PrintAttrs(IFileEntry entry, string attrName, ParamsBag parms) {
+            const string LFMT = "  {0,-12}: ";
 
-        private enum AttrID {
-            Unknown = 0, Type, AuxType, HFSFileType, HFSCreator, Access, CreateWhen, ModWhen
+            if (attrName == string.Empty) {
+                Console.WriteLine("Attributes for '" + entry.FullPathName + "':");
+                string fileKindStr = entry.IsDirectory ? "directory" : "plain file";
+                if (entry.IsDubious) {
+                    fileKindStr += " [dubious]";
+                }
+                if (entry.IsDamaged) {
+                    fileKindStr += " [DAMAGED]";
+                }
+                Console.WriteLine(string.Format(LFMT + "{1}",
+                    "File Kind", fileKindStr));
+                Console.WriteLine(string.Format(LFMT + "{1,-3} 0x{2:x2}",
+                    "File Type", FileTypes.GetFileTypeAbbrev(entry.FileType), entry.FileType));
+                Console.WriteLine(string.Format(LFMT + "0x{1:x4}",
+                    "Aux Type", entry.AuxType));
+                Console.WriteLine(string.Format(LFMT + "'{1,4}' 0x{2:x8}",
+                    "HFS Type", MacChar.StringifyMacConstant(entry.HFSFileType), entry.HFSFileType));
+                Console.WriteLine(string.Format(LFMT + "'{1,4}' 0x{2:x8}",
+                    "HFS Creator", MacChar.StringifyMacConstant(entry.HFSCreator), entry.HFSCreator));
+                Console.WriteLine(string.Format(LFMT + "0x{1:x2} [{2}]",
+                    "Access", entry.Access, Catalog.FormatAccessFlags(entry.Access)));
+                Console.WriteLine(string.Format(LFMT + "{1}",
+                    "Create Date", FormatDate(entry.CreateWhen)));
+                Console.WriteLine(string.Format(LFMT + "{1}",
+                    "Mod Date", FormatDate(entry.ModWhen)));
+                // TODO: remap ctrl / MOR chars?
+                Console.WriteLine(string.Format(LFMT + "{1}",
+                    "Comment", string.IsNullOrEmpty(entry.Comment) ?
+                        "(none)" : "\"" + entry.Comment + "\""));
+            } else {
+                AttrID id = ParseAttrName(attrName);
+                switch (id) {
+                    case AttrID.Type:
+                        Console.WriteLine("0x" + entry.FileType.ToString("x2"));
+                        break;
+                    case AttrID.AuxType:
+                        Console.WriteLine("0x" + entry.AuxType.ToString("x4"));
+                        break;
+                    case AttrID.HFSFileType:
+                        Console.WriteLine("0x" + entry.HFSFileType.ToString("x8"));
+                        break;
+                    case AttrID.HFSCreator:
+                        Console.WriteLine("0x" + entry.HFSCreator.ToString("x8"));
+                        break;
+                    case AttrID.Access:
+                        Console.WriteLine("0x" + entry.Access.ToString("x2"));
+                        break;
+                    case AttrID.CreateWhen:
+                        Console.WriteLine(FormatDate(entry.CreateWhen));
+                        break;
+                    case AttrID.ModWhen:
+                        Console.WriteLine(FormatDate(entry.ModWhen));
+                        break;
+                }
+            }
         }
-        private class AttrEdit {
-            public AttrID ID { get; private set; }
-            public object Value { get; private set; }
 
-            public AttrEdit(AttrID id, object value) {
-                ID = id;
-                Value = value;
+        private static string FormatDate(DateTime when) {
+            if (!TimeStamp.IsValidDate(when)) {
+                return "[No Date]";
+            } else {
+                return when.ToString("dd-MMM-yyyy HH:mm:ss");   // add K for timezone
+            }
+        }
+
+
+        /// <summary>
+        /// Handles the "set-attr" command.
+        /// </summary>
+        public static bool HandleSetAttr(string cmdName, string[] args, ParamsBag parms) {
+            if (args.Length < 2) {
+                CP2Main.ShowUsage(cmdName);
+                return false;
+            }
+
+            List<AttrEdit> editList;
+            if (!ParseAttrEdits(args[1], out editList)) {
+                return false;
+            }
+
+            string[] paths = new string[args.Length - 2];
+            for (int i = 2; i < args.Length; i++) {
+                paths[i - 2] = args[i];
+            }
+            bool isVolumeRef = false;
+            if (paths.Length == 1 && (paths[0] == "/" || paths[0] == ":")) {
+                isVolumeRef = true;
+            }
+
+            // Allow slash or colon as separators.  Ignore case.
+            List<Glob> globList;
+            try {
+                globList = Glob.GenerateGlobSet(paths, Glob.STD_DIR_SEP_CHARS, true);
+            } catch (ArgumentException ex) {
+                Console.Error.WriteLine("Error: " + ex.Message);
+                return false;
+            }
+
+            SetAttrWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
+                return Misc.HandleCallback(what, "setting attr", parms);
+            };
+            SetAttrWorker worker = new SetAttrWorker(cbFunc, macZip: parms.MacZip,
+                parms.AppHook);
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(Misc.SignalHandler);
+
+            if (!ExtArchive.OpenExtArc(args[0], true, false, parms, out DiskArcNode? rootNode,
+                    out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
+                return false;
+            }
+            using (rootNode) {
+                if (leaf is IArchive) {
+                    IArchive arc = (IArchive)leaf;
+                    if (!Misc.StdChecks(arc, needWrite: true, needMulti: false)) {
+                        return false;
+                    }
+
+                    if (isVolumeRef) {
+                        // NuFX has dates in the header, but they're not currently exposed (and
+                        // frankly they're not all that interesting).  This could be used to
+                        // access the archive comment in a ZIP file.
+                        Console.Error.WriteLine("Operation not supported for file archive");
+                        return false;
+                    }
+
+                    List<IFileEntry> entries =
+                        FindEntries.FindMatchingEntries(arc, globList, parms.Recurse);
+                    if (!Misc.CheckGlobList(globList)) {
+                        return false;
+                    }
+                    if (globList.Count == 0) {
+                        // Should not be possible.
+                        Console.Error.WriteLine("Must specify files");
+                        return false;
+                    }
+                    if (entries.Count == 0) {
+                        // Should not be possible if globList matched anything.
+                        Console.Error.WriteLine("Weird: nothing found");
+                        return false;
+                    }
+                    try {
+                        //arc.StartTransaction();
+                        if (!worker.SetAttrInArchive(arc, entries, editList,
+                                out bool isCancelled)) {
+                            if (isCancelled) {
+                                Console.Error.WriteLine("Cancelled.");
+                            }
+                            return false;
+                        }
+                        Debug.Assert(!isCancelled);
+                        leafNode.SaveUpdates(parms.Compress);
+                    } catch (Exception ex) {
+                        Console.Error.WriteLine("Error: " + ex.Message);
+                        return false;
+                    } finally {
+                        arc.CancelTransaction();    // no effect if transaction isn't open
+                    }
+
+                    // This is wrong for MacZip.
+                    //if (parms.Verbose && entries.Count == 1) {
+                    //    PrintAttrs(entries[0], string.Empty, parms);
+                    //}
+                } else {
+                    IFileSystem? fs = Misc.GetTopFileSystem(leaf);
+                    if (!Misc.StdChecks(fs, needWrite: true, parms.FastScan)) {
+                        return false;
+                    }
+                    List<IFileEntry> entries;
+                    if (isVolumeRef) {
+                        // TODO: would be better to handle this in FindMatchingEntries, but
+                        //   we'd need to go back and make sure it doesn't mess up other things.
+                        entries = new List<IFileEntry>() { fs.GetVolDirEntry() };
+                    } else {
+                        entries = FindEntries.FindMatchingEntries(fs, endDirEntry, globList,
+                            parms.Recurse);
+                        if (!Misc.CheckGlobList(globList)) {
+                            return false;
+                        }
+                        if (globList.Count == 0) {
+                            // Should not be possible.
+                            Console.Error.WriteLine("Error: must specify files");
+                            return false;
+                        }
+                        if (entries.Count == 0) {
+                            // Should not be possible if globList matched anything.
+                            Console.Error.WriteLine("Weird: nothing found");
+                            return false;
+                        }
+                    }
+                    bool success =
+                        worker.SetAttrInDisk(fs, entries, editList, out bool isCancelled);
+                    try {
+                        leafNode.SaveUpdates(parms.Compress);
+                    } catch (Exception ex) {
+                        Console.Error.WriteLine("Error: update failed: " + ex.Message);
+                        return false;
+                    }
+                    if (!success) {
+                        return false;
+                    }
+
+                    //if (parms.Verbose && entries.Count == 1) {
+                    //    PrintAttrs(entries[0], string.Empty, parms);
+                    //}
+                }
+            }
+
+            return true;
+        }
+
+        private const string ARG_TYPE = "type";
+        private const string ARG_AUX = "aux";
+        private const string ARG_HFSTYPE = "hfstype";
+        private const string ARG_CREATOR = "creator";
+        private const string ARG_ACCESS = "access";
+        private const string ARG_CDATE = "cdate";
+        private const string ARG_MDATE = "mdate";
+
+        /// <summary>
+        /// Converts an attribute name string to an attribute ID.
+        /// </summary>
+        private static AttrID ParseAttrName(string nameStr) {
+            switch (nameStr.ToLower()) {
+                case ARG_TYPE:
+                    return AttrID.Type;
+                case ARG_AUX:
+                    return AttrID.AuxType;
+                case ARG_HFSTYPE:
+                    return AttrID.HFSFileType;
+                case ARG_CREATOR:
+                    return AttrID.HFSCreator;
+                case ARG_ACCESS:
+                    return AttrID.Access;
+                case ARG_CDATE:
+                    return AttrID.CreateWhen;
+                case ARG_MDATE:
+                    return AttrID.ModWhen;
+                default:
+                    Console.Error.WriteLine("Error: unknown attribute '" + nameStr + "'");
+                    Console.Error.WriteLine(
+                        " (try: type, aux, hfstype, creator, access, cdate, mdate)");
+                    return AttrID.Unknown;
             }
         }
 
@@ -237,15 +407,14 @@ namespace cp2 {
         /// <summary>
         /// Parses the name/value attribute edit arguments.
         /// </summary>
-        /// <param name="args">List of edit arguments.</param>
-        /// <param name="firstArg">Index of first valid argument.</param>
+        /// <param name="arg">List of comma-separated edit arguments.</param>
         /// <param name="editList">Result: list of edit instructions.</param>
         /// <returns>True if parsing was successful.</returns>
-        private static bool ParseAttrEdits(string[] args, int firstArg,
-                out List<AttrEdit> editList) {
+        private static bool ParseAttrEdits(string arg, out List<AttrEdit> editList) {
             editList = new List<AttrEdit>();
+            string[] args = arg.Split(',');
 
-            for (int i = firstArg; i < args.Length; i++) {
+            for (int i = 0; i < args.Length; i++) {
                 MatchCollection matches = sNameValueRegex.Matches(args[i]);
                 if (matches.Count != 1) {
                     Console.Error.WriteLine("Error: bad attribute '" + args[i] + "'");
@@ -254,12 +423,11 @@ namespace cp2 {
                 string nameStr = matches[0].Groups[1].Value;
                 string valueStr = matches[0].Groups[2].Value;
 
-                AttrID id;
+                AttrID id = ParseAttrName(nameStr);
                 object? value = null;
                 long lconv;
-                switch (nameStr.ToLower()) {
-                    case "type":
-                        id = AttrID.Type;
+                switch (id) {
+                    case AttrID.Type:
                         int proType = FileTypes.GetFileTypeByAbbrev(valueStr);
                         if (proType >= 0) {
                             value = (byte)proType;
@@ -270,15 +438,13 @@ namespace cp2 {
                             }
                         }
                         break;
-                    case "aux":
-                        id = AttrID.AuxType;
+                    case AttrID.AuxType:
                         lconv = ConvertHex(valueStr, 4);
                         if (lconv >= 0) {
                             value = (ushort)lconv;
                         }
                         break;
-                    case "hfstype":
-                        id = AttrID.HFSFileType;
+                    case AttrID.HFSFileType:
                         if (valueStr.Length == 4) {
                             value = MacChar.IntifyMacConstantString(valueStr);
                         } else {
@@ -288,8 +454,7 @@ namespace cp2 {
                             }
                         }
                         break;
-                    case "creator":
-                        id = AttrID.HFSCreator;
+                    case AttrID.HFSCreator:
                         if (valueStr.Length == 4) {
                             value = MacChar.IntifyMacConstantString(valueStr);
                         } else {
@@ -299,8 +464,7 @@ namespace cp2 {
                             }
                         }
                         break;
-                    case "access":
-                        id = AttrID.Access;
+                    case AttrID.Access:
                         if (valueStr.ToLower() == "locked") {
                             value = FileAttribs.FILE_ACCESS_LOCKED;
                         } else if (valueStr.ToLower() == "unlocked") {
@@ -312,22 +476,20 @@ namespace cp2 {
                             }
                         }
                         break;
-                    case "cdate":
-                        id = AttrID.CreateWhen;
+                    case AttrID.CreateWhen:
                         if (DateTime.TryParse(valueStr, out DateTime cwhen)) {
                             value = cwhen;
                         }
                         break;
-                    case "mdate":
-                        id = AttrID.ModWhen;
+                    case AttrID.ModWhen:
                         if (DateTime.TryParse(valueStr, out DateTime mwhen)) {
                             value = mwhen;
                         }
                         break;
+                    case AttrID.Unknown:
+                        return false;
                     default:
-                        Console.Error.WriteLine("Error: unknown attribute '" + nameStr + "'");
-                        Console.Error.WriteLine(
-                            " (try: type, aux, hfstype, creator, access, cdate, mdate)");
+                        Debug.Assert(false, "missing case for " + id);
                         return false;
                 }
 
@@ -343,7 +505,8 @@ namespace cp2 {
         }
 
         /// <summary>
-        /// Converts a fixed-length hexadecimal string to an integer.
+        /// Converts a fixed-length hexadecimal string to an integer.  The string may be prefixed
+        /// with "$" or "0x".
         /// </summary>
         /// <param name="str">String to convert.</param>
         /// <param name="numDigits">Required number of digits.</param>
@@ -369,75 +532,6 @@ namespace cp2 {
             } catch (Exception ex) {
                 Debug.WriteLine("Convert failed: " + ex.Message);
                 return -1;
-            }
-        }
-
-        /// <summary>
-        /// Sets the attributes specified in the edit list.
-        /// </summary>
-        private static bool SetAttrs(IFileEntry entry, List<AttrEdit> editList, ParamsBag parms) {
-            foreach (AttrEdit edit in editList) {
-                switch (edit.ID) {
-                    case AttrID.Type:
-                        entry.FileType = (byte)edit.Value;
-                        break;
-                    case AttrID.AuxType:
-                        entry.AuxType = (ushort)edit.Value;
-                        break;
-                    case AttrID.HFSFileType:
-                        entry.HFSFileType = (uint)edit.Value;
-                        break;
-                    case AttrID.HFSCreator:
-                        entry.HFSCreator = (uint)edit.Value;
-                        break;
-                    case AttrID.Access:
-                        entry.Access = (byte)edit.Value;
-                        break;
-                    case AttrID.CreateWhen:
-                        entry.CreateWhen = (DateTime)edit.Value;
-                        break;
-                    case AttrID.ModWhen:
-                        entry.ModWhen = (DateTime)edit.Value;
-                        break;
-                    default:
-                        Console.Error.WriteLine("Unknown attr ID: " + edit.ID);
-                        return false;
-                }
-            }
-            entry.SaveChanges();
-            return true;
-        }
-
-        /// <summary>
-        /// Prints the entry's attributes.
-        /// </summary>
-        private static void PrintAttrs(IFileEntry entry, ParamsBag parms) {
-            const string LFMT = "  {0,-12}: ";
-            Console.WriteLine("Attributes for '" + entry.FullPathName + "':");
-            Console.WriteLine(string.Format(LFMT + "{1,-3} ${2:x2}",
-                "File Type", FileTypes.GetFileTypeAbbrev(entry.FileType), entry.FileType));
-            Console.WriteLine(string.Format(LFMT + "${1:x4}",
-                "Aux Type", entry.AuxType));
-            Console.WriteLine(string.Format(LFMT + "'{1,4}' ${2:x8}",
-                "HFS Type", MacChar.StringifyMacConstant(entry.HFSFileType), entry.HFSFileType));
-            Console.WriteLine(string.Format(LFMT + "'{1,4}' ${2:x8}",
-                "HFS Creator", MacChar.StringifyMacConstant(entry.HFSCreator), entry.HFSCreator));
-            Console.WriteLine(string.Format(LFMT + "${1:x2} [{2}]",
-                "Access", entry.Access, Catalog.FormatAccessFlags(entry.Access)));
-            Console.WriteLine(string.Format(LFMT + "{1}",
-                "Create Date", FormatDate(entry.CreateWhen)));
-            Console.WriteLine(string.Format(LFMT + "{1}",
-                "Mod Date", FormatDate(entry.ModWhen)));
-            Console.WriteLine(string.Format(LFMT + "{1}",
-                "Comment", string.IsNullOrEmpty(entry.Comment) ?
-                    "(none)" : "\"" + entry.Comment + "\""));   // TODO: replace ctrl / MOR chars?
-        }
-
-        private static string FormatDate(DateTime when) {
-            if (!TimeStamp.IsValidDate(when)) {
-                return "[No Date]";
-            } else {
-                return when.ToString("dd-MMM-yyyy HH:mm:ss");   // add K for timezone
             }
         }
     }

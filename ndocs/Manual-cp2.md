@@ -18,7 +18,7 @@ Contents:
    - [Export Specifications](#export-specifications)
    - [Import Specifications](#import-specifications)
  - [Resource Fork and Attribute Preservation](#resource-fork-and-attribute-preservation)
-   - [Finding Resource Forks](#finding-resource-forks)
+   - [Pairing Resource Forks](#pairing-resource-forks)
    - [Access Flags](#access-flags)
  - [Metadata](#metadata)
    - [DiskCopy 4.2](#diskcopy-4.2)
@@ -753,6 +753,29 @@ Examples:
  - `cp2 extract-partition multi-part.hdv:2 mydisk.po`
 
 ----
+#### `get-attr`|`ga`
+
+Gets file attributes, and formats them for display.
+
+Usage: `cp2 set-attr [options] <ext-archive> <file-in-archive> [attr]`
+
+By default, a summary of file attributes is displayed.  The display may include
+redundant information, e.g. the ProDOS file type is displayed as both the
+three-letter mnemonic and the hexadecimal type value.
+
+If an attribute name is given, only that attribute is displayed, in its most
+raw form.  This is intended to be machine-readable.  Valid attribute names
+are `type`, `aux`, `hfstype`, `creator`, `access`, `cdate`, and `mdate`.
+
+Options:
+ - `--mac-zip`, `--no-mac-zip`
+ - `--recurse`, `--no-recurse`
+
+Examples:
+ - `cp2 get-attr mydisk.do MYFILE`
+ - `cp2 ga archive.shk OTHERFILE type`
+
+----
 #### `get-metadata`|`gm`
 
 Gets metadata values from certain formats, e.g. 2IMG and WOZ, and displays
@@ -1064,10 +1087,9 @@ Examples:
 
 Changes file attributes for a single record.
 
-Usage: `cp2 set-attr [options] <ext-archive> <file-in-archive> [attrs...]`
+Usage: `cp2 set-attr [options] <ext-archive> <attrs> <file-in-archive> [file-in-archive...]`
 
-`attrs` takes the form of name/value pairs.  If none are specified, the
-current values are printed to the console in human-readable form.
+`attrs` takes the form of comma-separated name/value pairs.
 
 All numeric values are entered as fixed-length hexadecimal numbers.  They may
 be prefixed with "0x" or "$", though the latter is often a shell
@@ -1105,24 +1127,28 @@ possible values for a given attribute.  Attempting to set an unsupported
 attribute will fail silently, or be adjusted to work as well as possible.
 
 If the file is specified as ":" or "/", the root directory is selected.
-This can be used to set modification dates on certain filesystems.
+This can be used to set modification dates on certain filesystems.  This is
+only recognized when a single file argument is specified.
 
 If MacZip is enabled, setting the attributes on the main file entry in a
 ZIP archive will cause the "header" file to be updated if it exists.
 
-When verbose mode is enabled, the updated record will be displayed.
-The output will reflect the actual final state.
+When `--recurse` is enabled, if a directory is specified, the change will be
+applied to all files in that directory as well.  To change the attributes on
+all files in a directory, it may make more sense to use `--no-recurse` and
+wildcards.
 
 Editing of comments (for NuFX and Zip archives) is not currently supported.
 
 Options:
  - `--mac-zip`, `--no-mac-zip`
+ - `--recurse`, `--no-recurse`
 
 Examples:
- - `cp2 set-attr archive.shk MYFILE type=TXT aux=0x0000 access=0xc3`
- - `cp2 sa archive.shk DIR1:FILE1.SHK type=0xe0 aux=0x8002 access=unlocked`
- - `cp2 sa prodisk.po FILE1.TXT "cdate=01-Jun-1977 09:05:25"`
- - `cp2 sa prodisk.po : mdate=1986-09-15T17:05:27Z`
+ - `cp2 set-attr archive.shk type=TXT,aux=0x0000,access=0xc3 MYFILE`
+ - `cp2 sa archive.shk type=0xe0,aux=0x8002,access=unlocked "DIR1:*.SHK"`
+ - `cp2 sa prodisk.po "cdate=01-Jun-1977 09:05:25" FILE1.TXT FILE2.TXT FILE3.TXT`
+ - `cp2 sa prodisk.po mdate=1986-09-15T17:05:27Z` :
 
 ----
 #### `set-metadata`|`sm`
@@ -1789,26 +1815,32 @@ ProDOS or HFS file types is recovered from the filename, but if both were
 set then one will be lost.  The modification date from the file will be used,
 and the read-only flag will be used to set the access flags.
 
-### Finding Resource Forks ###
+### Pairing Resource Forks ###
 
-When adding files, the process for finding associated resource forks is:
- - If ADF is enabled, and a file with the same name prefixed by `._` is
-   found, it will be checked to see if it's AppleDouble.  If so, the
-   contents are used as the resource fork, and will be merged with the
-   data fork file when found.
- - Else, if AS is enabled, and the file has the extension ".as", it will
-   be checked to see if it's AppleSingle.  If so, the contents are used,
-   and both forks are obtained from the file.
+As mentioned earlier, when adding a set of files, it may be necessary to
+combine two host files into a single forked file.  The specific process for
+doing this is:
+
+ - If ADF (AppleDouble) is enabled, and a file with the same name but prefixed
+   with `._` is found in the same directory, it will be checked to see if it's
+   AppleDouble.  If so, and it contains a resource fork, the contents will be
+   merged with the data fork file when found.
+ - Else, if AS (AppleSingle) is enabled, and the file has the extension ".as",
+   it will be checked to see if it's AppleSingle.  If so, both forks will be
+   obtained from the file.
  - Else, if NAPS is enabled and the file has a "hashtag" extension, the
    extension will be stripped and the file will be treated as data or
    resource.  When the other part of the file is found, the forks will
    be combined.
- - Else, if Host is enabled, every data file open will be paired with a
-   check for a resource fork.
+ - Else, if Host preservation is enabled, a check for a "..namedfork/rsrc"
+   entry will be made for every file added.
 
 Mixing and matching is not advisable.  For example, when adding a file called
 "FOO#062000", if NAPS is enabled then no attempt to find a "..namedfork/rsrc"
 entry will be made.
+
+The same process is also used to determine the file attributes, such as the
+file type and modification date.
 
 ### Access Flags ###
 
@@ -1985,7 +2017,6 @@ Some ideas for the future:
  - Add sector skew order option for sector edit commands.
  - Add resource fork manipulation routines (`rez`/`derez` commands).
  - Support editing of ZIP/NuFX file comments in set-attr.
- - Add `get-attr` to get file attributes in machine-readable form.
  - Add a better way to set access flags in `set-attr`, e.g. by letter.
  - Add a way to set attributes for multiple files, e.g. mark as read-only.
  - Add `show-vol-bitmap` to display free/in-use blocks.
