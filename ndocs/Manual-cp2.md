@@ -22,6 +22,7 @@ Contents:
    - [export | xp](#exportxp)
    - [extract | x](#extractx)
    - [extract-partition | expart](#extract-partitionexpart)
+   - [get-attr | ga](#get-attrga)
    - [get-metadata | gm](#get-metadatagm)
    - [help](#help)
    - [import | ip](#importip)
