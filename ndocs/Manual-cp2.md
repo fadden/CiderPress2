@@ -798,7 +798,6 @@ are `type`, `aux`, `hfstype`, `creator`, `access`, `cdate`, and `mdate`.
 
 Options:
  - `--mac-zip`, `--no-mac-zip`
- - `--recurse`, `--no-recurse`
 
 Examples:
  - `cp2 get-attr mydisk.do MYFILE`
