@@ -39,10 +39,10 @@ The header is followed by the LZW-encoded data.  There is no in-stream indicatio
 file; the decompressor just reads data until it runs out.  There is no checksum.
 
 Internally, the compression code fills a buffer with 8 codes before writing output.  Codes start
-at 9 bits and grow to 16, so if we're currently working with 10-byte codes we'll be writing 10
+at 9 bits and grow to 16, so if we're currently working with 10-bit codes we'll be writing 10
 bytes at a time.  When the code size changes, the entire buffer must be flushed, because the
 decompression side also reads the input in 8-code chunks.  When operating in "block mode", each
-transition to a new code with happens to occur at a multiple of 8 codes, so there are no
+transition to a new code width happens to occur at a multiple of 8 codes, so there are no
 alignment gaps in the output unless a block clear code is emitted.  With the older (v2) behavior,
 the clear code is not reserved, which increases the number of available 9-bit codes by 1, so a gap
 will appear at the first code width change.  This somewhat obscure behavior has led to
