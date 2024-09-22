@@ -1,0 +1,190 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">ZIP Archive</h1><a aria-label="Permalink: ZIP Archive" class="anchor" href="#user-content-zip-archive" id="user-content-zip-archive" name="user-content-zip-archive"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>APPNOTE.TXT (<a href="http://www.pkware.com/appnote" rel="nofollow">http://www.pkware.com/appnote</a>)</li>
+<li><a href="https://en.wikipedia.org/wiki/ZIP_(file_format)" rel="nofollow">https://en.wikipedia.org/wiki/ZIP_(file_format)</a></li>
+<li><a href="https://libzip.org/specifications/extrafld.txt" rel="nofollow">https://libzip.org/specifications/extrafld.txt</a></li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The ZIP archive file format is one of the most widely used and documented formats in existence.</p>
+<p>It's worth noting that the format was designed for efficiency in situations where a single
+archive was spread across multiple floppy disks.  Replacing or deleting an entry from such an
+archive is best done by adding to the end of the archive, rather than rewriting the entire thing,
+so the contents of an archive are defined by the central directory stored at the end of the file.
+Walking through a ZIP file from start to finish would normally be done only by recovery software,
+as doing so could encounter deleted or stale copies of files.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Layout</h2><a aria-label="Permalink: File Layout" class="anchor" href="#user-content-file-layout" id="user-content-file-layout" name="user-content-file-layout"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Ignoring some less-commonly used features, files look like:</p>
+<pre><code>(optional stuff, e.g. a self-extraction executable)
+local file header 1
+file data 1
+local file header 2
+file data 2
+  ...
+local file header N
+file data N
+central directory header 1
+central directory header 2
+  ...
+central directory header N
+end of central directory record
+</code></pre>
+<div class="markdown-heading"><h2 class="heading-element">Structure</h2><a aria-label="Permalink: Structure" class="anchor" href="#user-content-structure" id="user-content-structure" name="user-content-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>All integer values are unsigned, stored in little-endian order.</p>
+<p>Local file header:</p>
+<pre><code>+$00 / 4: signature (0x50 0x4b 0x03 0x04)
++$04 / 2: version needed to extract (X.Y version number * 10)
++$06 / 2: general-purpose bit flags
++$08 / 2: compression method
++$0a / 2: modification time
++$0c / 2: modification date
++$0e / 4: CRC-32 of uncompressed data
++$12 / 4: compressed size (0xffffffff for ZIP64)
++$16 / 4: uncompressed size (0xffffffff for ZIP64)
++$1a / 2: filename length
++$1c / 2: "extra field" length
++$1e /nn: filename data
++$xx /yy : extra field data
+</code></pre>
+<p>This is immediately followed by the file data.</p>
+<p>If the archive was created by writing to a stream, the CRC and file sizes may not have been known
+at the time the data was being written.  If bit 3 in the flags is set, the CRC and size fields
+will be zero, and the actual values will be stored in a "data descriptor" immediately following
+the data.  (While it's possible to <em>create</em> a ZIP archive as a stream, it's not always possible
+to <em>read</em> it as a stream, and because of the central directory arrangement it's a bad idea to try.)</p>
+<p>The data descriptor is usually:</p>
+<pre><code>+$00 / 4: signature (0x50 0x4b 0x07 0x08) (might be missing)
++$04 / 4: CRC-32 of uncompressed data
++$08 / 4: compressed size (will be 8 bytes for ZIP64)
++$0c / 4: uncompressed size (will be 8 bytes for ZIP64)
+</code></pre>
+<p>The central directory comes after the data for the last file.  The central directory
+header is a superset of the local file header, containing:</p>
+<pre><code>+$00 / 4: signature (0x50 0x4b 0x01 0x02)
++$04 / 2: version made by (high byte is platform, low byte is X.Y version number * 10)
++$06 / 2: version needed to extract (X.Y version number * 10)
++$08 / 2: general-purpose bit flags
++$0a / 2: compression method
++$0c / 2: modification time
++$0e / 2: modification date
++$10 / 4: CRC-32 of uncompressed data
++$14 / 4: compressed size (0xffffffff for ZIP64)
++$18 / 4: uncompressed size (0xffffffff for ZIP64)
++$1c / 2: filename length
++$1e / 2: "extra field" length
++$20 / 2: file comment length
++$22 / 2: disk number where file starts
++$24 / 2: internal file attributes
++$26 / 4: external file attributes
++$2a / 4: relative file offset of local file header
++$2e /nn: filename data
++$xx /nn: extra field data
++$yy /nn: file comment data
+</code></pre>
+<p>Generally speaking, the values of fields in the local and central headers will be identical.  The
+central directory CRC and size fields will be set correctly even if the archive was created by
+writing to a stream (which means the data descriptor can generally be ignored).</p>
+<p>The "relative" file offsets are actually absolute, from the start of the file, unless the archive
+spans multiple floppy disks.</p>
+<p>The meaning of the external file attributes field depends on the system specified by the
+"version made by" field.  For example, the low 8 bits typically hold MS-DOS attributes, while
+entries created by UNIX store the file attributes in the upper 16 bits (see
+<a href="https://unix.stackexchange.com/a/14727/572091" rel="nofollow">https://unix.stackexchange.com/a/14727/572091</a>).</p>
+<p>The end-of-central-directory record (EOCD) appears at the end of the archive:</p>
+<pre><code>+$00 / 4: signature (0x50 0x4b 0x05 0x06)
++$04 / 2: number of this disk
++$06 / 2: disk where central directory starts
++$08 / 2: number of central directory records on this disk
++$0a / 2: total number of central directory records
++$0c / 4: size of central directory, in bytes (0xffffffff for ZIP64)
++$10 / 4: relative offset of start of central directory
++$14 / 2: archive comment length
++$16 /nn: archive comment data
+</code></pre>
+<p>The only way to find the EOCD is to start scanning backward from the end of the file until the
+signature is found.  If the comment happens to include the signature bytes, hilarity ensues.</p>
+<div class="markdown-heading"><h3 class="heading-element">Filenames and Comments</h3><a aria-label="Permalink: Filenames and Comments" class="anchor" href="#user-content-filenames-and-comments" id="user-content-filenames-and-comments" name="user-content-filenames-and-comments"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Filenames may be partial pathnames, with components separated by slashes ('/').  If a file was
+added from standard input, the filename will be an empty string.</p>
+<p>The default character set for filenames and comments is IBM Code Page 437
+(<a href="https://en.wikipedia.org/wiki/Code_page_437" rel="nofollow">https://en.wikipedia.org/wiki/Code_page_437</a>).  Specification 6.3.0 added a second option: if
+flag bit 11 ("language encoding flag" or "EFS") is set, filenames and comments in that record
+are encoded with UTF-8.  There is no flag for the archive comment in the EOCD record, however.</p>
+<p>The standard doesn't require filenames to be unique, and makes no mention of whether filename
+comparisons should be case-insensitive.  Since ZIP may be used on UNIX systems, case-sensitive
+comparisons should be used when checking for duplicates.</p>
+<p>Directories may be stored explicitly, though this is not required.  ZIP records have an "external
+attribute" value that may include an "is directory" flag, e.g. MS-DOS has FILE_ATTRIBUTE_DIRECTORY
+(<a href="https://learn.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants" rel="nofollow">https://learn.microsoft.com/en-us/windows/win32/fileio/file-attribute-constants</a>), but such a flag
+may not be present for all supported operating systems.  A more general approach is to check for
+zero-length files whose names end with '/'.</p>
+<div class="markdown-heading"><h3 class="heading-element">Date/Time Storage</h3><a aria-label="Permalink: Date/Time Storage" class="anchor" href="#user-content-datetime-storage" id="user-content-datetime-storage" name="user-content-datetime-storage"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Date/time are stored in MS-DOS format, which uses 16-bit little-endian values:</p>
+<pre><code>  date: YYYYYYYMMMMDDDDD
+  time: hhhhhmmmmmmsssss
+</code></pre>
+<p>where:</p>
+<pre><code>  YYYYYYY - years since 1980 (spans 1980-2107)
+  MMMM - month (1-12)
+  DDDDD - day (1-31)
+  hhhhh - hour (1-23)
+  mmmmmm - minute (1-59)
+  sssss - seconds (0-29 * 2 -&gt; 0-58)
+</code></pre>
+<p>Time values are in local time.</p>
+<div class="markdown-heading"><h3 class="heading-element">Extensible Data Fields</h3><a aria-label="Permalink: Extensible Data Fields" class="anchor" href="#user-content-extensible-data-fields" id="user-content-extensible-data-fields" name="user-content-extensible-data-fields"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>It is possible to store OS-specific and application-specific data in the "extra" field,
+allowing metadata like file types and access permissions to be kept.  The blocks of data are
+identified by 16-bit tags that are defined by the ZIP specification maintainer.</p>
+<pre><code>+$00 / 2: header ID
++$02 / 2: length
++$04 / n: data
+</code></pre>
+<p>For example, 0x5455 holds extended timestamp information, and 0x7875 has Info-ZIP UNIX UID/GID
+values.  As of specification 6.3.10, there are no definitions for HFS or ProDOS.  There are a few
+definitions for Macintosh programs that could be useful for HFS files.</p>
+<p>ZIP archives generally hold files archived from a host filesystem, rather than files copied
+directly from a ProDOS volume or NuFX archive.  Defining the extra data fields is not useful
+for Apple II files because ZIP utilities are rarely used on the Apple II itself.</p>
+<div class="markdown-heading"><h2 class="heading-element">Miscellaneous</h2><a aria-label="Permalink: Miscellaneous" class="anchor" href="#user-content-miscellaneous" id="user-content-miscellaneous" name="user-content-miscellaneous"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>ZIP archives are designed so that they can be written to a stream, but aren't really intended
+to be read from a stream.  The <a href="https://github.com/madler/sunzip">sunzip</a> project can extract
+a ZIP file from a stream, using various tricks to work around the issues.</p>
+<p>The optional Data Descriptor field is not self-identifying.  Even if the signature is present,
+you can't know if the data values are 32-bit or 64-bit without examining other parts of the
+archive.  ("sunzip" makes various guesses at its form until the interpreted data values match
+the uncompressed stream.)</p>
+<p>The Mac OS port of the popular Info-ZIP utility appears to encode filenames as UTF-8 without
+setting the appropriate flag, causing confusion when the archives are opened by other
+applications (e.g. Windows Explorer).  Technically this is allowed, as the ZIP standard only
+says that the filename SHOULD use CP437 if the flag isn't set.  It appears that Info-ZIP (as well
+as 7-Zip) uses the OS identifier in the "version made by" field to determine the default
+encoding, using UTF-8 when the system is $03 (UNIX).</p>
+<p>Archives created on a Macintosh may have paired entries that start with "__MACOSX/".  See the
+<a href="AppleSingle-notes.md">AppleSingle notes</a> for more information.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

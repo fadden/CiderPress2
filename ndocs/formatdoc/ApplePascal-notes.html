@@ -1,0 +1,77 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Apple Pascal Files</h1><a aria-label="Permalink: Apple Pascal Files" class="anchor" href="#user-content-apple-pascal-files" id="user-content-apple-pascal-files" name="user-content-apple-pascal-files"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>PCD ($02) / any : Apple Pascal codefile</li>
+<li>PTX ($03) / any : Apple Pascal textfile</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>
+<em>Apple II Pascal 1.3</em>, <a href="https://archive.org/details/apple-ii-pascal-1.3" rel="nofollow">https://archive.org/details/apple-ii-pascal-1.3</a>
+(.TEXT and .CODE described on page IV-16 and IV-17)</li>
+</ul>
+<p>The file type note index defines ProDOS type PCD as "Apple /// Pascal code" and PTX as "Apple ///
+Pascal text".  Treating them as equivalent to the Codefile and Textfile files created by Apple
+Pascal on the Apple II may or may not be correct.  However, this seems like the natural thing
+to do when copying Pascal files to a ProDOS disk.</p>
+<div class="markdown-heading"><h2 class="heading-element">Textfile</h2><a aria-label="Permalink: Textfile" class="anchor" href="#user-content-textfile" id="user-content-textfile" name="user-content-textfile"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The file is divided into 1KB chunks.  The first chunk is reserved for use by the system text
+editor.  The contents are not documented, and there is generally no reason to access it.</p>
+<p>The remaining chunks contain a series of unbroken lines of ASCII text, each of which is
+terminated with a carriage return ($0d).  Any leftover space at the end of a chunk is filled
+with NULs ($00).</p>
+<p>Pascal programs are often indented with spaces (' '), so to reduce the file size, leading spaces
+may be compressed with run-length encoding.  If a line starts with an ASCII DLE ($10), the
+following byte holds the number of spaces, plus 32.  It's valid to encode a lack of indentation
+as $10 $20 (i.e. 0 spaces).</p>
+<div class="markdown-heading"><h2 class="heading-element">Codefile</h2><a aria-label="Permalink: Codefile" class="anchor" href="#user-content-codefile" id="user-content-codefile" name="user-content-codefile"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>A codefile may be any of the following:</p>
+<ul>
+<li>Linked files composed of segments, ready for execution.</li>
+<li>Library files with units that may be used by other programs.</li>
+<li>Unlinked files created by the compiler.</li>
+</ul>
+<p>All codefiles have a Segment Dictionary in block 0, followed by a description of 1-16 segments.
+Segments may be code or data, and may be up to 64 blocks (32KB) long.</p>
+<p>The segment dictionary has fixed slots for all 16 segments, which are stored as a consecutive
+series of arrays:</p>
+<pre><code>+$000 / 64: 16 sets of 16-bit code length and 16-bit code address
++$040 /128: 16 sets of 8-character ASCII segment name (padded with spaces on the end)
++$0c0 / 32: 16 sets of 16-bit segment kind enumeration
++$0e0 / 32: 16 sets of 16-bit text address (for regular/Intrinsic Units)
++$100 / 32: 16 sets of segment info: 8-bit segment number, 8-bit type+version
++$120 /  4: bitmap that tells the system which Intrinsic Units are needed
++$124 /220: (library information, format undefined)
+</code></pre>
+<p>There may be empty slots; it's possible for slot 0 to be empty, even for an executable program
+(see SYSTEM.FILER).  Empty slots can be identified by testing for CODEADDR and CODELENG both
+equal to zero.  (It's normal for DATASEG segments to have address 0.)</p>
+<p>All multi-byte integers are stored in little-endian order.</p>
+<p>Some of the segment types have a documented structure.  See the Apple Pascal references for
+details.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

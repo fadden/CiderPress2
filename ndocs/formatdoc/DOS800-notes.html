@@ -1,0 +1,63 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">DOS 3.3 on 800KB Floppies</h1><a aria-label="Permalink: DOS 3.3 on 800KB Floppies" class="anchor" href="#user-content-dos-33-on-800kb-floppies" id="user-content-dos-33-on-800kb-floppies" name="user-content-dos-33-on-800kb-floppies"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>There are at least three different but functionally similar programs that put a pair of 400KB
+DOS 3.3 volumes on an 800KB 3.5" disk.  These are effectively multi-partition disk formats,
+rather than "hybrid" formats like DOS MASTER.</p>
+<ol>
+<li>UniDOS Plus v2.1 by MicroSPARC, Inc. -
+<a href="https://macgui.com/downloads/?file_id=36130" rel="nofollow">https://macgui.com/downloads/?file_id=36130</a> and
+<a href="https://www.apple.asimov.net/images/masters/3rd_party_dos/UniDOS%20Plus.pdf" rel="nofollow">https://www.apple.asimov.net/images/masters/3rd_party_dos/UniDOS%20Plus.pdf</a>
+</li>
+<li>AmDOS 3.5 by Gary Little -
+<a href="https://www.apple.asimov.net/images/masters/3rd_party_dos/amdos.dsk" rel="nofollow">https://www.apple.asimov.net/images/masters/3rd_party_dos/amdos.dsk</a>
+</li>
+<li>OzDOS by Oz Data / Richard Bennett -
+<a href="https://www.apple.asimov.net/images/masters/3rd_party_dos/OzDOS10.zip" rel="nofollow">https://www.apple.asimov.net/images/masters/3rd_party_dos/OzDOS10.zip</a>
+</li>
+</ol>
+<p>All three can create a bootable 3.5" disk.  Each DOS volume has 50 tracks and 32 sectors, which is
+the maximum DOS allows.</p>
+<p>Each requires alterations to DOS 3.3, as well as modifications to the FID file utility.</p>
+<div class="markdown-heading"><h2 class="heading-element">UniDOS</h2><a aria-label="Permalink: UniDOS" class="anchor" href="#user-content-unidos" id="user-content-unidos" name="user-content-unidos"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>There are two versions, "UniDOS 3.3" and "UniDOS PLUS".  Various improvements were made to the
+software, but the disk layout didn't change.</p>
+<p>The first volume is stored in blocks 0-799, the second in blocks 800-1599.  Each 512-byte disk
+block holds two consecutive DOS sectors.</p>
+<p>The catalog track is extended to fill all of track 17, and starts in T17 S31.  This allows it
+to hold 217 file entries instead of 105.</p>
+<div class="markdown-heading"><h2 class="heading-element">AmDOS</h2><a aria-label="Permalink: AmDOS" class="anchor" href="#user-content-amdos" id="user-content-amdos" name="user-content-amdos"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The software is completely different from UniDOS, but the disk layout is essentially the same.
+For compatibility with programs that start reading from T17 S15 without checking the VTOC, the
+disk catalog runs from sector 15 to 1, then 31 to 16.</p>
+<div class="markdown-heading"><h2 class="heading-element">OzDOS</h2><a aria-label="Permalink: OzDOS" class="anchor" href="#user-content-ozdos" id="user-content-ozdos" name="user-content-ozdos"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Instead of putting the volumes in separate block ranges, OzDOS splits individual blocks in half.
+The first volume uses the first 256 bytes of each block, and the second volume uses the last
+256 bytes.</p>
+<p>OzDOS has some unusual features, e.g. if you boot an OzDOS disk while DOS 3.3 is already active,
+it will patch the existing OS instead of overwriting it with its own code.  This allows OzDOS
+to be used to augment "fast DOS" implementations like Pronto-DOS.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

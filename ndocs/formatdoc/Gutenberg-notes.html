@@ -1,0 +1,127 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Gutenberg Filesystem</h1><a aria-label="Permalink: Gutenberg Filesystem" class="anchor" href="#user-content-gutenberg-filesystem" id="user-content-gutenberg-filesystem" name="user-content-gutenberg-filesystem"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Reverse engineering, primarily by David Schmidt</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The Gutenberg word processor (reviewed <a href="https://www.atarimagazines.com/creative/v9n6/64_Gutenberg.php" rel="nofollow">here</a>)
+is a somewhat obtuse program with some very advanced features.  For example, you could draw
+graphics, insert them into a document, and flow columns around them.  The full version, and a
+more limited version called Gutenberg, Jr., used a custom filesystem.</p>
+<p>The disk directory is held in a file called <code>DIR</code>.  To get a list of files on a disk from within
+the program, you open the file like you would any other document.  (It's not <em>exactly</em> the same,
+as the volume name header is skipped over, but it's very close to being formatted text.)</p>
+<p>The directory holds the filename, type, and initial track/sector of each file.  References to
+track or sector zero are stored as $40, probably because $00 has a special meaning in a document.
+The software displays the full contents of the directory file on screen, including the
+track/sector numbers; this works because bytes with the high bit clear are considered printable
+"alternate" character values.</p>
+<p>There are two types of files: programs and documents.  Fonts and non-resident commands are
+programs, and use file type 'P', or sometimes 'M'.  Documents use file type ' ' (space), or 'L' if
+they have been locked.</p>
+<p>Disks have a volume name that can be up to nine characters long.  Filenames can be up to 12
+characters, and may be any high-ASCII value other than slashes ('/'), spaces (' '), and control
+characters.  When a file is deleted the entire entry is cleared to high-ASCII spaces, so empty
+slots can be identified by checking the first byte of the filename.  (Having slashes in the
+<em>volume</em> name is apparently allowed, since the program disks do this themselves.)</p>
+<p>The program doesn't appear to allow lower-case characters to be used in filenames.</p>
+<div class="markdown-heading"><h2 class="heading-element">Disk Structure</h2><a aria-label="Permalink: Disk Structure" class="anchor" href="#user-content-disk-structure" id="user-content-disk-structure" name="user-content-disk-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The filesystem used an unusual approach: every 256-byte sector that is part of a file is arranged
+in a doubly-linked list.  The first six bytes of every file sector hold the track/sector numbers
+of the previous, current, and next sector in the list.  The list is circular.  The high bit of the
+next track number is set when it points to the first sector in the file, and the high bit of the
+current sector number is set when the sector is the first in the file.</p>
+<p>For example, consider a two-sector document that lives in track 3, sectors 1 and 3:</p>
+<pre><code>T3 S1:
+  03 03 03 81 03 03 ...
+T3 S3:
+  03 01 03 03 83 01 ...
+</code></pre>
+<p>The self-referencing sector in T3 S1, and forward-referencing track in T3 S3, have the high bit
+set, because traversing those links would take you to the start of the list.  The backward
+reference doesn't have the high bit set, though it probably should.  (In some files, such as the
+directories on the Gutenberg program disks, it looks like the backward reference in the first
+sector didn't get updated when the file expanded.  Use backward links with caution.)</p>
+<p>Some of the Gutenberg disks refer to files in track 0.  Some of the track/sector links for these
+files follow the directory convention of recording 0x00 as 0x40.</p>
+<p>The first sector of the disk directory lives in track 17, sector 7.  The first entry in the
+directory is itself, represented as a locked file called <code>DIR</code>.  Additional directory sectors can
+be found by traversing the linked list pointers.</p>
+<p>Each directory sector holds 15 entries, and looks like this:</p>
+<pre><code>+$00 / 1: previous track
++$01 / 1: previous sector
++$02 / 1: current track
++$03 / 1: current sector
++$04 / 1: next track
++$05 / 1: next sector
++$06 / 9: volume name, high ASCII padded with spaces
++$0f / 1: $8d (high-ASCII carriage return)
++$10 /16: entry #0
+ ...
++$f0 /16: entry #14
+</code></pre>
+<p>The volume name is found in all directory sectors.  The individual entries have the form:</p>
+<pre><code>+$00 /12: filename, high ASCII padded with spaces
++$0c / 1: file start track number
++$0d / 1: file start sector number
++$0e / 1: file type: high-ASCII ' ', 'L', 'M', or 'P'
++$0f / 1: $8d (high-ASCII carriage return)
+</code></pre>
+<p>Directory sectors are initialized to $a0, with $8d every 16 bytes.  This comes in handy when the
+<code>DIR</code> file is loaded and displayed within the program's text editor.</p>
+<p>The length of a file is not stored in the directory.  The only way to determine it is to walk
+through the file, and that only yields a multiple of 250.</p>
+<p>The boot area, which spans the first 3 tracks, is not represented by a file.  Some of the sectors
+seem to have the six-byte headers, and the program disk references files in that area.  On a
+newly-formatted Gutenberg, Jr. data disk, the first file is created in T3 S0.</p>
+<p>Track 17, sector 6 appears to hold a sector allocation bitmap.  The format details are unknown,
+but allocations seem to start at track 3.</p>
+<div class="markdown-heading"><h3 class="heading-element">File Formats</h3><a aria-label="Permalink: File Formats" class="anchor" href="#user-content-file-formats" id="user-content-file-formats" name="user-content-file-formats"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Document files use an extended ASCII character set, and end when the first $00 byte is encountered.
+The program supports custom character sets, so it's only possible to display the document
+correctly if the character set can be identified.  "Standard" characters have the high bit set,
+"alternate" characters have the high bit clear.  Only 0x80-0x9f are considered control characters.
+Open the file <code>FONTS.TABLE</code> on the Gutenberg, Jr. program disk to see the full set of characters
+available.</p>
+<p>Carriage return ($8d) is used as the end-of-line character.</p>
+<p>The structure of "program" files is unknown.  Gutenberg executables generally begin with the bytes
+<code>00 01 02 03 04 05 06 07 d3</code>, while Gutenberg, Jr.'s start with <code>00 01 02 03 04 05 06 07 08 d3</code>.
+The following byte appears to hold flags.  This is then followed by 6502 code, or by the program
+name between '/' characters and then the code.</p>
+<p>Graphics and font files have a different structure.  Files of type 'M' seem to be rare; the only
+instance is the file <code>FONTD.B</code> on the Gutenberg, Jr. boot disk.  (It's possible this is actually
+disk corruption, and there is no type 'M'.)</p>
+<p>The filesystem does not impose a maximum file length, though exceeding (((35 - 3) * 16) - 2) = 510
+sectors is impossible on a 140KB floppy disk (unless the file dips into the boot tracks).</p>
+<div class="markdown-heading"><h3 class="heading-element">Miscellaneous</h3><a aria-label="Permalink: Miscellaneous" class="anchor" href="#user-content-miscellaneous" id="user-content-miscellaneous" name="user-content-miscellaneous"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The Gutenberg and Gutenberg, Jr. disks found online have some damaged files.  For example, if you
+boot Gutenberg, Jr. and load CHAP.VI from side 2 into the editor, and then scroll down to the
+bottom, you will find a bit of text that says, "--&gt; BOOT OTHER SIDE &lt;--".  The string comes from
+the boot sector, T0 S0, which is treated as part of the file due to a bad sector link in the
+document.  Other files have overlapping regions or other issues.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

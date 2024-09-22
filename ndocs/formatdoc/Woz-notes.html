@@ -1,0 +1,94 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">WOZ Disk Image Format</h1><a aria-label="Permalink: WOZ Disk Image Format" class="anchor" href="#user-content-woz-disk-image-format" id="user-content-woz-disk-image-format" name="user-content-woz-disk-image-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>
+<a href="https://applesaucefdc.com/woz/reference1/" rel="nofollow">https://applesaucefdc.com/woz/reference1/</a> (version 1)</li>
+<li>
+<a href="https://applesaucefdc.com/woz/reference2/" rel="nofollow">https://applesaucefdc.com/woz/reference2/</a> (version 2)</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The WOZ format was developed by John K. Morris as a way to store the data coming from low-level
+disk reading hardware, such as the <a href="https://applesaucefdc.com/hardware/" rel="nofollow">Applesauce</a>.  It stores
+data as a bit stream, rather than a byte stream, allowing it to capture 10-bit self-sync bytes
+and other low-level bit gymnastics.  It can also record track synchronization, making it very
+effective for capturing the attributes of copy-protected media.</p>
+<p>The format supports 5.25" and 3.5" floppy disks.  It has a number of features intended for use
+by emulators, such as a boot sector format declaration and hardware compatibility flags.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>After a 12-byte header, the file uses the common "chunk" format, where each section begins with
+a 32-bit identifier followed by a 32-bit length.  To make parsing simpler, the first few chunks
+have fixed lengths and file offsets, and some chunks have data references with absolute file
+offsets.  The contents of some chunks (e.g. TMAP and TRKS) changed between version 1 and 2 without
+alteration of the chunk identifier, so chunk-parsing is version-specific.  The position of the
+FLUX chunk has a strict alignment requirement.  Two of the optional chunks are variable-length and
+position-independent, so it's not possible to ignore the chunk headers entirely.</p>
+<p>The disk image data is either stored as a bit stream, representing the bits as they would be seen
+by the disk controller, or less commonly as flux transition timing data.  The amount of data
+stored for each track is variable, though WOZ version 1 uses a fixed amount of file storage for
+each track.</p>
+<p>WOZ version 1 defines the following chunks:</p>
+<ul>
+<li>header (12 bytes, includes signature and a full-file CRC32)</li>
+<li>INFO (hdr +$0c, actual +$14, 60 bytes long) - best to use only INFOv1 fields</li>
+<li>TMAP (hdr +$50, actual +$58, 160 bytes long)</li>
+<li>TRKS (hdr +$f8, actual +$100, length is 6656 per track)</li>
+<li>META (optional) - file metadata; some entries are required, some values are restricted</li>
+</ul>
+<p>WOZ version 2 (re-)defines the following chunks:</p>
+<ul>
+<li>header (signature updated)</li>
+<li>INFO (hdr +$0c, actual +$14, 60 bytes long) - adds INFOv2 and INFOv3 fields</li>
+<li>TMAP (hdr +$50, actual +$58, 160 bytes long) - unchanged for 5.25", reordered for 3.5"</li>
+<li>TRKS (hdr +$f8, actual +$100, track storage lengths are variable multiples of 512) - each track
+has an 8-byte header that provides the starting block and length of the track data; actual
+track data starts at +1536 ($600)</li>
+<li>FLUX (optional; 160 bytes long) - like TMAP, but for FLUX tracks; chunk must always be
+placed at the start of a 512-byte block within the WOZ file, with the offset stored in INFO</li>
+<li>WRIT (optional) - variable-length chunk; useful when transferring back to physical media</li>
+<li>META (optional) - file metadata; some entries are required, some values are restricted</li>
+</ul>
+<p>The FLUX chunk's start offset must be 512-byte aligned.  The WOZ v2 TRKS track data begins at
++1536, and all tracks are stored in 512-byte blocks, so if FLUX immediately follows TRKS the
+alignment will happen naturally.</p>
+<p>(The WOZ documentation at <a href="https://applesaucefdc.com/woz/reference2/" rel="nofollow">https://applesaucefdc.com/woz/reference2/</a> defines everything nicely,
+so the detailed contents of the fields are not replicated here.)</p>
+<div class="markdown-heading"><h2 class="heading-element">Metadata</h2><a aria-label="Permalink: Metadata" class="anchor" href="#user-content-metadata" id="user-content-metadata" name="user-content-metadata"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Metadata contents are rigidly defined for certain keys, e.g. the value for "Language" must come
+from a specific set of strings.  All files should have the "standard" keys, and may include
+additional keys as well.  The character set and syntax for keys isn't currently defined, other
+than that the characters used for the structure (tab, linefeed, and pipe) are invalid.  Keys are
+case-sensitive and must be unique.</p>
+<p>It's safest to assume that keys must be in <code>[A-Z][a-z][0-9]_</code>, preferably in underscore_separated
+form.  Values may be any valid UTF-8 string (no BOM), so long as tab/linefeed aren't used, and
+pipe is only used as an item separator.  ASCII is recommended for best interaction with varied
+hardware.</p>
+<p>Anything that manipulates metadata in the META chunk should also be able to manipulate fields in
+the INFO chunk.  Write Protected, Boot Sector Format, Compatible Hardware, and Required RAM may
+reasonably be edited.  Other fields are set at creation time and should not be disturbed, as
+doing so may prevent the file from being interpreted correctly.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

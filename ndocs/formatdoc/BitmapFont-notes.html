@@ -1,0 +1,332 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Bitmap Font</h1><a aria-label="Permalink: Bitmap Font" class="anchor" href="#user-content-bitmap-font" id="user-content-bitmap-font" name="user-content-bitmap-font"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>ProDOS FON ($c8) / $0000</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Apple II File Type Note $c8/0000, "Apple IIGS Font File"</li>
+<li>IIgs TN #41: "Font Family Numbers"</li>
+<li>
+<em>Apple IIgs Toolbox Reference, Volume 2</em>, chapter 16 "QuickDraw II", p.16-41</li>
+<li>
+<em>Inside Macintosh, volume I</em>, chapter 7 "The Font Manager", p.I-227</li>
+<li>
+<em>Inside Macintosh, volume IV</em>, chapter 5 "The Font Manager", p.IV-29</li>
+<li>
+<em>Inside Macintosh: Text</em>, chapter 4 "Font Manager", p.4-66</li>
+</ul>
+<p>On vintage Mac OS, fonts were not stored in individual files.  Instead, they were stored as
+resources with type <code>FONT</code> in <code>System Folder:System</code>, and <code>Font/DA Mover</code> was used to manage
+them.  Resources with type <code>FWID</code> could be used to store font metadata.  System fonts, which
+the user was not allowed to remove, used resource type <code>FRSV</code>.  Later versions of the Font
+Manager, introduced with the Macintosh Plus, looked for font definition <code>FOND</code> resources and
+recognized <code>NFNT</code>.</p>
+<p>The resource ID of a Macintosh font was based on its font number and size:
+(128 * font_number) + font_size.  Because a font size of zero is invalid, a resource ID with
+zero in the size field was used to indicate the font name.  (cf. <em>IMv1</em>, p.I-234)</p>
+<p>On the Apple IIgs, bitmap fonts are stored in the data fork of FON files with auxtype $0000.
+TrueType fonts are stored in the resource fork of FON files with auxtype $0001.  Some valid
+bitmap font files have been found with auxtypes $0006, $0016, and $0026, though it's unclear
+why those auxtypes were used.</p>
+<div class="markdown-heading"><h2 class="heading-element">Apple IIgs Font File</h2><a aria-label="Permalink: Apple IIgs Font File" class="anchor" href="#user-content-apple-iigs-font-file" id="user-content-apple-iigs-font-file" name="user-content-apple-iigs-font-file"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The bitmap font file starts with a Pascal string (i.e. string prefixed with an 8-bit length)
+containing the font family name.  It's unclear whether this is strictly ASCII or may include
+Mac OS Roman characters.  The string is immediately followed by the QuickDraw II Font definition.</p>
+<p>The QuickDraw II definition consists of a variable-length header, followed by the Macintosh Font
+record (MF).  The only difference between the MF record on the IIgs and an actual Macintosh font
+definition is that multi-byte integers are stored in little-endian order.  Note this does not
+apply to the font strike (bitImage), which is stored the same in both.</p>
+<p>16-bit integers should generally be regarded as signed.</p>
+<p>The IIgs font header is:</p>
+<pre><code>+$00 / 2: offsetToMF: offset in 16-bit words to Macintosh font part (usually 6, i.e. 12 bytes)
++$02 / 2: family: font family number
++$04 / 2: style: style font was designed with (so as to avoid italicizing an italic font)
++$06 / 2: size: point size
++$08 / 2: version: version number of font definition, usually $0101 for v1.1
++$0a / 2: fbrExtent: font bounds rectangle extent
++$0c /xx: additional fields, if any
+</code></pre>
+<p>The <code>fbrExtent</code> field is essentially the maximum width of all characters in the font, taking
+kerning into account, but it's more complicated than that.  See p.16-53 in the IIgs Toolbox
+Reference manual.</p>
+<p>Later versions of the IIgs toolbox added <code>highowTLoc</code> at +$0c.  This holds the high-order word
+of the <code>owTLoc</code> field in the Mac header, allowing an offset &gt; 32767.</p>
+<p>The <code>style</code> field is a bit map:</p>
+<pre><code>$0001 - bold
+$0002 - italic
+$0004 - underline
+$0008 - outline
+$0010 - shadow
+$0020 - condensed [not on IIgs]
+$0040 - extended [not on IIgs]
+</code></pre>
+<p>The Macintosh font record is:</p>
+<pre><code>+$00 / 2: fontType: font type; ignored on the Apple IIgs
++$02 / 2: firstChar: Mac OS character code of first defined character (0-255)
++$04 / 2: lastChar: Mac OS character code of last defined character (0-255)
++$06 / 2: widMax: maximum character width, in pixels
++$08 / 2: kernMax: maximum leftward kern, in pixels (may be positive or negative)
++$0a / 2: nDescent: negative of descent, in pixels
++$0c / 2: fRectWidth: width of font rectangle, in pixels
++$0e / 2: fRectHeight: height of font rectangle, in pixels (equal to ascent + descent)
++$10 / 2: owTLoc: offset in words from here to offset/width table
++$12 / 2: ascent: font ascent, in pixels
++$14 / 2: descent: font descent, in pixels
++$16 / 2: leading: leading (rhymes with "heading"), in pixels (vertical space between lines)
++$18 / 2: rowWords: width of font strike, in 16-bit words
++$1a /xx: bitImage: (rowWords * fRectHeight) 16-bit words: font strike
++$nn /yy: locTable: (lastChar - firstChar + 3) 16-bit ints: pixel offset of glyph in bitImage
++$mm /yy: owTable: (lastChar - firstChar + 3) 16-bit words: offset/width table
+</code></pre>
+<p>Note there are two additional character entries in the location and offset/width tables.
+The entry at <code>lastChar + 1</code> is for the "missing symbol" glyph.  One additional entry is needed
+at <code>lastChar + 2</code>, because the image width of a glyph for character C in <code>bitImage</code> is given by
+<code>locTable[C + 1] - locTable[C]</code>.</p>
+<p>The <code>owTLoc</code> value is equal to <code>4 + (rowWords * fRectHeight) + (lastChar-firstChar+3) +1</code>.
+Remember that this is expressed in 16-bit words, not bytes.</p>
+<p>An <code>owTable</code> entry value of -1 ($ffff) indicates that the character is not represented in the font.
+Otherwise, the high byte holds the pixel offset of the glyph origin, and the low byte holds
+the character width.</p>
+<p>The <code>bitImage</code> table is stored in row-major order, i.e. all of the pixels for row 0 are laid
+out, followed by all of the pixels for row 1.  The leftmost pixel is stored in the high bit.
+A '1' bit indicates a lit pixel.  The table is measured in 16-bit words, so the last 0-15 pixels
+are garbage.</p>
+<p>Later versions of Mac OS added kerning tables that allow the amount to vary based on which
+characters are adjacent.</p>
+<p><em>IMv1</em>, p.I-230 declares that every font must have a "missing symbol", and the characters
+with ASCII codes $00 (NUL), $09 (horizontal tab), and $0d (carriage return) must not be missing
+from the font.  In practice, most but not all fonts define $09/$0d, and fewer define $00.</p>
+<p>Generally speaking, it's unwise to fully trust values in the headers that aren't definitive.
+<code>firstChar</code>, <code>lastChar</code>, <code>fRectHeight</code>, <code>kernMax</code>, <code>rowWords</code>, and the contents of the tables
+define the font and are accurate by definition.  (They still need to be validated to avoid
+crashing on bad data.)  Fields like <code>ascent</code> and <code>descent</code> are probably fine, but don't assume
+ascent+descent==height.  Computed fields like <code>fbrExtent</code> and <code>widMax</code> can and should be
+computed from the contents.</p>
+<p>The <code>nDescent</code> field was intended to be <code>nDescent = -descent</code>, but in practice this is not always
+the case, even with fonts supplied by Apple.  The field was originally added for the convenience
+of the font manager, but was eventually repurposed to hold the high word of the offset to the
+width/offset table (i.e. <code>offset = nDescent &lt;&lt; 16 | owTLoc</code>) for larger fonts.  If the field holds
+a negative value, it should be ignored (see <em>IM:T</em>, page 4-71).  On the Apple IIgs, the
+<code>highowTLoc</code> in the IIgs header holds the high 16 bits, so the <code>nDescent</code> field should always be
+ignored.</p>
+<div class="markdown-heading"><h3 class="heading-element">Font Type</h3><a aria-label="Permalink: Font Type" class="anchor" href="#user-content-font-type" id="user-content-font-type" name="user-content-font-type"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>On the Macintosh, the <code>fontType</code> field initially held <code>propFont</code> for proportional fonts,
+<code>fixedFont</code> for fixed-width fonts, or <code>fontWid</code> to indicate font width data (for <code>FWID</code>).
+This was later updated (see <em>IMv4</em>, p.IV-35):</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$9000</td>
+<td>proportional font</td>
+</tr>
+<tr>
+<td>$9001</td>
+<td>..with height table</td>
+</tr>
+<tr>
+<td>$9002</td>
+<td>..with width table</td>
+</tr>
+<tr>
+<td>$9003</td>
+<td>..with height &amp; width tables</td>
+</tr>
+<tr>
+<td>$b000</td>
+<td>fixed-width font</td>
+</tr>
+<tr>
+<td>$b001</td>
+<td>..with height table</td>
+</tr>
+<tr>
+<td>$b002</td>
+<td>..with width table</td>
+</tr>
+<tr>
+<td>$b003</td>
+<td>..with height &amp; width tables</td>
+</tr>
+<tr>
+<td>$acb0</td>
+<td>font width data: 64K ROM only</td>
+</tr>
+</tbody>
+</table>
+<p>The optional width table held the character widths for all entries as 8.8 fixed-point values.
+The fractional part allows more precise placement of glyphs, which is important when printing.</p>
+<p>The optional height table holds the image height (all entries have the same <em>character</em> height)
+for all entries, stored as two 8-bit values: the high-order byte is the offset of the first
+non-white row, the low-order byte is the number of rows that must be drawn.  (Font resources
+didn't typically include this; rather, it was generated by the Font Manager in memory.)</p>
+<p>The Font Type field is ignored by QuickDraw II on the Apple IIgs.  Fonts converted from the Mac
+will have one of these values, but will not include the extra tables even if the type field
+indicates that they are present.</p>
+<div class="markdown-heading"><h3 class="heading-element">Font Family Numbers</h3><a aria-label="Permalink: Font Family Numbers" class="anchor" href="#user-content-font-family-numbers" id="user-content-font-family-numbers" name="user-content-font-family-numbers"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Font family numbers were listed in a Nov 1990 tech note (IIgs #41).  These also apply to
+various LaserWriter printers.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Family Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$fffd</td>
+<td>Chicago</td>
+</tr>
+<tr>
+<td>$fffe</td>
+<td>Shaston</td>
+</tr>
+<tr>
+<td>$ffff</td>
+<td>(no font)</td>
+</tr>
+<tr>
+<td>0</td>
+<td>System Font</td>
+</tr>
+<tr>
+<td>1</td>
+<td>System (Application) Font</td>
+</tr>
+<tr>
+<td>2</td>
+<td>New York</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Geneva</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Monaco</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Venice</td>
+</tr>
+<tr>
+<td>6</td>
+<td>London</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Athens</td>
+</tr>
+<tr>
+<td>8</td>
+<td>San Francisco</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Toronto</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Cairo</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Los Angeles</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Zapf Dingbats</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Bookman</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Helvetica Narrow</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Palatino</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Zapf Chancery</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Times</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Helvetica</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Courier</td>
+</tr>
+<tr>
+<td>23</td>
+<td>Symbol</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Taliesin (became "Mobile")</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Avant Garde</td>
+</tr>
+<tr>
+<td>34</td>
+<td>New Century Schoolbook</td>
+</tr>
+</tbody>
+</table>
+<p>The tech note contains a caution that font family numbers may be arbitrarily reassigned, e.g.
+the Macintosh Font/DA Mover will renumber a font if it discovers that the family number is
+already in use.  Asking for a font by family name is recommended.</p>
+<p>The tech note also says:</p>
+<blockquote>
+<p>By convention, font family numbers that have the high bit set are designed for
+the 5:12 aspect ratio of the Apple IIgs computer.  Font family numbers with the
+high bit clear are designed for computers with a 1:1 pixel aspect ratio, such as
+the Macintosh.  Fonts designed for a 1:1 pixel aspect ratio appear "tall and
+skinny" when displayed on an Apple IIgs.</p>
+<p>Some third-party font packages were released before this convention was defined;
+therefore, font family numbers between 1000 and 1200 (decimal) do not adhere to
+this convention.</p>
+</blockquote>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

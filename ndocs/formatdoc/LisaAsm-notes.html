@@ -1,0 +1,116 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Lazer's Interactive Symbolic Assembler (LISA) Source File</h1><a aria-label="Permalink: Lazer's Interactive Symbolic Assembler (LISA) Source File" class="anchor" href="#user-content-lazers-interactive-symbolic-assembler-lisa-source-file" id="user-content-lazers-interactive-symbolic-assembler-lisa-source-file" name="user-content-lazers-interactive-symbolic-assembler-lisa-source-file"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>v2: DOS alternate B</li>
+<li>v3: ProDOS INT with aux type in range [$1000,$3fff]</li>
+<li>v4/v5: ProDOS INT with aux type in range [$4000,$5fff]</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>v2: reverse engineering, primarily by Andy McFadden</li>
+<li>v3: LISA v3.1 source code, from A2ROMulan CD-ROM</li>
+<li>v4/v5: Lisa816 v5.0a (433) source code, from A2ROMulan CD-ROM</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><a href="https://en.wikipedia.org/wiki/Lazer%27s_Interactive_Symbolic_Assembler" rel="nofollow">LISA</a> is an assembler
+for Apple II code written by Randall Hyde.  The name is pronounced "LE ZA" rather than "LI SA".</p>
+<p>The program kept the source file in tokenized form, which reduced the memory footprint and
+the time required to assemble code.  This is true for all versions, although the file format
+evolved significantly over time.</p>
+<p>Version 3.x was the last for 8-bit computers.  Versions 4 and 5 were branded "LISA 8/16", and
+added support for the Apple IIgs.</p>
+<div class="markdown-heading"><h2 class="heading-element">v2 Format</h2><a aria-label="Permalink: v2 Format" class="anchor" href="#user-content-v2-format" id="user-content-v2-format" name="user-content-v2-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The file structure is fairly straightforward:</p>
+<pre><code>+$00 / 2: program version? - usually $1800, which might indicate v2.4 (2.4 * 2560)
++$02 / 2: length of file data; needed because DOS 3.3 doesn't store this for alternate B
++$04 /nn: series of lines
+</code></pre>
+<p>Each line is:</p>
+<pre><code>+$00 / 1: line length (does not include length byte)
++$01 /nn: data
++$xx / 1: end-of-line marker ($0d)
+</code></pre>
+<p>The last line in the file has a length of 255 ($ff).  The last length byte is followed by two
+more $ff bytes.</p>
+<p>The line data is a mix of plain text and tokens.  The tokenization was primarily applied to the
+instruction mnemonics.</p>
+<p>Lines starting with '*' or ';' are full-line comments.  Lines starting with an upper-case letter
+are code lines that start with a label, lines starting with a caret (^) have a local (numeric)
+label, and lines starting with a space do not have a label.  All other characters are invalid at
+the start of a line.  If present, regular labels always take 8 bytes in the source file, and
+local labels take 7 bytes, padded with trailing spaces if necessary.  If the label is terminated
+with a colon, it will be included at the end.</p>
+<p>If the label is on a line by itself, the next character will be the end-of-line marker.  If not,
+the next byte will be the encoded opcode or pseudo-op mnemonic, with a value &gt;= 0x80.</p>
+<p>The opcode is followed by a byte that indicates the contents of the operand field.  It will be $00
+if there is no operand, $01 for absolute addressing, $02 for immediate, $05 for direct page
+indirect indexed Y), and so on. Operands that should be taken literally, e.g.
+<code>ASC "HELLO, WORLD!"</code>, use $20.  The text of the operand follows.</p>
+<p>If the line has a comment, it will be preceded by $bb (high-ASCII semicolon).  Because that value
+cannot appear in a valid operand, the end of the operand can be identified unambiguously, and thus
+it's not necessary to track open/close quotes when converting lines to text.  Lines without
+comments will follow the operand with $0d.</p>
+<div class="markdown-heading"><h2 class="heading-element">v3 Format</h2><a aria-label="Permalink: v3 Format" class="anchor" href="#user-content-v3-format" id="user-content-v3-format" name="user-content-v3-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Auxtypes $17fc, $1800, $1ffc, $2000, $26fc, and $27fc have been seen.</p>
+<p>The file format looks like this:</p>
+<pre><code>+$00 / 2: length of code section, in bytes
++$02 / 2: length of symbol table, in bytes
++$04 /nn: symbol table, 0-512 entries, 8 bytes each
++$xx /yy: code
+</code></pre>
+<p>Symbol table entries are 8 bytes each:</p>
+<pre><code>+$00 / 6: 8-character label, packed into 6 bytes
++$06 / 2: value? (usually zero)
+</code></pre>
+<p>The code section is a series of lines with a complex encoding.  All symbols are encoded as
+references to the symbol table, so the text of each symbol is only stored once.  Numeric values
+and operators used in operands are encoded.</p>
+<p>At least one file has been found that appears to use a different table of opcode mnemonics.  The
+file "anix.equates" appears in some ANIX distributions, and has the same filetype and auxtype as
+other source files.  However, even though it appears to decode successfully, all of the opcodes
+are incorrect.  Curiously, the ANIX 2.1 command "LPRINT" can successfully convert "anix.equates"
+to text, but generates incorrect output for LISA v3.1 source files.</p>
+<div class="markdown-heading"><h2 class="heading-element">v4/v5 Format</h2><a aria-label="Permalink: v4/v5 Format" class="anchor" href="#user-content-v4v5-format" id="user-content-v4v5-format" name="user-content-v4v5-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Auxtypes $40e8, $40e9, and $50e1 have been seen.  A filename suffix of ".A" is commonly used.</p>
+<p>The file format looks like this:</p>
+<pre><code>+$00 / 2: version number
++$02 / 2: offset of first byte past end of symbol table
++$04 / 2: symbol count
++$06 / 1: tab position for opcodes
++$07 / 1: tab position for operands
++$08 / 1: tab position for comments
++$09 / 1: CPU type
++$0a / 6: (reserved)
++$10 /nn: symbol table
++$xx /yy: code
+</code></pre>
+<p>The symbol table is a series of strings that have a preceding length and are null terminated.  The
+length byte includes the null termination and the length byte itself.</p>
+<p>The code section is a series of lines with a complex encoding, similar in overall structure to v3
+but extended.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

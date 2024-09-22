@@ -1,0 +1,86 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Apple IIgs Finder Icon File</h1><a aria-label="Permalink: Apple IIgs Finder Icon File" class="anchor" href="#user-content-apple-iigs-finder-icon-file" id="user-content-apple-iigs-finder-icon-file" name="user-content-apple-iigs-finder-icon-file"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>ProDOS ICN ($CA)</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Apple II File Type Note $ca/xxxx, "Finder Icons File"</li>
+<li>
+<em>Apple IIgs Toolbox Reference, Volume 2</em>, chapter 17 "QuickDraw II Auxiliary", p.17-3</li>
+</ul>
+<p>Icon files are loaded by the Finder, from the <code>Icons</code> directory on mounted volumes.  On older
+versions of the system software, the file <code>Finder.Icons</code> was required to exist on the boot disk.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The icon file includes small and large versions of each icon, as well as metadata used to
+determine which icon to use with which files.  Patterns for matching on the file type,
+auxiliary type, and filename are handled.</p>
+<p>All multi-byte integers are in little-endian order.</p>
+<p>The icon file has some empty holes that are expected to be filled in by the Finder after being
+loaded into memory.</p>
+<pre><code>+$00 / 4: iBlkNext: (zero on disk) handle to next icon file
++$04 / 2: iBlkID: ID number of icon file, must be $0001 for Finder icons
++$06 / 4: iBlkPath: (zero on disk) handle to pathname of icon file
++$0a /16: iBlkName: name of the icon file (ASCII, prefixed with length byte)
++$1a /nn: array of icon data records
+</code></pre>
+<p>Each icon data record is:</p>
+<pre><code>+$00 / 2: iDataLen: length of this icon data record, or zero if this is the end of the array
++$02 /64: iDataBoss: pathname of application that owns this icon (ASCII, prefixed with length byte)
++$42 /16: iDataName: filename filter, may include wildcard (e.g. `*.ASM` matches all .ASM files)
++$52 / 2: iDataType: file type filter, zero matches all files
++$54 / 2: iDataAux: auxiliary type filter, zero matches all files
++$56 /nn: iDataBig: normal size icon image data
++$xx /mm: iDataSmall: small size icon image data
+</code></pre>
+<p>The icon image data is defined by the QuickDraw II Auxiliary tool set, which has the <code>DrawIcon</code>
+call.  The structure is:</p>
+<pre><code>+$00 / 2: iconType: bit flags; bit 15 is set for color, clear for black &amp; white
++$02 / 2: iconSize: number of bytes in icon image
++$04 / 2: iconHeight: height of icon, in pixels
++$06 / 2: iconWidth: width of icon, in pixels
++$08 /nn: icon image, 4 bits per pixel; each row is `1 + (iconWidth - 1) / 2` bytes wide
++$xx /nn: icon mask, same dimensions as image
+</code></pre>
+<p>The <code>iconType</code> field declares whether the icon's contents are color or black and white, but in
+practice most icons (including those for the icon editor DIcEd) have a type of $0000, even when
+they're clearly intended to be colorful.  It appears that it could affect the way the icon is
+drawn in different modes, e.g. when selected in the Finder.</p>
+<div class="markdown-heading"><h2 class="heading-element">Rendering</h2><a aria-label="Permalink: Rendering" class="anchor" href="#user-content-rendering" id="user-content-rendering" name="user-content-rendering"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Icons drawn by QuickDraw II use a 16-bit <code>displayMode</code> word:</p>
+<pre><code>15-12: background color to apply to white part of B&amp;W icons
+ 11-8: foreground color to apply to black part of B&amp;W icons
+  7-3: reserved, set to zero
+    2: offLineBit: if 1, AND a light-gray pattern to image (e.g. to show a device as being offline)
+    1: openIconBit: if 1, copy a light-gray pattern instead of the image
+    0: selectedIconBit: if 1, invert the image before copying
+</code></pre>
+<p>If bits 15-8 are all zero, color is not applied to B&amp;W icons.</p>
+<p>Icons need to look good for all permutations of offline/open/selected, so icon editors would
+display all 8 possible situations.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

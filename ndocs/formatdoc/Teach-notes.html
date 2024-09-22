@@ -1,0 +1,105 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Apple IIgs Teach Document</h1><a aria-label="Permalink: Apple IIgs Teach Document" class="anchor" href="#user-content-apple-iigs-teach-document" id="user-content-apple-iigs-teach-document" name="user-content-apple-iigs-teach-document"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>GWP ($50) / $5445</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Apple II File Type Note $50/5445, "Teach Document"</li>
+<li><em>Apple IIgs Toolbox Reference, Volume 3</em></li>
+</ul>
+<p>Teach Documents are text documents with some additional formatting commands.  The format is named
+after a Macintosh program called "TeachText".</p>
+<p>The files are essentially TextEdit control contents serialized to a file.  The data fork holds
+the text, while the resource fork has two resources: an rStyleBlock (type=$8012 ID=1) with style
+information that can be passed directly to TextEdit calls, and a custom resource (type=$7001 ID=1)
+that holds window position information.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Format</h2><a aria-label="Permalink: File Format" class="anchor" href="#user-content-file-format" id="user-content-file-format" name="user-content-file-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The data fork is plain text, using one of the Macintosh characters sets, such as Mac OS Roman.</p>
+<p>The interesting part is the rStyleBlock ($8012) resource, which uses various structures described
+in <em>Apple IIgs Toolbox Reference, Volume 3</em>.  The resource contains a TextEdit <code>TEFormat</code>
+structure (defined on page 49-31):</p>
+<pre><code>+$00 / 2: version - version number of structure, should be zero
++$02 / 4: rulerListLength - length, in bytes, of theRulerList
++$06 / N: theRulerList - array of TERuler structures
++$xx / 4: styleListLength - length, in bytes, of theStyleList
++$xx / N: theStyleList - array of TEStyle structures
++$xx / 4: numberOfStyles - numer of StyleItems contained in theStyles
++$xx / N: theStyles - array of StyleItems specifying which actual styles (stored in theStyleList)
+          apply to which text within the TextEdit record
+</code></pre>
+<p>All documents appear to have a single ruler.  It's unclear how multiple rulers would be applied.</p>
+<p>TextEdit <code>TERuler</code> structures (defined on page 49-39) are:</p>
+<pre><code>+$00 / 2: leftMargin - number of pixels to indent from left edge of text rect (exc. new para)
++$02 / 2: leftIndent - number of pixels to indent from left edge for new paragraphs
++$04 / 2: rightMargin - maximum line length, in pixels from the left edge of text rect
++$06 / 2: just - text justification (0=left, -1=right, 1=center, 2=full)
++$08 / 2: extraLS - line spacing, number of pixels to add between lines (may be negative)
++$0a / 2: flags (reserved)
++$0c / 4: userData - application-specific data
++$10 / 2: tabType - type of tab data (0=none, 1=regular intervals, 2=absolute pixel locations)
++$12 / N: theTabs - array of TabItem structures; tabTerminator field marks end of list
++$xx / 2: tabTerminator - omitted for tabType=0; pixel count for tabType=1; $ffff for tabType=2
+</code></pre>
+<p>These can also appear as rTERuler ($8025) resources, but not in Teach documents.  None of these
+values can be set from the current Teach application.</p>
+<p>TextEdit <code>TEStyle</code> structures (defined on page 49-41) are:</p>
+<pre><code>+$00 / 4: fontID - font manager ID
++$04 / 2: foreColor - foreground color for text
++$06 / 2: backColor - background color for text
++$08 / 4: userData - application-specific data
+</code></pre>
+<p>The current Teach application doesn't provide a way to set the color, but documents with colored
+text have been found.</p>
+<p>The <em>Apple IIgs Toolbox Reference, Volume 3</em> describes <code>foreColor</code> values thusly (p.49-41):</p>
+<blockquote>
+<p>Foreground color for the text.  Note that all bits in TextEdit color words are significant.
+TextEdit generates QuickDraw II color patterns by replicating a color word the appropriate
+number of times for the current resolution (8 times for 640 mode, 16 times for 320 mode).
+See Chapter 16 [...] for more information on QuickDraw II patterns and dithered colors.</p>
+</blockquote>
+<p>For example, the foreground color value 0x4444 is rendered in 640 mode as alternating
+red/black pixels.</p>
+<p>TextEdit <code>StyleItem</code> structures (defined on page 49-55) are:</p>
+<pre><code>+$00 / 4: length - total number of text characters that use this style; -1 indicates unused entry
++$04 / 4: offset - offset, in bytes, into theStyleList array to the TEStyle record
+</code></pre>
+<p>The <code>TabItem</code> structures (defined on page 49-59) are:</p>
+<pre><code>+$00 / 2: tabKind - must be $0000
++$02 / 2: tabData - location of absolute tab, expressed as number of pixels from left edge of view
+</code></pre>
+<p>Font ID records are 32-bit values, but have four distinct parts:</p>
+<pre><code>+$00 / 2: famNum - font family number
++$02 / 1: fontStyle - style of font (bit flags)
++$03 / 1: fontSize - size of font (in points, 1/72nd of an inch)
+</code></pre>
+<p>See chapter 8 in <em>Apple IIgs Toolbox Reference, Volume 1</em>.</p>
+<div class="markdown-heading"><h3 class="heading-element">Algorithm</h3><a aria-label="Permalink: Algorithm" class="anchor" href="#user-content-algorithm" id="user-content-algorithm" name="user-content-algorithm"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>To format the text, walk through the list of StyleItem structures, applying the referenced style
+to the specified number of characters.  The list of styles should exactly span the text.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

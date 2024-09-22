@@ -1,0 +1,147 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Notes on BASIC Disassemblers</h1><a aria-label="Permalink: Notes on BASIC Disassemblers" class="anchor" href="#user-content-notes-on-basic-disassemblers" id="user-content-notes-on-basic-disassemblers" name="user-content-notes-on-basic-disassemblers"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>This document has notes for:</p>
+<ul>
+<li>
+<a href="#user-content-applesoft-basic">Applesoft BASIC</a> for the Apple II</li>
+<li>
+<a href="#user-content-integer-basic">Integer BASIC</a> for the Apple II</li>
+<li>
+<a href="#user-content-business-basic">Business BASIC</a> for the Apple ///</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Applesoft BASIC</h2><a aria-label="Permalink: Applesoft BASIC" class="anchor" href="#user-content-applesoft-basic" id="user-content-applesoft-basic" name="user-content-applesoft-basic"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>BAS ($fc) / any (aux type is often $0801)</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Applesoft disassembly, by Bob Sander-Cederlof.  <a href="https://6502disassembly.com/a2-rom/" rel="nofollow">https://6502disassembly.com/a2-rom/</a>
+</li>
+</ul>
+<p>Applesoft BASIC, developed by Microsoft and enhanced by Apple, is one of the most popular
+programming languages for the Apple II.</p>
+<p>Applesoft programs are stored in tokenized form.  BASIC statements like "PRINT" are converted
+to a single byte, while strings and numbers are stored as text.</p>
+<div class="markdown-heading"><h3 class="heading-element">File Structure</h3><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The general structure of an Applesoft program is a series of lines.  Each line consists of:</p>
+<pre><code>  +$00 / 2: address of next line
+  +$02 / 2: line number, 0-63999
+  +$04 / N: variable number of bytes; mix of literals and tokens, ending with $00
+</code></pre>
+<p>At the end of the file, the line consists solely of an "address of next line" value of $0000.
+(Some files appear to have one additional byte past this.  Might be because <code>NEW</code> sets $af-b0 to
+$0804, while <code>FP</code> sets it to $0803?)</p>
+<p>The address and line number are stored little-endian.  Byte values &lt; 128 are literals, while
+values &gt;= 128 are tokens.</p>
+<p>The tokenized form does not include whitespace, except in quoted text, REM statements, and DATA
+statements.  Numeric values are stored as ASCII strings, and are converted to binary form every
+time they are encountered.</p>
+<p>Converting the bytecode form to "source" form is trivial, requiring only a simple conversion
+of tokens to strings.  Converting text source to bytecode is slightly more complicated.  The
+parser must find the longest match when parsing tokens, preferring "ONERR" over "ON", and must
+recognize "?" as shorthand for "PRINT".  It also requires special handling for "AT" and "TO".
+Whitespace is taken into account to differentiate "AT N" from "ATN" (arctangent) and
+"A TO" from "AT O".</p>
+<p>The program is stored on disk as it appears in memory.  Because it includes absolute addresses,
+and the load address of the program isn't included in the file, the addresses stored in the file
+are meaningless.  The OS file loader must re-write them by scanning through the program when
+it's loaded.</p>
+<div class="markdown-heading"><h3 class="heading-element">Misc</h3><a aria-label="Permalink: Misc" class="anchor" href="#user-content-misc" id="user-content-misc" name="user-content-misc"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>There are multiple versions of Applesoft.  The answers to
+<a href="https://retrocomputing.stackexchange.com/q/384/56" rel="nofollow">this question</a> provide a nice description
+of the evolution.</p>
+<p>The ROM-based version most people are familiar with loaded the program at $0801.  The byte in
+memory immediately before the program ($0800) must be zero, or the program will not execute.  The
+reason for this behavior is explained <a href="https://retrocomputing.stackexchange.com/a/20180/56" rel="nofollow">here</a>.</p>
+<div class="markdown-heading"><h2 class="heading-element">Integer BASIC</h2><a aria-label="Permalink: Integer BASIC" class="anchor" href="#user-content-integer-basic" id="user-content-integer-basic" name="user-content-integer-basic"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>INT ($fa) / any</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Integer BASIC disassembly, by Paul R. Santa-Maria.  <a href="https://6502disassembly.com/a2-rom/" rel="nofollow">https://6502disassembly.com/a2-rom/</a>
+</li>
+<li>FID.C by Paul Schlyter</li>
+</ul>
+<p>Integer BASIC was the first BASIC programming language shipped in the Apple II ROM.  Written by
+Steve Wozniak, there is famously no source code, just a binder full of notes.</p>
+<p>Integer BASIC programs are stored in tokenized form.  Statements like "PRINT" are converted
+to a single byte, numbers are stored as 16-bit integers, and strings and variable names are
+stored as text.</p>
+<div class="markdown-heading"><h3 class="heading-element">File Structure</h3><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure-1" id="user-content-file-structure-1" name="user-content-file-structure-1"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>A file is a series of lines.  Each line is:</p>
+<pre><code>+$00 / 1: line length (including the length byte itself)
++$01 / 2: line number
++$03 /nn: series of variable-length bytecode values
++$xx / 1: end-of-line token ($01)
+</code></pre>
+<p>Integers are stored in little-endian order.  There is no end-of-file marker.</p>
+<p>The bytecode stream values have the following meanings:</p>
+<pre><code> $00   : invalid token in program
+ $01   : end of line
+ $02-11: invalid token in program
+ $12-7f: language token
+ $b0-b9: ('0'-'9') start of integer constant; followed by 16-bit value
+ $ba-c0: (invalid)
+ $c1-da: ('A'-'Z') start of a variable name; ends on value &lt; $80 (i.e. a token)
+ $db-ff: (invalid)
+</code></pre>
+<p>All byte values are possible, e.g. in integer constants.  The "invalid token" values may be
+valid when typed directly on the command line, but not in the program itself.  For example,
+you're not allowed to use <code>DEL</code> or <code>RUN</code> within a program.</p>
+<p>In some cases, multiple tokens have the same name.  For example, there are separate tokens for
+<code>RUN</code> with and without a line number (run from start vs. run at line).</p>
+<div class="markdown-heading"><h2 class="heading-element">Business BASIC</h2><a aria-label="Permalink: Business BASIC" class="anchor" href="#user-content-business-basic" id="user-content-business-basic" name="user-content-business-basic"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>BA3 ($09) / any (aux type usually $0000 or $0200)</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Program lister, written by David Schmidt for original CiderPress.</li>
+</ul>
+<p>Apple's Business BASIC ran on the Apple ///.  It offered a number of improvements over Apple II
+BASIC.</p>
+<div class="markdown-heading"><h3 class="heading-element">File Structure</h3><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure-2" id="user-content-file-structure-2" name="user-content-file-structure-2"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>All integers are stored in little-endian order.</p>
+<p>The file structure is:</p>
+<pre><code>+$00 / 2: file length (does not include this length word)
++$02 /nn: zero or more lines
++$xx / 2: end-of-file marker ($0000)
+</code></pre>
+<p>Some files have a stored file length of zero, and may omit the end-of-file marker.</p>
+<p>Each line is:</p>
+<pre><code>+$00 / 1: offset to next line
++$01 / 2: 16-bit line number
++$03 /nn: mix of tokens and literals
++$xx / 1: end-of-line token ($00)
+</code></pre>
+<p>Numbers are stored in character form, and are parsed during execution.</p>
+<p>The end of the program is indicated by a line with a zero value for the offset to the next line.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

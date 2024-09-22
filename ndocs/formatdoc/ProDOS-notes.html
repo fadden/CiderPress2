@@ -1,0 +1,273 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Apple II "Professional Disk Operating System" Filesystem</h1><a aria-label='Permalink: Apple II "Professional Disk Operating System" Filesystem' class="anchor" href="#user-content-apple-ii-professional-disk-operating-system-filesystem" id="user-content-apple-ii-professional-disk-operating-system-filesystem" name="user-content-apple-ii-professional-disk-operating-system-filesystem"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>
+<em>Beneath Apple ProDOS</em> (Second Printing, March 1985; check the errata
+in <em>Supplement for 1.2/1.3</em>, page 152+)
+<a href="https://archive.org/details/Beneath_Apple_ProDOS_Alt/mode/1up" rel="nofollow">https://archive.org/details/Beneath_Apple_ProDOS_Alt/mode/1up</a>
+</li>
+<li>
+<em>ProDOS 8 Technical Reference Manual</em>: <a href="https://prodos8.com/docs/techref/" rel="nofollow">https://prodos8.com/docs/techref/</a>
+</li>
+<li>ProDOS 8 TN #25 "Non-Standard Storage Types"</li>
+<li>ProDOS 8 TN #28 "ProDOS Dates -- 2000 and Beyond"</li>
+<li>ProDOS 8 TN #30 "Sparse Station"</li>
+<li>GS/OS TN #8 "Filenames With More Than CAPS and Numerals"</li>
+</ul>
+<p>Also:</p>
+<ul>
+<li>Apple II File Type Note $19/xxxx (AppleWorks document), section "Auxiliary
+Type Definitions", for AW's approach to lower-case flags</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The ProDOS filesystem was originally developed for the Sophisticated Operating System (SOS) on
+the Apple /// computer.  The version used for ProDOS 8 is structurally identical, though some
+extensions were made for GS/OS.</p>
+<p>The filesystem is based on 512-byte blocks, identified by a 16-bit unsigned integer.  This
+yields a maximum volume size of 65535 blocks, one short of 32MB.  (Some hard drive images are
+65536 blocks long; the last block is unused.)  Individual files have a maximum length of 2^24 - 1,
+one byte shy of 16MB.</p>
+<p>The filesystem is hierarchical in nature.  Disk directories appear in the filesystem, but are
+structured differently from other files.</p>
+<p>All files have a "key block" in their directory entry.  The meaning of the key block changes
+for regular files as the file's length changes:</p>
+<ul>
+<li>[0,512]: "seedling": key block holds file contents.</li>
+<li>[513,131072]: "sapling": key block is an index block that holds up to 256 block numbers.
+Each referenced block holds file data.</li>
+<li>[131073,16777215]: "tree": key block is a "master" index block that holds up to 128 block
+numbers.  Each referenced block is an index block.
+When a file grows long enough to expand, a new key block is allocated.  The seedling key block
+becomes the first data block listed in the index; the sapling index block becomes the first index
+listed in the master index.  If a file is truncated, the process is reversed.</li>
+</ul>
+<p>Directory files are stored as a simple linear list of file entries.  The volume directory cannot
+change size, but subdirectories are allowed to grow (but not shrink).</p>
+<p>GS/OS added a new storage type, called "extended", that has a data fork and a resource fork,
+similar to HFS.  The key block is an "extended information block", which holds information like
+storage type and length for each fork.  The block can also hold Macintosh Finder information,
+such as the HFS creator and file type.</p>
+<p>The filesystem supports "sparse" files.  If the block number listed in an index or master index
+block is zero, any data read from the block in question will simply be zero-filled.  In ProDOS 8,
+sparse files can be created by seeking past the end of the file and then writing data.  In GS/OS,
+any block that is filled entirely with zeroes is stored as a sparse entry.  The only exception is
+the very first data block in the file, which is never sparse.</p>
+<p>GS/OS repurposed some of the fields to allow lower-case filenames.  For backward compatibility,
+the names are still stored as upper case, but applications that are aware of the case flags can
+choose to display the names as mixed-case.  The filesystem is thus case-insensitive but
+case-preserving.  AppleWorks files use a parallel scheme, storing the case flags in the auxiliary
+type field.</p>
+<div class="markdown-heading"><h2 class="heading-element">Disk Structure</h2><a aria-label="Permalink: Disk Structure" class="anchor" href="#user-content-disk-structure" id="user-content-disk-structure" name="user-content-disk-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The contents of the first 3 512-byte blocks are defined by the system.  Block 0 holds the ProDOS
+boot loader, and block 1 is usually empty but can hold a SOS boot loader (for the Apple ///).  The
+volume directory begins at block 2, and is usually 4 blocks long, but could be longer or shorter
+and doesn't have to occupy contiguous blocks.  The blocks-in-use bitmap usually appears right
+after the volume directory, in block 6, and may occupy up to 16 blocks.</p>
+<p>All directories, including the volume directory, begin with previous/next block numbers to
+facilitate bidirectional directory traversal:</p>
+<pre><code>+$00 / 2: previous dir block number
++$02 / 2: next dir block number
+</code></pre>
+<p>A block number of zero is used to indicate the end of the list.</p>
+<p>The first entry in each directory is a special header that has the same size and general layout
+as a standard entry, but has some different fields.  The volume directory header is different
+from that in subdirectories.</p>
+<p>Volume directory header:</p>
+<pre><code>+$00 / 1: storage type / name length ($Fx)
++$01 /15: volume name (A-Z, 0-9, '.', must start with letter)
++$10 / 2: (reserved, should be zeroes)
++$12 / 4: (undocumented? GS/OS feature) modification date/time
++$16 / 2: lower-case flags (see TN.GSOS.008)
++$18 / 4: creation date/time of this volume
++$1c / 2: version/min_version (min version must be 0 or GS/OS gets upset?)
++$1e / 1: access flags
++$1f / 1: directory entry length (usually $27)
++$20 / 1: entries per directory block (usually $200/$27 = $0d)
++$21 / 2: number of active entries in volume directory (not including header)
++$23 / 2: volume bitmap start block
++$25 / 2: total blocks in volume
+</code></pre>
+<p>Directory header:</p>
+<pre><code>+$00 / 1: storage type / name length ($Ex)
++$01 /15: subdirectory name (redundant)
++$10 / 1: (reserved, must contain $75 for P8, or $76 for GS/OS)
++$11 / 7: (reserved, should be zeroes)
++$18 / 4: creation date/time of this directory (redundant, not updated)
++$1c / 4: version/min-version (not used for lower-case flags)
++$1e / 1: access flags (redundant, not updated)
++$1f / 1: directory entry length (usually $27)
++$20 / 1: entries per directory block (usually $200/$27 = $0d)
++$21 / 2: number of active entries in directory (not including header)
++$23 / 2: parent pointer (block of directory with entry for this dir; NOT key block)
++$25 / 1: parent entry number (entry number within parent directory block, 1-N)
++$26 / 1: parent entry length (length of entries in parent dir, should be $27)
+</code></pre>
+<p>Regular directory entry:</p>
+<pre><code>+$00 / 1: storage type / name length
++$01 /15: file name (A-Z, 0-9, '.', must start with letter)
++$10 / 1: file type
++$11 / 2: key pointer (block number where storage begins)
++$13 / 2: blocks used
++$15 / 3: EOF
++$18 / 4: creation date/time
++$1c / 4: version/min-version -OR- lower-case flags (see TN.GSOS.008)
++$1e / 1: access flags
++$1f / 2: aux type
++$21 / 4: modification date/time
++$25 / 2: header pointer (key block number of directory that holds this file)
+</code></pre>
+<p>Storage types (see TN.PDOS.025):</p>
+<pre><code> $00: deleted entry
+ $01: seedling - key block holds data (0-512 bytes)
+ $02: sapling - key block is list of data blocks (513-131072 bytes)
+ $03: tree - key block is list of index blocks (128KB-16MB)
+ $04: Pascal area on ProFile hard disk drive (see ProDOS 8 TN #25)
+ $05: GS/OS forked file
+ $0d: subdirectory
+ $0e: subdirectory header entry
+ $0f: volume directory header entry
+</code></pre>
+<p>Setting the storage type to zero is insufficient when deleting a file.  The entire byte, which
+also includes the filename length, must be zeroed.</p>
+<div class="markdown-heading"><h2 class="heading-element">Fields</h2><a aria-label="Permalink: Fields" class="anchor" href="#user-content-fields" id="user-content-fields" name="user-content-fields"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Filenames are case-insensitive but (with GS/OS extensions) case-preserving.</p>
+<p>Access flags (8-bit value):</p>
+<pre><code> D R B - - I W R
+ $80: destroy-enabled
+ $40: rename-enabled
+ $20: backup-needed
+ $10: (reserved)
+ $08: (reserved)
+ $04: file-invisible (GS/OS addition)
+ $02: write-enabled
+ $01: read-enabled
+</code></pre>
+<p>Date and time (two 16-bit values):</p>
+<pre><code> YYYYYYY MMMM DDDDD
+ 000 HHHHH 00 MMMMMM
+</code></pre>
+<p>Years start in 1900, with some weird rules.  Months are 1-12, days 1-31,
+hours 0-23, and minutes 0-59.  Seconds are not represented.  Timestamps are
+in local time.</p>
+<p>The year field holds 0-127.  The official (ProDOS Tech Note #28) mapping is:</p>
+<ul>
+<li>0-39 = 2000-2039</li>
+<li>40-99 = 1940-1999</li>
+<li>100-127 = unused</li>
+</ul>
+<p>However, the tech note says, "Apple II and Apple IIgs System Software does not
+currently reflect this definition".  In practice, many ProDOS utilities seem
+to work best when 100 is used for Y2K which suggests that it might be better
+to use:</p>
+<ul>
+<li>0-39 = 2000-2039</li>
+<li>40-99 = 1940-1999</li>
+<li>100-127 = 2000-2027</li>
+</ul>
+<p>See the ProDOS section in the <a href="../../CommonUtil/TimeStamp.cs">TimeStamp code</a>
+for the details of how this is handled.</p>
+<div class="markdown-heading"><h2 class="heading-element">Extended Files</h2><a aria-label="Permalink: Extended Files" class="anchor" href="#user-content-extended-files" id="user-content-extended-files" name="user-content-extended-files"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The key block for forked files points to an extended key block entry.  The
+block has "mini-entries" for each fork, with data at +$0000 and rsrc at
++$0100, plus some optional HFS FInfo/FXInfo data at +$0008.</p>
+<pre><code>+$00 / 1: storage type for fork (must be 1/2/3)
++$01 / 2: key block
++$03 / 2: blocks used
++$05 / 3: EOF
+</code></pre>
+<p>There may be two 18-byte entries with the Mac HFS finder info, immediately
+following the data fork data.  This feature was added to the ProDOS FST in
+GS/OS System 6.0.  The format is:</p>
+<pre><code> +$08 / 1: size of first entry (must be 18)
+ +$09 / 1: type of entry (1 for FInfo, 2 for FXInfo)
+ +$0a /16: 16 bytes of Finder data
+ +$1a / 1: size of second entry (must be 18)
+ +$1b / 1: type of entry (1 fir FInfo, 2 for FXInfo)
+ +$1c /16: 16 bytes of Finder data
+</code></pre>
+<p>The ProDOS FST creates both, but the software for the Apple //e card for the
+Mac LC may create only one.  The AppleShare FST uses the same format as HFS.</p>
+<p>The contents of "FInfo" and "xFInfo" aren't detailed by technote #25, but
+they are defined in <em>Inside Macintosh: Macintosh Toolbox Essentials</em>,
+starting on page 7-47:</p>
+<pre><code>TYPE FInfo = RECORD
+  fdType:     OSType;     {file type}
+  fdCreator:  OSType;     {file creator}
+  fdFlags:    Integer;    {Finder flags}
+  fdLocation: Point;      {file's location in window}
+  fdFldr:     Integer;    {directory that contains file}
+END;
+TYPE FXInfo = RECORD
+  fdIconID:   Integer;    {icon ID}
+  fdUnused:   ARRAY[1..3] OF Integer; {unused but reservedsdfsdf 6 bytes}
+  fdScript:   SignedByte; {script flag and code}
+  fdXFlags:   SignedByte; {reserved}
+  fdComment:  Integer;    {comment ID}
+  fdPutAway:  LongInt;    {home directory ID}
+END;
+</code></pre>
+<p>In the HFS definitions, OSType/LongInt/Point are 4 bytes, Integer is 2 bytes,
+SignedByte is 1 byte, so these are 16 bytes each.  Under GS/OS, these values
+are accessed through the "option list" parameter on certain calls.  Some tests
+with GS/OS showed the file type and creator were propagated, but the other
+fields were zeroed out.</p>
+<p>Most of the fields should NOT be preserved when a file is copied between
+volumes.  For example, the pointer to the parent directory will almost
+certainly be wrong.  The file type and creator type, and perhaps the Finder
+flags, are the only things worth keeping.</p>
+<p>(The discussion starting on page 5 of <em>GS/OS AppleShare File System Translator
+External ERS</em> for System 6.0 may also be helpful.)</p>
+<div class="markdown-heading"><h2 class="heading-element">Volume Block Allocation Bitmap</h2><a aria-label="Permalink: Volume Block Allocation Bitmap" class="anchor" href="#user-content-volume-block-allocation-bitmap" id="user-content-volume-block-allocation-bitmap" name="user-content-volume-block-allocation-bitmap"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The bitmap usually starts on block 6, immediately after the volume directory,
+but that's not mandatory.  One bit is assigned for every block on the volume;
+with 8*512=4096 bits per block, the bitmap will span at most
+ceil(65535/4096)=16 blocks.</p>
+<p>Each byte holds the bits for 8 consecutive blocks, with the lowest-numbered
+block in the high bit.  Bits are set for unallocated blocks, so a full disk
+will have nothing but zeroes.</p>
+<p>Blocks are generally allocated in ascending order, with no regard for disk
+geometry.</p>
+<div class="markdown-heading"><h2 class="heading-element">Embedded Volumes</h2><a aria-label="Permalink: Embedded Volumes" class="anchor" href="#user-content-embedded-volumes" id="user-content-embedded-volumes" name="user-content-embedded-volumes"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Disk volumes from UCSD Pascal can be embedded in a ProDOS disk, using storage
+type $04.  This was implemented by Apple's <em>Pascal ProFile Manager</em> for use
+with ProFile hard drives, and is referred to as <a href="../Multi/PPM-notes.md">PPM</a>.</p>
+<p>Multiple DOS 3.3 volumes can be embedded in a ProDOS disk using Glen Bredon's
+DOS MASTER.  See the notes on <a href="Hybrid-notes.md">hybrid disks</a> for more details.</p>
+<div class="markdown-heading"><h2 class="heading-element">Miscellaneous</h2><a aria-label="Permalink: Miscellaneous" class="anchor" href="#user-content-miscellaneous" id="user-content-miscellaneous" name="user-content-miscellaneous"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>A change list for ProDOS v1.0 through v2.0.1 can be found in ProDOS 8 TN #23,
+"ProDOS 8 Changes and Minutia".</p>
+<p>ProDOS 8 TN #30 ("Sparse Station") uses the following example as a way to
+create a very large file with minimal data in it:</p>
+<p><code>BSAVE SPARSE.FILE,A$300,L$1,B$FFFFFF</code></p>
+<p>This command works, but it should actually fail.  The maximum length of a file
+is $ffffff, which means the last byte you can actually write is at $fffffe.
+ProDOS 8 allows you to read and write the last byte in the last block, which
+would make the file's length $1000000.  GS/OS doesn't seem to allow this.</p>
+<p>It gets weirder:
+<a href="https://groups.google.com/g/comp.sys.apple2/c/Rt0_rAAN2CA/m/arII-OpSBQAJ" rel="nofollow">https://groups.google.com/g/comp.sys.apple2/c/Rt0_rAAN2CA/m/arII-OpSBQAJ</a></p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

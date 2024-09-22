@@ -1,0 +1,65 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Merlin Assembler Source File</h1><a aria-label="Permalink: Merlin Assembler Source File" class="anchor" href="#user-content-merlin-assembler-source-file" id="user-content-merlin-assembler-source-file" name="user-content-merlin-assembler-source-file"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>ProDOS TXT or DOS T, with filename extension ".S"</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Reverse engineering</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><a href="https://en.wikipedia.org/wiki/Merlin_(assembler)" rel="nofollow">Merlin</a> is an assembler written by Glen
+Bredon for the Apple II.  Initially written for DOS 3.3, an updated version called "Merlin Pro"
+was published after ProDOS was released.  After the Apple IIgs shipped, Merlin Pro was renamed
+to "Merlin 8", and a IIgs-specific version called "Merlin 16" was released.</p>
+<p>Merlin provided its own source code editor.  Source files use a customized text format.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Format</h2><a aria-label="Permalink: File Format" class="anchor" href="#user-content-file-format" id="user-content-file-format" name="user-content-file-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Assembly source files have four columns:</p>
+<ol>
+<li>label</li>
+<li>opcode</li>
+<li>operand</li>
+<li>comment</li>
+</ol>
+<p>To save space in memory and on disk, the contents of each column are separated by a single
+space character.  Each column starts at a specific column on-screen.  Lines starting with '*'
+are treated as full-line comments.</p>
+<p>End-of-line comments start with a semi-colon.  The editor doesn't require multiple separator
+spaces before a comment, but if you type them, they will be part of the file.  A line that
+begins with ';' is considered an end-of-line comment.</p>
+<p>The Apple II screen was 80 columns wide, so the code was generally formatted to fit in that
+space.  The default placement of the four columns positioned them at screen positions
+1, 10, 16, and 27, respectively (where 1 is the left edge of the screen).</p>
+<p>The file contents are generally high ASCII, but spaces in comments and quoted text in operands
+are encoded as 0x20.  Columns are separated with a single space character (0xa0).  Encoding spaces
+this way makes it easy to find the column breaks, because you don't have to worry about tracking
+whether you're inside quoted text.  Lines end with a carriage return (0x8d).</p>
+<div class="markdown-heading"><h2 class="heading-element">Similar Formats</h2><a aria-label="Permalink: Similar Formats" class="anchor" href="#user-content-similar-formats" id="user-content-similar-formats" name="user-content-similar-formats"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The DOS Toolkit ED/ASM source format was very similar, but didn't use 0x20 for spaces in comments
+and quoted operands.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

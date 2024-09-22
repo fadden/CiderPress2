@@ -66,8 +66,8 @@ subscript                                 ^B
 For example, the first line in COMMAND CHART is underlined (Ctrl+^ is 0x1e):
 ```
 000100: a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0                  
-000110: a0 a0 a0 9e cd e1 e7 e9 e3 a0 d7 e9 ee e4 ef f7     稭agic Window
-000120: a0 c9 c9 a0 c3 ef ed ed e1 ee e4 f3 9e 8d 8d 8d   II Commands贩贩
+000110: a0 a0 a0 9e cd e1 e7 e9 e3 a0 d7 e9 ee e4 ef f7     路Magic Window
+000120: a0 c9 c9 a0 c3 ef ed ed e1 ee e4 f3 9e 8d 8d 8d   II Commands路路路路
 ```
 Note that centering was done manually with spaces.
 
