@@ -99,8 +99,6 @@ text_subst = [
         ( re.compile(r"/github-markdown-css/"), "" ),
         ]
 
-footer = "<p><a href=\"../doc-index.html\">Return to documentation index</a></p>\n"
-
 def convert(pathName):
     """ converts a .md file from the source tree to a .html file here """
 
@@ -117,6 +115,10 @@ def convert(pathName):
         mdtext = file.read()
     with open(tempmd, "w", encoding="utf-8") as file:
         file.write(mdtext)
+
+    footer = ("<p><a href=\"../doc-index.html\">Return to documentation index</a> | "
+        "<a href=\"https://github.com/fadden/CiderPress2/blob/main/" + pathName + "\">"
+        "View in source tree</a></p>\n")
 
     # Do the conversion.
     gh_md_to_html.main(tempmd, math="False", footer=footer, box_width="25cm")

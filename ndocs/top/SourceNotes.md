@@ -142,9 +142,10 @@ updating version numbers and running a final set of tests on the app.
  3. Do a full build of the project in Visual Studio, in Debug mode.  It's
     important to build for Debug to enable assertions and extended checks.
     Note this step builds MakeDist with the updated version number.
- 4. Launch the GUI application.  Verify the version number.  It's also good
-    to do this because, in a Debug build, some library unit tests are
-    executed during app startup.
+ 4. Launch the GUI application (`cp2_wpf` project, built as `CiderPress2.exe`)
+    in the debugger.  Verify the version number.  It's good to do this
+    because, in a Debug build, some library unit tests are executed during
+    app startup.
  5. Run the command-line tests: `cp2 debug-test`, `cp2 debug-test-da`,
     and `cp2 debug-test-fc`.  These require files in the TestData directory.
     All tests must pass.  If you're not built for Debug mode, you will see
@@ -175,3 +176,17 @@ Finally, build the applications and submit the changes.
 
 Version numbers should follow the semantic versioning scheme: v1.2.3,
 v1.2.3-dev1, etc.
+
+There is an additional step for publishing updates to the files in the
+file format documentation set.  `ndocs/formatdoc/convert.py` will generate
+HTML versions of the Markdown documentation.  This is necessary because the
+major search engines don't like to index github repositories.  The conversion
+script requires an external program, and may need github authentication to
+avoid being cut off by the rate limiter (the HTML conversion is actually
+performed by the github web API), so it's not part of the publication script.
+The `ndocs/publish.py` script just copies them to the `docs` directory.
+
+Modified "-notes.md" files can usually be converted at the time they are
+updated, since their contents aren't really tied to a release.  Doing a full
+refresh as part of generating a "final" release is still prudent to avoid
+missing any changes.
