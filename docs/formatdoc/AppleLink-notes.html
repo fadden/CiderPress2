@@ -1,0 +1,109 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">AppleLink-PE Package Format (ACU)</h1><a aria-label="Permalink: AppleLink-PE Package Format (ACU)" class="anchor" href="#user-content-applelink-pe-package-format-acu" id="user-content-applelink-pe-package-format-acu" name="user-content-applelink-pe-package-format-acu"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary Sources</h2><a aria-label="Permalink: Primary Sources" class="anchor" href="#user-content-primary-sources" id="user-content-primary-sources" name="user-content-primary-sources"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Reverse engineering</li>
+<li>Archive list code by Andrew Wells: <a href="https://github.com/fadden/CiderPress2/discussions/4">https://github.com/fadden/CiderPress2/discussions/4</a>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><a href="https://en.wikipedia.org/wiki/AppleLink" rel="nofollow">AppleLink</a> was an online service created by Apple
+Computer.  Initially only available to employees and dealers, it was eventually opened to
+software developers.  This was to be replaced by a system available to all users, called AppleLink
+Personal Edition, but for various reasons the product evolved without Apple and was renamed to
+America Online.</p>
+<p>Files were stored in AppleLink Package Compression Format, which combined the data and resource
+forks and file attributes into a single file.  This appears to have been a Macintosh-specific
+format.</p>
+<p>A separate format was designed for Apple II files on AppleLink Personal Edition.  These were
+created and unpacked with the AppleLink Conversion Utility (ACU), written by Floyd Zink (who also
+wrote BLU, the Binary II Library Utility).  The file format was assigned file type LBR/$8001, but
+no file type note was published.  Files typically end in ".ACU".</p>
+<p>ACU was a ProDOS 8 application, but included forward-looking support for features like resource
+forks and non-ProDOS operating systems.  In practice it was only used for plain ProDOS files.</p>
+<p>Files in ACU archives can be stored with or without compression.  The only supported algorithm
+is SQueeze, a combination of RLE and Huffman encoding.  The format is the same as that used by
+Binary II, but without the filename header.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Files have a header that identifies the file format, followed by a series of records.  Each
+record has a header with the file attributes and CRCs.  The record contents generally reflect
+the GS/OS view of file attributes, with 16-bit file types and 32-bit aux types.  All
+multi-byte integers are stored in little-endian order.</p>
+<p>The file header is 20 bytes:</p>
+<pre><code>+$00 / 2: number of records in archive
++$02 / 2: source filesystem ID
++$04 / 5: signature "fZink"
++$09 / 1: ACU version number ($01)
++$0a / 2: length of fixed-size portion of file headers ($36)
++$0c / 7: reserved, must be zero
++$13 / 1: ? $DD
+</code></pre>
+<p>The header before each file is:</p>
+<pre><code>+$00 / 1: resource fork compression method
++$01 / 1: data fork compression method
++$02 / 2: CRC of resource fork contents
++$04 / 2: CRC of data fork contents
++$06 / 4: blocks required to store resource fork on ProDOS
++$0a / 4: blocks required to store data fork on ProDOS
++$0e / 4: length of resource fork in archive (compressed)
++$12 / 4: length of data fork in archive (compressed)
++$16 / 2: ProDOS access flags
++$18 / 2: ProDOS file type
++$1a / 4: ProDOS aux type
++$1e / 2: ? reserved, must be zero
++$20 / 2: ProDOS storage type; $0d indicates directory
++$22 / 4: uncompressed length of resource fork
++$26 / 4: uncompressed length of data fork
++$2a / 2: create date
++$2c / 2: create time
++$2e / 2: modification date
++$30 / 2: modification time
++$32 / 2: filename length
++$34 / 2: CRC of file header
++$36 /nn: filename
+</code></pre>
+<p>The file header is immediately followed by the resource fork contents, and then the data fork
+contents.  If there are additional records, the file header follows immediately.  There is no
+padding for alignment.</p>
+<p>The filename field holds a partial path.  For ProDOS, the components are separated by '/'.  It's
+unclear how other filesystems would be handled.  Directories are stored explicitly, as zero-length
+files with storage type $0D, though it's not known if their presence them is mandatory.</p>
+<p>The compression method is $00 if the data is uncompressed, $03 for SQueeze.</p>
+<p>Dates and times are in ProDOS-8 format.</p>
+<p>The only Binary II field that doesn't appear here is "native file type", which could hold the
+raw DOS 3.3 file type.  It's possible the reserved field at +$1e was set aside for that.</p>
+<p>The operating system ID is based on the GS/OS FST definition.  It will always be $01 (ProDOS)
+unless some other application generated ACU files.</p>
+<p>The 16-bit checksum on the record header is a standard CRC-16/XMODEM that covers the first $34
+bytes of the header, skips the CRC field, and continues through the variable-length filename
+field.  The checksum on the file data is the same algorithm, but with a twist: it only seems to
+match the calculated value for files up to 256 bytes long.  ACU will detect and report the damage
+on a short file, but not on a long file.  It's unclear how the CRC is being calculated or whether
+it has any value.</p>
+<p>Some archives have extra data tacked onto the end.  This seems to happen when creating archives
+with entries that failed to compress.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

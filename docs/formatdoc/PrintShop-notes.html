@@ -1,0 +1,156 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Print Shop Graphics</h1><a aria-label="Permalink: Print Shop Graphics" class="anchor" href="#user-content-print-shop-graphics" id="user-content-print-shop-graphics" name="user-content-print-shop-graphics"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>BIN / $4800/5800/6800/7800, length 572 or 576: Print Shop 88x52 Monochrome Clip Art</li>
+<li>BIN / $4800/5800/6800/7800, length 144 or 148: Print Shop 12x12 Monochrome Border</li>
+<li>BIN / $6000/5FF4, length &gt; 576: Print Shop Font</li>
+<li>$f8 / $c311: Print Shop GS ?x? Monochrome Pattern</li>
+<li>$f8 / $c312: Print Shop GS ?x? Monochrome Border</li>
+<li>$f8 / $c313: Print Shop GS 88x52 Monochrome Clip Art</li>
+<li>$f8 / $c316: Print Shop GS Font</li>
+<li>$f8 / $c321: Print Shop GS ?x? 8-Color Pattern</li>
+<li>$f8 / $c322: Print Shop GS ?x? 8-Color Border</li>
+<li>$f8 / $c323: Print Shop GS 88x52 8-color Clip Art</li>
+<li>$f8 / $c324: Print Shop GS "Full Panel GC"</li>
+<li>$f8 / $c325: Print Shop GS "Full Panel LH"</li>
+<li>$f8 / $c328: Print Shop GS "Editor"</li>
+<li>$f8 / $c329: Print Shop GS "Full Panel EV"</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Reverse engineering</li>
+</ul>
+<p>The ProDOS files used a generic type, so no file type notes exist for these formats.</p>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The Print Shop is a desktop publishing application first published by Broderbund in 1984.
+Originally written for the Apple II, it's popularity led to it being ported to a variety of
+systems, and it was still being updated for Mac and Windows as recently as 2009.</p>
+<p>The web site <a href="https://theprintshop.club/" rel="nofollow">https://theprintshop.club/</a> provides an emulated version of the original Apple II
+program that can print to PDF.</p>
+<div class="markdown-heading"><h2 class="heading-element">Clip Art</h2><a aria-label="Permalink: Clip Art" class="anchor" href="#user-content-clip-art" id="user-content-clip-art" name="user-content-clip-art"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The original Print Shop uses 88x52 monochrome images.  When printed or displayed, these are
+doubled in width and tripled in height to form a 176x156 image.  Print Shop GS also supports
+these, as "single-color" artwork.</p>
+<p>The files are simple bitmaps.  The top-left pixel is stored in the most-significant bit of the
+first byte of the file.  A '1' bit indicates a black pixel, while a '0' bit indicates white.</p>
+<p>The color clip art used by Print Shop GS is stored as a bitmap with three color planes.  These
+are approximately CMY.  The yellow plane is stored first, followed by the magenta plane, then
+the cyan plane.</p>
+<p>The actual color palette, as determined by a screen grab from an emulator, is comprised of RGB
+primaries and purple/orange that are similar to the classic Apple II hi-res colors.</p>
+<table>
+<thead>
+<tr>
+<th>Y M C</th>
+<th>color</th>
+<th>red, green, blue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 0 0</td>
+<td>white</td>
+<td>0xff, 0xff, 0xff</td>
+</tr>
+<tr>
+<td>0 0 1</td>
+<td>blue</td>
+<td>0x00, 0x00, 0xff</td>
+</tr>
+<tr>
+<td>0 1 0</td>
+<td>red</td>
+<td>0xff, 0x00, 0x00</td>
+</tr>
+<tr>
+<td>0 1 1</td>
+<td>purple</td>
+<td>0xcc, 0x00, 0xcc</td>
+</tr>
+<tr>
+<td>1 0 0</td>
+<td>yellow</td>
+<td>0xff, 0xff, 0x00</td>
+</tr>
+<tr>
+<td>1 0 1</td>
+<td>green</td>
+<td>0x00, 0xff, 0x00</td>
+</tr>
+<tr>
+<td>1 1 0</td>
+<td>orange</td>
+<td>0xff, 0x66, 0x00</td>
+</tr>
+<tr>
+<td>1 1 1</td>
+<td>black</td>
+<td>0x00, 0x00, 0x00</td>
+</tr>
+</tbody>
+</table>
+<div class="markdown-heading"><h2 class="heading-element">Fonts</h2><a aria-label="Permalink: Fonts" class="anchor" href="#user-content-fonts" id="user-content-fonts" name="user-content-fonts"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Each font contains 59 characters (0-58).</p>
+<p>In the Print Shop Companion (PSC) font editor, offsets 0 (space) and 32 (image) are not editable.</p>
+<p>In Print Shop, offset 32 points to the current graphic selected, which is not contained in the font
+file itself.</p>
+<p>The Space character is at offset 0, and in all the examples I've seen, has a height of 0 pixels.
+The width is calculated in the PSC font editor based off of an average of all other character
+widths.</p>
+<p>Character data is stored one bit per pixel, where 0 indicated background and 1 is foreground.  LSB
+is first.  Pixel data bytes are encoded left to right, as a series of rows.  Character data is
+arbitrarily located within the file but is accessible through ordered pointers as defined below.</p>
+<p>The file format is:</p>
+<pre><code>+$00 / 12 ($5FF4): Optional Print Shop Companion Font Header (From Font Editor)
++$0C / 59 ($6000): Character widths (in pixels). High bit indicates "Edited" in PSC. Should be stripped.
++$3B / 59 ($603B): Character heights in rows.
++$47 / 59 ($6076): Low Bytes of character data pointers
++$82 / 59 ($60B1): High Bytes of character data pointers
++$BD / nn ($60EC): Character data.
+</code></pre>
+<p>If a 12-byte Print Shop Companion Header exists, the file is loaded at an earlier location in memory
+such that the Character Widths block always falls at $6000.  Pointers to font data are calculated
+with offset assumed. The presence or absence of the 12-byte header must be accounted for when
+dereferencing the internal pointers.</p>
+<p>To check for validity, we can iterate through all 59 characters (excluding 0 and 32) and check that:</p>
+<ul>
+<li>The address pointers fall within the range of the data file.</li>
+<li>Width and height values are "reasonable".  The PSC font editor limits character sizes to a max of
+48x38 (152 bytes)</li>
+</ul>
+<p>If all are within range, then acceptability should be flagged as Yes, if the pointers are in range,
+but some characters are out of the expected sizes, then the acceptability should be flagged as
+ProbablyYes.</p>
+<p>Like the Print Shop graphic data, fonts are expanded 2x3 in usage.</p>
+<p>The characters map directly to ASCII $20-3a; the special entry 32 replaces '@':</p>
+<pre lang="0"><code>$00 spc !  "  #  $  %  &amp;  '  (  )  *  +  ,  -  .  /
+$10  0  1  2  3  4  5  6  7  8  9  :  ;  &lt;  =  &gt;  ?
+$20 img A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+$30  P  Q  R  S  T  U  V  W  X  Y  Z
+</code></pre>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

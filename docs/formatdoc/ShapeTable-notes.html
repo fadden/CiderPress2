@@ -1,0 +1,95 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Applesoft Shape Table</h1><a aria-label="Permalink: Applesoft Shape Table" class="anchor" href="#user-content-applesoft-shape-table" id="user-content-applesoft-shape-table" name="user-content-applesoft-shape-table"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>ProDOS BIN ($04) / DOS B, with correct structure</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>
+<em>Applesoft II BASIC Programming Reference Manual</em>, chapter 9 "High-Resolution Shapes"</li>
+</ul>
+<p>Shape tables were widely used by Applesoft programs to draw simple shapes on the screen.  While
+not terribly efficient, the implementation was built into the ROM, making them convenient.  The
+format is essentially a series of vectors, allowing shapes to be scaled and rotated (crudely).</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The file format is simply a shape table that has been BSAVEd.  This is similar to the cassette
+tape format, which is a 16-bit table length followed by the table data.  While shape data must
+be written manually to cassettes, it can be loaded with the Applesoft SHLOAD command.</p>
+<p>The table format is:</p>
+<pre><code>+$00 / 1: number of shapes
++$01 / 1: (unused, could be any value)
++$02 / 2: offset from start of table to shape #1
++$04 / 2: offset from start of table to shape #2
+ ...
++$xx /nn: shape #1 data
++$yy /mm: shape #2 data
+ ...
+</code></pre>
+<p>Applesoft numbers shapes starting from 1, not 0.</p>
+<p>When creating tables by hand, the offset table may have been created with more space than is
+required to hold the number of shapes actually present, to leave room to add more without having
+to resize the header.  The offsets of the unused entries may be zero or bogus values, and there
+are often "holes" with unused space between shapes or at the end.  This makes detecting shape
+table files tricky.  It's also possible (though unlikely) to have shapes that overlap.</p>
+<p>The shape data is stored as a series of bytes.  Each byte holds three vectors, with the bits
+defined as follows:</p>
+<pre><code> 7-6: vector C movement direction
+   5: vector B plot flag
+ 4-3: vector B movement direction
+   2: vector A plot flag
+ 0-1: vector A movement direction
+
+Movement is:
+  00: up
+  01: right
+  10: down
+  11: left
+</code></pre>
+<p>When drawing, vectors are handled in the order A-B-C.  If the plot flag bit is set to 1, a point
+will be plotted before the cursor is moved.  Note that vector C does not have a plot flag, so it
+can only move without plotting.</p>
+<p>If all bits are zero, the byte marks the end of the shape.  If C is zero then it is ignored, and if
+B and C are both zero then both are ignored.</p>
+<p>See page 93 in the Applesoft manual for an example.</p>
+<div class="markdown-heading"><h3 class="heading-element">Shape Usage</h3><a aria-label="Permalink: Shape Usage" class="anchor" href="#user-content-shape-usage" id="user-content-shape-usage" name="user-content-shape-usage"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Applesoft programs specify the shape to draw by number.  If the table has 10 shapes, the number
+must be from 1-10, inclusive.  Applesoft will allow you to draw shape 0, but the code will
+try to read the shape offset from +$00/01 in the file, which is unlikely to reference a valid
+shape.</p>
+<p>Shapes can be drawn with DRAW or XDRAW.  The latter toggles the current screen pixel value,
+so it's best to avoid plotting the same point more than once.</p>
+<p>While the shape data doesn't contain any color information, it's possible to create colored
+shapes on the hi-res screen by drawing on alternating lines (although this falls apart when
+scaling is used).  Further, the Applesoft routines that draw shapes will apply the current
+HCOLOR value, masking pixels and setting the high bit.</p>
+<div class="markdown-heading"><h3 class="heading-element">Tools</h3><a aria-label="Permalink: Tools" class="anchor" href="#user-content-tools" id="user-content-tools" name="user-content-tools"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><em>Apple Mechanic</em> and <em>Shape Mechanic</em>, published by Beagle Bros, have excellent tools for
+creating and editing shape tables on an Apple II.  They allows you to draw or capture arbitrary
+shapes that are then automatically converted into shape table format.  Both come with hi-res
+fonts in shape table form.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

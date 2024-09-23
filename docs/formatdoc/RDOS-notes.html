@@ -1,0 +1,100 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">RDOS Filesystem</h1><a aria-label="Permalink: RDOS Filesystem" class="anchor" href="#user-content-rdos-filesystem" id="user-content-rdos-filesystem" name="user-content-rdos-filesystem"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>RDOS 2.1 disassembly</li>
+<li>ProDOS RDOS implementation, <a href="https://fadden.com/apple2/unprotect.html" rel="nofollow">https://fadden.com/apple2/unprotect.html</a>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The RDOS operating system was developed by Roland Gustafsson for
+<a href="https://en.wikipedia.org/wiki/Strategic_Simulations" rel="nofollow">Strategic Simulations, Inc.</a> (SSI),
+a game development and publishing company.  SSI used the operating system on dozens of titles.
+The OS needed very little memory, and could be used from Applesoft BASIC through an ampersand
+interface.</p>
+<p>The filesystem layout is similar to Apple Pascal, featuring a list of files described by a
+start block and length.</p>
+<p>There are two significant versions: RDOS 2.1 was distributed on 13-sector disks, and RDOS 3.3
+was distributed on 16-sector disks.  There are also cracked copies of 13-sector disks that used
+a simple approach: the sectors were copied to a 16-sector disk, and the OS was modified to use
+16-sector I/O routines but only use the first 13 sectors on each track.</p>
+<p>A later effort, ProDOS RDOS, converted the files to ProDOS and replace the OS entirely.  The
+conversion program gave the formats the following labels:</p>
+<ul>
+<li>
+<code>RDOS33</code> - 16-sector (same physical format as DOS 3.3), uses ProDOS sector skew</li>
+<li>
+<code>RDOS32</code> - 13-sector (same physical format as DOS 3.2), uses physical sector skew</li>
+<li>
+<code>RDOS3</code> - 13-sector layout on a 16-sector disk, uses physical sector skew</li>
+</ul>
+<p>To avoid confusion with other documentation sources, I will continue to use the names here.</p>
+<p>The disk sectors did use modified address headers, but were otherwise DOS-compatible.</p>
+<div class="markdown-heading"><h2 class="heading-element">Disk Structure</h2><a aria-label="Permalink: Disk Structure" class="anchor" href="#user-content-disk-structure" id="user-content-disk-structure" name="user-content-disk-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The operating system lives on track 0.  RDOS32 disks had two different boot sectors to allow
+the disk to be booted on systems that had been upgraded to support 16-sector disks.</p>
+<p>The disk catalog lives on track 1.  On 13-sector disks it occupies sectors 0 through 10, with
+sector 11 holding Applesoft "chain" code, and sector 12 holding the code that actually performs
+the disk catalog.  On 16-sector disks the additional code is stored on track 0, so all of track 1
+is available for file entries.</p>
+<p>Each entry is 32 bytes:</p>
+<pre><code>+$00 /24: filename, high ASCII, padded with trailing spaces
++$18 / 1: file type, high ASCII 'A', 'B', 'T', or 'S'
++$19 / 1: number of 256-byte sectors used by this file
++$1a / 2: load address for 'B', not really used for 'A' and 'T'
++$1c / 2: file length in bytes (rounded up for 'T')
++$1e / 2: index of first sector
+</code></pre>
+<p>Two-byte integers are in little-endian byte order.</p>
+<p>The sector index is a 16-bit value that starts in T0S0.  It works like a ProDOS block number, but
+with 256-byte sectors.  Sector index 13 is either T0S13 for RDOS33, or T1S0 for RDOS32/RDOS3.
+Files appear to be sorted by ascending sector index to simplify scanning for empty regions when
+creating new files.</p>
+<p>Filenames may include any character except double quotes, since that would interfere with the
+ampersand-based argument passing, and may not have trailing spaces.</p>
+<p>When a file is deleted, the first character of the filename is set to $80, and the file type is
+set to $A0 (space).  If you create a new file, it will use the deleted file slot, and will
+occupy the entire region that the previous file occupied.</p>
+<p>The first entry on every disk spans the OS and catalog tracks.  On game disks it's called
+<code>RDOS 2.1 COPYRIGHT 1981 </code> or <code>RDOS 3.3 COPYRIGHT 1986 </code>, and on save-game disks created by
+initialization code it's <code>SSI SAVE GAME DISK RDOS </code> or <code>&gt;-SSI GAME SAVE DISK-&lt;</code>.</p>
+<div class="markdown-heading"><h3 class="heading-element">File Types</h3><a aria-label="Permalink: File Types" class="anchor" href="#user-content-file-types" id="user-content-file-types" name="user-content-file-types"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Files may be Applesoft BASIC, binary, or text.  Applesoft and binary are stored the same way they
+would be on a ProDOS disk.</p>
+<p>Text files are very similar to sequential text files on DOS 3.3: they're encoded in high ASCII,
+use CR ($0d) for line breaks, and have a length that is rounded up to the nearest sector.  To
+determine the actual length of a text file it's necessary to scan it for the first occurrence of
+a $00 byte.  (When creating a text file, RDOS requires the program to pre-size it, and does not
+track the actual length in the catalog.)</p>
+<p>The catalog header on a newly-initialized RDOS 3.3 saved-game disk has type 'S'.</p>
+<div class="markdown-heading"><h3 class="heading-element">Copy Protection</h3><a aria-label="Permalink: Copy Protection" class="anchor" href="#user-content-copy-protection" id="user-content-copy-protection" name="user-content-copy-protection"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>13-sector disks used a modified sector address header.  16-sector disks used different address
+headers on odd/even tracks, and altered the address epilog bytes.  These changes were used
+consistently across all titles.</p>
+<p>These changes were easily handled by contemporary nibble copiers, so many games had a secondary
+protection check.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

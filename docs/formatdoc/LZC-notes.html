@@ -1,0 +1,66 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">LZC Compression Format</h1><a aria-label="Permalink: LZC Compression Format" class="anchor" href="#user-content-lzc-compression-format" id="user-content-lzc-compression-format" name="user-content-lzc-compression-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Source code for UNIX <code>compress</code> command, version 4.0</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>First released in 1984, the <code>compress</code> <a href="https://en.wikipedia.org/wiki/Compress_(software)" rel="nofollow">command</a>
+was the preferred way to compress individual files on large systems for several years.  It uses an
+algorithm based on Lempel-Ziv-Welch (LZW)
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch" rel="nofollow">encoding</a>, which is faster and
+has better compression ratios than previous programs like <code>pack</code> and <code>compact</code>, which used RLE and
+Huffman encoding.  The specific implementation of the algorithm is sometimes referred to as <code>LZC</code>.</p>
+<p><code>compress</code> marked its files by adding <code>.Z</code> to the filename.  It was largely supplanted by <code>gzip</code>,
+which has better compression ratios and wasn't subject to Unisys patents.</p>
+<p>The program went through a few iterations, with primary development ending in 1985 with
+the release of version 4.0.  Various minor versions were released by different authors, generally
+to improve compatibility with specific systems, or to tweak the way clear codes were issued.</p>
+<p>The maximum width of the LZW codes, which affects how much memory is required by the program, could
+be configured at compile time and overridden to be lower at run time.  The value could be set
+between 9 and 16, inclusive.  This impacted decompression, meaning that an implementation limited
+to 12-bit codes could not decompress a file that used 16-bit codes.</p>
+<p>GS/ShrinkIt can decompress NuFX threads compressed with LZC, up to 16 bits.  It does not perform
+compression in that format, but it is possible to create such archives with NuLib.</p>
+<div class="markdown-heading"><h2 class="heading-element">Detail</h2><a aria-label="Permalink: Detail" class="anchor" href="#user-content-detail" id="user-content-detail" name="user-content-detail"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Files start with the magic number $1F $9D.  This is followed by a byte with compression
+parameters: the low 5 bits hold the maximum code length (9-16), and the high bit holds a
+"block compress" flag that determines whether block clear codes are issued or expected.  (Block
+clear codes were added in v3 as a non-backward-compatible change.)</p>
+<p>The header is followed by the LZW-encoded data.  There is no in-stream indication of end of
+file; the decompressor just reads data until it runs out.  There is no checksum.</p>
+<p>Internally, the compression code fills a buffer with 8 codes before writing output.  Codes start
+at 9 bits and grow to 16, so if we're currently working with 10-bit codes we'll be writing 10
+bytes at a time.  When the code size changes, the entire buffer must be flushed, because the
+decompression side also reads the input in 8-code chunks.  When operating in "block mode", each
+transition to a new code width happens to occur at a multiple of 8 codes, so there are no
+alignment gaps in the output unless a block clear code is emitted.  With the older (v2) behavior,
+the clear code is not reserved, which increases the number of available 9-bit codes by 1, so a gap
+will appear at the first code width change.  This somewhat obscure behavior has led to
+<a href="https://github.com/vapier/ncompress/issues/5">bugs</a> in some implementations.</p>
+<p>The only time a partial chunk is written is at the end of the file.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

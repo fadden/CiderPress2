@@ -1,0 +1,261 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">NuFX (ShrinkIt) Archive</h1><a aria-label="Permalink: NuFX (ShrinkIt) Archive" class="anchor" href="#user-content-nufx-shrinkit-archive" id="user-content-nufx-shrinkit-archive" name="user-content-nufx-shrinkit-archive"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Apple II File Type Note $e0/8002 (NuFX format specification)</li>
+<li>NuFX "final revision three" specification (<a href="http://nulib.com/library/old-nufx-spec.htm" rel="nofollow">http://nulib.com/library/old-nufx-spec.htm</a>)</li>
+<li>NuFX Addendum (<a href="http://nulib.com/library/nufx-addendum.htm" rel="nofollow">http://nulib.com/library/nufx-addendum.htm</a>)</li>
+<li>"NuFX: Playing Historian" article in Winter 1990 Call-A.P.P.L.E. magazine (p.97)</li>
+<li>NufxLib source code</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>"NuFX", short for "NuFile eXchange", is a disk and file archive format designed for the
+Apple II by Andy Nicholas.  It was designed in conjunction with a program called ShrinkIt,
+which featured LZW compression code by Kent Dickey.  The first public versions of the
+specification and application were distributed in early 1989.</p>
+<p>The specification describes a very flexible file format, and deliberately chooses not to
+define how ambiguity should be resolved.  For example, if a record has two resource forks,
+the handling of the situation (extract first, extract second, ignore both) is left up to the
+discretion of the software.</p>
+<p>The compression code was originally intended for compressing floppy disk images, as a
+replacement for the relatively ineffective schemes used in programs like DDD.  It grabs 4KB
+at a time -- the size of track on a 5.25" disk -- and applies RLE before LZW, because tracks
+full of zeroes weren't uncommon.  Some oddities of the original architecture remain, e.g. a
+byte to hold the 5.25" disk volume number is part of every compressed file.</p>
+<p>There are five relevant filename extensions:</p>
+<ul>
+<li>.SHK - basic NuFX archive</li>
+<li>.SDK - NuFX archive that holds a single disk image</li>
+<li>.BXY - NuFX archive with a Binary II header</li>
+<li>.SEA - NuFX archive with a GS/ShrinkIt self-extracting archive header (rare)</li>
+<li>.BSE - NuFX archive with both Binary II and self-extracting archive headers (rare)</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">File Layout</h2><a aria-label="Permalink: File Layout" class="anchor" href="#user-content-file-layout" id="user-content-file-layout" name="user-content-file-layout"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Archives begin with a 48-byte "master header".  This has a magic number for file identification,
+some timestamps, and a count of the number of records in the archive.</p>
+<p>This is followed by a series of "records".  Records may contain a variety of parts, including
+file icons and resource forks, but ultimately each record represents a single file or disk image.</p>
+<p>The individual parts within a record are called "threads".  Threads are identified by a
+three-part type: "class", "format", and "kind".  The combination of class and kind determines
+the thread's contents and layout.  The format value indicates whether the thread's data is
+compressed, and by what algorithm.</p>
+<div class="markdown-heading"><h2 class="heading-element">Version Differences</h2><a aria-label="Permalink: Version Differences" class="anchor" href="#user-content-version-differences" id="user-content-version-differences" name="user-content-version-differences"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The first version of the specification to be widely distributed was "final revision three".
+This put 0 in the master version field (or rather, where the master version field was
+eventually carved out of the reserved area), and in the record header.  The specification
+was updated a few times before reaching its final state, documented in the file type note
+dated July 1990.</p>
+<p>Master header version 1:</p>
+<ul>
+<li>Added a version number.</li>
+<li>Added an 8-byte ProDOS file type and aux type area to the master header.</li>
+<li>Added the "master EOF" field.</li>
+</ul>
+<p>Master header version 2:</p>
+<ul>
+<li>Removed the ProDOS file type and aux type area from the master header.</li>
+</ul>
+<p>Record version 1:</p>
+<ul>
+<li>Added GS/OS option lists.</li>
+<li>Removed the "sparse file" flag from the file_sys_info field.</li>
+</ul>
+<p>Record version 2:</p>
+<ul>
+<li>Added a CRC-16 on the compressed data to the thread header.</li>
+</ul>
+<p>Record version 3:</p>
+<ul>
+<li>Switched the thread header CRC-16 to be on the <em>uncompressed</em> data.  This allows the CRC to
+check data even when it isn't compressed, and helps detect bugs in the compression code.</li>
+<li>Moved the preferred location of the filename from the record header to a thread.  (It's okay
+to create filename threads in older records, e.g. the last release of P8 ShrinkIt creates
+v1 records with filenames in threads.)</li>
+</ul>
+<p>Version 2 records were only generated by pre-release versions of GS/ShrinkIt [IIRC], and as
+such should be extremely rare.</p>
+<p>Updates to the specification clarified several things, sometimes in vague ways.  For example,
+the original specification stated that the extra_type field should be "ProDOS aux_type or
+HFS creator_type", but this was changed to be "what the operating system returns when asked".
+This is significant because, under GS/OS, the operating system always returns ProDOS file types,
+even for HFS volumes.  (The HFS file type and creator type are returned in the option list.)
+Defining an archive format in terms of the behavior of the GS/OS FST is perhaps not ideal, and
+since the spec doesn't specify an operating system it leaves open the possibility that archives
+created under Mac OS could be different.</p>
+<p>The original specification only defined Squeeze and RLE+LZW as compression formats.  Later
+versions added LZW/2 and UNIX "compress" LZW (a/k/a LZC).  [I'm not sure when they first appeared
+in the spec; the Call-A.P.P.L.E. article mentions them, and uses record version 2.]</p>
+<p>The movement of the CRC field across versions merits discussion.  In early archives, the CRC
+was written as part of the LZW/1 data, and not included in the header.  In later versions,
+the CRC was excluded from LZW/2, and included in the thread header.  This means that some records
+could have two CRCs, while others might have none.  As a result, it's unwise to rewrite a
+record header unless the record body is also being rewritten, because doing so could result
+in the loss of the only CRC.</p>
+<p>The CRCs in the LZW/1 data and the version 3 header are both on the uncompressed data.
+Unfortunately, the v3 header uses a different initial seed, so it's not possible to simply
+copy the LZW/1 CRC out.</p>
+<p>ProDOS 8 ShrinkIt generates version 1 records with LZW/1 compression.  GS/ShrinkIt generates
+version 3 records with LZW/2 compression.  Both programs can decompress either format.</p>
+<div class="markdown-heading"><h2 class="heading-element">Structure</h2><a aria-label="Permalink: Structure" class="anchor" href="#user-content-structure" id="user-content-structure" name="user-content-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Master header:</p>
+<pre><code>+$00 / 6: signature ("NuFile" in low/high ASCII)
++$06 / 2: master header CRC (spans remaining fields)
++$08 / 4: number of records in archive
++$0c / 8: archive creation date/time
++$14 / 8: archive modification date/time
++$1c / 2: master version
++$1e / 8: (reserved)
++$26 / 4: archive file length, including this header
++$2a / 6: (reserved)
+</code></pre>
+<p>Record header block:</p>
+<pre><code>+$00 / 4: signature ("NuFx" in low/high ASCII)
++$04 / 2: record header CRC (spans remaining fields, including thread array)
++$06 / 2: attrib_count: length of this header, up to and including the filename length field
++$08 / 2: record version number
++$0a / 4: number of threads in record
++$0e / 2: filesystem ID, from GS/OS FST definition
++$10 / 1: filesystem separator char (e.g. '/' or ':')
++$11 / 1: (reserved)
++$12 / 1: access flags
++$13 / 3: (reserved)
++$16 / 4: file type (generally expected to be a ProDOS file type)
++$1a / 4: files: aux type; disks: number of blocks
++$1e / 2: files: ProDOS storage type; disks: device block size (usually 512)
++$20 / 8: creation date/time
++$28 / 8: modification date/time
++$30 / 8: archival date/time (i.e. when it was added to the archive)
++$38 / 2: (record v1+): GS/OS option list length
++$3a /nn: (record v1+): GS/OS option list data (+1 pad byte if the length is odd)
+ ...
+at attrib_count-2:
++$00 / 2: (deprecated) filename length
++$02 /nn: (deprecated) filename
+</code></pre>
+<p>Note that certain fields cannot be interpreted until we establish whether the record represents
+a file or a disk image.  That cannot be known without processing the full list of threads.</p>
+<p>The record header is followed by an array of 16-byte thread structures:</p>
+<pre><code>+$00 / 2: thread class
++$02 / 2: thread format
++$04 / 2: thread kind
++$06 / 2: thread CRC (version dependent)
++$08 / 2: uncompressed length (usually)
++$0c / 4: compressed length; this is the number of bytes stored in the archive file
+</code></pre>
+<p>The array of headers is followed by the data for each thread, in the same order.</p>
+<p>The thread CRC is computed for the compressed data in version 2 records, and for uncompressed
+data in version 3 records.  It's only set when the thread class is $0002 (data_thread).</p>
+<p>Considered together, the class/kind fields have the following definitions:</p>
+<ul>
+<li>$0000/0000: ASCII text (deprecated)</li>
+<li>$0000/0001: comment: uncompressed length is comment length</li>
+<li>$0000/0002: icon bitmap (never used?)</li>
+<li>$0001/0000: directory creation directive (never used?)</li>
+<li>$0002/0000: file data fork</li>
+<li>$0002/0001: disk image</li>
+<li>$0002/0002: file resource fork</li>
+<li>$0003/0000: filename: uncompressed length is filename length</li>
+</ul>
+<p>In all cases, the length of the data in the archive is determined by the compressed-length field.
+For filenames and comment threads, which are never compressed, the uncompressed length field
+indicates the amount of storage actually used.  This arrangement allows the archive to have
+over-sized buffers, so that files can be renamed and comments can be expanded without needing
+to rewrite the entire archive.</p>
+<p>Disk image threads are sized by the storage_type and extra_type fields in the record header,
+so the thread EOF field is not used for those, and in fact is zeroed out by some programs.
+The uncompressed length of disk image threads is therefore defined by the record header, not
+the thread header.</p>
+<p>The file span of a single record can be computed by:</p>
+<ul>
+<li>reading the first part of the header to get the attrib_count and total_threads</li>
+<li>seeking forward to read the filename length, to determine where the thread headers start</li>
+<li>reading every thread header and summing up the comp_thread_eof values</li>
+</ul>
+<p>The record header CRC covers all header data, including the thread headers.</p>
+<p>The specification does not say whether filenames are case-sensitive, or which character set is
+used.  Since the primary filesystems are ProDOS and HFS, it's reasonable to assume that
+filenames use Mac OS Roman.  Because UNIX implementations exist, the filenames should theoretically
+be compared in a case-sensitive fashion when checking for duplicate entries, but in practice a
+case-insensitive comparison works fine since nearly all archives are from ProDOS or HFS.</p>
+<div class="markdown-heading"><h3 class="heading-element">Filesystem ID</h3><a aria-label="Permalink: Filesystem ID" class="anchor" href="#user-content-filesystem-id" id="user-content-filesystem-id" name="user-content-filesystem-id"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The filesystem ID comes from the GS/OS FST definition:</p>
+<pre><code>  $00 - (unknown)
+  $01 - ProDOS
+  $02 - DOS 3.3
+  $03 - DOS 3.2
+  $04 - Apple Pascal
+  $05 - MFS
+  $06 - HFS
+  $07 - Lisa
+  $08 - CP/M
+  $09 - (character FST)
+  $0a - MS-DOS
+  $0b - High Sierra (CD-ROM)
+  $0c - ISO-9660 (CD-ROM)
+  $0d - AppleShare
+</code></pre>
+<p>In practice, values other than $00, $01, and $06 are unlikely.</p>
+<div class="markdown-heading"><h3 class="heading-element">Disk Images</h3><a aria-label="Permalink: Disk Images" class="anchor" href="#user-content-disk-images" id="user-content-disk-images" name="user-content-disk-images"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The storage of disk images merits closer examination.  As noted earlier, certain fields in the
+header change meaning depending on whether they are used for a file or a disk image, but you
+can't know what a record represents until you process all of the threads.  The defining
+characteristic is the presence of a disk image thread, and hopefully the absence of data and
+resource fork threads.</p>
+<p>The uncompressed length of the disk image is defined in two different ways: by the thread_eof,
+and by a combination of the extra_type field (which becomes a block count) and the storage_type
+field (which becomes a block size).  Various versions of ShrinkIt put bad values into these
+fields, making it difficult to know exactly how to interpret the contents.</p>
+<p>The "NuFX Addendum" page has some recommendations for resolving these issues.</p>
+<div class="markdown-heading"><h2 class="heading-element">Wrappers</h2><a aria-label="Permalink: Wrappers" class="anchor" href="#user-content-wrappers" id="user-content-wrappers" name="user-content-wrappers"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>NuFX archives may be "wrapped" with a Binary II header.  This is not really NuFX-in-Binary-II,
+as Binary II isn't intended to be an archive format; rather, this is just a way to preserve
+the ProDOS file attributes of the archive (type=$e0 aux=$8002).  If a wrapped archive is updated,
+the file length stored in the Binary II header must be updated.  The storage size fields aren't
+really used, and setting them precisely is difficult, so they may be updated to an approximate
+value, zeroed out, or simply ignored.</p>
+<p>Archives created by GS/ShrinkIt may also have a self-extracting archive wrapper.  The format
+of this was never published, but the important parts can be gleaned by examining the files.
+The executable has two OMF segments.  The first is the code segment, which is $2ea2 (11938) bytes
+long, and is identical for all archives.  The second holds the NuFX data.</p>
+<p>The second segment has a minor bug: the DISPDATA field for the second segment is one byte too
+long.  Instead of finding an LCONST record with the length of the NuFX data, the GS/OS loader
+would encounter the low byte of the length value, and try to treat it as an opcode.  This doesn't
+actually matter, because the segment has the "skip" flag set in its KIND field, so GS/OS doesn't
+try to load it.</p>
+<p>Three locations must be adjusted for the length of the NuFX archive:</p>
+<pre><code>+$2ea2 / 4: header BYTECNT field, holds NuFX length + 68
++$2eaa / 4: header LENGTH field, holds the NuFX length
++$2ee1 / 4: LCONST record, holds the NuFX length
+</code></pre>
+<p>The NuFX data begins at $2ee5, 12005 bytes from the start.  To be a correct OMF segment, a
+single $00 byte must be appended to the end of the file to act as an END opcode.</p>
+<p>(Some details... the BYTECNT field holds the total size of the segment. The value "68" is the
+size of the OMF segment header and opcodes: the header is 62 bytes long, and is followed by a
+5-byte LCONST record with the NuFX data, and a 1-byte END record.  The bug mentioned earlier can
+be fixed by changing the value at $2ecc from 63 to 62, but doing so will cause the app to
+conclude that it has been corrupted and refuse to run.)</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

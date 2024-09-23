@@ -1,0 +1,70 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">MicroDrive Partition Format</h1><a aria-label="Permalink: MicroDrive Partition Format" class="anchor" href="#user-content-microdrive-partition-format" id="user-content-microdrive-partition-format" name="user-content-microdrive-partition-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary Sources</h2><a aria-label="Permalink: Primary Sources" class="anchor" href="#user-content-primary-sources" id="user-content-primary-sources" name="user-content-primary-sources"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Reverse engineering + notes from Joachim Lange</li>
+<li><a href="https://wiki.reactivemicro.com/MicroDrive/Turbo" rel="nofollow">https://wiki.reactivemicro.com/MicroDrive/Turbo</a></li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The MicroDrive Turbo is an Apple II IDE controller with DMA support.  The card allows IDE hard
+drives to be attached, and includes a Compact Flash card socket.  The card was designed by
+Joachim Lange of ///SHH Systeme and first released in 1996.</p>
+<div class="markdown-heading"><h2 class="heading-element">Layout</h2><a aria-label="Permalink: Layout" class="anchor" href="#user-content-layout" id="user-content-layout" name="user-content-layout"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Block 0 holds the partition map, which defines up to 16 partitions.  The first partition always
+starts at block 256.</p>
+<p>The partition map is defined:</p>
+<pre><code>+$00 / 2: magic (0xccca, 'JL' in little-endian high ASCII)
++$02 / 2: number of cylinders
++$04 / 2: (reserved)
++$06 / 2: number of heads per cylinder
++$08 / 2: number of sectors per track
++$0a / 2: (reserved)
++$0c / 1: number of partitions in first chunk (0-7)
++$0d / 1: number of partitions in second chunk (0-7)
++$0e /10: (reserved)
++$18 / 2: romVersion for IIgs; indicates ROM01 or ROM03
++$1a / 6: (reserved)
++$20 / 4: start LBA of partition #0
+  ...
++$3c / 4: start LBA of partition #7
++$40 / 4: size, in blocks, of partition #0
+ ...
++$5c / 4: size, in blocks, of partition #7
++$60 /32: (reserved)
++$80 / 4: start LBA of partition #8
+  ...
++$9c / 4: start LBA of partition #15
++$a0 / 4: size, in blocks, of partition #8
+ ...
++$bc / 4: size, in blocks, of partition #15
++$c0 /nn: (reserved)
+</code></pre>
+<p>All values are little-endian.</p>
+<p>The partition size values are in the low 3 bytes of the size fields.  The high byte is used "for
+switching drives in a two-drive configuration", so the size values should always be masked
+with 0x00ffffff.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

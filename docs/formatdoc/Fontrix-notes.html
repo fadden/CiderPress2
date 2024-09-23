@@ -1,0 +1,85 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Fontrix Fonts</h1><a aria-label="Permalink: Fontrix Fonts" class="anchor" href="#user-content-fontrix-fonts" id="user-content-fontrix-fonts" name="user-content-fontrix-fonts"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>BIN / $6400: Fontrix Font File</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Reverse engineering, primarily by Mark Long</li>
+</ul>
+<p>Font filenames generally start with "SET.".</p>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Fontrix was a desktop publishing application for the Apple II.  Developed by Data Transforms, Inc.,
+it could generate large, detailed graphics ("16 times larger than the Apple screen"), combining
+graphics with text rendered in custom fonts.</p>
+<p>A series of "fontpaks" were released, each of which had ten fonts.  At one point the company
+was offering $100 for submissions of original font designs.</p>
+<div class="markdown-heading"><h2 class="heading-element">Font File Structure</h2><a aria-label="Permalink: Font File Structure" class="anchor" href="#user-content-font-file-structure" id="user-content-font-file-structure" name="user-content-font-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Each font contains between 1 and 94 characters.</p>
+<p>Character data is stored one bit per pixel, where 0 indicated background and 1 is foreground. Data
+for each glyph is stored in byte order from left to right, top to bottom, with the left-most pixel
+of each byte stored in the LSB.  Glyph data is referenced by a pointer into the file for each
+character.  Fonts need not contain all characters; there are values identifying the first character
+and number of characters included in the file.  Regardless of how many characters are included,
+there are always 96 data pointers, representing ASCII values 32 through 127, although the first and
+last characters are never defined nor used by Fontrix. Although there is not necessarily glyph data
+provided for it, the offset for character 127 always points to the first byte beyond the glyph data
+for character 126.</p>
+<p>The glyph data is always mapped sequentially, and the width in bytes of a character can be
+determined by the difference between its data offset and that of the following character,
+divided by the given glyph height.</p>
+<p>Offsets $0E2-$141 appear to potentially be the individual character widths for proportional fonts,
+although further research needs to be done to confirm this.</p>
+<p>The Fontrix font editor allows glyph cells to be 1-32 pixels wide, and 1-32 pixels high, inclusive.</p>
+<p>The file format is:</p>
+<pre><code>+$000 /  1: Unknown byte (usually $02)
++$001 / 15: Font Name, encoded in low ASCII, padded with spaces
++$010 /  1: Number of characters in file
++$011 /  1: ASCII value of first encoded character
++$012 /  1: Proportional flag.  0 = Non-proportional, 1 = Proportional
++$013 /  1: Non-Proportional font glyph width. For proportional fonts this seems to be an average.
++$014 /  1: Font height
++$015 /  1: Unknown byte
++$016 /  2: Font file size. This is little-endian encoded.
++$018 /  3: Identifier bytes.  All Fontrix fonts have a fixed sequence of $90/$F7/$B2 here.
++$01B /  5: Unknown bytes
++$020 /192: Character data offsets. 96 little-endian offsets from start of file. There are offsets
+            for characters 32 (space) and 127 (del) although they are not used in Fontrix.
++$0E2 / 96: Unknown bytes.  These may be width or spacing data for proportional fonts.
++$142 / 62: Unknown bytes.  Usually 0 filled, sometimes junk text.
++$180 / nn: Character glyph data.
+</code></pre>
+<p>When editing a font, the font editor replaces the signature with its bitwise inversion ($6F/08/4D).
+Files in this state can be found in fontpaks.</p>
+<div class="markdown-heading"><h2 class="heading-element">Rendering Notes</h2><a aria-label="Permalink: Rendering Notes" class="anchor" href="#user-content-rendering-notes" id="user-content-rendering-notes" name="user-content-rendering-notes"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>When creating a "GRAFFILE" with Fontrix, the space between glyphs is configurable, with a default
+of one pixel.  Space characters aren't stored explicitly; rather, they're determined by "the size
+of the last character accessed plus the size of the space between characters."  For a
+non-proportional font that makes perfect sense, for a proportional font that can cause some
+variability.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

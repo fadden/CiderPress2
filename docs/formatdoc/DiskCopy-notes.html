@@ -1,0 +1,67 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Apple DiskCopy File Format</h1><a aria-label="Permalink: Apple DiskCopy File Format" class="anchor" href="#user-content-apple-diskcopy-file-format" id="user-content-apple-diskcopy-file-format" name="user-content-apple-diskcopy-file-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary Sources</h2><a aria-label="Permalink: Primary Sources" class="anchor" href="#user-content-primary-sources" id="user-content-primary-sources" name="user-content-primary-sources"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Apple II File Type Note $e0/8005 (DiskCopy disk image)</li>
+<li><a href="https://www.discferret.com/wiki/Apple_DiskCopy_4.2" rel="nofollow">https://www.discferret.com/wiki/Apple_DiskCopy_4.2</a></li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The DiskCopy disk image format was developed by Apple for internal use in duplicating and
+distributing 3.5" disk images.  The version described here is for DiskCopy v4.2.</p>
+<p>On the Apple II, the files should use type $e0/8005.  On the Mac, type 'dImg', usually with
+creator 'dCpy'.  On systems without file types, these were usually ".image", ".img", ".dc",
+".dc42", or sometimes ".dsk".</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>DiskCopy files have both data and resource forks, although the resource fork isn't strictly
+necessary and is often discarded when images are distributed.  The format stores the 512-byte
+blocks as well as the 12-byte "tag" data stored on Macintosh 3.5" disks.  The tag data was
+important for MFS but not used for HFS, so images with nonzero tag data are uncommon.  There is
+no tag data for 720KB or 1440KB MFM disks.</p>
+<p>The format uses a custom checksum algorithm, calculated on the data and tag areas, that must be
+updated whenever the disk contents are altered.</p>
+<p>Files have three parts: header, user data, and tag data.  All integer values are in big-endian
+order.</p>
+<p>The header is:</p>
+<pre><code>+$00 /64: diskName - disk description string, preceded by length byte (assume Mac OS Roman)
++$40 / 4: dataSize - length of the user data, in bytes (must be a multiple of 512)
++$44 / 4: tagSize - length of the tag data, in bytes (must be a multiple of 12; may be zero)
++$48 / 4: dataChecksum - checksum of the userData area
++$4c / 4: tagChecksum - checksum of the tagData area
++$50 / 1: diskFormat - 0=400KB, 1=800KB, 2=720KB, 3=1440KB; other values reserved
++$51 / 1: formatByte - $12=400KB, $22=800KB Mac, $24=800KB IIgs
++$52 / 2: private - must be $0100
++$54 / n: userData - data blocks for the disk
++xxx / n: tagData - tag data for the disk, if present
+</code></pre>
+<p>The exact set of values for <code>formatByte</code> are debatable -- the Mac 400KB disk should probably
+be $02 rather than $12 -- but the exact value doesn't seem to be critical.  Some additional
+research into the subject can be found in the <a href="Nibble-notes.md">nibble-notes</a> document.</p>
+<p>The tag checksum must be zero if no tag data is present.  A note on the discferret site says that
+the first 12 bytes of the tag data are not included in the checksum, to maintain backward
+compatibility with an older version of DiskCopy.  Some experiments with old disk images
+confirmed this behavior.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

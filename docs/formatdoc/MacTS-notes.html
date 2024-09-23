@@ -1,0 +1,64 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Macintosh Plus SCSI Partition Map</h1><a aria-label="Permalink: Macintosh Plus SCSI Partition Map" class="anchor" href="#user-content-macintosh-plus-scsi-partition-map" id="user-content-macintosh-plus-scsi-partition-map" name="user-content-macintosh-plus-scsi-partition-map"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>
+<em>Inside Macintosh, Volume IV</em> (1986), chapter 31 (esp. p.292);
+<a href="https://vintageapple.org/inside_o/pdf/Inside_Macintosh_Volume_IV_1986.pdf" rel="nofollow">https://vintageapple.org/inside_o/pdf/Inside_Macintosh_Volume_IV_1986.pdf</a>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>This is a very rare format, developed for use on SCSI hard drives attached to the Macintosh Plus.
+It was used before APM, and only gets a passing notice in later documentation.  For example,
+<em>Inside Macintosh: Devices</em> notes on page 3-25, in the definition of the <code>pmSig</code> field:</p>
+<blockquote>
+<p>The partition signature. This field should contain the value of the pMapSIG constant ($504D).
+An earlier but still supported version uses the value $5453.</p>
+</blockquote>
+<p>I refer to this as the "TS" partition format because of the signature word.</p>
+<div class="markdown-heading"><h2 class="heading-element">Structure</h2><a aria-label="Permalink: Structure" class="anchor" href="#user-content-structure" id="user-content-structure" name="user-content-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Block zero holds a Driver Descriptor Record that is nearly identical to the
+<a href="APM-notes.md">APM definition</a>, lacking only the <code>ddPad</code> definition (which defines drivers
+beyond the first).</p>
+<p>Block 1 holds the Device Partition Map:</p>
+<pre><code>$00 / 2: pdSig - signature (big-endian $5453, 'TS')
+$02 / 4: pdStart - block number of first block of partition
+$06 / 4: pdSize - number of blocks in partition
+$0a / 4: pdFSID - file system ID ($54465331 'TFS1' for Macintosh Plus)
+</code></pre>
+<p>The <code>pdStart</code>/<code>pdSize</code>/<code>pdFSID</code> fields are repeated for successive partitions.  There is no count,
+so the list is supposed to end when all three values are set to zero.</p>
+<p>Looking at a very old CD-ROM image:</p>
+<pre><code>00000200: 5453 0000 0022 0004 a5ba 5446 5331 0000  TS..."....TFS1..
+00000210: 0000 4456 6572 0003 0002 6420 696e 746f  ..DVer....d into
+00000220: 2069 7473 656c 6620 6f72 2069 7473 206f   itself or its o
+00000230: 776e 2066 6f6c 6465 722e 3654 6861 7420  wn folder.6That
+</code></pre>
+<p>The first partition is start=$00000022 size=$0004a5ba fsid=TFS1.  The second partition would
+have a start block of zero, which apparently ends the list.  The rest of the data in the block
+is garbage.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

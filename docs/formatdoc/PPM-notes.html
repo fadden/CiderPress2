@@ -1,0 +1,83 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Pascal ProFile Manager (PPM) Partition</h1><a aria-label="Permalink: Pascal ProFile Manager (PPM) Partition" class="anchor" href="#user-content-pascal-profile-manager-ppm-partition" id="user-content-pascal-profile-manager-ppm-partition" name="user-content-pascal-profile-manager-ppm-partition"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary Sources</h2><a aria-label="Permalink: Primary Sources" class="anchor" href="#user-content-primary-sources" id="user-content-primary-sources" name="user-content-primary-sources"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>ProDOS 8 TN #25 "Non-Standard Storage Types"</li>
+<li>
+<em>Pascal ProFile Manager Manual</em>, <a href="https://archive.org/details/a2ppfmm/" rel="nofollow">https://archive.org/details/a2ppfmm/</a>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Apple published the "Pascal ProFile Manager" software to allow multiple UCSD Pascal volumes to be
+stored on a disk formatted for ProDOS.  This was intended for use with Apple ProFile(tm) hard
+drives.  It required Apple Pascal v1.2 or later.</p>
+<p>Images of hard drives that use this system are rare.</p>
+<div class="markdown-heading"><h2 class="heading-element">Layout</h2><a aria-label="Permalink: Layout" class="anchor" href="#user-content-layout" id="user-content-layout" name="user-content-layout"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The PPM area is recorded in the ProDOS filesystem as a file called "PASCAL.AREA" in the root
+directory.  It has file type PAS ($ef), and storage type of $4.  No other type of file uses
+storage type 4.  The ProDOS "key pointer" is set to the first block of the PPM area, and the
+"blocks used" value is set to the region size.</p>
+<p>The first two blocks of the PPM area contain some header data and the volume map.  Information
+is stored for 31 partitions and the PPM volume itself, which is considered volume zero.  If the
+two blocks are combined into a 1KB buffer, the basic layout is:</p>
+<pre><code>+$000 / 256: volume info (8 bytes x 32)
++$100 / 512: volume description (16 bytes x 32)
++$300 / 256: cached volume names (8 bytes x 32)
+</code></pre>
+<p>Broken down further:</p>
+<pre><code>+$000 / 2: total size of the PPM region, in blocks (should match "blocks used" in dir entry)
++$002 / 2: number of volumes (1-31)
++$004 / 4: signature: "PPM", preceded by length byte
++$010 / 8: info for volume #1
+  ...
++$0f8 / 8: info for volume #31
++$100 /16: description for volume #0 (not used)
++$110 /16: description for volume #1: ASCII string preceded by length byte
+  ...
++$2f0 /16: description for volume #31
++$300 / 8: volume name of volume #0 (not used)
++$308 / 8: volume name of volume #1 (cached copy, read from actual volume)
+  ...
++$3f8 / 8: volume name of volume #31
+</code></pre>
+<p>The volume info data is:</p>
+<pre><code>+$00 / 2: absolute start block of volume (within ProDOS disk, not within PPM)
++$02 / 2: length of volume, in blocks
++$04 / 1: default unit
++$05 / 1: write-protection flag (high bit)
++$06 / 2: old driver address (used when floppy drive unit numbers are assigned to PPM volumes)
+</code></pre>
+<p>It's important to note that the starting block for each partition is an absolute ProDOS filesystem
+block number, not relative to the start of the PPM area.  This means that extracting the PPM area
+from ProDOS into a separate file is not useful unless the block numbers are rewritten at the
+same time.</p>
+<p>Partitions appear to be stored in ascending order of starting block.  The PPM volume manager seems
+to have made design choices that are similar to Apple Pascal's filesystem, so it's likely that
+this is a requirement.  Deleted volumes are not represented in the directory.  The PPM volume
+manager can "krunch" (defragment) space after Pascal volumes have been deleted.</p>
+<p>The largest possible Pascal volume appears to be 16MB.  The PPM area can fill the ProDOS volume.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

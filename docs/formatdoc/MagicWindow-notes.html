@@ -1,0 +1,91 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Magic Window Document</h1><a aria-label="Permalink: Magic Window Document" class="anchor" href="#user-content-magic-window-document" id="user-content-magic-window-document" name="user-content-magic-window-document"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>DOS 'B' with filename extension ".MW"</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Reverse engineering</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><a href="http://www.artscipub.com/history/magicwindow/" rel="nofollow">Magic Window</a> was a text-based word processor
+published by Artsci.  It featured a window that scrolled horizontally and vertically to
+provide a WYSIWYG editor on a 40-column screen (assuming 10 CPI monospace output).</p>
+<p>Documents are standard DOS 'B' files with a mystery value in the load address field.  They have
+a 256-byte header, followed by high-ASCII text with occasional control codes for bold, italic,
+and so on.  Line endings are indicated with a carriage return.  A ".MW" filename suffix is
+enforced by the program.</p>
+<p>An updated version of Magic Window was published for the Apple IIe.  The file format does not
+appear to be significantly different, although a text area in the file header switched from
+high ASCII to standard ASCII.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Format</h2><a aria-label="Permalink: File Format" class="anchor" href="#user-content-file-format" id="user-content-file-format" name="user-content-file-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The contents of the 256-byte header are not well understood.  In the original MW, the layout
+looks like this:</p>
+<pre><code>+$00 / 1: $8d
++$01 / 1: unknown
++$02 /64: ASCII text, often just spaces, possibly document header and footer; high ASCII
++$52 /80: unknown, all $00?
++$a2 /94: unknown, generally nonzero values
+</code></pre>
+<p>The header changed a bit in Magic Window II:</p>
+<pre><code>+$00 / 1: $8d
++$01 / 1: unknown
++$02 /64: ASCII text, often just spaces, possibly document header and footer; low ASCII (DCI?)
++$41 / 1: $a0
++$42 /96: ASCII text, always $20?
++$a2 /94: unknown, generally nonzero values
+</code></pre>
+<p>See e.g. "CHAR.TABLE.MW" on the Magic Window II disk for an example with header text.</p>
+<p>Documents may contain formatting control codes.  The list of codes provided by the program are
+shown in "COMMAND CHART.MW":</p>
+<pre><code>Printer Tokens (^B codes):
+
+Direct:
+pica pitch (10 cpi)                       ^N
+elite pitch (12 cpi)                      ^S
+condensed pitch (17 cpi)                  ^T
+
+Toggle on/off:
+italics (alternate font) not IW           ^F
+proportional                              ^P
+underline on/off                          ^^
+boldface (emphasized)                     ^]
+expanded (double width)                   ^X
+enhanced (double strike) not IW           ^Z
+superscript                               ^A
+subscript                                 ^B
+</code></pre>
+<p>For example, the first line in COMMAND CHART is underlined (Ctrl+^ is 0x1e):</p>
+<pre><code>000100: a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0 a0                  
+000110: a0 a0 a0 9e cd e1 e7 e9 e3 a0 d7 e9 ee e4 ef f7     ·Magic Window
+000120: a0 c9 c9 a0 c3 ef ed ed e1 ee e4 f3 9e 8d 8d 8d   II Commands····
+</code></pre>
+<p>Note that centering was done manually with spaces.</p>
+<p>It's possible to enter printer-specific escape codes directly; see "GEMINI CODES.MW" on the
+Magic Window II disk for an example.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

@@ -1,0 +1,191 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">AppleWorks "Classic" Documents</h1><a aria-label='Permalink: AppleWorks "Classic" Documents' class="anchor" href="#user-content-appleworks-classic-documents" id="user-content-appleworks-classic-documents" name="user-content-appleworks-classic-documents"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>ADB ($19) / any : AppleWorks Data Base</li>
+<li>AWP ($1a) / any : AppleWorks Word Processor</li>
+<li>ASP ($1b) / any : AppleWorks Spreadsheet</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Apple II File Type Note $19, "AppleWorks Data Base File"</li>
+<li>Apple II File Type Note $1A, "AppleWorks Word Processor File"</li>
+<li>Apple II File Type Note $1B, "AppleWorks Spreadsheet File"</li>
+</ul>
+<p>The file type notes have detailed information on all three formats, as implemented by
+AppleWorks v3.0.</p>
+<p>The AppleWorks v4 and v5 manuals have some useful information on updated features, but do not
+document changes to the file formats.  Documents created with these versions of the application
+may not be backward compatible to v3.0.</p>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><a href="https://en.wikipedia.org/wiki/AppleWorks" rel="nofollow">AppleWorks</a> is an integrated office suite, combining
+a word processor, database, and spreadsheet into a single application.  It was developed by
+Rupert Lissner for Apple Computer, initially released in 1984 for the Apple II.  Shortly after
+its release, it became the best-selling software package on any computer, with more than a
+million copies sold by the end of 1988.  Support for the software was handed off to Claris, an
+Apple subsidiary.</p>
+<p>An Apple /// version was developed, but before being released it was sold off to Haba Systems,
+which sold it as "/// E-Z Pieces".  Both programs used the same file format.</p>
+<p>A series of enhancements were published by Beagle Bros with the "TimeOut" name.  Version 3.0 of
+AppleWorks was developed by Beagle Bros, on contract from Claris.</p>
+<p>Claris eventually lost interest in Apple II products, and licensed AppleWorks to Quality Computers,
+which released v4 and v5 in the early 1990s.</p>
+<p>AppleWorks GS shares little but the name with AppleWorks.  AWGS started out as GS Works, developed
+by StyleWare, and was renamed after being purchased by Claris.</p>
+<p>Claris developed integrated office suites for the Macintosh and Windows, called ClarisWorks.  After
+Claris was absorbed back into Apple, the programs were renamed to "AppleWorks".  The original
+AppleWorks is sometimes called "AppleWorks Classic" to differentiate it from the Mac/Windows
+products and AWGS.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Details</h2><a aria-label="Permalink: File Details" class="anchor" href="#user-content-file-details" id="user-content-file-details" name="user-content-file-details"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The three types of files have very different structures, but they all end with $ff $ff.  The
+file type notes describe the file contents of v3.0 files in detail.</p>
+<p>All multi-byte integers are stored in little-endian order.</p>
+<div class="markdown-heading"><h3 class="heading-element">ProDOS Auxiliary Type</h3><a aria-label="Permalink: ProDOS Auxiliary Type" class="anchor" href="#user-content-prodos-auxiliary-type" id="user-content-prodos-auxiliary-type" name="user-content-prodos-auxiliary-type"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The 16-bit aux type is used to hold lower-case flags for the 15-character filename.  A '1' bit
+indicates lower-case.  This has no effect for numbers, but a lower-case period ('.') is displayed
+as a space (' ').</p>
+<p>This is independent of the ProDOS filesystem lower-case convention, which was introduced with GS/OS.</p>
+<div class="markdown-heading"><h3 class="heading-element">Tags</h3><a aria-label="Permalink: Tags" class="anchor" href="#user-content-tags" id="user-content-tags" name="user-content-tags"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Version 3.0 formalized a tagged data extension, allowing arbitrary data to be appended to the
+file.  Tags start after the file end marker ($ff $ff), and have the form:</p>
+<pre><code>+$00 / 1: must be $ff
++$01 / 1: tag ID, assigned by Beagle Bros
++$02 / 2: data length in bytes, up to 2048
++$04 /nn: data
+</code></pre>
+<p>The start of the next tag immediately follows the data from the previous tag.</p>
+<p>The last entry is special: +$02 is a count of the tags in the file, +$03 is $ff, and there is
+no following data.</p>
+<p>It's unclear which programs used this feature, or what the assigned IDs are.</p>
+<div class="markdown-heading"><h3 class="heading-element">Post-v3 Changes</h3><a aria-label="Permalink: Post-v3 Changes" class="anchor" href="#user-content-post-v3-changes" id="user-content-post-v3-changes" name="user-content-post-v3-changes"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>v4 and v5 made numerous improvements, some of which require changes to the way data is stored.
+Some newer files may not load correctly with v3.</p>
+<p>v5 introduced support for inverse and MouseText characters.  These just use previously-unused
+byte ranges.  The definition for character encoding becomes:</p>
+<pre><code> $00-1f: special
+ $20-7f: plain ASCII
+ $80-9f: inverse upper case (map to $40-5f)
+ $a0-bf: inverse symbols/numbers (map to $20-3f)
+ $c0-df: MouseText
+ $e0-ff: inverse lower case (map to $60-7f)
+</code></pre>
+<p>MouseText and inverse characters are available in Word Processor and Data Base files.</p>
+<div class="markdown-heading"><h2 class="heading-element">Data Base Files</h2><a aria-label="Permalink: Data Base Files" class="anchor" href="#user-content-data-base-files" id="user-content-data-base-files" name="user-content-data-base-files"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The basic file structure is:</p>
+<ul>
+<li>Variable-length header.</li>
+<li>Zero or more report records, 600 bytes each.  The original limit of 8 was increased to 20
+in v3.0.</li>
+<li>Standard values record.</li>
+<li>Zero or more variable-sized data records.</li>
+<li>End marker ($ff $ff).</li>
+<li>Tag data.</li>
+</ul>
+<p>Each data record is a series of control bytes, which may be followed by data.  The structure
+generally has one entry per category:</p>
+<pre><code>+$00 / 2: number of bytes in remainder of record
++$02 / 1: category #0 control byte
++$03 /nn: category #0 data
++$xx / 1: category #1 control byte
++$yy /nn: category #1 data
+ [...]
+</code></pre>
+<p>The control byte may be:</p>
+<pre><code> $01-7f: number of following bytes for this category
+ $81-9e: number of categories to skip (value minus $80)
+ $ff   : end of record
+</code></pre>
+<p>In the simplest case, the category data is a string, with the control byte providing the length.</p>
+<p>There are special categories for dates and times, to allow them to be sorted correctly.  The first
+byte of the category data will be $c0 for a date (high-ASCII '@'), and $d4 (high-ASCII 'T') for
+time.  (It's unclear how this interacts with inverse/MouseText encoding in v5.  AW5 supports
+four-digit years, so it's likely the date/time encoding system was revamped post-v3.0.)</p>
+<p>Dates are stored in a 6-byte field, as <code>XYYMDD</code>, where X is $c0, Y and D are ASCII digits '0'-'9',
+and M is a month code.  Month codes are 'A' for January, 'B' for February, and so on.  These are
+displayed by AppleWorks in day-month-year format, e.g. "5 Jan 70".  If the year or day is <code>00</code>,
+then that value is not specified (e.g. it's a list of people's birthdays without the birth year),
+and the date should be displayed as "5 Jan" or "Jan 70".  This means that the year 2000 cannot be
+represented directly.</p>
+<p>Times are stored in a 4-byte field, as <code>XHMM</code>, where X is $d4, H is an hour code, and M are ASCII
+digits '0'-'9' for the minutes.  The hour code is 'A' for midnight, 'B' for 01:00, and so on
+through 'X' at 23:00.  AppleWorks displays times as 12-hour AM/PM.</p>
+<p>The category-skip values are used to skip over entries that don't have data.  The control byte is
+not followed by additional data for that category.  A skip value of 1 only skips the current
+category.</p>
+<p>These files can be represented as a spreadsheet-style cell grid, where each category is stored
+as a column, and the top row holds the category names.</p>
+<div class="markdown-heading"><h2 class="heading-element">Word Processor Files</h2><a aria-label="Permalink: Word Processor Files" class="anchor" href="#user-content-word-processor-files" id="user-content-word-processor-files" name="user-content-word-processor-files"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The basic file structure is:</p>
+<ul>
+<li>300-byte file header.</li>
+<li>Zero or more variable-sized line records.</li>
+<li>End marker ($ff $ff).</li>
+<li>Tag data.</li>
+</ul>
+<p>There are three kinds of line records:</p>
+<ol>
+<li>Carriage return.  Records the horizontal screen position of the line ending.</li>
+<li>Command line.  These are special commands that are displayed as a full line on screen,
+e.g. changes to margins, justification, and spacing.</li>
+<li>Text record.  This is primarily text typed by the user, but can contain mid-line formatting
+commands as well, e.g. bold and underline.</li>
+</ol>
+<p>The type of each record is determined by the first two bytes.</p>
+<p>Many of the features can be converted directly to Rich Text Format (RTF), which allows the
+document to be imported into a variety of word processors.  A subset of RTF can be displayed
+directly in a Windows RichTextBox control.  If the goal is simply to display the contents, rather
+than convert for future editing, then converting the document to HTML might make more sense.</p>
+<div class="markdown-heading"><h2 class="heading-element">Spreadsheet Files</h2><a aria-label="Permalink: Spreadsheet Files" class="anchor" href="#user-content-spreadsheet-files" id="user-content-spreadsheet-files" name="user-content-spreadsheet-files"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The basic file structure is:</p>
+<ul>
+<li>300-byte file header.</li>
+<li>Zero or more variable-length row records, each of which holds a sparse collection of cells.</li>
+<li>End marker ($ff $ff).</li>
+<li>Tag data.</li>
+</ul>
+<p>Each row record is:</p>
+<pre><code>+$00 / 2: number of bytes in remainder of record
++$02 / 2: row number, starting with 1
++$04 /nn: variable-length data, containing a series of cell entries
+</code></pre>
+<p>Each cell record is variable-length, and starts with a byte full of bit flags that provide
+information about the contents and presentation.  The contents of the rest of the cell entry
+vary based on the type.  Some cells hold labels, others hold formulas.  Formulas are tokenized,
+using a single byte for math operators and spreadsheet functions.</p>
+<p>Column references are output as a letter, starting with "A" for column 0, "AA" for column 26, up
+to "DW" for column 127.</p>
+<p>Numeric values are stored as 64-bit floating point values, using the Standard Apple Numerics
+Environment (SANE).  These are equivalent to IEEE 754 values.</p>
+<p>Performing small translations on the output can make it easier for modern applications to import
+the generated output.  For example, cell ranges in AppleWorks are defined with a three-dot
+ellipsis, e.g. <code>@SUM(A12...A18)</code>, but modern spreadsheets expect two dots ("..") instead.  Some
+of the functions are commonly known by other names, e.g. <code>@AVG</code> is more commonly provided as
+<code>@AVERAGE</code>.  A slightly more complicated issue involves making formulas more easily recognizable,
+e.g. AppleWorks will use <code>(A12+A13)</code> as a formula, but a modern spreadsheet might expect that to
+begin with <code>+</code> or <code>=</code>.  File format converters need to define the extent to which the original
+content will be modified for the sake of modern usability.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

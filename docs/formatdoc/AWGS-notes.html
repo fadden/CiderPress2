@@ -1,0 +1,94 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">AppleWorks GS Documents</h1><a aria-label="Permalink: AppleWorks GS Documents" class="anchor" href="#user-content-appleworks-gs-documents" id="user-content-appleworks-gs-documents" name="user-content-appleworks-gs-documents"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>GWP ($50) / $8010 : AppleWorks GS Word Processor</li>
+<li>GSS ($51) / $8010 : AppleWorks GS Spreadsheet</li>
+<li>GDB ($52) / $8010 : AppleWorks GS Data Base</li>
+<li>GDB ($52) / $8011 : AppleWorks GS DB Template</li>
+<li>DRW ($53) / $8010 : AppleWorks GS Graphics</li>
+<li>GDP ($54) / $8010 : AppleWorks GS Page Layout</li>
+<li>COM ($59) / $8010 : AppleWorks GS Communications</li>
+<li>CFG ($5a) / $8010 : AppleWorks GS configuration</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Apple II File Type Note $50/8010, "AppleWorks GS Word Processor File"</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>AppleWorks GS is an integrated office suite, combining a word processor, database, spreadsheet,
+communications, page layout, and graphics modules in a single program.  A detailed file format
+description was published for the word processor, but not for any of the other components.</p>
+<p>Originally created by StyleWare as "GS Works", the program was purchased by Claris and sold
+under the AppleWorks name.  As with AppleWorks "Classic", rights to the program were licensed
+to Quality Computers after Claris lost interest in Apple II products.</p>
+<div class="markdown-heading"><h2 class="heading-element">Word Processor</h2><a aria-label="Permalink: Word Processor" class="anchor" href="#user-content-word-processor" id="user-content-word-processor" name="user-content-word-processor"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The document structure is organized around paragraphs.  All multi-byte integers are stored in
+little-endian order.</p>
+<p>The overall structure is:</p>
+<pre><code>+$000 / 282: document header
++$11a / 386: globals
++$29c / nnn: document body chunk
++$xxx / ooo: document header chunk
++$yyy / ppp: document footer chunk
+</code></pre>
+<p>Each "chunk" has three parts:</p>
+<ul>
+<li>SaveArray entries.  One entry per paragraph, 12 bytes each.  The list is preceded by a count
+of the number of entries (1-65535).</li>
+<li>Rulers.  52 bytes each.  Each paragraph is associated with a ruler, so there will be at
+least one defined.</li>
+<li>Text blocks.  Variable size, holding one or more paragraphs.  Every chunk has at least one
+paragraph, so there will be at least one text block.</li>
+</ul>
+<p>A SaveArray entry has six elements:</p>
+<pre><code>+$00 / 2: textBlock - number of text block that holds the paragraph; starts from zero
++$02 / 2: offset - offset to start of paragraph within the text block
++$04 / 2: attributes - 0=normal text, 1=page break paragraph
++$06 / 2: rulerNum - index of the ruler associated with this paragraph
++$08 / 2: pixelHeight - height of this paragraph, in pixels
++$0a / 2: numLines - number of lines in this paragraph
+</code></pre>
+<p>The number of rulers in a chunk can be determined by reading through the SaveArray entries and
+noting the highest-numbered ruler reference.</p>
+<p>Text Block Records start with a 32-bit word that identifies their size, followed by the Text Block
+itself.  The Text Block starts with a pair of 16-bit lengths, one for the total size and one for
+the actually-used size, both of which should be equal to the 32-bit length in the record header.
+A text block can hold multiple paragraphs.</p>
+<p>Each paragraph starts with a 7-byte header:</p>
+<pre><code>+$00 / 2: firstFont - font family number of the first character in the paragraph
++$02 / 1: firstStyle - style of the first character
++$03 / 1: firstSize - size, in points, of the first character
++$04 / 1: firstColor - offset into color table of color of first character
++$05 / 2: reserved
+</code></pre>
+<p>Paragraphs end with a carriage return ($0d).</p>
+<p>The character set may be assumed to be Mac OS Roman.</p>
+<p>The theoretical maximum size of an AWGS document is nearly 4GB.  Given the limitations of a
+typical Apple IIgs system, it's unlikely that documents larger than a few hundred KB were created
+for anything other than testing.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

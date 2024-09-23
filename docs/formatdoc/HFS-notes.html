@@ -1,0 +1,479 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Apple Macintosh "Hierarchical File System" (HFS)</h1><a aria-label='Permalink: Apple Macintosh "Hierarchical File System" (HFS)' class="anchor" href="#user-content-apple-macintosh-hierarchical-file-system-hfs" id="user-content-apple-macintosh-hierarchical-file-system-hfs" name="user-content-apple-macintosh-hierarchical-file-system-hfs"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>
+<em>Inside Macintosh: Files</em>, chapter 2 (esp. p. 2-52+)</li>
+<li>
+<em>Inside Macintosh: Macintosh Toolbox Essentials</em> (esp. p. 7-47+)</li>
+</ul>
+<p>Additional resources:</p>
+<ul>
+<li>
+<a href="https://www.savagetaylor.com/2018/01/01/mac-os-standard-format-specifications-apple-kb-article-8647/" rel="nofollow">https://www.savagetaylor.com/2018/01/01/mac-os-standard-format-specifications-apple-kb-article-8647/</a>
+(general overview)</li>
+<li>
+<a href="https://opensource.apple.com/source/xnu/xnu-2050.18.24/bsd/hfs/hfs_format.h" rel="nofollow">https://opensource.apple.com/source/xnu/xnu-2050.18.24/bsd/hfs/hfs_format.h</a> or
+<a href="https://opensource.apple.com/source/hfs/hfs-366.1.1/core/hfs_format.h.auto.html" rel="nofollow">https://opensource.apple.com/source/hfs/hfs-366.1.1/core/hfs_format.h.auto.html</a>
+(data structures and constants for HFS and HFS+)</li>
+<li>HFS/HFS+ doc:
+<a href="https://github.com/libyal/libfshfs/blob/main/documentation/Hierarchical%20File%20System%20(HFS).asciidoc">https://github.com/libyal/libfshfs/blob/main/documentation/Hierarchical%20File%20System%20(HFS).asciidoc</a>
+</li>
+<li>libhfs project: <a href="https://www.mars.org/home/rob/proj/hfs/" rel="nofollow">https://www.mars.org/home/rob/proj/hfs/</a>
+</li>
+<li>Linux kernel: <a href="https://github.com/torvalds/linux/tree/master/fs/hfs">https://github.com/torvalds/linux/tree/master/fs/hfs</a>
+</li>
+<li>
+<a href="https://developer.apple.com/library/archive/documentation/mac/Files/Files-99.html" rel="nofollow">https://developer.apple.com/library/archive/documentation/mac/Files/Files-99.html</a>
+(2-52 in IM:Files as HTML)</li>
+<li>
+<a href="https://developer.apple.com/library/archive/technotes/tn/tn1150.html" rel="nofollow">https://developer.apple.com/library/archive/technotes/tn/tn1150.html</a> (HFS+ info, some useful)</li>
+</ul>
+<p>The <em>Inside Macintosh: Files</em> chapter does a nice job of explaining how things are laid out on
+disk, but falls a bit short when it comes to explaining how some of the pieces fit together.
+This document summarizes the general information and then details the recommended algorithms.</p>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The Hierarchical File System was developed by Apple Computer for use on the Macintosh line of
+computers.  It was introduced in 1986 with the launch of the Macintosh plus, as a successor to
+MFS, and was designed to work with floppy disks and hard drives.  It has also been used to
+distribute software on CD-ROM.  Support for HFS volumes was dropped in macOS 10.15.</p>
+<p>HFS disks have 512-byte "logical blocks", but files are made up of "allocation blocks", which are
+one or more consecutive logical blocks.  A volume can't have more than 65535 allocation blocks,
+so for volumes over 32MB the size of the allocation blocks is increased.</p>
+<p>Files have a "physical EOF", equal to the size of the storage allocated to the file, and a
+"logical EOF", based on the actual contents of the file.  Sparse files aren't allowed, so
+setting the logical EOF larger than the physical EOF requires new storage to be allocated.
+(Doing so is encouraged in situations where you know the file size ahead of time, because it
+increases the likelihood that allocated blocks will be contiguous.)</p>
+<p>As files expand, they may briefly be given more storage than they actually need, according
+to the volume's "clump size".  A "clump" is a group of contiguous allocation blocks that are
+allocated together to reduce fragmentation.  The file may be trimmed when it's closed.</p>
+<p>Files on the Macintosh can be identified by a "File System Specification" triplet: volume
+reference number, directory number, and file name.  (The use of full pathnames is discouraged.)</p>
+<p>Files and directories can be uniquely identified with a 32-bit integer, based on the "catalog
+node ID" (CNID).  File and directory IDs exist in the same name space but are referred to
+independently in the documentation as "directory ID" and "file ID".  The first 16 CNIDs are
+reserved by Apple.  The defined values are:
+0 invalid (used as an argument in certain situations)
+1 (fsRtParID) is the root directory's parent (which doesn't actually exist)
+2 (fsRtDirID) is the root directory
+3 file number of the extents file
+4 file number of the catalog file
+5 file number of the bad allocation block file</p>
+<p>With regard to CNIDs, the documentation notes (IM:Files page 2-25): "once an ID has been
+assigned to a file, that number is not reused even after the file has been deleted".  It's
+not clear how that's maintained, although the time required to create 4 billion files might
+simply be assumed to exceed the useful lifespan of hard drives built in the late 1980s.  The
+IDs appear to be issued serially, so if a filesystem rolled the counter over it would be
+necessary to pause and renumber all directories and files on the drive.</p>
+<p>Directories are not files.  They have attributes, like modification date/time, but hold no data.</p>
+<p>Volume names are 1-27 characters long, and may contain any 8-bit value except colon (':', $3a).
+File names are 1-31 characters long.  Both are treated as case-preserving but case-insensitive.
+Non-printing (control) characters are allowed but discouraged, as values such as 0x00 can cause
+problems when using the C interfaces and don't work on AppleShare servers.</p>
+<p>Filenames (except for the volume name) are mostly stored in variable-length structures, and
+start with a length byte.  In theory this could allow filenames to be up to 255 characters long,
+but in practice the catalog file keys used in index blocks have a fixed size.  (Some online
+resources claim that HFS supports 255-character filenames.  They are likely confusing HFS with
+MFS, which did support the longer names.)</p>
+<p>Officially, names starting with a ':' are partial paths, while names that don't start with a
+colon are full paths, in which the first component is the volume name.</p>
+<div class="markdown-heading"><h2 class="heading-element">Disk Layout</h2><a aria-label="Permalink: Disk Layout" class="anchor" href="#user-content-disk-layout" id="user-content-disk-layout" name="user-content-disk-layout"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Logical blocks 0/1 are used for booting (see IM:Files page 2-57 for details).  Logical block 2
+holds the "master directory block" (MDB), which specifies volume parameters and the locations
+of other system structures, like the volume bitmap.  In practice, the volume bitmap always
+starts in block 3.  A copy of the MDB is stored in the next-to-last block in the volume, and
+updated when the system catalog or extents overflow file expands.  The idea is to have a copy
+of the MDB with the structural information needed to reconstruct the volume if the primary MDB is
+trashed.  Writing to it infrequently reduces the possibility that both blocks will be damaged.
+The MDB is sometimes referred to as a "volume information block", or VIB.</p>
+<p>The very last block of the hard drive is left empty.  One source says, "it is used to check
+for bad sections of the hard disk".  The logical blocks between the regions at the start and
+end become the allocation blocks.</p>
+<p>The volume bitmap is used to track the status of the allocation blocks.  The size of the bitmap
+depends on the number of allocation blocks in the volume.  Allocation blocks are allocated in
+sequential groups, called "extents"; the first three extents for each file are specified in its
+directory entry.  If needed, additional extents are kept in the "extents overflow" file.</p>
+<p>The filesystem recognizes the possibility of being unmounted in a "dirty" state, perhaps due to
+power loss.  A bit in the MDB is cleared when the volume is mounted, and set when it's
+unmounted.  The OS tended to flush the MDB and volume bitmap infrequently, so if the bit is
+clear when the volume is mounted, the OS will perform "free-space scavenging".  This regenerates
+the volume bitmap by walking through the list of extents, and verifies that the "next CNID"
+value in the MDB is actually higher than the highest CNID found in the catalog file.</p>
+<p>Bad blocks may be detected during disk initialization.  The system can perform "bad block
+sparing", adding extents associated with a special file (CNID #5) that isn't included in the
+catalog.  (See IM:Files chapter 5, "Disk Initialization Manager".)</p>
+<p>The system maintains two special files as B*-trees: the catalog file, and the extents overflow
+file.  The catalog file lists every file and directory on the volume.</p>
+<div class="markdown-heading"><h3 class="heading-element">B* Trees</h3><a aria-label="Permalink: B* Trees" class="anchor" href="#user-content-b-trees" id="user-content-b-trees" name="user-content-b-trees"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The B-tree data structure was invented to provide a balanced tree structure in an environment
+with fixed-size containers, such as disk blocks.  The basic idea is that each disk block is
+a "node", and nodes are arranged in a tree structure.  A node holds multiple records in sorted
+order, where each record is a combination of a search key and a pointer to a lower-level node.
+Nodes to the left on the same level hold smaller values, while nodes to the right hold larger
+values.  Finding an item in the tree requires traversing a relatively short and broad tree,
+scanning the contents of each node to find a match or an appropriate child reference.</p>
+<p>When a new record is added but the appropriate node is full, the node is split into two.  A
+new record that points to the new node is added to the node's parent.  If the parent node is
+full, the parent node is also split.  If the parent is the root, a new level is added to the
+tree.  Removal of a record is similar: if a node is empty (or nearly empty), the contents are
+merged with an adjacent node, and so on up the tree, potentially removing a level at the top.</p>
+<p>The documentation consistently refers to the data structure as a "B*-tree", but it more closely
+resembles a B+-tree as described here: <a href="https://en.wikipedia.org/wiki/B%2B_tree" rel="nofollow">https://en.wikipedia.org/wiki/B%2B_tree</a></p>
+<p>HFS B*-tree files use 512 bytes per node, which map directly to logical disk blocks.  (While
+trees are managed as a collection of allocation blocks, the size of an allocation block has no
+bearing on the size of a node.)  The first node (node 0) holds a special "header node" that
+describes the tree.  This is NOT the root of the tree; rather, it points to the root.
+Additional nodes are allocated sequentially, with an in-use bitmap to track them.</p>
+<p>Nodes in the middle of the tree are called "index nodes", while those at the bottom are called
+"leaf nodes".  Unlike the classic B-tree definition, records in index nodes just point to other
+nodes, and all data is stored in the leaves.  Each record starts with a key, whose definition
+is specific to the tree type.  Records in index nodes are simply the key followed by a 32-bit
+node index, pointing to the node at the next level down.</p>
+<p>There are also "map nodes", linked in a list from the header node, that are used to extend the
+in-use bitmap.</p>
+<p>The contents of the records are specific to each B*-tree.  The catalog file has Catalog File Keys
+and Catalog File Data Records, while the extents overflow file has Extent Keys and Extent
+Data Records.  Some records are fixed in size, others are variable.</p>
+<p>There is no fixed minimum or maximum number of records for a node.  A single node could hold 35
+extent overflow index records, but only 3 catalog file data records.</p>
+<div class="markdown-heading"><h3 class="heading-element">Catalog File</h3><a aria-label="Permalink: Catalog File" class="anchor" href="#user-content-catalog-file" id="user-content-catalog-file" name="user-content-catalog-file"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Catalog keys are formed by combining the parent directory CNID with the filename.  The keys are
+sorted primarily by parent CNID, which ensures that all files and directories that live in a
+given directory are grouped together in the tree leaves.  The filename sort is generally
+case-insensitive alphabetical, but has specific handling for certain characters, so sorting is
+most easily done with a table.  (The exact sort order is not documented in the standard references,
+but the table can be extracted from Apple's HFS implementations.)</p>
+<p>There are four types of data records in the catalog: one for files, one for directories, and two
+"thread" records that connect a file or directory with its parent.  All records use the same
+key (which is a combination of the filename and the parent CNID), although index records use
+a fixed-length filename field while data records use a variable-length field, and thread records
+have an empty filename.  The purpose of the thread records is to provide a way to get the full
+key for the parent of a given child, so the data includes the parent's CNID and filename.</p>
+<p>When a directory record is created, a directory thread record is also created.  The directory
+thread is used to traverse the tree upwards.  For example, suppose a folder called "Inner"
+is created inside "Outer".  Outer has CNID 18, Inner has CNID 19.  The search key for Inner
+is "18/Inner", i.e. the parent directory's CNID combined with the directory's name.  To find
+the parent (Outer), we need to find a directory with CNID 18, but there's no fast way to search
+for an arbitrary CNID: the keys in the tree all have the <em>parent</em> CNID.  So instead we look for
+a directory thread record with key "18/" (thread record keys have an empty filename), which yields
+a record with the data field CNID=2 name="Outer".  This allows us to find "2/Outer" in the tree.
+(CNID 2 is reserved for the volume directory.)</p>
+<p>The documentation is unclear on whether directory threads <em>must</em> exist for every directory.
+Assuming that they do, e.g. to find the volume directory, or get the first entry in a
+subdirectory, may be unsafe.  However, libhfs and Linux HFS seem to make this assumption with
+no ill effects, and it turns out to be convenient.</p>
+<p>File threads are defined but don't appear to be created by Mac OS, GS/OS or libhfs, though they
+are created by the Linux HFS implementation.  They would be helpful if files were specified
+solely by CNID, but in practice the Macintosh OS uses an "FSSpec" (IM:F 2-86), which includes
+the directory CNID and filename -- exactly what's needed to form a catalog file key.</p>
+<p>The volume (root) directory uses CNID 2, with the volume name as the filename.  The search key
+for the volume directory is "1/"; it's the only record with CNID 1.  Because the keys
+are sorted primarily by CNID, the entry for the volume directory always appears first in the
+leaves.  (It's also possible to find the root directory by searching for its thread, using
+key "2/".  This works even if the MDB's volume name is out of sync, but assumes the directory
+thread exists.)</p>
+<p>Some things to note: directories are simply records in the tree, with no additional storage
+attached.  A volume can't have more files than it has allocation blocks, but directories
+(and empty files) do not count against that limit.</p>
+<div class="markdown-heading"><h3 class="heading-element">Extents Overflow File</h3><a aria-label="Permalink: Extents Overflow File" class="anchor" href="#user-content-extents-overflow-file" id="user-content-extents-overflow-file" name="user-content-extents-overflow-file"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Extents overflow keys are a combination of the file fork, the file CNID, and an allocation block
+index (<em>not</em> an allocation block number).  For example, if a file fills up the three extents
+in the catalog record with two allocation blocks each, then the allocation block index in the
+first extent record in the overflow file will be 6.  The CNID is the primary sort key, followed
+by the fork.</p>
+<p>The extent record data is an ExtDataRec, which is an array of three ExtDescriptors, which are
+simply the starting allocation block and a count.  Allocation block numbers and counts are 16-bit
+values, so extent records are 12 bytes long.</p>
+<p>In general, the B*-tree files may be extended in the same way as normal files.  The extents
+overflow file itself may not be extended, to avoid the possibility of an extent descriptor
+ending up in the part of the file it describes.  (See ExtendFileC() function in the dfalib
+sources in fsck.hfs; it returns fxOvFlErr for this situation.)</p>
+<p>Files that are written all at once on a clean disk could have a single extent, stored in the
+catalog file entry, regardless of the file's size.  It's common for an HFS CD-ROM to have an
+empty extents overflow file because the image was created by copying fully-formed files onto
+a new volume.  A file that grows gradually over time, interspersed with other file activity,
+could very well have one extent per allocation block.</p>
+<div class="markdown-heading"><h3 class="heading-element">File Algorithms</h3><a aria-label="Permalink: File Algorithms" class="anchor" href="#user-content-file-algorithms" id="user-content-file-algorithms" name="user-content-file-algorithms"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><strong>Find root directory:</strong></p>
+<p>There are at least three ways to find the directory record for the root:</p>
+<ol>
+<li>Look for "1/", where  comes from the MDB.  This works unless the
+MDB is out of sync, in which case the volume becomes unreadable.
+</li>
+<li>Get the first record from the first leaf node of the catalog tree.  Sounds convenient, but
+the code needed to do this isn't useful for anything else.</li>
+<li>Look for a directory thread with key "2/", and use the data in the thread record to form the
+key.  Assumes the directory thread exists.</li>
+</ol>
+<p><strong>Full tree traversal:</strong></p>
+<p>Traverse all nodes in the tree, with no specific ordering requirement.  (The contents of
+directories will be grouped together, but the ordering of directories is determined by CNID.)</p>
+<p>Because all data is in the leaf nodes, and all nodes at a given level of the tree are part of
+a singly-linked list, it's possible to traverse the entire catalog or list of overflow
+extents by:</p>
+<ol>
+<li>Find the leaf node with the root directory.  It's guaranteed to be the first entry in the
+leftmost leaf, because it has a CNID of 2.</li>
+<li>Walk the list of leaf nodes, following the forward link (ndFLink) field, processing all
+records in each node.</li>
+</ol>
+<p>Traversing the catalog file in this way reads each leaf node only once, and avoids reading
+any index blocks, which is why the Mac OS file search feature could be much faster than an
+explicit recursive search through the directory structure.</p>
+<p>Bear in mind that files can be moved, so a file's CNID may be smaller than that of its parent
+directory.</p>
+<p><strong>Directory traversal:</strong></p>
+<p>Given the search key for a directory, find all the files in it (opendir/readdir).</p>
+<ol>
+<li>Get the directory entry, and extract the directory's CNID.</li>
+<li>Form a key with the CNID and an empty filename to find the directory thread.  The thread
+record is the first record in the tree with the directory's CNID, and is immediately
+followed by all files and directories that use the target directory as parent.</li>
+<li>Walk forward through the leaf node chain, examining all records.  Stop when a record with a
+different CNID in the key is found.</li>
+</ol>
+<p><strong>Pathname search:</strong></p>
+<p>Given a pathname, find the associated file.</p>
+<ol>
+<li>Create a key with the root directory CNID (2) and the first pathname component.  Search
+for the entry in the catalog tree.</li>
+<li>Loop, using the CNID from the record and the next pathname component.</li>
+</ol>
+<div class="markdown-heading"><h3 class="heading-element">Tree Algorithms</h3><a aria-label="Permalink: Tree Algorithms" class="anchor" href="#user-content-tree-algorithms" id="user-content-tree-algorithms" name="user-content-tree-algorithms"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Index nodes hold a collection of keys, with pointers to index or leaf nodes.  The contents of
+the linked node have keys that are greater than or equal to the key in the index record.</p>
+<p>When inserting a new record, it will (almost) always be added to the right of an existing
+record.  In the catalog tree, which uses keys sorted by parent CNID, the root directory sits to
+the left of everything because it is the child of CNID 1.  In the extents tree, it is possible to
+need to insert a node to the left of all previous nodes.  When this happens, it is necessary to
+walk up the tree and rewrite the index records to use the newly-inserted key.</p>
+<p><strong>Insert node:</strong></p>
+<ul>
+<li>
+<p>If root node does not exist, create it.</p>
+</li>
+<li>
+<p>Search tree to find leaf node where record belongs.  If key already exists, error.</p>
+</li>
+<li>
+<p>If leaf has enough free space, add new record.  If the new record is the smallest,
+replace the key in the parent node (this may need to propagate all the way up).  Done.</p>
+</li>
+<li>
+<p>Otherwise, split leaf node in half, based on the size of the records.  The goal is to
+have an even number of <em>bytes</em> used in both nodes, not an even number of <em>records</em>.  Keep
+a pointer to the key for the first record in the right node.</p>
+<ul>
+<li>Optimization: factor the size and placement of the new record into the split, to ensure
+that the post-split nodes are evenly distributed.  Not strictly necessary so long as a node
+can hold at least 3 records.</li>
+<li>Add the new record to whichever node is appropriate.  If it's now the first record of the
+left node, update the key in the parent.</li>
+<li>Update the forward/backward node links.</li>
+<li>Add a new index record to the parent, with the key of the first record in the right node.
+If there isn't enough room, loop to split parent.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Delete node:</strong></p>
+<ul>
+<li>
+<p>Search tree to find leaf node with record.  If not found, error.</p>
+</li>
+<li>
+<p>Delete record, and compact node.  If node isn't empty, we're done.</p>
+<ul>
+<li>Optimization: if node is barely used, and one if its neighbors is similarly empty, combine
+the contents of the nodes.  This can improve record density for trees where many records
+were deleted.  If we only merge into the node on the left, then merging a node is identical
+to deleting a node as far as the upward tree maintenance is concerned.</li>
+</ul>
+</li>
+<li>
+<p>If node is empty, delete it.  Update the forward/backward links.</p>
+<ul>
+<li>Remove link to node from index record in parent.  If this empties the parent node, loop
+to remove that node as well.</li>
+</ul>
+</li>
+<li>
+<p>If last record in root node is deleted, remove the root node, and update the header.</p>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">File Attributes</h2><a aria-label="Permalink: File Attributes" class="anchor" href="#user-content-file-attributes" id="user-content-file-attributes" name="user-content-file-attributes"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Files have a 4-byte creator and a 4-byte file type.  These are usually human-readable, e.g. a
+text file might use 'TEXT' (0x54455854), but the set of values is not restricted.</p>
+<p>Preservation of ProDOS file types is described in Technical Note PT515
+"Apple File Exchange Q&amp;As", and in slightly more detail on pages 335-336 of
+Byte Works' <em>Programmer's Reference for System 6.0</em>, which seems to come from
+page 4 of <em>GS/OS AppleShare File System Translator External ERS</em>.</p>
+<p>Timestamps are unsigned 32-bit values indicating the time in seconds since midnight on
+Jan 1, 1904, in local time.  The timestamp will roll over on Feb 6, 2040.</p>
+<div class="markdown-heading"><h2 class="heading-element">Important Data Structures</h2><a aria-label="Permalink: Important Data Structures" class="anchor" href="#user-content-important-data-structures" id="user-content-important-data-structures" name="user-content-important-data-structures"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The structure and field names were originally published in Apple header files and documentation,
+notably <em>Inside Macintosh: Files</em>.  The <code>hfs_format.h</code> header file has revised versions, in which
+some fields were deprecated or repurposed.  Many fields were renamed.  Both forms are listed here.</p>
+<p>MDB / HFSMasterDirectoryBlock (162 bytes)</p>
+<pre><code>+$00 / 2: drSigWord / signature ($4244 "BD", apparently for "Big Disk")
++$02 / 4: drCrDate / createDate
++$06 / 4: drLsMod / modifyDate
++$0a / 2: drAtrb / attributes
++$0c / 2: drNmFls / fileCount
++$0e / 2: drVBMSt
++$10 / 2: drAllocPtr / nextAllocation
++$12 / 2: drNmAlBlks / totalBlocks
++$14 / 4: drAlBlkSiz / blockSize
++$18 / 4: drClpSiz / clumpSize
++$1c / 2: drAlBlSt
++$1e / 4: drNxtCNID / nextCatalogID
++$22 / 2: drFreeBks / freeBlocks
++$24 /28: drVN (volume name Pascal string, end padded with zeroes)
++$40 / 4: drVolBkUp / backupDate
++$44 / 2: drVSeqNum
++$46 / 4: drWrCnt / writeCount
++$4a / 2: drXTClpSiz
++$4e / 4: drCTClpSiz
++$52 / 2: drNmRtDirs
++$54 / 4: drFilCnt
++$58 / 4: drDirCnt
++$5c /32: drFndrInfo[8 * long] / finderInfo[32 * byte]
++$7c / 2: drVCSize -&gt; drEmbedSigWord
++$7e / 4: drVBMCSize/drCtlCSize -&gt; drEmbedExtent
++$82 / 4: drXTFlSize
++$86 /12: drXTExtRec
++$92 / 4: drCTFlSize
++$96 /12: drCTExtRec
+</code></pre>
+<p>ExtDescriptor / HFSExtentDescriptor (4 bytes)</p>
+<pre><code>+$00 / 2: xdrStABN / startBlock
++$02 / 2: xdrNumAblks / blockCount
+</code></pre>
+<p>ExtDataRec / HFSExtentRecord (12 bytes)</p>
+<pre><code>+$00 /12: array of HFSExtentDescriptor[3]
+</code></pre>
+<p>NodeDescriptor / BTNodeDescriptor (14 bytes)</p>
+<pre><code>+$00 / 4: ndFLink / fLink
++$04 / 4: ndBLink / bLink
++$08 / 1: ndType / kind
++$09 / 1: ndNHeight / height
++$0a / 2: ndNRecs / numRecords
++$0c / 2: ndResv2 / reserved
+</code></pre>
+<p>BTHdrRec / BTHeaderRec (106 bytes, at +$0e-77 in header node)</p>
+<pre><code>+$00 / 2 ($0e): bthDepth / treeDepth
++$02 / 4 ($10): bthRoot / rootNode
++$06 / 4 ($14): bthNRecs / leafRecords
++$0a / 4 ($18): bthFNode / firstLeafNode
++$0e / 4 ($1c): bthLNode / lastLeafNode
++$12 / 2 ($20): bthNodeSize / nodeSize
++$14 / 2 ($22): bthKeyLen / maxKeyLength
++$16 / 4 ($24): bthNNodes / totalNodes
++$1a / 4 ($28): bthFree / freeNodes
++$1e /76 ($2c): bthResv / reserved
+</code></pre>
+<p>CatDataDirRec / HFSCatalogFolder (70 bytes)</p>
+<pre><code>+$00 / 2: cdrType+cdrResrv2 / recordType
++$02 / 2: dirFlags / flags
++$04 / 2: dirVal / valence
++$06 / 4: dirDirID / folderID
++$0a / 4: dirCrDat / createDate
++$0e / 4: dirMdDat / modifyDate
++$12 / 4: dirBkDat / backupDate
++$16 /16: dirUsrInfo / userInfo
++$26 /16: dirFndrInfo / finderInfo
++$36 /16: dirResrv[4] / reserved[4]
+</code></pre>
+<p>CatDataFileRec / HFSCatalogFile (102 bytes)</p>
+<pre><code>+$00 / 2: cdrType+cdrResv2 / recordType
++$02 / 1: filFlags / flags
++$03 / 1: filType / fileType
++$04 /16: filUsrWds / userInfo
++$14 / 4: filFlNum / fileID
++$18 / 2: filStBlk / dataStartBlock
++$1a / 4: filLgLen / dataLogicalSize
++$1e / 4: filPyLen / dataPhysicalSize
++$22 / 2: filRStBlk / rsrcStartBlock
++$24 / 4: filRLgLen / rsrcLogicalSize
++$28 / 4: filRPyLen / rsrcPhysicalSize
++$2c / 4: filCrDat / createDate
++$30 / 4: filMdDat / modifyDate
++$34 / 4: filBkDat / backupDate
++$38 /16: filFndrInfo / finderInfo
++$48 / 2: filClpSize / clumpSize
++$4a /12: filExtRec / dataExtents
++$56 /12: filRExtRec / rsrcExtents
++$62 / 4: filResrv / reserved
+</code></pre>
+<p>CatDataThdRec / CatDataFThdRec / HFSCatalogThread (46 bytes)</p>
+<pre><code>+$00 / 2: cdrType+cdrResv2 / recordType
++$02 / 8: thdResrv[2] / reserved[2]
++$0a / 4: thdParID / parentID
++$0e /32: thdCName / nodeName[32]
+</code></pre>
+<p>DInfo / FndrDirInfo (16 bytes)</p>
+<pre><code>+$00 / 2: frRect.top
++$02 / 2: frRect.left
++$04 / 2: frRect.bottom
++$06 / 2: frRect.right
++$08 / 2: frFlags
++$0a / 2: frLocation.v
++$0c / 2: frLocation.h
++$0e / 2: frView / opaque
+</code></pre>
+<p>DXInfo / FndrOpaqueInfo (16 bytes)</p>
+<pre><code>+$00 / 2: frScroll.v
++$02 / 2: frScroll.h
++$04 / 4: frOpenChain
++$08 / 1: frScript
++$09 / 1: frXFlags
++$0a / 2: frComment
++$0c / 4: frPutAway
+</code></pre>
+<p>FInfo / FndrFileInfo (16 bytes)</p>
+<pre><code>+$00 / 4: fdType
++$04 / 4: fdCreator
++$08 / 2: fdFlags
++$0a / 2: fdLocation.v
++$0c / 2: fdLocation.h
++$0e / 2: fdFldr / opaque
+</code></pre>
+<p>FXInfo / FndrOpaqueInfo (16 bytes)</p>
+<pre><code>+$00 / 2: fdIconID
++$02 / 6: fdUnused[3]
++$08 / 1: fdScript
++$09 / 1: fdXFlags
++$0a / 2: fdComment
++$0c / 4: fdPutAway
+</code></pre>
+<div class="markdown-heading"><h2 class="heading-element">Miscellaneous</h2><a aria-label="Permalink: Miscellaneous" class="anchor" href="#user-content-miscellaneous" id="user-content-miscellaneous" name="user-content-miscellaneous"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>HFS volumes can checked with the <code>fsck.hfs</code> command.  The x86-64 version found on Linux
+crashes immediately (using hfsprogs 332.25-11build1 amd64), but the i386 version still works.
+The command will fix minor problems without asking unless the "-n" flag is given.</p>
+<p>The GS/OS System 6.0.1 FST has a serious bug that can cause file corruption.  A software patch is
+available in the test file collection, in <a href="../../TestData/nufx"><code>TestData/nufx/PatchHFS.shk</code></a>.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

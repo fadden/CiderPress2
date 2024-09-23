@@ -1,0 +1,109 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">NuFX (ShrinkIt) Compression Format</h1><a aria-label="Permalink: NuFX (ShrinkIt) Compression Format" class="anchor" href="#user-content-nufx-shrinkit-compression-format" id="user-content-nufx-shrinkit-compression-format" name="user-content-nufx-shrinkit-compression-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Apple II File Type Note $e0/8002</li>
+<li>
+<em>Hacking Data Compression</em>, Lesson 9 (<a href="https://fadden.com/apple2/hdc/lesson09.html" rel="nofollow">https://fadden.com/apple2/hdc/lesson09.html</a>)</li>
+<li>NufxLib source code</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The data compression performed by ShrinkIt and GS/ShrinkIt uses a combination of run-length
+encoding (RLE) and Lempel-Ziv-Welch sequence encoding (LZW; see
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch" rel="nofollow">https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch</a>).  The Apple II code was developed
+by Kent Dickey and Andy Nicholas.</p>
+<p>The original goal was to compress 5.25" disk images, offering a significant improvement over
+programs like Dalton's Disk Disintegrator (DDD), which combined RLE with a simplified Huffman
+encoding.  Each track on a 5.25" floppy holds 4KB, so compressing each track as an individual
+entity is a natural fit.  ShrinkIt evolved into a more general-purpose file archiver, but some
+of the original disk-oriented aspects remained.</p>
+<p>For the Apple IIgs version of ShrinkIt, an improved version of the LZW algorithm was used.
+In the original algorithm (now dubbed LZW/1), the table of sequences learned by the compressor
+is reset for every 4KB chunk.  In LZW/2, the table is only reset when the table runs out of
+space, or when LZW fails to make a 4KB chunk smaller.</p>
+<div class="markdown-heading"><h2 class="heading-element">Detail</h2><a aria-label="Permalink: Detail" class="anchor" href="#user-content-detail" id="user-content-detail" name="user-content-detail"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The run-length encoder will transform any run of more than three bytes to:</p>
+<p><code>&lt;delim&gt; &lt;count-1&gt; &lt;value&gt;</code></p>
+<p>The delimiter is specified in the compressed data, but ShrinkIt always uses $DB.</p>
+<p>The length of a run is encoded as (count - 1), allowing runs up to 256 bytes.  Delimiters
+are escaped by encoding them as a run, no matter how many appear.  The worse case scenario
+is the delimiter alternating with non-delimiter values, resulting in a 2x expansion.</p>
+<p>If RLE fails to make the contents of the 4KB buffer smaller, the uncompressed data is used.</p>
+<p>If the file isn't an exact multiple of 4096 bytes, the extra space at the end of the buffer
+is filled with zeroes.  These zeroes are included in the compressed output, and for LZW/1 they
+are included in the CRC calculation as well.</p>
+<p>The LZW pass takes the output from the RLE pass and compresses it.  The output uses
+variable-width codes from 9 to 12 bits wide, inclusive.  Code 0x0100 is reserved for table
+clears, so the first code used for data is 0x0101.</p>
+<p>If LZW fails to make the contents smaller, the output of the RLE pass is used instead.</p>
+<p>The output of the LZW/1 compressor includes a CRC at the <em>start</em> of the data, which makes it
+unsuited for streaming.  This was removed from LZW/2, and GS/ShrinkIt stores a CRC in the thread
+header instead.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Layout</h2><a aria-label="Permalink: File Layout" class="anchor" href="#user-content-file-layout" id="user-content-file-layout" name="user-content-file-layout"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The compressed data starts with a short header, followed by a series of compressed data chunks.
+The layout is slightly different for LZW/1 and LZW/2.  All multi-byte values are little-endian.</p>
+<p>LZW/1 header:</p>
+<pre><code>+$00 / 2: CRC-16/XMODEM on the uncompressed data
++$02 / 1: low-level volume number for 5.25" disks
++$03 / 1: delimiter value for run-length encoding (usually 0xdb)
+</code></pre>
+<p>LZW/1 chunk:</p>
+<pre><code>+$00 / 2: length after RLE compression; will be 4096 if compression failed
++$02 / 1: LZW flag (0 or 1)
++$03 /nn: (compressed data)
+</code></pre>
+<p>LZW/2 header:</p>
+<pre><code>+$00 / 1: low-level volume number for 5.25" disks
++$01 / 1: delimiter value for run-length encoding (usually 0xdb)
+</code></pre>
+<p>LZW/2 chunk:</p>
+<pre><code>+$00 / 2: bits [0,12]: length after RLE compression; bit [15]: LZW flag (set if LZW succeeded)
+ +$02 / 2: if LZW flag set: total length of compressed data, including the 4 header bytes
++$xx /nn: (compressed data)
+</code></pre>
+<div class="markdown-heading"><h2 class="heading-element">Notes</h2><a aria-label="Permalink: Notes" class="anchor" href="#user-content-notes" id="user-content-notes" name="user-content-notes"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The disk volume number stored in the header is only useful for 5.25" floppy disk images, and
+only if the program that extracts the image performs a low-level format as part of extracting
+the data.  Further, it's only useful if the program on the disk actually pays attention to
+the disk volume number.</p>
+<p>The length of compressed chunks was added to the LZW/2 data to allow for partial recovery of
+corrupted archives.  If a corrupted chunk was found, the extraction program could skip forward
+4KB in the output file, and continue with the next chunk.  It's unclear which programs made
+use of this feature.  Archives made by a certain Mac application have values stored in big-endian
+order for this field, so it's usually best to ignore this value.</p>
+<p>The length of the original file cannot be determined from the compressed data.  The file's
+length is effectively rounded up to the nearest 4KB boundary as it is being compressed, and it
+retains this form when expanded.  The code managing the expansion must be prepared to trim the
+output.  Simply reading data until the codec halts will not yield correct results.</p>
+<p>If presented with a zero-length file, the compressor could zero-fill a 4KB buffer and compress
+that, avoiding a special case.  It's easier to just output no data at all, and have the
+decompressor recognize a stream that ends after the file header as an empty file.  (This never
+comes up in ShrinkIt, because it doesn't try to compress very small files.)</p>
+<p>P8 and GS ShrinkIt add an extra byte to the end of LZW-compressed threads.  Because the
+decompressor halts when all output is generated, rather than when all input is consumed, extra
+trailing bytes are ignored.  Neither program appears to require the extra byte when expanding.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>

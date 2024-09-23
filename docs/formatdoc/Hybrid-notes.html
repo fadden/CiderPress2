@@ -1,0 +1,86 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Notes on Hybrid Disk Formats</h1><a aria-label="Permalink: Notes on Hybrid Disk Formats" class="anchor" href="#user-content-notes-on-hybrid-disk-formats" id="user-content-notes-on-hybrid-disk-formats" name="user-content-notes-on-hybrid-disk-formats"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>This document discusses disk images with multiple operating systems.  While multi-partition
+formats typically have a series of well-defined discrete containers, hybrid disks have filesystem
+regions that overlap.  This can make them more difficult to detect.</p>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Some documentation, mostly reverse-engineering</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">DOS MASTER</h2><a aria-label="Permalink: DOS MASTER" class="anchor" href="#user-content-dos-master" id="user-content-dos-master" name="user-content-dos-master"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>DOS MASTER, by Glen Bredon, allows DOS 3.3 volumes to be embedded in a ProDOS filesystem.  A
+common use was to put multiple DOS volumes on an 800KB floppy.  The program allocates a
+contiguous region of blocks, usually at the end of the disk, and marks them as "in use" without
+creating an associated file for them.  Even though the DOS regions are accessible by ProDOS,
+they won't be overwritten because the blocks aren't available to files.</p>
+<p>The individual DOS volumes may be 140KB (35 tracks), 160KB (40 tracks), 200KB (50 tracks), or
+400KB (50 tracks, 32 sectors each).  If the volumes completely fill the target disk, the first
+7 blocks will be reserved for the ProDOS boot blocks and volume directory, so the disk will
+still be recognized as a valid ProDOS volume (albeit with no free sectors).  The installer
+also gives the option of reserving an additional 28KB (7 tracks) for "PRODOS" and the "DOS.3.3"
+executable, allowing the disk to be booted directly into DOS 3.3.</p>
+<p>The presence of DOS MASTER volumes can be identified by looking for contiguous in-use blocks that
+aren't part of any file on a ProDOS disk.  Once found, the size of the region provides a
+reasonable guess at the number and size of the DOS volumes present.  Scanning for the DOS
+catalog track within each provides confirmation.  An alternative approach is to check for DOS
+tracks in various configurations, but this has a higher risk of false-positives, especially if
+a set of DOS regions was created, removed, and re-created.</p>
+<div class="markdown-heading"><h2 class="heading-element">140KB DOS Hybrids</h2><a aria-label="Permalink: 140KB DOS Hybrids" class="anchor" href="#user-content-140kb-dos-hybrids" id="user-content-140kb-dos-hybrids" name="user-content-140kb-dos-hybrids"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>It's possible to create a "hybrid" disk that has both the DOS 3.3 filesystem and another
+filesystem, so long as the other begins on track 0.  ProDOS, UCSD Pascal, and CP/M filesystems
+all qualify.  This works because the "starting point" of a DOS filesystem is the VTOC on
+track 17 sector 0.  By marking tracks 0 through 16 as in-use but not associated with a file,
+the other operating system can avoid being trampled by DOS by marking tracks 17+ as in-use in
+the VTOC.</p>
+<p>The other operating system can be configured in one of two ways.  For ProDOS, which has a
+blocks-in-use bitmap, the volume can be configured to span the entire volume, with the blocks
+on the second half of the disk marked as being in use.  For UCSD Pascal, which uses the file
+entries to determine block usage, it's necessary to declare the volume size as shorter than
+the full length of the disk.</p>
+<p>Because the CP/M directory starts on track 3, it's actually possible to have DOS, CP/M, and
+either ProDOS or Pascal on a single disk.</p>
+<p>The DOS MASTER distribution disk provides an interesting case: tracks 17 through 21 are DOS 3.3,
+but the rest of the disk (tracks 0-16 and 22-34) is ProDOS.  This is very different from a
+DOS MASTER volume, which has a complete DOS disk stored inside a ProDOS filesystem, and a little
+different from other hybrids, which tend to split the disk in half.  (The DOS catalog track is
+only one sector long, which makes recognition tricky.)</p>
+<p>DOS hybrids can be detected by examining the VTOC for in-use blocks that aren't part of any file.
+This isn't perfect because the first three tracks of most DOS disks are already in this state
+because they hold the DOS boot image, but if the no-file in-use area extends to track 3 and beyond
+then it's worth scanning for other known operating systems.  Another approach is simply to test
+each disk for every known operating system, and accept all that appear.</p>
+<p>One utility for creating DOS/ProDOS hybrids is called HYBRID.CREATE, part of the "Extra K"
+utilities sold by Beagle Bros.</p>
+<p>Another is "Doubleboot", written by Ken Manly and published by MicroSPARC, Inc.  It creates a
+hybrid DOS/ProDOS disk with a custom boot loader that allows either OS to be booted.  The number
+of tracks reserved for DOS can be adjusted, and the catalog track length is cut in half, with
+half the blocks being available to ProDOS (which is tricky due to the software sector skewing).
+<a href="https://www.applefritter.com/appleii-box/APPLE2/ProDOSandDOS33DoubleBoot/DoubleBoot.pdf" rel="nofollow">https://www.applefritter.com/appleii-box/APPLE2/ProDOSandDOS33DoubleBoot/DoubleBoot.pdf</a> has a
+listing that can be typed in.</p>
+<div class="markdown-heading"><h2 class="heading-element">Pascal ProFile Manager (PPM)</h2><a aria-label="Permalink: Pascal ProFile Manager (PPM)" class="anchor" href="#user-content-pascal-profile-manager-ppm" id="user-content-pascal-profile-manager-ppm" name="user-content-pascal-profile-manager-ppm"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>See <a href="../Multi/PPM-notes.md">PPM</a>.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a></p>
+</div>
+</div>
+</div>
