@@ -36,9 +36,10 @@ for regular files as the file's length changes:
    Each referenced block holds file data.
  - [131073,16777215]: "tree": key block is a "master" index block that holds up to 128 block
    numbers.  Each referenced block is an index block.
+
 When a file grows long enough to expand, a new key block is allocated.  The seedling key block
-becomes the first data block listed in the index; the sapling index block becomes the first index
-listed in the master index.  If a file is truncated, the process is reversed.
+becomes the first data block listed in the new index; the sapling index block becomes the first
+index listed in the new master index.  When a file is truncated, the process is reversed.
 
 Directory files are stored as a simple linear list of file entries.  The volume directory cannot
 change size, but subdirectories are allowed to grow (but not shrink).
