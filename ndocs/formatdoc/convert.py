@@ -6,7 +6,7 @@
 # This formats various Markdown documents as HTML.  This is done via the
 # github REST API, using code from
 # https://github.com/phseiff/github-flavored-markdown-to-html .  You need to
-# have that program installed (pip3 install gh-md-to-html) for this to work.
+# have that program installed ("pip3 install gh-md-to-html") for this to work.
 #
 # The file needs to be fixed up a bit before and after the conversion.
 #
@@ -14,9 +14,9 @@
 # If you exceed the limit, the files will be trivial "limit exceeded" messages
 # instead of converted documents.  The limit is increased to 5,000 for
 # authenticated requests.  To add authentication:
-#  - Create a fine-grained personal access token.  Learn how on
+#  - Create a fine-grained personal access token.  Instructions:
 #    https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
-#  - Locate the gh-md-to-html module.  In Windows, I found this in
+#  - Locate the installed gh-md-to-html module.  In Windows, I found this in
 #    ~/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/LocalCache/local-packages/Python312/site-packages/gh_md_to_html
 #  - Edit the __init__.py file.  Find the "markdown_to_html_via_github_api"
 #    function.  Add two entries to "headers", substituting the token in:
@@ -24,7 +24,7 @@
 #      "X-GitHub-Api-Version": "2022-11-28"
 #
 # The converter has an "offline" conversion mode, which requires additional
-# dependencies (pip3 install gh-md-to-html[offline_conversion]), but it
+# dependencies ("pip3 install gh-md-to-html[offline_conversion]"), but it
 # currently fails in pygments.
 #
 
@@ -99,22 +99,80 @@ text_subst = [
         ( re.compile(r"/github-markdown-css/"), "" ),
         ]
 
+findChunk = re.compile(r"\[.*\]\(([^\)]+)\)")
+GROUP_ALL = 0
+GROUP_LINK = 1
+
+SOURCE_ROOT = "https://github.com/fadden/CiderPress2/blob/main/"
+
+def fixlinks(inpath, outpath):
+    """ fixes the links in a .md file, and strips the UTF-8 BOM """
+    treePath = "../../" + inpath
+
+    with open(treePath, "r", encoding="utf-8-sig") as file:
+        fileData = file.read()
+
+    with open(outpath, "w", encoding="utf-8") as outFile:
+        # The simplest approach is to rewrite them to find the .md documentation
+        # in the source tree.  For links to other format docs, we can get a little
+        # fancier and link to the converted document in this directory.
+        startPos = 0
+        while True:
+            match = findChunk.search(fileData, startPos)
+            if not match:
+                break
+            link = match.group(GROUP_LINK)
+
+            linkSpan = match.span(GROUP_LINK)
+
+            # copy everything up to the chunk
+            outFile.write(fileData[startPos : linkSpan[0]])
+            # fix the link
+            if len(link) > 9 and link[-9:] == "-notes.md":
+                base = os.path.basename(link)
+                outstr = base[0:-2] + "html"
+            elif link[0] == "#" or link[0:4] == "http":
+                # don't mess with local links or full URLs
+                outstr = link
+            else:
+                # handle relative paths to non-notes items in source tree
+                basePath = os.path.dirname(inpath)
+                modLink = link
+                while modLink[0:3] == "../":
+                    modLink = modLink[3:]
+                    basePath = os.path.dirname(basePath)
+                if not basePath:
+                    linkPath = modLink
+                else:
+                    linkPath = basePath + "/" + modLink
+                linkPath = SOURCE_ROOT + linkPath
+                outstr = linkPath
+            if link == outstr:
+                #print("  {0} --> (no change)".format(link))
+                None
+            else:
+                print("  {0} --> {1}".format(link, outstr))
+            outFile.write(outstr)
+            # copy the rest of the match
+            outFile.write(fileData[linkSpan[1] : match.end(GROUP_ALL)])
+
+            # Start next search at end of full search.
+            startPos = match.end(GROUP_ALL)
+
+        # copy remaining bytes
+        outFile.write(fileData[startPos:])
+
+
 def convert(pathName):
     """ converts a .md file from the source tree to a .html file here """
 
     tempmd = "tempfile.md"
     temphtml = "tempfile.html"
 
-    # In theory we can call gh_md_to_html.core_converter.markdown(), but in
-    # practice python can't find that.  The file loader is confused by
-    # byte-order marks, so we need to read the file and write it back without
-    # the BOM.
+    # The file loader is confused by byte-order marks, so we need to read the
+    # file and write it back without the BOM, fixing links as we do.
     fileNameBase = os.path.splitext(os.path.basename(pathName))[0]
-    treePath = "../../" + pathName
-    with open(treePath, "r", encoding="utf-8-sig") as file:
-        mdtext = file.read()
-    with open(tempmd, "w", encoding="utf-8") as file:
-        file.write(mdtext)
+    fixlinks(pathName, tempmd)
 
     footer = ("<p><a href=\"../doc-index.html\">Return to documentation index</a> | "
         "<a href=\"https://github.com/fadden/CiderPress2/blob/main/" + pathName + "\">"
