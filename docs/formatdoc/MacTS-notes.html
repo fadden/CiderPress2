@@ -33,7 +33,7 @@ An earlier but still supported version uses the value $5453.</p>
 <p>I refer to this as the "TS" partition format because of the signature word.</p>
 <div class="markdown-heading"><h2 class="heading-element">Structure</h2><a aria-label="Permalink: Structure" class="anchor" href="#user-content-structure" id="user-content-structure" name="user-content-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>Block zero holds a Driver Descriptor Record that is nearly identical to the
-<a href="APM-notes.md">APM definition</a>, lacking only the <code>ddPad</code> definition (which defines drivers
+<a href="APM-notes.html">APM definition</a>, lacking only the <code>ddPad</code> definition (which defines drivers
 beyond the first).</p>
 <p>Block 1 holds the Device Partition Map:</p>
 <pre><code>$00 / 2: pdSig - signature (big-endian $5453, 'TS')
