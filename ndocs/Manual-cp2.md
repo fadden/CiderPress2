@@ -50,7 +50,7 @@ Contents:
    - [Pairing Resource Forks](#pairing-resource-forks)
    - [Access Flags](#access-flags)
  - [Metadata](#metadata)
-   - [DiskCopy 4.2](#diskcopy-4.2)
+   - [DiskCopy 4.2](#diskcopy-42)
    - [Trackstar](#trackstar)
    - [2IMG](#2img)
    - [WOZ](#woz)
