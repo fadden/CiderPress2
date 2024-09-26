@@ -39,8 +39,8 @@ the disk to be booted on systems that had been upgraded to support 16-sector dis
 
 The disk catalog lives on track 1.  On 13-sector disks it occupies sectors 0 through 10, with
 sector 11 holding Applesoft "chain" code, and sector 12 holding the code that actually performs
-the disk catalog.  On 16-sector disks the additional code is stored on track 0, so all of track 1
-is available for file entries.
+the disk catalog.  On 16-sector disks the operating system, catalog, and chain code are all on
+track 0, so all of track 1 is available to the disk directory.
 
 Each entry is 32 bytes:
 ```
@@ -58,8 +58,8 @@ with 256-byte sectors.  Sector index 13 is either T0S13 for RDOS33, or T1S0 for 
 Files appear to be sorted by ascending sector index to simplify scanning for empty regions when
 creating new files.
 
-Filenames may include any character except double quotes, since that would interfere with the
-ampersand-based argument passing, and may not have trailing spaces.
+Filenames may include any ASCII character except control characters.  Trailing spaces, and
+characters after the 24th, are ignored.
 
 When a file is deleted, the first character of the filename is set to $80, and the file type is
 set to $A0 (space).  If you create a new file, it will use the deleted file slot, and will

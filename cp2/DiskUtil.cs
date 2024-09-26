@@ -852,6 +852,9 @@ namespace cp2 {
 
         #region Replace Partition
 
+        /// <summary>
+        /// Handles the "replace-partition" command.
+        /// </summary>
         public static bool HandleReplacePartition(string cmdName, string[] args, ParamsBag parms) {
             if (args.Length != 2) {
                 CP2Main.ShowUsage(cmdName);
