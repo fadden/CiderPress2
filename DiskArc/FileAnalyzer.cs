@@ -373,6 +373,9 @@ namespace DiskArc {
                 case ".acu":
                     fileKind1 = FileKind.AppleLink;
                     break;
+                case ".wav":
+                    fileKind1 = FileKind.AudioRecording;
+                    break;
                 case ".gz":
                     fileKind1 = FileKind.GZip;
                     break;
@@ -509,11 +512,13 @@ namespace DiskArc {
         /// <returns>Result of TestKind() function.</returns>
         public static bool TestKind(Stream stream, FileKind kind, AppHook appHook) {
             switch (kind) {
+                case FileKind.AppleLink:
+                    return AppleLink.TestKind(stream, appHook);
                 case FileKind.AppleSingle:
                     return AppleSingle.TestKind(stream, appHook) ||
                         AppleSingle.TestDouble(stream, appHook);
-                case FileKind.AppleLink:
-                    return AppleLink.TestKind(stream, appHook);
+                case FileKind.AudioRecording:
+                    return AudioRecording.TestKind(stream, appHook);
                 case FileKind.Binary2:
                     if (stream.Length == 0) {
                         // Empty Binary II archives are totally empty files.  The test code
@@ -522,7 +527,7 @@ namespace DiskArc {
                     }
                     return Binary2.TestKind(stream, appHook);
                 case FileKind.DDD:
-                    return false;       // TODO
+                    return false;       // TODO(someday)
                 case FileKind.DiskCopy:
                     return DiskCopy.TestKind(stream, appHook);
                 case FileKind.GZip:
@@ -917,6 +922,9 @@ namespace DiskArc {
                         break;
                     case FileKind.AppleSingle:
                         archive = AppleSingle.OpenArchive(stream, appHook);
+                        break;
+                    case FileKind.AudioRecording:
+                        archive = AudioRecording.OpenArchive(stream, appHook);
                         break;
                     case FileKind.Binary2:
                         archive = Binary2.OpenArchive(stream, appHook);

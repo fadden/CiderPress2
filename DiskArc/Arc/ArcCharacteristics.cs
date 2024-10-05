@@ -73,11 +73,13 @@ namespace DiskArc.Arc {
 
         /// <summary>
         /// Earliest timestamp that can be represented in this archive.
+        /// Use DateTime.MinValue if timestamps aren't supported.
         /// </summary>
         public DateTime TimeStampStart { get; }
 
         /// <summary>
         /// Latest timestamp that can be represented in this archive.
+        /// Use DateTime.MinValue if timestamps aren't supported.
         /// </summary>
         public DateTime TimeStampEnd { get; }
 

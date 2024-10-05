@@ -27,7 +27,7 @@ namespace cp2_wpf {
     public static class WinUtil {
         public const string FILE_FILTER_ALL = "All files|*.*";
         public const string FILE_FILTER_KNOWN = "Known formats|" +
-            "*.shk;*.sdk;*.sea;*.bny;*.bqy;*.bxy;*.bse;" +
+            "*.shk;*.sdk;*.sea;*.bny;*.bqy;*.bxy;*.bse;*.wav;" +
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc42;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;" +
             "*.gz;*.zip;*.as;*.bin;*.macbin;*.acu";

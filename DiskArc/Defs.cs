@@ -126,6 +126,7 @@ namespace DiskArc {
             NuFX,                       // .shk, .sdk, .bxy, .sea, .bse
             Binary2,                    // .bny, bqy
             AppleLink,                  // .acu
+            AudioRecording,             // .wav
             // ? StuffIt
 
             // Single-file wrappers.

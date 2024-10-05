@@ -34,6 +34,8 @@ namespace AppCommon {
                 return "AppleLink";
             } else if (arc is AppleSingle) {
                 return "AppleSingle";
+            } else if (arc is AudioRecording) {
+                return "Audio";
             } else if (arc is Binary2) {
                 return "Binary II";
             } else if (arc is GZip) {

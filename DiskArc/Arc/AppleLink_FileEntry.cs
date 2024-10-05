@@ -99,6 +99,7 @@ namespace DiskArc.Arc {
 
         public string Comment { get => string.Empty; set { } }
 
+        // Entries do not have children.
         private static readonly List<IFileEntry> sEmptyList = new List<IFileEntry>();
         public IEnumerator<IFileEntry> GetEnumerator() {
             return sEmptyList.GetEnumerator();

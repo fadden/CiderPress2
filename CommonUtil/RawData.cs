@@ -493,6 +493,7 @@ namespace CommonUtil {
             data[offset + 2] = (byte)(val >> 8);
             data[offset + 3] = (byte)val;
         }
+
         /// <summary>
         /// Reads an unsigned 32-bit big-endian value from a byte stream,
         /// advancing the offset.
@@ -698,6 +699,21 @@ namespace CommonUtil {
             uint leVal = (val >> 16) | ((val << 16) & 0xffff0000);
             leVal = ((leVal >> 8) & 0x00ff00ff) | ((leVal << 8) & 0xff00ff00);
             return StringifyU32LE(leVal);
+        }
+
+        /// <summary>
+        /// Converts a 4-character ASCII string to a 32-bit integer.
+        /// </summary>
+        /// <remarks>
+        /// Results are undefined if the argument includes non-ASCII chars.
+        /// </remarks>
+        /// <param name="str">String to convert.</param>
+        /// <returns>Integer representation.</returns>
+        public static int IntifyASCII(string str) {
+            if (str.Length != 4) {
+                throw new ArgumentException("String must be four characters: '" + str + "'");
+            }
+            return (str[0] << 24) | (str[1] << 16) | (str[2] << 8) | str[3];
         }
 
         /// <summary>
