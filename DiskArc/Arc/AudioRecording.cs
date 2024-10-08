@@ -16,7 +16,6 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
-using System.Text;
 
 using CommonUtil;
 using static DiskArc.Defs;
@@ -98,7 +97,7 @@ namespace DiskArc.Arc {
         /// <returns>True if this looks like a match.</returns>
         public static bool TestKind(Stream stream, AppHook appHook) {
             stream.Position = 0;
-            WAVFile? wav = WAVFile.ReadHeader(stream);
+            WAVFile? wav = WAVFile.Prepare(stream);
             return (wav != null);
         }
 
@@ -122,12 +121,14 @@ namespace DiskArc.Arc {
         /// <exception cref="NotSupportedException">Data stream is not compatible.</exception>
         public static AudioRecording OpenArchive(Stream stream, AppHook appHook) {
             stream.Position = 0;
-            WAVFile? wav = WAVFile.ReadHeader(stream);
+            WAVFile? wav = WAVFile.Prepare(stream);
             if (wav == null) {
-                throw new NotSupportedException("Not a recognized WAV file format");
+                throw new NotSupportedException("Not a supported WAV file format");
             }
             AudioRecording archive = new AudioRecording(stream, wav, appHook);
-            // TODO - scan contents
+            List<CassetteDecoder.Chunk> chunks = CassetteDecoder.DecodeFile(wav,
+                CassetteDecoder.Algorithm.Zero);
+            // TODO - analyze contents
             return archive;
         }
 

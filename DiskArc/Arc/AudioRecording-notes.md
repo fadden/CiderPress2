@@ -2,8 +2,12 @@
 
 ## Primary References ##
 
- - General info: https://retrocomputing.stackexchange.com/a/144/56
  - Apple II ROM tape routines (READ, WRITE)
+ - CiderPress implementation
+   (https://github.com/fadden/ciderpress/blob/master/app/CassetteDialog.cpp)
+
+There is a substantial library of Apple II cassette tapes at
+https://brutaldeluxe.fr/projects/cassettes/.
 
 ## Background ##
 
@@ -21,8 +25,8 @@ structure:
  - Tape-in edge: 1/2 cycle at 400 usec/cycle, followed by 1/2 cycle at
    500 usec/cycle. This "short zero" indicates the transition between
    header and data.
- - Data: one cycle per bit, using 500 usec/cycle for 0 and
-   1000 usec/cycle for 1.
+ - Data: one cycle per bit, using 500 usec/cycle (2kHz) for 0 and
+   1000 usec/cycle (1kHz) for 1.
 
 There is no "end of data" indication, so it's up to the user to specify the
 length of data. The last byte of data is followed by an XOR checksum,
@@ -122,8 +126,91 @@ a full cycle before making an evaluation, though we still need to
 examine the half-cycle timing during the lead-in to catch the "short 0".
 
 Because of these distortions, 8-bit 8KHz audio is probably not a good
-idea.  16-bit 22.05KHz sampling is a better choice for tapes that have
-been sitting around for 25-30 years.
+idea.  22.05KHz sampling is a better choice for tapes that have been sitting
+around for 25-30 years.
+
+## Sound Capture ##
+
+_Here are some tips on capturing audio from an Apple II data recording.  This
+comes from the manual for the original CiderPress application._
+
+It isn't necessary to record each section of data from the cassette into its
+own WAV file.  CiderPress will try to find every chunk of data in a WAV file.
+
+If you have a "line out" on your tape player and a "line in" on your PC sound
+card, use those.  If not, you can use the "microphone" input and the
+"headphone" out, though you will have to set the volume levels correctly.  In
+the "speaker" or "multimedia" control panel, set the microphone input gain to
+50%.  Start up your sound editor.  If you have a way to see the input level
+on the microphone, turn that on.  Play the cassette tape out loud until you
+hear a tone, then plug it into the computer and watch the input level.  You
+want to set the volume so that the input is as high as you can get it without
+exceeding the limit (this causes "clipping", which is a lot like a square
+wave but probably isn't going to help us here).
+
+Once you have the volume level figured out, back the tape up to the start of
+the tone.  Hit "record" in your software and "play" on your tape player.
+Record at 22.05KHz with 8-bit monaural samples.  (Recording at CD quality,
+44.1KHz with 16-bit stereo samples, doesn't help and requires 8x the space.)
+If your software shows an input meter while recording, continue to record
+until the volume level drops and stays low for at least 10 seconds.  If you
+can't monitor the input, you will either need to time the cassette, or just
+record for a long time and perhaps trim the excess off in the sound editor.
+Make sure you get all of the data from the tape.  When you think you're done,
+pull the audio plug out of the tape player and keep listening for a
+little bit.
+
+Tip: CiderPress only needs to see about a second of the lead-in, so it's okay
+to fiddle with the volume while the initial tone is playing.
+
+Tip: in some cases, setting the volume a little too high can be beneficial.
+It's better to clip some samples than have too little signal.  If at first
+you don't succeed, crank up the volume a notch and try again.
+
+
+Most cassettes include more than one copy of a program.  In some cases (such
+as Adventure International's "Asteroid") they are slightly different
+implementations, while in others it's the same program repeated.  Sometimes
+the program is repeated on the back side of the tape.  Magnetic tapes wear out
+if you play them too much, so redundancy was common.
+
+The output of the Apple II is a blocky "square wave" rather than a smooth
+"sine wave".  Because of limitations in how quickly voltage levels can change,
+the output isn't perfectly square.  Because of the physical properties of and
+variations in magnetic media, the not-quite-square wave is rather rounded and
+wiggly.  After being stored in less-than-perfect conditions for 25-30 years,
+what you read back from an Apple II tape can look pretty crazy.
+
+Most cassettes can be recovered, even those that will no longer play on an
+Apple II.  If you find one that can't, you may want to keep the WAV recording
+anyway, on the off chance that in the future an improved algorithm can be
+developed that will decode it.
+
+When CiderPress encounters data that it can't interpret, it stops trying to
+read from that section of the WAV file.  For this reason, damaged entries will
+usually be shorter than undamaged ones.  If a file appears to have the correct
+length but the checksum still doesn't match, it means the signal was
+sufficiently distorted to make a '0' bit look like a '1' bit, which is actually
+pretty hard to do.  In most cases the decoder will either make an accurate
+determination or will conclude that the signal is too distorted to process.
+So far only one case has been found where the checksum was deliberately
+altered, as part of a copy protection scheme (Sargon II).
+
+If the tape has more than one program on it, you can usually tell if it's
+multiple copies of the same thing by comparing lengths and checksums.  If the
+checksums say "good" but have different values, you probably have two
+different programs, or two slightly different versions of the same program.
+
+
+You may be tempted to store copies of the WAV file in MP3 format.  This is not
+recommended.  CiderPress cannot decode MP3s, and the decoded MP3 file is less
+likely to work than the original.  However, experiments with converting the
+sound files in and out of MP3 format suggest that "healthy" files are unharmed
+at reasonable compression ratios.
+
+You don't need fancy equipment.  Connecting the headphone jack of a 15-year-old
+"boom box" to the microphone jack of a low-cost PC with on-motherboard audio
+works just fine.
 
 ## ROM Implementation ##
 

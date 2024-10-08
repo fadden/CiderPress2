@@ -82,7 +82,7 @@ namespace DiskArc.Arc {
         public DateTime CreateWhen { get => TimeStamp.NO_DATE; set { } }
         public DateTime ModWhen { get => TimeStamp.NO_DATE; set { } }
 
-        public long StorageSize => 1234;    // TODO, report WAV size?
+        public long StorageSize => 1234;    // TODO
 
         public long DataLength => 1234;     // TODO
 
