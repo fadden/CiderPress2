@@ -17,6 +17,7 @@ Suggested procedure:
  - Start by defining place-holder implementations for both interfaces.
  - Write the code that scans the contents of the archive.
  - Add an entry to FileAnalyzer, so the archives are automatically detected.
+ - Update DAExtensions as appropriate.
  - Write "prefab" tests that read the contents of existing archives.  Add the tests and some
    sample archives to the test set.
  - Write the code that extracts files and handles file attribute queries.  Add tests.

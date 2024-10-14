@@ -244,6 +244,10 @@ namespace cp2_wpf {
         }
 
         private void CheckFileNameValidity(out bool isValid, out bool isUnique) {
+            if (IsAllReadOnly) {
+                isValid = isUnique = true;
+                return;
+            }
             isValid = mIsValidFunc(NewAttribs.FullPathName);
             isUnique = true;
             if (mArchiveOrFileSystem is IArchive) {

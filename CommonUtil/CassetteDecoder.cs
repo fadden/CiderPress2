@@ -190,17 +190,18 @@ namespace CommonUtil {
         /// Decodes a stream of audio samples into data chunks.
         /// </summary>
         /// <param name="wavFile">Processed RIFF file with WAVE data (.wav).</param>
+        /// <param name="firstOnly">If true, stop when the first good chunk is found.</param>
         /// <returns>List of chunks, in the order in which they appear in the sound file.</returns>
-        public static List<Chunk> DecodeFile(WAVFile wavFile, Algorithm alg) {
+        public static List<Chunk> DecodeFile(WAVFile wavFile, Algorithm alg, bool firstOnly) {
             CassetteDecoder decoder = new CassetteDecoder(wavFile, alg);
-            decoder.Scan();
+            decoder.Scan(firstOnly);
             return decoder.mChunks;
         }
 
         /// <summary>
         /// Scans the contents of the audio file, generating file chunks as it goes.
         /// </summary>
-        private void Scan() {
+        private void Scan(bool firstOnly) {
             Debug.Assert(mWavFile.FormatTag == WAVFile.WAVE_FORMAT_PCM);
             Debug.WriteLine("Scanning file: " + mWavFile.GetInfoString());
 
@@ -284,13 +285,20 @@ namespace CommonUtil {
                             chunk = new Chunk(fileData, (byte)readChecksum, checksum,
                                 bitAcc != 1, mDataStart, mDataEnd);
                         }
-                        Debug.WriteLine("READ: " + chunk.ToString());
+                        Debug.WriteLine("Found: " + chunk.ToString());
                         mChunks.Add(chunk);
                         doInit = true;
+                        if (firstOnly) {
+                            break;
+                        }
                     }
                 }
 
                 curSampleIndex += count;
+
+                if (firstOnly && mChunks.Count > 0) {
+                    break;
+                }
             }
 
             switch (mState) {

@@ -36,5 +36,9 @@ namespace DiskArc {
 
         // Root directory when running library tests.  This is where "TestData" can be found.
         public const string LIB_TEST_ROOT = "lib-test-root";
+
+        // Audio cassette decoder algorithm.  Ideally this would be passed in directly, but
+        // it's a semi-experimental facet of a rarely-used feature.
+        public const string AUDIO_REC_ALG = "audio-rec-alg";
     }
 }

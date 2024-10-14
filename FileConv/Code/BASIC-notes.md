@@ -83,7 +83,7 @@ stored as text.
 A file is a series of lines.  Each line is:
 ```
 +$00 / 1: line length (including the length byte itself)
-+$01 / 2: line number
++$01 / 2: line number (must be positive)
 +$03 /nn: series of variable-length bytecode values
 +$xx / 1: end-of-line token ($01)
 ```

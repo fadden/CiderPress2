@@ -91,6 +91,34 @@ namespace CommonUtil {
             //}
         }
 
+        public T GetOptionEnum<T>(string name, T defaultValue) {
+            if (!mOptions.TryGetValue(name, out string? valueStr)) {
+                return defaultValue;
+            }
+            try {
+                object o = Enum.Parse(typeof(T), valueStr);
+                return (T)o;
+            } catch (ArgumentException ae) {
+                Debug.WriteLine("Failed to parse '" + valueStr + "' (enum " + typeof(T) + "): " +
+                    ae.Message);
+                return defaultValue;
+            }
+        }
+
+        public void SetOptionEnum<T>(string name, T value) {
+            if (value == null) {
+                throw new NotImplementedException("Can't handle a null-valued enum type");
+            }
+            string? newVal = Enum.GetName(typeof(T), value);
+            if (newVal == null) {
+                Debug.WriteLine("Unable to get enum name type=" + typeof(T) + " value=" + value);
+                return;
+            }
+            if (!mOptions.TryGetValue(name, out string? oldValue) || oldValue != newVal) {
+                mOptions[name] = newVal;
+            }
+        }
+
 
         public void LogD(string msg) {
             Debug.WriteLine("MsgD: " + msg);

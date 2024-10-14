@@ -6,7 +6,7 @@
  - CiderPress implementation
    (https://github.com/fadden/ciderpress/blob/master/app/CassetteDialog.cpp)
 
-There is a substantial library of Apple II cassette tapes at
+There is a substantial library of Apple II cassette tape recordings at
 https://brutaldeluxe.fr/projects/cassettes/.
 
 ## Background ##

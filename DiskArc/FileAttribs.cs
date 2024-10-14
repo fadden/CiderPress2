@@ -76,6 +76,7 @@ namespace DiskArc {
         public const int FILE_TYPE_OS = 0xf9;
         public const int FILE_TYPE_INT = 0xfa;
         public const int FILE_TYPE_BAS = 0xfc;
+        public const int FILE_TYPE_VAR = 0xfd;
         public const int FILE_TYPE_REL = 0xfe;
         public const int FILE_TYPE_SYS = 0xff;
 

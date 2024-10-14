@@ -153,8 +153,11 @@ namespace FileConv.Code {
                 ushort nextAddr = RawData.ReadU16LE(dataBuf, ref offset);
                 if (nextAddr == 0) {
                     if (length - offset > 1) {
-                        // Allow one extra byte; seems to appear on some files.
-                        output.Notes.AddW("File ended early; excess bytes: " + (length - offset));
+                        // Allow one extra byte; seems to appear on some files.  Significant
+                        // excess data could be a bug here or an embedded program
+                        // (e.g. Penny Arcade cassette).
+                        output.Notes.AddW("Applesoft program ended early; excess bytes: " +
+                            (length - offset));
                     }
                     break;
                 }

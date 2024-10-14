@@ -15,6 +15,7 @@
  */
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
@@ -32,8 +33,8 @@ namespace DiskArc.Arc {
         //
 
         public bool IsValid { get { return Archive != null; } }
-        public bool IsDubious { get; private set; }
-        public bool IsDamaged { get; private set; }
+        public bool IsDubious { get; internal set; }
+        public bool IsDamaged => false;
 
         public bool IsDirectory => false;
 
@@ -63,11 +64,11 @@ namespace DiskArc.Arc {
 
         public bool HasProDOSTypes => true;
         public byte FileType {
-            get => 0x00;    // TODO
+            get => mFileType;
             set => throw new InvalidOperationException("Cannot modify object without transaction");
         }
         public ushort AuxType {
-            get => 0x1234;  // TODO
+            get => mAuxType;
             set => throw new InvalidOperationException("Cannot modify object without transaction");
         }
 
@@ -82,9 +83,9 @@ namespace DiskArc.Arc {
         public DateTime CreateWhen { get => TimeStamp.NO_DATE; set { } }
         public DateTime ModWhen { get => TimeStamp.NO_DATE; set { } }
 
-        public long StorageSize => 1234;    // TODO
+        public long StorageSize => mData.Length;    // could show WAV length, not really useful
 
-        public long DataLength => 1234;     // TODO
+        public long DataLength => mData.Length;
 
         public long RsrcLength => 0;
 
@@ -103,7 +104,10 @@ namespace DiskArc.Arc {
         // Implementation-specific fields.
         //
 
-        private string mFileName = "TODO";      // TODO
+        private string mFileName;
+        private byte mFileType;
+        private ushort mAuxType;
+        private byte[] mData;
 
         /// <summary>
         /// Reference to archive object.
@@ -112,26 +116,47 @@ namespace DiskArc.Arc {
 
 
         /// <summary>
-        /// Private constructor.
+        /// Internal constructor.
         /// </summary>
-        private AudioRecording_FileEntry(AudioRecording archive) {
+        internal AudioRecording_FileEntry(AudioRecording archive,
+                string fileName, byte fileType, ushort auxType, byte[] data) {
             Archive = archive;
+            mFileName = fileName;
+            mFileType = fileType;
+            mAuxType = auxType;
+            mData = data;
         }
 
         // IFileEntry
         public bool GetPartInfo(FilePart part, out long length, out long storageSize,
                 out CompressionFormat format) {
-            // TODO
-            throw new NotImplementedException();
+            switch (part) {
+                case FilePart.DataFork:
+                    length = storageSize = mData.Length;
+                    format = CompressionFormat.Uncompressed;
+                    return true;
+                case FilePart.RsrcFork:
+                default:
+                    length = -1;
+                    storageSize = 0;
+                    format = CompressionFormat.Unknown;
+                    return false;
+            }
         }
 
         /// <summary>
         /// Creates an object for reading the contents of the entry out of the archive.
         /// </summary>
         internal ArcReadStream CreateReadStream(FilePart part) {
-            Debug.Assert(Archive.DataStream != null);
-            // TODO
-            throw new NotImplementedException();
+            switch (part) {
+                case FilePart.DataFork:
+                    return new ArcReadStream(Archive, mData.Length, null,
+                        new MemoryStream(mData, false));
+                case FilePart.RsrcFork:
+                    throw new FileNotFoundException("No rsrc fork");
+                default:
+                    throw new FileNotFoundException("No part of type " + part);
+            }
         }
 
         // IFileEntry
