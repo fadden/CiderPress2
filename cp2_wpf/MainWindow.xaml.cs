@@ -674,7 +674,8 @@ namespace cp2_wpf {
             SetShowCenterInfo(CenterPanelChange.Toggle);
         }
         private void ViewFilesCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
-            mMainCtrl.ViewFiles();
+            //mMainCtrl.ViewFiles();
+            mMainCtrl.HandleFileListDoubleClick();
         }
 
         private void Debug_BulkCompressTestCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
@@ -1212,14 +1213,8 @@ namespace cp2_wpf {
                 return;
             }
             FileListItem fli = (FileListItem)item;
-
-            ArchiveTreeItem? arcTreeSel = archiveTree.SelectedItem as ArchiveTreeItem;
-            DirectoryTreeItem? dirTreeSel = directoryTree.SelectedItem as DirectoryTreeItem;
-            if (arcTreeSel == null || dirTreeSel == null) {
-                Debug.Assert(false, "tree is missing selection");
-                return;
-            }
-            mMainCtrl.HandleFileListDoubleClick(fli, row, col, arcTreeSel, dirTreeSel);
+            //Debug.WriteLine("Double-click on " + fli.FileEntry);
+            mMainCtrl.HandleFileListDoubleClick();
         }
 
         /// <summary>

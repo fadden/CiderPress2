@@ -178,8 +178,8 @@ namespace cp2_wpf.WPFCommon {
     /// Helper functions for working with DataGrids.
     /// </summary>
     /// <remarks>
-    /// <para>It's tempting to handle double-click actions by using the selected row.  This gets a
-    /// little weird, though, because double-clicking on a header or blank area doesn't
+    /// <para>It's tempting to simply handle double-click actions by using the selected row.  This
+    /// gets a little weird, though, because double-clicking on a header or blank area doesn't
     /// clear the selection.</para>
     /// <para>Great explanation of row/cell selection in a DataGrid:
     /// <see href="https://blog.magnusmontin.net/2013/11/08/how-to-programmatically-select-and-focus-a-row-or-cell-in-a-datagrid-in-wpf/"/>;
@@ -194,6 +194,11 @@ namespace cp2_wpf.WPFCommon {
         /// Based on
         /// <see href="https://blog.scottlogic.com/2008/12/02/wpf-datagrid-detecting-clicked-cell-and-row.html"/>.
         /// </remarks>
+        /// <param name="e">Arguments received from event.</param>
+        /// <param name="rowIndex">Result: index of clicked row.</param>
+        /// <param name="colIndex">Result: index of clicked column.</param>
+        /// <param name="item">Result: if a data item was clicked, the data item; otherwise
+        ///   null.</param>
         /// <returns>True if the click was on a data item.</returns>
         public static bool GetClickRowColItem(this DataGrid dg, MouseButtonEventArgs e,
                 out int rowIndex, out int colIndex, [NotNullWhen(true)] out object? item) {
@@ -201,6 +206,9 @@ namespace cp2_wpf.WPFCommon {
                 out colIndex, out item);
         }
 
+        /// <summary>
+        /// Determines which row and column was the target of a drop action.
+        /// </summary>
         public static bool GetDropRowColItem(this DataGrid dg, DragEventArgs e,
                 out int rowIndex, out int colIndex, [NotNullWhen(true)] out object? item) {
             return GetRowColItem(dg, (DependencyObject)e.OriginalSource, out rowIndex,
@@ -370,6 +378,9 @@ namespace cp2_wpf.WPFCommon {
             }
         }
 
+        /// <summary>
+        /// Scrolls the DataGrid to the top.
+        /// </summary>
         public static void ScrollToTop(this DataGrid dg) {
             VirtualizingStackPanel? virtPanel =
                 VisualHelper.GetVisualChild<VirtualizingStackPanel>(dg);
@@ -468,6 +479,9 @@ namespace cp2_wpf.WPFCommon {
     /// TreeView extensions.
     /// </summary>
     public static class TreeViewExtensions {
+        /// <summary>
+        /// Scrolls the TreeView to the top.
+        /// </summary>
         public static void ScrollToTop(this TreeView tv) {
             VirtualizingStackPanel? virtPanel =
                 VisualHelper.GetVisualChild<VirtualizingStackPanel>(tv);

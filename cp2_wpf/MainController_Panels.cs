@@ -538,6 +538,8 @@ namespace cp2_wpf {
         ///   should be set for all file operations, but not during archive or directory
         ///   tree traversal.</param>
         internal void RefreshDirAndFileList(bool focusOnFileList = true) {
+            //Debug.WriteLine("RefreshDirAndFileList: focus=" + focusOnFileList +
+            //    " mSwitch=" + mSwitchFocusToFileList);
             mSwitchFocusToFileList |= focusOnFileList;
             if (CurrentWorkObject == null) {
                 return;
@@ -690,9 +692,11 @@ namespace cp2_wpf {
         ///   have strange effects.)</param>
         internal void PopulateFileList(IFileEntry selEntry, bool focusOnFileList) {
             if (selEntry != IFileEntry.NO_ENTRY) {
-                Debug.WriteLine("Populate: current item is " + selEntry.FileName);
+                Debug.WriteLine("Populate: current item is " + selEntry.FileName +
+                    " (focus=" + focusOnFileList + " mSwitch=" + mSwitchFocusToFileList + ")");
             } else {
-                Debug.WriteLine("Populate: no selected item in file list");
+                Debug.WriteLine("Populate: no selected item in file list " +
+                    " (focus=" + focusOnFileList + " mSwitch=" + mSwitchFocusToFileList + ")");
             }
             ObservableCollection<FileListItem> fileList = mMainWin.FileList;
 
@@ -919,9 +923,14 @@ namespace cp2_wpf {
         /// <summary>
         /// Handles a double-click on an item in the file list grid.
         /// </summary>
-        public void HandleFileListDoubleClick(FileListItem item, int row, int col,
-                ArchiveTreeItem arcTreeSel, DirectoryTreeItem dirTreeSel) {
-            //Debug.WriteLine("DCLICK: r=" + row + " c=" + col + " item=" + item);
+        public void HandleFileListDoubleClick() {
+            //Debug.WriteLine("HandleFileListDoubleClick");
+            ArchiveTreeItem? arcTreeSel = mMainWin.SelectedArchiveTreeItem;
+            DirectoryTreeItem? dirTreeSel = mMainWin.SelectedDirectoryTreeItem;
+            if (arcTreeSel == null || dirTreeSel == null) {
+                Debug.Assert(false, "tree is missing selection");
+                return;
+            }
 
             //
             // Something has been double-clicked.  If it's a single entry:
@@ -958,15 +967,16 @@ namespace cp2_wpf {
             // or disk image and requires special handling.  Otherwise we'll just hand everything
             // over to the file viewer.
             if (dg.SelectedItems.Count == 1) {
-                IFileEntry entry = item.FileEntry;
+                FileListItem fli = (FileListItem)dg.SelectedItems[0]!;
+                IFileEntry entry = fli.FileEntry;
                 if (entry.IsDirectory) {
                     if (fs != null) {
                         // Select the entry in the dir tree.  This may rewrite the file list.
+                        // We want to keep the focus on the file list to support keyboard nav.
+                        mSwitchFocusToFileList = true;
                         if (!DirectoryTreeItem.SelectItemByEntry(mMainWin, entry)) {
                             Debug.WriteLine("Unable to find dir tree entry for " + entry);
-                        } else {
-                            // TODO: the focus will move to the directory tree.  We may want
-                            // to put it on the first item in the file list instead.
+                            mSwitchFocusToFileList = false;
                         }
                     } else {
                         // Directory file in a file archive.  Nothing for us to do.

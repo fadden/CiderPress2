@@ -363,6 +363,7 @@ namespace cp2_wpf {
                 return;
             }
             if (dirSel.Parent != null) {
+                mSwitchFocusToFileList = true;     // keep focus on file list, for keyboard nav
                 dirSel.Parent.IsSelected = true;
                 DirectoryTreeItem.BringItemIntoView(mMainWin.directoryTree, dirSel.Parent);
             } else if (!dirOnly) {
@@ -973,7 +974,8 @@ namespace cp2_wpf {
             // Get the list of selected items.  The behavior is a little strange: if you select
             // an item in the middle, and then use select-all, the item you selected will be at
             // the top (unless your selection was at the very bottom).  Everything else will be
-            // in the expected order.
+            // in the expected order.  Control-clicking multiple items appears to add them to
+            // the selection set in the order in which they are clicked.
             DataGrid dg = mMainWin.fileListDataGrid;
             IList listSel = dg.SelectedItems;
             if (listSel.Count == 0) {
