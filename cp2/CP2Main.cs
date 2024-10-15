@@ -495,7 +495,7 @@ namespace cp2 {
             Console.WriteLine("Settings file " + (info.Exists ? "is" : "would be") +
                 " '" + settingsPath + "'");
             Console.WriteLine();
-            Console.WriteLine("Copyright 2023 faddenSoft - https://ciderpress2.com/");
+            Console.WriteLine("Copyright 2024 faddenSoft - https://ciderpress2.com/");
             Console.WriteLine("See http://www.apache.org/licenses/LICENSE-2.0 for license.");
             return true;
         }
