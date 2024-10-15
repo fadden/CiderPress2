@@ -170,31 +170,6 @@ namespace CommonUtil {
             }
         }
 
-#if false
-        /// <summary>
-        /// Retrieves an enumerated value setting.
-        /// </summary>
-        /// <param name="name">Setting name.</param>
-        /// <param name="enumType">Enum type that the value is part of.</param>
-        /// <param name="defaultValue">Setting default value.</param>
-        /// <returns>The value found, or the default value if no setting with the specified
-        ///   name exists, or the stored value is not a member of the specified enumerated
-        ///   type.</returns>
-        public int GetEnum(string name, Type enumType, int defaultValue) {
-            if (!mSettings.TryGetValue(name, out string? valueStr)) {
-                return defaultValue;
-            }
-            try {
-                object o = Enum.Parse(enumType, valueStr);
-                return (int)o;
-            } catch (ArgumentException ae) {
-                Debug.WriteLine("Failed to parse " + valueStr + " (enum " + enumType + "): " +
-                    ae.Message);
-                return defaultValue;
-            }
-        }
-#endif
-
         /// <summary>
         /// Retrieves an enumerated value setting.
         /// </summary>
@@ -209,6 +184,12 @@ namespace CommonUtil {
             }
             try {
                 object o = Enum.Parse(typeof(T), valueStr);
+                // The Parse function accepts strings and numeric values.  Strings must match,
+                // but numeric values can be anything.  Do a second test to confirm that the
+                // value is defined by the enum.
+                if (!Enum.IsDefined(typeof(T), o)) {
+                    return defaultValue;
+                }
                 return (T)o;
             } catch (ArgumentException ae) {
                 Debug.WriteLine("Failed to parse '" + valueStr + "' (enum " + typeof(T) + "): " +
@@ -216,30 +197,6 @@ namespace CommonUtil {
                 return defaultValue;
             }
         }
-
-#if false
-        /// <summary>
-        /// Sets an enumerated setting.
-        /// </summary>
-        /// <remarks>
-        /// The value is output to the settings file as a string, rather than an integer, allowing
-        /// the correct handling even if the enumerated values are renumbered.
-        /// </remarks>
-        /// <param name="name">Setting name.</param>
-        /// <param name="enumType">Enum type.</param>
-        /// <param name="value">Setting value (integer enum index).</param>
-        public void SetEnum(string name, Type enumType, int value) {
-            string? newVal = Enum.GetName(enumType, value);
-            if (newVal == null) {
-                Debug.WriteLine("Unable to get enum name type=" + enumType + " value=" + value);
-                return;
-            }
-            if (!mSettings.TryGetValue(name, out string? oldValue) || oldValue != newVal) {
-                mSettings[name] = newVal;
-                IsDirty = true;
-            }
-        }
-#endif
 
         /// <summary>
         /// Sets an enumerated setting.

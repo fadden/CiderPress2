@@ -2,13 +2,17 @@
 #
 # Usage: convert <md-path|all>
 #  where md-path is e.g. "DiskArc/Arc/AppleLink-notes.md"
+# (Run this here, in the ndocs/formatdoc directory.)
 #
 # This formats various Markdown documents as HTML.  This is done via the
 # github REST API, using code from
 # https://github.com/phseiff/github-flavored-markdown-to-html .  You need to
 # have that program installed ("pip3 install gh-md-to-html") for this to work.
 #
-# The file needs to be fixed up a bit before and after the conversion.
+# The file needs to be fixed up a bit before and after the conversion.  This
+# script takes care of that.
+#
+# ---
 #
 # NOTE: github has a limit of 60 requests per hour for an unauthenticated user.
 # If you exceed the limit, the files will be trivial "limit exceeded" messages

@@ -37,8 +37,12 @@ namespace CommonUtil {
         /// <summary>
         /// Algorithm to use when analyzing samples.
         /// </summary>
+        /// <remarks>
+        /// These may be specified numerically from the command line, so we should avoid
+        /// renumbering them.
+        /// </remarks>
         public enum Algorithm {
-            Unknown = 0, Zero, SharpPeak, RoundPeak, ShallowPeak
+            Unknown = 0, ZeroCross = 1, SharpPeak = 2, RoundPeak = 3, ShallowPeak = 4
         }
 
         /// <summary>
@@ -94,9 +98,9 @@ namespace CommonUtil {
             }
 
             public override string ToString() {
-                return Data.Length + " bytes, ex-sum=$" + ReadChecksum.ToString("x2") +
-                    " act-sum=$" + CalcChecksum.ToString("x2") + ", badEnd=" + BadEnd +
-                    " start=" + StartSample +", end=" + EndSample;
+                return Data.Length + " bytes, cksum=$" + ReadChecksum.ToString("x2") +
+                    " ckres=$" + CalcChecksum.ToString("x2") + ", badEnd=" + BadEnd +
+                    " startSamp=" + StartSample +", endSamp=" + EndSample;
             }
         }
 
@@ -239,7 +243,7 @@ namespace CommonUtil {
                     int bitVal;
                     bool gotBit;
                     switch (mAlg) {
-                        case Algorithm.Zero:
+                        case Algorithm.ZeroCross:
                             gotBit =
                                 ProcessSampleZero(sampleBuf[i], curSampleIndex + i, out bitVal);
                             break;

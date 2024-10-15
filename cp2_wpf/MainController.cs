@@ -350,6 +350,11 @@ namespace cp2_wpf {
                 mMainWin.ReconfigureCenterPanel(
                     settings.GetBool(AppSettings.MAC_ZIP_ENABLED, false));
             }
+
+            // Propagate the decode algorithm into the app hook.  Yes, this is a kluge.
+            AppHook.SetOptionEnum(DAAppHook.AUDIO_DEC_ALG,
+                settings.GetEnum(AppSettings.AUDIO_DECODE_ALG,
+                    CassetteDecoder.Algorithm.ZeroCross));
         }
 
         public void NavToParent(bool dirOnly) {

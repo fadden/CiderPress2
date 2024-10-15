@@ -1,0 +1,350 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Apple II Audio Cassette Recording</h1><a aria-label="Permalink: Apple II Audio Cassette Recording" class="anchor" href="#user-content-apple-ii-audio-cassette-recording" id="user-content-apple-ii-audio-cassette-recording" name="user-content-apple-ii-audio-cassette-recording"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Apple II ROM tape routines (READ, WRITE)</li>
+<li>CiderPress implementation
+(<a href="https://github.com/fadden/ciderpress/blob/master/app/CassetteDialog.cpp">https://github.com/fadden/ciderpress/blob/master/app/CassetteDialog.cpp</a>)</li>
+</ul>
+<p>There is a substantial library of Apple II cassette tape recordings at
+<a href="https://brutaldeluxe.fr/projects/cassettes/" rel="nofollow">https://brutaldeluxe.fr/projects/cassettes/</a>.</p>
+<div class="markdown-heading"><h2 class="heading-element">Background</h2><a aria-label="Permalink: Background" class="anchor" href="#user-content-background" id="user-content-background" name="user-content-background"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The typical storage medium used on early Apple II systems, before floppy
+drives became commonplace, was a consumer-grade cassette tape recorder.  The
+Apple II records data as a frequency-modulated sine wave.  A recording device
+can be connected to the dedicated audio I/O port on the Apple ][, ][+,
+and //e.  The //c, ///, and IIgs do not have this port.</p>
+<p>A tape can hold one or more chunks of data, each of which has the following
+structure:</p>
+<ul>
+<li>Entry tone: 10.6 seconds of 770Hz (8192 cycles at 1300 usec/cycle). This
+lets the human operator know that the start of data had been found.</li>
+<li>Tape-in edge: 1/2 cycle at 400 usec/cycle, followed by 1/2 cycle at
+500 usec/cycle. This "short zero" indicates the transition between
+header and data.</li>
+<li>Data: one cycle per bit, using 500 usec/cycle (2kHz) for 0 and
+1000 usec/cycle (1kHz) for 1.</li>
+</ul>
+<p>There is no "end of data" indication, so it's up to the user to specify the
+length of data. The last byte of data is followed by an XOR checksum,
+initialized to $FF, that can be used to check for success.</p>
+<p>Typical instructions for loading data from tape look like this:</p>
+<ul>
+<li>Type <code>LOAD</code> or <code>xxxx.xxxxR</code>, but don't hit &lt;return&gt;.</li>
+<li>Play tape until you here the tone.</li>
+<li>Immediately hit stop.</li>
+<li>Plug the cable from the Apple II into the tape player.</li>
+<li>Hit "play" on the recorder, then immediately hit &lt;return&gt;.</li>
+<li>When the Apple II beeps, it's done.  Stop the tape.</li>
+</ul>
+<p>The cassette I/O routines are built into the ROM.  For binary code or data,
+the command is issued from the system monitor.  The length is specified on
+the monitor command line, e.g. <code>800.1FFFR</code> would read $1800 (6144) bytes. For
+BASIC programs and data, the length is included in an initial header section:</p>
+<ul>
+<li>Integer BASIC programs have a two-byte (little-endian) length.</li>
+<li>Applesoft BASIC programs (written with <code>SAVE</code>, loaded with <code>LOAD</code>) have a
+three byte header: the two-byte length, followed by a "lock" flag byte
+(if the high bit is set, the program starts executing when the <code>LOAD</code>
+completes).</li>
+<li>Applesoft shape tables (loaded with <code>SHLOAD</code>) have a two-byte length.</li>
+<li>Applesoft arrays (written with <code>STORE</code>, loaded with <code>RECALL</code>) have
+a three-byte header: the length, followed by an unused byte.</li>
+</ul>
+<p>The header section is a full data area, complete with 10.6-second lead-in.</p>
+<p>The storage density varies from 2000bps for a file full of 0 bits to 1000bps
+for a file full of 1 bits. Assuming an equal distribution of bits, you can
+expect to transfer about 187 bytes/second (ignoring the header).</p>
+<div class="markdown-heading"><h2 class="heading-element">Signal Processing</h2><a aria-label="Permalink: Signal Processing" class="anchor" href="#user-content-signal-processing" id="user-content-signal-processing" name="user-content-signal-processing"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Some notes on what's required to decipher the recorded signal...</p>
+<p>The monitor ROM routine uses a detection threshold of 700 usec to tell
+the difference between 0s and 1s.  When reading, it <em>outputs</em> a tone for
+3.5 seconds before listening.  It doesn't try to detect the 770Hz tone,
+just waits for something under (40*12=)440 usec.</p>
+<p>The Apple II hardware changes the high bit read from $c060 every time it
+detects a zero-crossing on the cassette input.  I assume the polarity
+of the input signal is reflected by the polarity of the high bit, but
+I'm not sure, and in the end it doesn't really matter.</p>
+<p>How quickly do we need to sample?  The highest frequency we expect to
+find is 2KHz, so anything over 4KHz should be sufficient.  However, we
+need to be able to resolve the time between zero transitions to some
+reasonable resolution.  We need to tell the difference between a 650usec
+half-cycle and a 200usec half-cycle for the start, and 250/500usec for
+the data section.  Our measurements can comfortably be off by 200 usec
+with no ill effects on the lead-in, assuming a perfect signal.  (Sampling
+every 200 usec would be 5Hz.)  The data itself needs to be +/- 125usec
+for half-cycles, though we can get a little sloppier if we average the
+error out by combining half-cycles.</p>
+<p>The signal is less than perfect, sometimes far less, so we need better
+sampling to avoid magnifying distortions in the signal.  If we sample
+at 22.05KHz, we could see a 650usec gap as 590, 635, or 680, depending
+on when we sample and where we think the peaks lie.  We're off by 15usec
+before we even start.  We can reasonably expect to be off +/- twice the
+"usecPerSample" value.  At 8KHz, that's +/- 250usec, which isn't
+acceptable.  At 11KHz we're at +/- 191usec, which is scraping along.</p>
+<p>We can get mitigate some problems by doing an interpolation of the
+two points nearest the zero-crossing, which should give us a more
+accurate fix on the zero point than simply choosing the closest point.
+This does potentially increase our risk of errors due to noise spikes at
+points near the zero.  Since we're reading from cassette, any noise spikes
+are likely to be pretty wide, so averaging the data or interpolating
+across multiple points isn't likely to help us.</p>
+<p>Some tapes seem to have a low-frequency distortion that amounts to a DC
+bias when examining a single sample.  Timing the gaps between zero
+crossings is therefore not sufficient unless we also correct for the
+local DC bias.  In some cases the recorder or media was unable to
+respond quickly enough, and as a result 0s have less amplitude
+than 1s.  This throws off some simple correction schemes.</p>
+<p>The easiest approach is to figure out where one cycle starts and stops, and
+use the timing of the full cycle.  This gets a little ugly because the
+original output was a square wave, so there's a bit of ringing in the
+peaks, especially the 1s.  Of course, we have to look at half-cycles
+initially, because we need to identify the first "short 0" part.  Once
+we have that, we can use full cycles, which distributes any error over
+a larger set of samples.</p>
+<p>In some cases the positive half-cycle is longer than the negative
+half-cycle (e.g. reliably 33 samples vs. 29 samples at 48KHz, when
+31.2 is expected for 650us).  Slight variations can lead to even
+greater distortion, even though the timing for the full signal is
+within tolerances.  This means we need to accumulate the timing for
+a full cycle before making an evaluation, though we still need to
+examine the half-cycle timing during the lead-in to catch the "short 0".</p>
+<p>Because of these distortions, 8-bit 8KHz audio is probably not a good
+idea.  22.05KHz sampling is a better choice for tapes that have been sitting
+around for 25-30 years.</p>
+<div class="markdown-heading"><h2 class="heading-element">Sound Capture</h2><a aria-label="Permalink: Sound Capture" class="anchor" href="#user-content-sound-capture" id="user-content-sound-capture" name="user-content-sound-capture"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p><em>Here are some tips on capturing audio from an Apple II data recording.  This
+comes from the manual for the original CiderPress application.</em></p>
+<p>It isn't necessary to record each section of data from the cassette into its
+own WAV file.  CiderPress will try to find every chunk of data in a WAV file.</p>
+<p>If you have a "line out" on your tape player and a "line in" on your PC sound
+card, use those.  If not, you can use the "microphone" input and the
+"headphone" out, though you will have to set the volume levels correctly.  In
+the "speaker" or "multimedia" control panel, set the microphone input gain to
+50%.  Start up your sound editor.  If you have a way to see the input level
+on the microphone, turn that on.  Play the cassette tape out loud until you
+hear a tone, then plug it into the computer and watch the input level.  You
+want to set the volume so that the input is as high as you can get it without
+exceeding the limit (this causes "clipping", which is a lot like a square
+wave but probably isn't going to help us here).</p>
+<p>Once you have the volume level figured out, back the tape up to the start of
+the tone.  Hit "record" in your software and "play" on your tape player.
+Record at 22.05KHz with 8-bit monaural samples.  (Recording at CD quality,
+44.1KHz with 16-bit stereo samples, doesn't help and requires 8x the space.)
+If your software shows an input meter while recording, continue to record
+until the volume level drops and stays low for at least 10 seconds.  If you
+can't monitor the input, you will either need to time the cassette, or just
+record for a long time and perhaps trim the excess off in the sound editor.
+Make sure you get all of the data from the tape.  When you think you're done,
+pull the audio plug out of the tape player and keep listening for a
+little bit.</p>
+<p>Tip: CiderPress only needs to see about a second of the lead-in, so it's okay
+to fiddle with the volume while the initial tone is playing.</p>
+<p>Tip: in some cases, setting the volume a little too high can be beneficial.
+It's better to clip some samples than have too little signal.  If at first
+you don't succeed, crank up the volume a notch and try again.</p>
+<p>Most cassettes include more than one copy of a program.  In some cases (such
+as Adventure International's "Asteroid") they are slightly different
+implementations, while in others it's the same program repeated.  Sometimes
+the program is repeated on the back side of the tape.  Magnetic tapes wear out
+if you play them too much, so redundancy was common.</p>
+<p>The output of the Apple II is a blocky "square wave" rather than a smooth
+"sine wave".  Because of limitations in how quickly voltage levels can change,
+the output isn't perfectly square.  Because of the physical properties of and
+variations in magnetic media, the not-quite-square wave is rather rounded and
+wiggly.  After being stored in less-than-perfect conditions for 25-30 years,
+what you read back from an Apple II tape can look pretty crazy.</p>
+<p>Most cassettes can be recovered, even those that will no longer play on an
+Apple II.  If you find one that can't, you may want to keep the WAV recording
+anyway, on the off chance that in the future an improved algorithm can be
+developed that will decode it.</p>
+<p>When CiderPress encounters data that it can't interpret, it stops trying to
+read from that section of the WAV file.  For this reason, damaged entries will
+usually be shorter than undamaged ones.  If a file appears to have the correct
+length but the checksum still doesn't match, it means the signal was
+sufficiently distorted to make a '0' bit look like a '1' bit, which is actually
+pretty hard to do.  In most cases the decoder will either make an accurate
+determination or will conclude that the signal is too distorted to process.
+So far only one case has been found where the checksum was deliberately
+altered, as part of a copy protection scheme (Sargon II).</p>
+<p>If the tape has more than one program on it, you can usually tell if it's
+multiple copies of the same thing by comparing lengths and checksums.  If the
+checksums say "good" but have different values, you probably have two
+different programs, or two slightly different versions of the same program.</p>
+<p>You may be tempted to store copies of the WAV file in MP3 format.  This is not
+recommended.  CiderPress cannot decode MP3s, and the decoded MP3 file is less
+likely to work than the original.  However, experiments with converting the
+sound files in and out of MP3 format suggest that "healthy" files are unharmed
+at reasonable compression ratios.</p>
+<p>You don't need fancy equipment.  Connecting the headphone jack of a 15-year-old
+"boom box" to the microphone jack of a low-cost PC with on-motherboard audio
+works just fine.</p>
+<div class="markdown-heading"><h2 class="heading-element">ROM Implementation</h2><a aria-label="Permalink: ROM Implementation" class="anchor" href="#user-content-rom-implementation" id="user-content-rom-implementation" name="user-content-rom-implementation"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>For reference, here is a disassembly of the ROM routines.  The code has been
+rearranged to make it easier to read.</p>
+<pre><code>; Increment 16-bit value at 0x3c (A1) and compare it to 16-bit value at
+;  0x3e (A2). Returns with carry set if A1 &gt;= A2.
+; Requires 26 cycles in common case, 30 cycles in rare case.
+FCBA: A5 3C     709  NXTA1    LDA   A1L        ;INCR 2-BYTE A1.
+FCBC: C5 3E     710           CMP   A2L
+FCBE: A5 3D     711           LDA   A1H        ;  AND COMPARE TO A2
+FCC0: E5 3F     712           SBC   A2H
+FCC2: E6 3C     713           INC   A1L        ;  (CARRY SET IF &gt;=)
+FCC4: D0 02     714           BNE   RTS4B
+FCC6: E6 3D     715           INC   A1H
+FCC8: 60        716  RTS4B    RTS
+
+; Write data from location in A1L up to location in A2L.
+FECD: A9 40     975  WRITE    LDA   #$40
+FECF: 20 C9 FC  976           JSR   HEADR      ;WRITE 10-SEC HEADER
+; Write loop.  Continue until A1 reaches A2.
+FED2: A0 27     977           LDY   #$27
+FED4: A2 00     978  WR1      LDX   #$00
+FED6: 41 3C     979           EOR   (A1L,X)
+FED8: 48        980           PHA
+FED9: A1 3C     981           LDA   (A1L,X)
+FEDB: 20 ED FE  982           JSR   WRBYTE
+FEDE: 20 BA FC  983           JSR   NXTA1
+FEE1: A0 1D     984           LDY   #$1D
+FEE3: 68        985           PLA
+FEE4: 90 EE     986           BCC   WR1
+; Write checksum byte, then beep the speaker.
+FEE6: A0 22     987           LDY   #$22
+FEE8: 20 ED FE  988           JSR   WRBYTE
+FEEB: F0 4D     989           BEQ   BELL
+
+; Write one byte (8 bits, or 16 half-cycles).
+; On exit, Z-flag is set.
+FEED: A2 10     990  WRBYTE   LDX   #$10
+FEEF: 0A        991  WRBYT2   ASL
+FEF0: 20 D6 FC  992           JSR   WRBIT
+FEF3: D0 FA     993           BNE   WRBYT2
+FEF5: 60        994           RTS
+
+; Write tape header.  Called by WRITE with A=$40, READ with A=$16.
+; On exit, A holds $FF.
+; First time through, X is undefined, so we may get slightly less than
+;  A*256 half-cycles (i.e. A*255 + X).  If the carry is clear on entry,
+;  the first ADC will subtract two (yielding A*254+X), and the first X
+;  cycles will be "long 0s" instead of "long 1s".  Doesn't really matter.
+FCC9: A0 4B     717  HEADR    LDY   #$4B       ;WRITE A*256 'LONG 1'
+FCCB: 20 DB FC  718           JSR   ZERDLY     ;  HALF CYCLES
+FCCE: D0 F9     719           BNE   HEADR      ;  (650 USEC EACH)
+FCD0: 69 FE     720           ADC   #$FE
+FCD2: B0 F5     721           BCS   HEADR      ;THEN A 'SHORT 0'
+; Fall through to write bit.  Note carry is clear, so we'll use the zero
+;  delay.  We've initialized Y to $21 instead of $32 to get a short '0'
+;  (165usec) for the first half and a normal '0' for the second half;
+FCD4: A0 21     722           LDY   #$21       ;  (400 USEC)
+; Write one bit.  Called from WRITE with Y=$27.
+FCD6: 20 DB FC  723  WRBIT    JSR   ZERDLY     ;WRITE TWO HALF CYCLES
+FCD9: C8        724           INY              ;  OF 250 USEC ('0')
+FCDA: C8        725           INY              ;  OR 500 USEC ('0')
+; Delay for '0'.  X typically holds a bit count or half-cycle count.
+; Y holds delay period in 5-usec increments:
+;   (carry clear) $21=165us  $27=195us  $2C=220 $4B=375us
+;   (carry set) $21=165+250=415us  $27=195+250=445us  $4B=375+250=625us
+;   Remember that TOTAL delay, with all other instructions, must equal target
+; On exit, Y=$2C, Z-flag is set if X decremented to zero.  The 2C in Y
+;  is for WRBYTE, which is in a tight loop and doesn't need much padding.
+FCDB: 88        726  ZERDLY   DEY
+FCDC: D0 FD     727           BNE   ZERDLY
+FCDE: 90 05     728           BCC   WRTAPE     ;Y IS COUNT FOR
+; Additional delay for '1' (always 250us).
+FCE0: A0 32     729           LDY   #$32       ;  TIMING LOOP
+FCE2: 88        730  ONEDLY   DEY
+FCE3: D0 FD     731           BNE   ONEDLY
+; Write a transition to the tape.
+FCE5: AC 20 C0  732  WRTAPE   LDY   TAPEOUT
+FCE8: A0 2C     733           LDY   #$2C
+FCEA: CA        734           DEX
+FCEB: 60        735           RTS
+
+; Read data from location in A1L up to location in A2L.
+FEFD: 20 FA FC  999  READ     JSR   RD2BIT     ;FIND TAPEIN EDGE
+FF00: A9 16     1000          LDA   #$16
+FF02: 20 C9 FC  1001          JSR   HEADR      ;DELAY 3.5 SECONDS
+FF05: 85 2E     1002          STA   CHKSUM     ;INIT CHKSUM=$FF
+FF07: 20 FA FC  1003          JSR   RD2BIT     ;FIND TAPEIN EDGE
+; Loop, waiting for edge.  11 cycles/iteration, plus 432+14 = 457usec.
+FF0A: A0 24     1004 RD2      LDY   #$24       ;LOOK FOR SYNC BIT
+FF0C: 20 FD FC  1005          JSR   RDBIT      ;  (SHORT 0)
+FF0F: B0 F9     1006          BCS   RD2        ;  LOOP UNTIL FOUND
+; Timing of next transition, a normal '0' half-cycle, doesn't matter.
+FF11: 20 FD FC  1007          JSR   RDBIT      ;SKIP SECOND SYNC H-CYCLE
+; Main byte read loop.  Continue until A1 reaches A2.
+FF14: A0 3B     1008          LDY   #$3B       ;INDEX FOR 0/1 TEST
+FF16: 20 EC FC  1009 RD3      JSR   RDBYTE     ;READ A BYTE
+FF19: 81 3C     1010          STA   (A1L,X)    ;STORE AT (A1)
+FF1B: 45 2E     1011          EOR   CHKSUM
+FF1D: 85 2E     1012          STA   CHKSUM     ;UPDATE RUNNING CHKSUM
+FF1F: 20 BA FC  1013          JSR   NXTA1      ;INC A1, COMPARE TO A2
+FF22: A0 35     1014          LDY   #$35       ;COMPENSATE 0/1 INDEX
+FF24: 90 F0     1015          BCC   RD3        ;LOOP UNTIL DONE
+; Read checksum byte and check it.
+FF26: 20 EC FC  1016          JSR   RDBYTE     ;READ CHKSUM BYTE
+FF29: C5 2E     1017          CMP   CHKSUM
+FF2B: F0 0D     1018          BEQ   BELL       ;GOOD, SOUND BELL AND RETURN
+
+; Print "ERR", beep speaker.
+FF2D: A9 C5     1019 PRERR    LDA   #$C5
+FF2F: 20 ED FD  1020          JSR   COUT       ;PRINT "ERR", THEN BELL
+FF32: A9 D2     1021          LDA   #$D2
+FF34: 20 ED FD  1022          JSR   COUT
+FF37: 20 ED FD  1023          JSR   COUT
+FF3A: A9 87     1024 BELL     LDA   #$87       ;OUTPUT BELL AND RETURN
+FF3C: 4C ED FD  1025          JMP   COUT
+
+; Read a byte from the tape.  Y is $3B on first call, $35 on subsequent
+;  calls.  The bits are shifted left, meaning that the high bit is read
+;  first.
+FCEC: A2 08     736  RDBYTE   LDX   #$08       ;8 BITS TO READ
+FCEE: 48        737  RDBYT2   PHA              ;READ TWO TRANSITIONS
+FCEF: 20 FA FC  738           JSR   RD2BIT     ;  (FIND EDGE)
+FCF2: 68        739           PLA
+FCF3: 2A        740           ROL              ;NEXT BIT
+FCF4: A0 3A     741           LDY   #$3A       ;COUNT FOR SAMPLES
+FCF6: CA        742           DEX
+FCF7: D0 F5     743           BNE   RDBYT2
+FCF9: 60        744           RTS
+
+; Read two bits from the tape.
+FCFA: 20 FD FC  745  RD2BIT   JSR   RDBIT
+; Read one bit from the tape.  On entry, Y is the expected transition time:
+;   $3A=696usec  $35=636usec  $24=432usec
+; Returns with the carry set if the transition time exceeds the Y value.
+FCFD: 88        746  RDBIT    DEY              ;DECR Y UNTIL
+FCFE: AD 60 C0  747           LDA   TAPEIN     ; TAPE TRANSITION
+FD01: 45 2F     748           EOR   LASTIN
+FD03: 10 F8     749           BPL   RDBIT
+; the above loop takes 12 usec per iteration, what follows takes 14.
+FD05: 45 2F     750           EOR   LASTIN
+FD07: 85 2F     751           STA   LASTIN
+FD09: C0 80     752           CPY   #$80       ;SET CARRY ON Y
+FD0B: 60        753           RTS
+</code></pre>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Arc/AudioRecording-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>

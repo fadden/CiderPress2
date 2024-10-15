@@ -696,6 +696,8 @@ namespace DiskArc {
                 return ((AppleLink_FileEntry)entry).Archive;
             } else if (entry is AppleSingle_FileEntry) {
                 return ((AppleSingle_FileEntry)entry).Archive;
+            } else if (entry is AudioRecording_FileEntry) {
+                return ((AudioRecording_FileEntry)entry).Archive;
             } else if (entry is Binary2_FileEntry) {
                 return ((Binary2_FileEntry)entry).Archive;
             } else if (entry is GZip_FileEntry) {

@@ -19,7 +19,8 @@ namespace DiskArc {
     public static class DAAppHook {
         //
         // Option name constants.  These are simple strings, but we want to use constants
-        // so the compiler will catch typographical errors.
+        // so the compiler will catch typographical errors.  These may be supplied from the
+        // command line (--set-int), so keep the names reasonable.
         //
 
         // Make "marked but unused" allocations a warning, rather than just an informational
@@ -30,15 +31,18 @@ namespace DiskArc {
         // true unless the catalog is weird.)
         public const string DOS_STOP_FIRST_UNUSED = "dos-stop-first-unused";
 
-        // Override the standard T17 S0 location of the DOS VTOC.
-        public const string DOS_VTOC_TRACK = "dos-vtoc-track";
-        public const string DOS_VTOC_SECTOR = "dos-vtoc-sector";
-
         // Root directory when running library tests.  This is where "TestData" can be found.
         public const string LIB_TEST_ROOT = "lib-test-root";
 
+        // Override the standard T17 S0 location of the DOS VTOC.
+        // This is documented as a command-line arg; do not rename.
+        public const string DOS_VTOC_TRACK = "dos-vtoc-track";
+        public const string DOS_VTOC_SECTOR = "dos-vtoc-sector";
+
         // Audio cassette decoder algorithm.  Ideally this would be passed in directly, but
-        // it's a semi-experimental facet of a rarely-used feature.
-        public const string AUDIO_REC_ALG = "audio-rec-alg";
+        // it's a semi-experimental facet of a rarely-used feature, so plumbing it all the
+        // way through isn't worthwhile.
+        // This is documented as a command-line arg; do not rename.
+        public const string AUDIO_DEC_ALG = "audio-dec-alg";
     }
 }

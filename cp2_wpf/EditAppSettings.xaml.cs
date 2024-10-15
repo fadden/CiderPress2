@@ -108,6 +108,9 @@ namespace cp2_wpf {
             mAutoOpenDepth = mSettings.GetEnum(AppSettings.AUTO_OPEN_DEPTH,
                 MainController.AutoOpenDepth.SubVol);
             SetAutoOpenDepth();
+            mAudioAlg = mSettings.GetEnum(AppSettings.AUDIO_DECODE_ALG,
+                CassetteDecoder.Algorithm.ZeroCross);
+            SetAudioAlg();
         }
 
         private MainController.AutoOpenDepth mAutoOpenDepth;
@@ -134,9 +137,47 @@ namespace cp2_wpf {
         }
         private void SetAutoOpenDepth() {
             mSettings.SetEnum(AppSettings.AUTO_OPEN_DEPTH, mAutoOpenDepth);
-            OnPropertyChanged("AutoOpenDepth_Shallow");
-            OnPropertyChanged("AutoOpenDepth_SubVol");
-            OnPropertyChanged("AutoOpenDepth_Max");
+            OnPropertyChanged(nameof(AutoOpenDepth_Shallow));
+            OnPropertyChanged(nameof(AutoOpenDepth_SubVol));
+            OnPropertyChanged(nameof(AutoOpenDepth_Max));
+            IsDirty = true;
+        }
+
+        private CassetteDecoder.Algorithm mAudioAlg;
+        public bool Audio_Zero {
+            get { return mAudioAlg == CassetteDecoder.Algorithm.ZeroCross; }
+            set {
+                mAudioAlg = CassetteDecoder.Algorithm.ZeroCross;
+                SetAudioAlg();
+            }
+        }
+        public bool Audio_PTP_Sharp {
+            get { return mAudioAlg == CassetteDecoder.Algorithm.SharpPeak; }
+            set {
+                mAudioAlg = CassetteDecoder.Algorithm.SharpPeak;
+                SetAudioAlg();
+            }
+        }
+        public bool Audio_PTP_Round {
+            get { return mAudioAlg == CassetteDecoder.Algorithm.RoundPeak; }
+            set {
+                mAudioAlg = CassetteDecoder.Algorithm.RoundPeak;
+                SetAudioAlg();
+            }
+        }
+        public bool Audio_PTP_Shallow {
+            get { return mAudioAlg == CassetteDecoder.Algorithm.ShallowPeak; }
+            set {
+                mAudioAlg = CassetteDecoder.Algorithm.ShallowPeak;
+                SetAudioAlg();
+            }
+        }
+        private void SetAudioAlg() {
+            mSettings.SetEnum(AppSettings.AUDIO_DECODE_ALG, mAudioAlg);
+            OnPropertyChanged(nameof(Audio_Zero));
+            OnPropertyChanged(nameof(Audio_PTP_Sharp));
+            OnPropertyChanged(nameof(Audio_PTP_Round));
+            OnPropertyChanged(nameof(Audio_PTP_Shallow));
             IsDirty = true;
         }
 

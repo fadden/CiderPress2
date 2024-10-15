@@ -22,10 +22,11 @@ using static DiskArc.Defs;
 
 namespace DiskArc.Arc {
     /// <summary>
-    /// Apple II audio cassette recording.
+    /// Apple II audio cassette recording.  These are audio files that contain one or more
+    /// blobs of data.
     /// </summary>
     public class AudioRecording : IArchiveExt {
-        private const string FILENAME_RULES = "Auto-generated.";
+        private const string FILENAME_RULES = "Filenames are auto-generated.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "Audio Recording",
             canWrite: false,
@@ -102,8 +103,8 @@ namespace DiskArc.Arc {
                 return false;
             }
             // Scan for the first good entry.  No need to process the entire file.
-            CassetteDecoder.Algorithm alg = appHook.GetOptionEnum(DAAppHook.AUDIO_REC_ALG,
-                CassetteDecoder.Algorithm.Zero);
+            CassetteDecoder.Algorithm alg = appHook.GetOptionEnum(DAAppHook.AUDIO_DEC_ALG,
+                CassetteDecoder.Algorithm.ZeroCross);
             List<CassetteDecoder.Chunk> chunks = CassetteDecoder.DecodeFile(wav, alg, true);
             return chunks.Count != 0;
         }
@@ -135,13 +136,14 @@ namespace DiskArc.Arc {
             AudioRecording archive = new AudioRecording(stream, wav, appHook);
 
             // Allow the default algorithm to be overridden.
-            CassetteDecoder.Algorithm alg = appHook.GetOptionEnum(DAAppHook.AUDIO_REC_ALG,
-                CassetteDecoder.Algorithm.Zero);
+            CassetteDecoder.Algorithm alg = appHook.GetOptionEnum(DAAppHook.AUDIO_DEC_ALG,
+                CassetteDecoder.Algorithm.ZeroCross);
             List<CassetteDecoder.Chunk> chunks = CassetteDecoder.DecodeFile(wav, alg, false);
             if (chunks.Count == 0) {
                 // Doesn't appear to be an Apple II recording.
                 throw new NotSupportedException("no Apple II recordings found");
             }
+            archive.Notes.AddI("Decoding with " + alg + " identified " + chunks.Count + " chunks");
             archive.GenerateRecords(chunks);
             return archive;
         }
@@ -203,8 +205,8 @@ namespace DiskArc.Arc {
                     if (CheckBAS(len, xtra, chunks[i + 1])) {
                         fileType = FileAttribs.FILE_TYPE_BAS;
                     } else {
-                        // TODO: find or create examples of VAR tapes, and figure out how to
-                        //   determine validity.
+                        // TODO: find or create examples of tapes with VAR data, and figure out
+                        //   how to determine validity.
                         fileType = FileAttribs.FILE_TYPE_NON;
                     }
                 } else {

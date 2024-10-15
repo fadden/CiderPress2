@@ -49,7 +49,7 @@ namespace AppCommon {
             // if the .gz itself is stored in an archive.
             //
             // NuFX disk images require special exclusion handling by the caller.
-            ".zip", ".bny", ".bqy", ".shk", ".bxy", ".bse", ".sea", ".acu", ".gz", ".as"
+            ".zip", ".bny", ".bqy", ".shk", ".bxy", ".bse", ".sea", ".acu", ".gz", ".as", ".wav"
         };
 
         /// <summary>

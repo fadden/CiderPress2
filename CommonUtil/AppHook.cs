@@ -97,6 +97,9 @@ namespace CommonUtil {
             }
             try {
                 object o = Enum.Parse(typeof(T), valueStr);
+                if (!Enum.IsDefined(typeof(T), o)) {
+                    return defaultValue;
+                }
                 return (T)o;
             } catch (ArgumentException ae) {
                 Debug.WriteLine("Failed to parse '" + valueStr + "' (enum " + typeof(T) + "): " +

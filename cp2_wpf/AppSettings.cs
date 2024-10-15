@@ -55,6 +55,7 @@ namespace cp2_wpf {
         public const string MAC_ZIP_ENABLED = "mac-zip-enabled";
         public const string DOS_TEXT_CONV_ENABLED = "dos-text-conv-enabled";
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";
+        public const string AUDIO_DECODE_ALG = "audio-decode-alg";
 
         // Add/extract/import/export.
         public const string DDCP_ADD_EXTRACT = "ddcp-add-extract";

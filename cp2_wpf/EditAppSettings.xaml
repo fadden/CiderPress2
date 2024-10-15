@@ -54,15 +54,15 @@ limitations under the License.
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Grid.Column="0" Margin="4,0,0,0">
-                        <GroupBox Header="Auto-Open Depth" Padding="2,4">
+                        <GroupBox Header="Auto-Open Depth" Padding="2,4" Height="90">
                             <StackPanel>
-                                <RadioButton Content="Shallow"
+                                <RadioButton Content="Shallow" GroupName="AutoOpen"
                                              ToolTip="Don't scan for disks and archives"
                                              IsChecked="{Binding AutoOpenDepth_Shallow}"/>
-                                <RadioButton Content="Sub-Volume (recommended)"
+                                <RadioButton Content="Sub-Volume (recommended)" GroupName="AutoOpen"
                                              ToolTip="Scan for filesystem sub-volumes, and disk images in archives"
                                              IsChecked="{Binding AutoOpenDepth_SubVol}"/>
-                                <RadioButton Content="Max"
+                                <RadioButton Content="Max" GroupName="AutoOpen"
                                              ToolTip="Scan for disk images and file archives in all files"
                                              IsChecked="{Binding AutoOpenDepth_Max}"/>
                             </StackPanel>
@@ -74,7 +74,7 @@ limitations under the License.
                     </StackPanel>
 
                     <StackPanel Grid.Row="0" Grid.Column="2">
-                        <GroupBox Header="Import/Export Conversion" Padding="2,4">
+                        <GroupBox Header="Import/Export Conversion" Padding="2,4" Height="90">
                             <StackPanel>
                                 <Button Content="Configure Import Options" Width="160"
                                         HorizontalAlignment="Left"
@@ -88,6 +88,25 @@ limitations under the License.
                         <CheckBox Content="Enable DOS text conversion" Margin="0,4,0,0"
                                   ToolTip="Convert DOS text files when copying and pasting between filesystems"
                                   IsChecked="{Binding EnableDOSTextConv}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="4">
+                        <GroupBox Header="Apple II Cassette Decoder" Padding="2,4" Height="90">
+                            <StackPanel>
+                                <RadioButton Content="Zero-Crossing (recommended)" GroupName="AudioDec"
+                                             ToolTip="Decode signal by detecting zero crossings"
+                                             IsChecked="{Binding Audio_Zero}"/>
+                                <RadioButton Content="Peak-to-Peak Width, Sharp" GroupName="AudioDec"
+                                             ToolTip="Decode signal by measuring peak-to-peak distance, with sharp parameters"
+                                             IsChecked="{Binding Audio_PTP_Sharp}"/>
+                                <RadioButton Content="Peak-to-Peak Width, Round" GroupName="AudioDec"
+                                             ToolTip="Decode signal by measuring peak-to-peak distance, with round parameters"
+                                             IsChecked="{Binding Audio_PTP_Round}"/>
+                                <RadioButton Content="Peak-to-Peak Width, Shallow" GroupName="AudioDec"
+                                             ToolTip="Decode signal by measuring peak-to-peak distance, with shallow parameters"
+                                             IsChecked="{Binding Audio_PTP_Shallow}"/>
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
 
                     <CheckBox Grid.Column="0" Grid.Row="4" Content="Enable DEBUG menu" Margin="4,16,0,0"
