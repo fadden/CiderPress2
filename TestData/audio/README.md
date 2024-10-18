@@ -1,7 +1,7 @@
 # Audio Recordings #
 
 These are recordings of cassette tapes with Apple II software on them,
-downloaded from https://brutaldeluxe.fr/projects/cassettes/muse/ .
+downloaded from https://brutaldeluxe.fr/projects/cassettes/ .
 
 k7_apple_600202100_microchess2.wav.zip: Microchess 2.0, copyright
 1978 Personal Software, Inc., distributed by Apple Computer.  Three copies
