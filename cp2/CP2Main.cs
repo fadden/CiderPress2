@@ -477,6 +477,7 @@ namespace cp2 {
                     Environment.Is64BitProcess);
                 Console.WriteLine("  E_MACH=\"" + Environment.MachineName + "\" cpus=" +
                     Environment.ProcessorCount);
+                Console.WriteLine("  E_CD=\"" + Environment.CurrentDirectory + "\"");
                 Console.WriteLine("  RI_FD=" + RuntimeInformation.FrameworkDescription);
                 Console.WriteLine("  RI_OSA=" + RuntimeInformation.OSArchitecture);
                 Console.WriteLine("  RI_OSD=" + RuntimeInformation.OSDescription);
