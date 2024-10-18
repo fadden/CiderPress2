@@ -17,11 +17,13 @@ using System;
 
 using CommonUtil;
 using DiskArc;
-using DiskArc.Arc;
 using static DiskArc.Defs;
 
 
 namespace DiskArcTests {
+    /// <summary>
+    /// Test basic archive recognition.
+    /// </summary>
     public class TestAppleLink_Prefab : ITest {
         private const string FILE1 = "acu/IconEd.ACU";
         private static List<Helper.FileAttr> sFile1List = new List<Helper.FileAttr>() {

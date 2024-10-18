@@ -98,9 +98,20 @@ namespace CommonUtil {
             }
 
             public override string ToString() {
-                return Data.Length + " bytes, cksum=$" + ReadChecksum.ToString("x2") +
+                string str = Data.Length + " bytes, cksum=$" + ReadChecksum.ToString("x2") +
                     " ckres=$" + CalcChecksum.ToString("x2") + ", badEnd=" + BadEnd +
                     " startSamp=" + StartSample +", endSamp=" + EndSample;
+                if (Data.Length > 0 && Data.Length <= 3) {
+                    str += " {";
+                    for (int i = 0; i < Data.Length; i++) {
+                        if (i != 0) {
+                            str += ' ';
+                        }
+                        str += Data[i].ToString("x2");
+                    }
+                    str += "}";
+                }
+                return str;
             }
         }
 

@@ -188,6 +188,9 @@ namespace DiskArc.Arc {
                 if (i == chunks.Count - 1) {
                     // Last chunk.
                     fileType = FileAttribs.FILE_TYPE_NON;
+                } else if (chunk.BadChecksum || chunk.BadEnd) {
+                    // Don't try to apply special interpretation to broken pieces.
+                    fileType = FileAttribs.FILE_TYPE_NON;
                 } else if (chunk.Data.Length == 2) {
                     // Could be followed by Integer BASIC program or Applesoft shape table.
                     ushort len = RawData.GetU16LE(chunk.Data, 0);
@@ -238,7 +241,7 @@ namespace DiskArc.Arc {
                 }
                 AudioRecording_FileEntry newEntry = new AudioRecording_FileEntry(this,
                     "File" + RecordList.Count.ToString("D2"), fileType, auxType, chunks[i].Data);
-                if (chunk.CalcChecksum != 0x00 || chunk.BadEnd) {
+                if (chunks[i].BadChecksum || chunks[i].BadEnd) {
                     newEntry.IsDubious = true;
                 }
                 RecordList.Add(newEntry);

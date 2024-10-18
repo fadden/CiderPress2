@@ -332,6 +332,7 @@ namespace cp2 {
                     fmt = ThingString.CompressionFormat(bestFmt);
                     if (entry.IsDamaged || entry.IsDubious) {
                         fmt = '!' + fmt;
+                        dataFmtStr = '!' + dataFmtStr;
                     }
 
 

@@ -3,7 +3,7 @@
 ## Primary References ##
 
  - Apple II ROM tape routines (READ, WRITE)
- - CiderPress implementation
+ - CiderPress decoder implementation
    (https://github.com/fadden/ciderpress/blob/master/app/CassetteDialog.cpp)
 
 There is a substantial library of Apple II cassette tape recordings at
