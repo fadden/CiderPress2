@@ -69,6 +69,7 @@ namespace DiskArc {
         public const int FILE_TYPE_SND = 0xd8;
         public const int FILE_TYPE_LBR = 0xe0;
         public const int FILE_TYPE_CMD = 0xf0;
+        public const int FILE_TYPE_F1 = 0xf1;
         public const int FILE_TYPE_F2 = 0xf2;
         public const int FILE_TYPE_F3 = 0xf3;
         public const int FILE_TYPE_F4 = 0xf4;

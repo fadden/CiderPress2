@@ -123,6 +123,7 @@ namespace AppCommon {
             if (!looksGood && !hasProType && entry.HasProDOSTypes) {
                 proType = entry.FileType;
                 proAux = entry.AuxType;
+                hasProType = true;
             }
             if (!looksGood) {
                 if (proType == FileAttribs.FILE_TYPE_LBR &&
@@ -145,8 +146,15 @@ namespace AppCommon {
                 // If it's BIN or NON, or totally typeless (ZIP), test the filename extension.
                 if ((!hasProType /*&& !entry.HasHFSTypes*/) ||
                         (hasProType && (proType == FileAttribs.FILE_TYPE_NON ||
-                                        proType == FileAttribs.FILE_TYPE_BIN))) {
+                                        proType == FileAttribs.FILE_TYPE_BIN ||
+                                        proType == FileAttribs.FILE_TYPE_F1))) {
                     if (ExtInSet(ext, sDiskExts)) {
+                        looksGood = true;
+                    } else if (entry.DataLength == 140 * 1024) {
+                        // File is exactly the size of a 140KB floppy disk image.  It didn't have
+                        // a recognized disk image filename extension, so let's assume it's in
+                        // DOS sector order.
+                        ext = ".do";
                         looksGood = true;
                     }
                 }

@@ -747,7 +747,7 @@ namespace DiskArc {
             return false;
         }
 
-        #endregion
+        #endregion IFileEntry
 
         #region IMetadata
 
@@ -768,6 +768,6 @@ namespace DiskArc {
             return null;
         }
 
-        #endregion
+        #endregion IMetadata
     }
 }
