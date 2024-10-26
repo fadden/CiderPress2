@@ -374,7 +374,11 @@ namespace FileConv.Gfx {
             int modeDiffCount = 0;
             int packOffset = main.mPackedScanLinesOffset;
             byte[] unpackBuf = new byte[1280];                  // oversized
-            byte[] colorBuf = new byte[main.mPixelsPerScanLine + 3];    // oversize for odd widths
+            // Some images mix and match 320/640, but declare a pixels-per-scanline of 320.  For
+            // safety, just create the buffer at 2x the declared width.
+            //
+            // Also, oversize the buffer slightly to handle odd widths.
+            byte[] colorBuf = new byte[main.mPixelsPerScanLine * 2 + 3];
 
             for (int row = 0; row < main.mNumScanLines; row++) {
                 ushort mode = main.mScanLineDirectory[row].mMode;
