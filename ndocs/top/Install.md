@@ -109,13 +109,11 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
     #!/bin/sh
     exec PATH/TO/dotnet PATH/TO/cp2.dll $@
 
-### Linux and Wine ###
+### Using the GUI on Linux and macOS ###
 
-It's possible to run the GUI application under Linux using the Wine compatibility layer.
-With Wine v9 the application works somewhat, but crashes in some common operations.
+It's possible to run the GUI application under macOS and Linux using the Wine compatibility layer.
+See [this discussion](https://github.com/fadden/CiderPress2/discussions/34) for an example with
+macOS.  The key seems to be using the self-contained 32-bit (x86) release of CiderPress II
+(`win-x86_sc` package).
 
-If you want to try it, download the 32-bit (x86) self-contained package for Windows.  On my
-system, the 64-bit version hangs during startup (for both GUI and CLI), and the framework-dependent
-package requires downloading additional Wine components, so `win-x86_sc` is your best bet.
-
-(I am not a Wine expert.  It's possible I'm missing something obvious.)
+This is not officially supported and may be unstable.
