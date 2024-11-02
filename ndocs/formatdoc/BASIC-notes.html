@@ -88,7 +88,7 @@ stored as text.</p>
 <div class="markdown-heading"><h3 class="heading-element">File Structure</h3><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure-1" id="user-content-file-structure-1" name="user-content-file-structure-1"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>A file is a series of lines.  Each line is:</p>
 <pre><code>+$00 / 1: line length (including the length byte itself)
-+$01 / 2: line number
++$01 / 2: line number (must be positive)
 +$03 /nn: series of variable-length bytecode values
 +$xx / 1: end-of-line token ($01)
 </code></pre>

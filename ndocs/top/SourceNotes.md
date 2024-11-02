@@ -159,7 +159,9 @@ always match the current "final" release.
 
  6. Update the `app_version` number in `ndocs/publish.py`.  This is used
     for text substitution in the descriptive text and installer links.
- 7. From the command line, in the `ndocs` directory, run `publish.py`
+ 7. If file format docs have changed, use the `ndocs/formatdoc/convert.py`
+    script (see below).
+ 8. From the command line, in the `ndocs` directory, run `publish.py`
     (you may need to explicitly run python if the shell isn't set up to
     execute scripts directly).  This will update the contents of the `docs`
     directory and the top-level documentation (including this file) with the
@@ -167,12 +169,12 @@ always match the current "final" release.
 
 Finally, build the applications and submit the changes.
 
- 8. Run `makedist build` from the top level of the source tree (it'll be in
+ 9. Run `makedist build` from the top level of the source tree (it'll be in
     `MakeDist/bin/debug/NET6.0`).  This builds the distribution packages.
     The output will be in the `DIST` directory.
- 9. Submit all changes to git, push them to the server.
- 10. Create a new release on github.  Drag `DIST/*.zip` into the release.
- 11. Update/close any issues that have been addressed by the new release.
+ 10. Submit all changes to git, push them to the server.
+ 11. Create a new release on github.  Drag `DIST/*.zip` into the release.
+ 12. Update/close any issues that have been addressed by the new release.
 
 Version numbers should follow the semantic versioning scheme: v1.2.3,
 v1.2.3-dev1, etc.

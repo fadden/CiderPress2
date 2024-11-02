@@ -1,4 +1,4 @@
-CiderPress II is copyright 2023 faddenSoft.  Source and binaries may be
+CiderPress II is copyright faddenSoft.  Source and binaries may be
 distributed under terms of the Apache 2.0 license (attached below, and
 in the LICENSE file included with the source code).
 

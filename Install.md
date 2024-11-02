@@ -17,19 +17,19 @@ or use one of the links below to download the most recent stable release.
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_win-x86_sc.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_win-x64_sc.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_osx-x64_sc.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_linux-x64_sc.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x86_sc.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x64_sc.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_osx-x64_sc.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_linux-x64_sc.zip
 
 **Framework-Dependent** (~1 MB)
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_win-x86_fd.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_win-x64_fd.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_osx-x64_fd.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.4/cp2_1.0.4_linux-x64_fd.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x86_fd.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x64_fd.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_osx-x64_fd.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_linux-x64_fd.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they are unzipped.
@@ -109,13 +109,11 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
     #!/bin/sh
     exec PATH/TO/dotnet PATH/TO/cp2.dll $@
 
-### Linux and Wine ###
+### Using the GUI on Linux and macOS ###
 
-It's possible to run the GUI application under Linux using the Wine compatibility layer.
-With Wine v9 the application works somewhat, but crashes in some common operations.
+It's possible to run the GUI application under macOS and Linux using the Wine compatibility layer.
+See [this discussion](https://github.com/fadden/CiderPress2/discussions/34) for an example with
+macOS.  The key seems to be using the self-contained 32-bit (x86) release of CiderPress II
+(`win-x86_sc` package).
 
-If you want to try it, download the 32-bit (x86) self-contained package for Windows.  On my
-system, the 64-bit version hangs during startup (for both GUI and CLI), and the framework-dependent
-package requires downloading additional Wine components, so `win-x86_sc` is your best bet.
-
-(I am not a Wine expert.  It's possible I'm missing something obvious.)
+This is not officially supported and may be unstable.

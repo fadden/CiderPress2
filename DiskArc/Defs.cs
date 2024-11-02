@@ -27,7 +27,7 @@ namespace DiskArc {
         /// DiskArc library version number.
         /// </summary>
         public static CommonUtil.Version LibVersion { get; } =
-            new CommonUtil.Version(1, 0, 4, CommonUtil.Version.PreRelType.Final, 0);
+            new CommonUtil.Version(1, 0, 5, CommonUtil.Version.PreRelType.Final, 0);
 
         public const string BUILD_TYPE =
 #if DEBUG

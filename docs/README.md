@@ -28,7 +28,7 @@ handful of top-level documents (like the project README and installation
 instructions) are copied out of the `top` directory.
 
 Some text variable substitutions can be performed on HTML and Markdown files
-as they are copied, e.g. all occurrences of `1.0.4` will be replaced with
+as they are copied, e.g. all occurrences of `1.0.5` will be replaced with
 the current app version.  This is used to update the links in the download
 instructions (`Install.md`) to point at the current release.
 
