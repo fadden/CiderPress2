@@ -971,7 +971,7 @@ namespace DiskArc.Comp {
             }
 
             if (srcOffset != srcEndOffset || dstOffset != dstEndOffset) {
-                Debug.Assert(false, "Bad RLE data");
+                //Debug.Assert(false, "Bad RLE data");
                 return false;
             }
 
