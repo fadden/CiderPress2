@@ -52,7 +52,10 @@ In the shell, change to the directory where the files were unzipped.  Then:
    to make it executable.  The system adds a "quarantine" flag to anything downloaded from the
    Internet, so you need to do an extra step before you can execute the program.  In the directory
    where the files were unpacked, run `xattr -d com.apple.quarantine *`.  Run `./cp2 version`
-   to confirm this was successful.
+   to confirm this was successful.  The x64 code requires Rosetta 2 to run on Apple Silicon macs;
+   if you've never run an Intel-based program on your Mac, it won't be present, and you will see
+   "bad CPU type in executable" messages.  [Apple support](https://support.apple.com/en-us/102527)
+   has instructions for getting Rosetta 2 installed.
 
 The commands are:
 
