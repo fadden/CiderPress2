@@ -75,7 +75,7 @@ namespace cp2 {
         /// <remarks>
         /// <para>We can't use '/' or '\' because those will be part of the host pathname.  Most
         /// shells understand ':' as being part of a compound path and won't interfere.</para>
-        /// <para>We also want to use this when naming elements in ZIP and NuFX archives, because
+        /// <para>We also want to use this when naming elements in NuFX archives, because
         /// we made ':' the canonical path separator.  That requires an iterative search over
         /// increasingly long paths.</para>
         /// </remarks>
@@ -381,7 +381,7 @@ namespace cp2 {
                     Debug.Assert(false);        // shouldn't be here?
                 }
             } else {
-                const char ARC_SEP = SPLIT_CHAR;
+                char ARC_SEP = archive.Characteristics.DefaultDirSep;
 
                 // We need to find an entry that matches.  Entries can have directory separators,
                 // which we want to handle the same way we do directories on a disk image, but
