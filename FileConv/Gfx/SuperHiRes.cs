@@ -54,13 +54,21 @@ namespace FileConv.Gfx {
             if (DataStream == null) {
                 return Applicability.Not;
             }
-            // Must be 32KB or we won't know what to do with it.
-            if (DataStream.Length != EXPECTED_LEN) {
-                return Applicability.Not;
-            }
             // Official definition is 32KB PIC/$0000.
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_PIC && FileAttrs.AuxType == 0x0000) {
-                return Applicability.Yes;
+                if (DataStream.Length == EXPECTED_LEN) {
+                    return Applicability.Yes;
+                } else {
+                    // A modern project is storing additional data in PIC/$0000 files.  The
+                    // image viewers on the IIgs (e.g. SuperConvert) tend to ignore everything
+                    // past the first 32KB, rather than rejecting the file outright.  Do the
+                    // same thing here.
+                    return Applicability.Probably;
+                }
+            }
+            // Must be 32KB or we won't know what to do with it.
+            if (DataStream.Length < EXPECTED_LEN) {
+                return Applicability.Not;
             }
             // Sometimes the aux type is set wrong.
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_PIC) {
