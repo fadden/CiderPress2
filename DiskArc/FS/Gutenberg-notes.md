@@ -6,14 +6,16 @@
 
 ## General ##
 
-The Gutenberg word processor (reviewed [here](https://www.atarimagazines.com/creative/v9n6/64_Gutenberg.php))
-is a somewhat obtuse program with some very advanced features.  For example, you could draw
+The Gutenberg word processor, published in 1981 (see a review
+[here](https://www.atarimagazines.com/creative/v9n6/64_Gutenberg.php)), is a somewhat obtuse
+program with some very advanced features for its time.  For example, you could draw
 graphics, insert them into a document, and flow columns around them.  The full version, and a
 more limited version called Gutenberg, Jr., used a custom filesystem.
 
 The disk directory is held in a file called `DIR`.  To get a list of files on a disk from within
 the program, you open the file like you would any other document.  (It's not *exactly* the same,
-as the volume name header is skipped over, but it's very close to being formatted text.)
+as the volume name header is skipped over, but the directory format is very similar to
+formatted text.)
 
 The directory holds the filename, type, and initial track/sector of each file.  References to
 track or sector zero are stored as $40, probably because $00 has a special meaning in a document.
@@ -22,7 +24,7 @@ track/sector numbers; this works because bytes with the high bit clear are consi
 "alternate" character values.
 
 There are two types of files: programs and documents.  Fonts and non-resident commands are
-programs, and use file type 'P', or sometimes 'M'.  Documents use file type ' ' (space), or 'L' if
+programs, and use file type 'P', or (rarely) 'M'.  Documents use file type ' ' (space), or 'L' if
 they have been locked.
 
 Disks have a volume name that can be up to nine characters long.  Filenames can be up to 12
@@ -35,7 +37,7 @@ The program doesn't appear to allow lower-case characters to be used in filename
 
 ## Disk Structure ##
 
-The filesystem used an unusual approach: every 256-byte sector that is part of a file is arranged
+The filesystem uses an unusual approach: every 256-byte sector that is part of a file is arranged
 in a doubly-linked list.  The first six bytes of every file sector hold the track/sector numbers
 of the previous, current, and next sector in the list.  The list is circular.  The high bit of the
 next track number is set when it points to the first sector in the file, and the high bit of the
