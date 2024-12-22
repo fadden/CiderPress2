@@ -121,9 +121,10 @@ namespace FileConv.Gfx {
                 if (extraLen < 0) {
                     notes.AddW("Warning: invalid OffsetToMF " + OffsetToMF);
                     // keep going
-                } else if (OffsetToMF > BASE_LENGTH) {
+                } else if (extraLen > 0) {
                     ExtraData = new byte[extraLen];
                     Array.Copy(buf, offset, ExtraData, 0, extraLen);
+                    offset += extraLen;
                 }
                 return true;
             }
@@ -175,7 +176,9 @@ namespace FileConv.Gfx {
                 Debug.Assert(offset - startOffset == BASE_LENGTH);
 
                 if (LastChar < 0 || LastChar > 255 || FirstChar > LastChar) {
-                    notes.AddE("Error: bad first/last char " + FirstChar + " / " + LastChar);
+                    notes.AddE("Error: bad first/last char: first=$" +
+                        ((int)FirstChar).ToString("x2") + " '" + FirstChar + "' last=$" +
+                        ((int)LastChar).ToString("x2") + " '" + LastChar + "'");
                     return false;
                 }
                 if (FRectWidth <= 0 || FRectHeight <= 0 || RowWords <= 0) {
