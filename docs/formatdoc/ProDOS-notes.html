@@ -109,7 +109,7 @@ from that in subdirectories.</p>
 +$10 / 1: (reserved, must contain $75 for P8, or $76 for GS/OS)
 +$11 / 7: (reserved, should be zeroes)
 +$18 / 4: creation date/time of this directory (redundant, not updated)
-+$1c / 4: version/min-version (not used for lower-case flags)
++$1c / 2: version/min-version (not used for lower-case flags)
 +$1e / 1: access flags (redundant, not updated)
 +$1f / 1: directory entry length (usually $27)
 +$20 / 1: entries per directory block (usually $200/$27 = $0d)
