@@ -215,7 +215,7 @@ limitations under the License.
 
                 <GroupBox Grid.Row="2" Header="Advanced" Padding="2,4">
                     <StackPanel>
-                        <TextBlock Text="Sector order:"/>
+                        <TextBlock Text="Sector skew:"/>
                         <ComboBox Name="sectorOrderCombo" HorizontalAlignment="Stretch" Margin="0,2,0,0"
                                   ItemsSource="{Binding SectorOrderList}" DisplayMemberPath="Label"
                                   IsReadOnly="True" IsEnabled="{Binding IsSectorOrderEnabled}"
