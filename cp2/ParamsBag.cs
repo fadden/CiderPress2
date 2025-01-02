@@ -455,6 +455,9 @@ namespace cp2 {
                     case 'j':
                         ProcessLongOption("--strip-paths");
                         break;
+                    case '0':
+                        ProcessLongOption("--no-compress");
+                        break;
                     case 'p':
                         switch (optStr[++i]) {
                             case '0':

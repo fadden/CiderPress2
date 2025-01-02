@@ -1284,14 +1284,15 @@ Short single-hyphen equivalents are provided for a few of the options:
  - `-f` = `--overwrite` (f = "force")
  - `-i` = `--interactive`
  - `-j` = `--strip-paths` (j = "junk paths")
+ - `-0` = `--no-compress`
  - `-p0` = `--preserve=none` (that's a zero)
  - `-pa` = `--preserve=as`
  - `-pd` = `--preserve=adf`
  - `-ph` = `--preserve=host`
  - `-pn` = `--preserve=naps`
 
-These may be provided singly or as a single chunk, e.g. `-pnfj` is equivalent
-to `-pn -f -j`.
+These may be provided singly or in chunks, e.g. `-pnfj` is equivalent to
+`-pn -f -j`.
 
 #### `--classic`
 
@@ -1511,13 +1512,14 @@ e.g. "800K".  Supported multiplier strings are:
  - "TRK", "tracks" - 5.25" disk tracks (4096 bytes, or 3328 bytes
     with `--sectors=13` flag)
 
-The size indicates the amount of storage available to the filesystem,
-not the size of the disk image itself.  A standard 5.25" disk would be
+The size indicates the amount of storage accessible by the operating system,
+not the size of the disk image file.  A standard 5.25" Apple II disk would be
 specified as "140KB" for both ".do" sector images and ".nib" nibble images.
-(As a special case, ProDOS volumes may be specified as 32MB, though they will
-be formatted with 65535 blocks rather than 65536.)
-
 The size string is case-insensitive.
+
+ProDOS volumes may be specified as 32MB (65536 blocks) even though the
+filesystem is limited to 65535 blocks.  In that case, the file will have an
+unused block at the end.
 
 ### Filename Extensions ###
 
@@ -2057,4 +2059,3 @@ Additional short options to consider:
  - `-v` for `--verbose`?  (Not needed, verbose is default)
  - `-r` for `--recurse`?  (Not needed, recurse is default)
  - `-w` for `--wide`?  (Rarely used)
- - `-0` for `--no-compress`?

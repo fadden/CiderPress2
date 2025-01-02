@@ -135,6 +135,9 @@ namespace cp2 {
             ExtractFileWorker worker = new ExtractFileWorker(cbFunc, macZip: parms.MacZip,
                 preserve: parms.Preserve, rawMode: parms.Raw, stripPaths: parms.StripPaths,
                 ParamsBag.sExportSpecs, parms.AppHook);
+            if (parms.ShowNotes && exportSpec != null) {
+                worker.NotesOut = Console.Out;
+            }
 
             if (!ExtArchive.OpenExtArc(extArchive, true, true, parms, out DiskArcNode? rootNode,
                     out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
