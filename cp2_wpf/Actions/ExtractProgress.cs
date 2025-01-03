@@ -37,6 +37,7 @@ namespace cp2_wpf.Actions {
         private AppHook mAppHook;
 
         public ExtractFileWorker.PreserveMode Preserve { get; set; }
+        public bool AddExportExt { get; set; }
         public bool EnableMacOSZip { get; set; }
         public bool StripPaths { get; set; }
         public bool RawMode { get; set; }
@@ -69,9 +70,9 @@ namespace cp2_wpf.Actions {
                 ExtractFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
                     return ProgressUtil.HandleCallback(what, "extract", choices, null, bkWorker);
                 };
-                ExtractFileWorker extWorker = new ExtractFileWorker(cbFunc, macZip: EnableMacOSZip,
-                    preserve: Preserve, rawMode: RawMode, stripPaths: StripPaths, DefaultSpecs,
-                    mAppHook);
+                ExtractFileWorker extWorker = new ExtractFileWorker(cbFunc,
+                    addExportExt: AddExportExt, macZip: EnableMacOSZip, preserve: Preserve,
+                    rawMode: RawMode, stripPaths: StripPaths, DefaultSpecs, mAppHook);
 
                 // Switch to output directory.
                 Environment.CurrentDirectory = mOutputDir;

@@ -1718,6 +1718,13 @@ namespace cp2_wpf {
             }
         }
 
+        public bool IsChecked_ExtAddExportExt {
+            get { return AppSettings.Global.GetBool(AppSettings.EXT_ADD_EXPORT_EXT, true); }
+            set {
+                AppSettings.Global.SetBool(AppSettings.EXT_ADD_EXPORT_EXT, value);
+                OnPropertyChanged();
+            }
+        }
         public bool IsChecked_ExtRaw {
             get { return AppSettings.Global.GetBool(AppSettings.EXT_RAW_ENABLED, false); }
             set {
@@ -1890,6 +1897,7 @@ namespace cp2_wpf {
             IsChecked_AddPreserveADF = IsChecked_AddPreserveADF;
             IsChecked_AddPreserveAS = IsChecked_AddPreserveAS;
             IsChecked_AddPreserveNAPS = IsChecked_AddPreserveNAPS;
+            IsChecked_ExtAddExportExt = IsChecked_ExtAddExportExt;
             IsChecked_ExtRaw = IsChecked_ExtRaw;
             IsChecked_ExtStripPaths = IsChecked_ExtStripPaths;
 

@@ -33,6 +33,7 @@ namespace cp2.Tests {
             Controller.PrepareTestTmp(parms);
 
             parms.EraseImportExportSpecs();
+            parms.AddExt = true;
 
             //
             // Scenarios to test:
@@ -124,6 +125,18 @@ namespace cp2.Tests {
                 if (!File.Exists("HRBARS.rtf")) {
                     throw new Exception("Failed to extract BAS as .rtf");
                 }
+
+                // Test the --no-add-ext option.
+                parms.AddExt = false;
+                if (!Extract.HandleExport("xp",
+                        new string[] { arcPath, convSpec + "false", testFile }, parms)) {
+                    throw new Exception("export spec=" + convSpec + " " + testFile +
+                        " --no-add-ext failed");
+                }
+                if (!File.Exists("HRBARS")) {
+                    throw new Exception("Failed to extract BAS without extension");
+                }
+                parms.AddExt = true;
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;
             }

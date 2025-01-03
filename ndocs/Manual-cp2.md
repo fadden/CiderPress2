@@ -714,9 +714,11 @@ If a file is not compatible with the export specification, the command will
 fail.
 
 Options:
+ - `--add-ext`, `--no-add-ext`
  - `--overwrite`, `--no-overwrite`
  - `--raw`, `--no-raw`
  - `--recurse`, `--no-recurse`
+ - `--show-notes`, `--no-show-notes`
  - `--strip-paths`, `--no-strip-paths`
 
 Examples:
@@ -1293,6 +1295,13 @@ Short single-hyphen equivalents are provided for a few of the options:
 
 These may be provided singly or in chunks, e.g. `-pnfj` is equivalent to
 `-pn -f -j`.
+
+#### `--add-ext` (default), `--no-add-ext`
+
+When exporting files, it's useful to add a file extension to identify the new
+file's type, e.g. ".txt" for text files or ".png" for PNG images.  Sometimes
+this is undesirable, e.g. when exporting source code that already has a
+meaningful extension, such as ".c" or ".asm".
 
 #### `--classic`
 

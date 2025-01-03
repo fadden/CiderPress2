@@ -132,9 +132,9 @@ namespace cp2 {
             ExtractFileWorker.CallbackFunc cbFunc = delegate (CallbackFacts what) {
                 return Misc.HandleCallback(what, opStr, parms);
             };
-            ExtractFileWorker worker = new ExtractFileWorker(cbFunc, macZip: parms.MacZip,
-                preserve: parms.Preserve, rawMode: parms.Raw, stripPaths: parms.StripPaths,
-                ParamsBag.sExportSpecs, parms.AppHook);
+            ExtractFileWorker worker = new ExtractFileWorker(cbFunc, addExportExt: parms.AddExt,
+                macZip: parms.MacZip, preserve: parms.Preserve, rawMode: parms.Raw,
+                stripPaths: parms.StripPaths, ParamsBag.sExportSpecs, parms.AppHook);
             if (parms.ShowNotes && exportSpec != null) {
                 worker.NotesOut = Console.Out;
             }

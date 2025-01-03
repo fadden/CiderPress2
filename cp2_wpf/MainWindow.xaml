@@ -454,7 +454,7 @@ limitations under the License.
 
             <!-- Elements to show when no file is open ("launch" screen). -->
             <Grid Name="launchPanel"
-                  Visibility="{Binding Path=LaunchPanelVisibility}" d:IsHidden="False"
+                  Visibility="{Binding Path=LaunchPanelVisibility}" d:IsHidden="True"
                   Background="Transparent"
                   AllowDrop="True" Drop="LaunchPanel_Drop" DragOver="LaunchPanel_DragOver">
                 <Grid.ColumnDefinitions>
@@ -533,7 +533,7 @@ limitations under the License.
             requires that the controller set the initial left/right sizes explicitly (probably
             when restoring the previous configuration from the settings file). -->
             <Grid Name="mainTriptychPanel"
-                  Visibility="{Binding Path=MainPanelVisibility}" d:IsHidden="True">
+                  Visibility="{Binding Path=MainPanelVisibility}" d:IsHidden="False">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" MinWidth="100"/>
                     <ColumnDefinition Width="Auto"/>
@@ -1020,6 +1020,8 @@ limitations under the License.
                             <StackPanel Grid.Row="3" Margin="2,6,2,0">
                                 <CheckBox Content="Strip Paths"
                                           IsChecked="{Binding IsChecked_ExtStripPaths}"/>
+                                <CheckBox Content="Add Filename Ext to Exports"
+                                          IsChecked="{Binding IsChecked_ExtAddExportExt}"/>
                                 <CheckBox Content="Raw (for DOS 3.x)"
                                           IsChecked="{Binding IsChecked_ExtRaw}"/>
 

@@ -57,7 +57,7 @@ namespace cp2_wpf {
         public const string AUTO_OPEN_DEPTH = "auto-open-depth";
         public const string AUDIO_DECODE_ALG = "audio-decode-alg";
 
-        // Add/extract/import/export.
+        // Add/extract/import/export.  NOTE: update PublishSideOptions().
         public const string DDCP_ADD_EXTRACT = "ddcp-add-extract";
 
         public const string ADD_RECURSE_ENABLED = "add-recurse-enabled";
@@ -69,6 +69,7 @@ namespace cp2_wpf {
         public const string ADD_PRESERVE_AS = "add-preserve-as";
         public const string ADD_PRESERVE_NAPS = "add-preserve-naps";
 
+        public const string EXT_ADD_EXPORT_EXT = "ext-add-export-ext";
         public const string EXT_RAW_ENABLED = "ext-raw-enabled";
         public const string EXT_STRIP_PATHS_ENABLED = "ext-strip-paths-enabled";
         public const string EXT_PRESERVE_MODE = "ext-preserve-mode";

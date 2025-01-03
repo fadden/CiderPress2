@@ -48,6 +48,7 @@ namespace AppCommon {
         // Innards.
         //
 
+        private bool mAddExportExt;
         private bool mStripPaths;
         private bool mEnableMacZip;
         private ExtractFileWorker.PreserveMode mPreserveMode;
@@ -99,6 +100,7 @@ namespace AppCommon {
         /// <param name="entries">List of entries to add.</param>
         /// <param name="baseDir">For disk images, the effective root of the filesystem.</param>
         /// <param name="preserveMode">Preservation mode to use for extracted files.</param>
+        /// <param name="addExportExt">If true, add a file extension to exported files.</param>
         /// <param name="useRawData">If true, use "raw" mode on appropriate disks.</param>
         /// <param name="stripPaths">If true, strip paths while adding to set.</param>
         /// <param name="enableMacZip">If true, handle Mac ZIP entries.</param>
@@ -107,13 +109,14 @@ namespace AppCommon {
         /// <param name="appHook">Application hook reference.</param>
         public ClipFileSet(object archiveOrFileSystem, List<IFileEntry> entries,
                 IFileEntry baseDir, ExtractFileWorker.PreserveMode preserveMode,
-                bool useRawData, bool stripPaths, bool enableMacZip,
+                bool addExportExt, bool useRawData, bool stripPaths, bool enableMacZip,
                 ConvConfig.FileConvSpec? exportSpec,
                 Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs, AppHook appHook) {
 
             // Stuff the simple items into the object so we don't have to pass them around.
             mBaseDir = baseDir;
             mPreserveMode = preserveMode;
+            mAddExportExt = addExportExt;
             mUseRawData = useRawData;
             mStripPaths = stripPaths;
             mEnableMacZip = enableMacZip;
@@ -591,7 +594,9 @@ namespace AppCommon {
             }
             Debug.Assert(!string.IsNullOrEmpty(attrs.FileNameOnly));
             string ext;
-            if (expectedType == typeof(SimpleText)) {
+            if (!mAddExportExt) {
+                ext = string.Empty;
+            } else if (expectedType == typeof(SimpleText)) {
                 ext = TXTGenerator.FILE_EXT;
             } else if (expectedType == typeof(FancyText)) {
                 ext = RTFGenerator.FILE_EXT;

@@ -78,6 +78,7 @@ namespace cp2 {
         /// </summary>
         private Dictionary<string, Option> mOptions = InitOptions();
 
+        private static Option OptAddExt = new Option("add-ext", OptionType.Bool, true);
         private static Option OptClassic = new Option("classic", OptionType.Bool, false);
         private static Option OptCompress = new Option("compress", OptionType.Bool, true);
         private static Option OptConvertDOSText = new Option("convert-dos-text",
@@ -117,6 +118,7 @@ namespace cp2 {
         /// </summary>
         private static Dictionary<string, Option> InitOptions() {
             Dictionary<string, Option> opts = new Dictionary<string, Option> {
+                { OptAddExt.Name, OptAddExt },
                 { OptClassic.Name, OptClassic },
                 { OptCompress.Name, OptCompress },
                 { OptConvertDOSText.Name, OptConvertDOSText },
@@ -168,6 +170,10 @@ namespace cp2 {
             mOptions[name].CurValue = value;
         }
 
+        public bool AddExt {
+            get => GetBoolOption(OptAddExt.Name);
+            set => SetOption(OptAddExt.Name, value);
+        }
         public bool Classic {
             get => GetBoolOption(OptClassic.Name);
             set => SetOption(OptClassic.Name, value);

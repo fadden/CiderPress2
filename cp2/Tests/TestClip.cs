@@ -60,6 +60,7 @@ namespace cp2.Tests {
             parms.StripPaths = false;
             parms.Raw = false;
             parms.MacZip = true;
+            parms.AddExt = true;
 
             using NuFX nufxSrc = NuFX.CreateArchive(parms.AppHook);
             CreateTestArchive(nufxSrc, sSampleFiles, parms);
@@ -86,7 +87,7 @@ namespace cp2.Tests {
         private static void TestForeignExtract(IArchive arc, ParamsBag parms) {
             List<IFileEntry> entries = GatherArchiveEntries(arc, false, parms);
             ClipFileSet clipSet = new ClipFileSet(arc, entries, IFileEntry.NO_ENTRY,
-                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                parms.Preserve, parms.AddExt, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
 
             CheckForeign(clipSet, sForeignExtractNAPS, parms);
@@ -96,7 +97,7 @@ namespace cp2.Tests {
             List<IFileEntry> entries = GatherDiskEntries(srcFs, srcFs.GetVolDirEntry());
 
             ClipFileSet clipSet = new ClipFileSet(srcFs, entries, IFileEntry.NO_ENTRY,
-                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                parms.Preserve, parms.AddExt, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
             List<MemoryStream?> xferStreams = GenerateXferStreams(srcFs, clipSet);
             Debug.Assert(clipSet.XferEntries.Count == xferStreams.Count);
@@ -116,7 +117,7 @@ namespace cp2.Tests {
             List<IFileEntry> entries = GatherDiskEntries(srcFs, srcRootDir);
 
             ClipFileSet clipSet = new ClipFileSet(srcFs, entries, srcBaseDir,
-                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                parms.Preserve, parms.AddExt, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
             List<MemoryStream?> xferStreams = GenerateXferStreams(srcFs, clipSet);
             Debug.Assert(clipSet.XferEntries.Count == xferStreams.Count);
@@ -135,7 +136,7 @@ namespace cp2.Tests {
             List<IFileEntry> entries = GatherArchiveEntries(zip, false, parms);
 
             ClipFileSet clipSet = new ClipFileSet(zip, entries, IFileEntry.NO_ENTRY,
-                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                parms.Preserve, parms.AddExt, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
             List<MemoryStream?> xferStreams = GenerateXferStreams(zip, clipSet);
             Debug.Assert(clipSet.XferEntries.Count == xferStreams.Count);
@@ -151,7 +152,7 @@ namespace cp2.Tests {
             List<IFileEntry> entries = GatherDiskEntries(srcFs, srcFs.GetVolDirEntry());
 
             ClipFileSet clipSet = new ClipFileSet(srcFs, entries, IFileEntry.NO_ENTRY,
-                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                parms.Preserve, parms.AddExt, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
             List<MemoryStream?> xferStreams = GenerateXferStreams(srcFs, clipSet);
             Debug.Assert(clipSet.XferEntries.Count == xferStreams.Count);
@@ -205,7 +206,7 @@ namespace cp2.Tests {
             //
             List<IFileEntry> dosSrcEntries = new List<IFileEntry>() { dosText };
             ClipFileSet dosClipSet = new ClipFileSet(dosFs, dosSrcEntries, IFileEntry.NO_ENTRY,
-                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                parms.Preserve, parms.AddExt, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
 
             ClipPasteWorker.ClipStreamGenerator dosGen = delegate (ClipFileEntry clipEntry) {
@@ -224,7 +225,7 @@ namespace cp2.Tests {
             //
             List<IFileEntry> proSrcEntries = new List<IFileEntry>() { proText };
             ClipFileSet proClipSet = new ClipFileSet(proFs, proSrcEntries, IFileEntry.NO_ENTRY,
-                parms.Preserve, parms.Raw, parms.StripPaths, parms.MacZip,
+                parms.Preserve, parms.AddExt, parms.Raw, parms.StripPaths, parms.MacZip,
                 null, null, parms.AppHook);
 
             ClipPasteWorker.ClipStreamGenerator proGen = delegate (ClipFileEntry clipEntry) {

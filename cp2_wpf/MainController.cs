@@ -1915,6 +1915,7 @@ namespace cp2_wpf {
             ExtractFileWorker.PreserveMode preserve =
                 settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
                     ExtractFileWorker.PreserveMode.None);
+            bool addExportExt = settings.GetBool(AppSettings.EXT_ADD_EXPORT_EXT, true);
             bool rawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false);
             bool doStrip = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false);
             bool doMacZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true);
@@ -1932,8 +1933,8 @@ namespace cp2_wpf {
                 // may have to open file contents.
                 Mouse.OverrideCursor = Cursors.Wait;
                 clipSet = new ClipFileSet(CurrentWorkObject!, entries, baseDir,
-                    preserve, useRawData: rawMode, stripPaths: doStrip, enableMacZip: doMacZip,
-                    exportSpec, defaultSpecs, AppHook);
+                    preserve, addExportExt: addExportExt, useRawData: rawMode, stripPaths: doStrip,
+                    enableMacZip: doMacZip, exportSpec, defaultSpecs, AppHook);
             } finally {
                 Mouse.OverrideCursor = null;
             }
@@ -2050,6 +2051,7 @@ namespace cp2_wpf {
                     selected, outputDir, exportSpec, AppHook) {
                 Preserve = settings.GetEnum(AppSettings.EXT_PRESERVE_MODE,
                     ExtractFileWorker.PreserveMode.None),
+                AddExportExt = settings.GetBool(AppSettings.EXT_ADD_EXPORT_EXT, true),
                 EnableMacOSZip = settings.GetBool(AppSettings.MAC_ZIP_ENABLED, true),
                 StripPaths = settings.GetBool(AppSettings.EXT_STRIP_PATHS_ENABLED, false),
                 RawMode = settings.GetBool(AppSettings.EXT_RAW_ENABLED, false),

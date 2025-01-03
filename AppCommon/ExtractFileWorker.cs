@@ -43,8 +43,12 @@ namespace AppCommon {
         public delegate CallbackFacts.Results CallbackFunc(CallbackFacts what);
 
         /// <summary>
-        /// If set, files added to a ZIP archive that have resource forks or HFS types will
-        /// be stored as AppleDouble with a "__MACOSX" prefix.
+        /// If set, add a filename extension to exported files.
+        /// </summary>
+        public bool AddExportExt { get; set; }
+
+        /// <summary>
+        /// If set, handle AppleDouble files stored with the __MACOSX prefix.
         /// </summary>
         public bool IsMacZipEnabled { get; set; }
 
@@ -54,13 +58,12 @@ namespace AppCommon {
         public PreserveMode Preserve { get; set; }
 
         /// <summary>
-        /// If set, use raw mode when adding files to filesystems (notably DOS 3.x).
+        /// If set, use raw mode when extracting files from filesystems (notably DOS 3.x).
         /// </summary>
         public bool RawMode { get; set; }
 
         /// <summary>
-        /// If set, strip pathnames off of files before adding them.  For a filesystem, all
-        /// files will be added to the target directory.
+        /// If set, strip pathnames off of files before extracting them.
         /// </summary>
         public bool StripPaths { get; set; }
 
@@ -83,16 +86,19 @@ namespace AppCommon {
         /// </summary>
         /// <param name="func">Callback function, for progress messages and file overwrite
         ///   queries.</param>
+        /// <param name="addExportExt">True if filename extensions should be added to exported
+        ///   files.</param>
         /// <param name="macZip">True if MacZip is enabled.</param>
         /// <param name="preserve">Attribute preservation mode to use during extract.</param>
         /// <param name="rawMode">True if data forks should be opened in "raw" mode.</param>
         /// <param name="stripPaths">True if pathnames should be stripped down to filenames.</param>
         /// <param name="defaultSpecs">Default export specs, for "best" mode.</param>
         /// <param name="appHook">Application hook reference.</param>
-        public ExtractFileWorker(CallbackFunc func, bool macZip, PreserveMode preserve,
-                bool rawMode, bool stripPaths,
+        public ExtractFileWorker(CallbackFunc func, bool addExportExt, bool macZip,
+                PreserveMode preserve, bool rawMode, bool stripPaths,
                 Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs, AppHook appHook) {
             mFunc = func;
+            AddExportExt = addExportExt;
             IsMacZipEnabled = macZip;
             Preserve = preserve;
             RawMode = rawMode;
@@ -685,7 +691,8 @@ namespace AppCommon {
                         ((ErrorText)convOutput).Text.ToString());
                     return false;
                 } else if (convOutput is FancyText && !((FancyText)convOutput).PreferSimple) {
-                    string rtfPath = extractPath + RTFGenerator.FILE_EXT;
+                    string rtfPath = extractPath;
+                    if (AddExportExt) { rtfPath += RTFGenerator.FILE_EXT; }
                     if (!PrepareOutputFile(rtfPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -695,7 +702,8 @@ namespace AppCommon {
                         RTFGenerator.Generate((FancyText)convOutput, outStream);
                     }
                 } else if (convOutput is SimpleText) {
-                    string txtPath = extractPath + TXTGenerator.FILE_EXT;
+                    string txtPath = extractPath;
+                    if (AddExportExt) { txtPath += TXTGenerator.FILE_EXT; }
                     if (!PrepareOutputFile(txtPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -705,7 +713,8 @@ namespace AppCommon {
                         TXTGenerator.Generate((SimpleText)convOutput, outStream);
                     }
                 } else if (convOutput is CellGrid) {
-                    string csvPath = extractPath + CSVGenerator.FILE_EXT;
+                    string csvPath = extractPath;
+                    if (AddExportExt) { csvPath += CSVGenerator.FILE_EXT; }
                     if (!PrepareOutputFile(csvPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -715,7 +724,8 @@ namespace AppCommon {
                         CSVGenerator.Generate((CellGrid)convOutput, outStream);
                     }
                 } else if (convOutput is IBitmap) {
-                    string pngPath = extractPath + PNGGenerator.FILE_EXT;
+                    string pngPath = extractPath;
+                    if (AddExportExt) { pngPath += PNGGenerator.FILE_EXT; }
                     if (!PrepareOutputFile(pngPath, dataProgEnt, out bool doCancel)) {
                         return !doCancel;
                     }
@@ -725,7 +735,7 @@ namespace AppCommon {
                         PNGGenerator.Generate((IBitmap)convOutput, outStream);
                     }
                 } else if (convOutput is HostConv) {
-                    // Copy these to the output unmodified
+                    // Copy these to the output unmodified.  No file extension added.
                     if (dataCopy == null) {
                         ReportConvFailure("weird: HostConv but no data fork");
                         return false;
