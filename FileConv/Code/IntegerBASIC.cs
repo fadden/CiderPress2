@@ -195,7 +195,7 @@ namespace FileConv.Code {
                         // not equal to ASCII '"'.
                         output.SetForeColor(COLOR_STRING);
                         output.Append('"');
-                        while (dataBuf[offset] != TOK_CLOSE_QUOTE && offset < length) {
+                        while (offset < length && dataBuf[offset] != TOK_CLOSE_QUOTE) {
                             if (makePrintable) {
                                 output.AppendPrintable((char)(dataBuf[offset] & 0x7f));
                             } else {
@@ -203,7 +203,7 @@ namespace FileConv.Code {
                             }
                             offset++;
                         }
-                        if (dataBuf[offset] != TOK_CLOSE_QUOTE) {
+                        if (offset == length) {
                             output.Notes.AddE("File ended while in a string constant");
                             break;
                         }
