@@ -217,7 +217,7 @@ namespace FileConv.Code {
                             output.Append(' ');
                         }
                         output.Append(sIntegerTokens[curByte]);   // output "REM "
-                        while (dataBuf[offset] != TOK_EOL && offset < length) {
+                        while (offset < length && dataBuf[offset] != TOK_EOL) {
                             if (makePrintable) {
                                 output.AppendPrintable((char)(dataBuf[offset] & 0x7f));
                             } else {
@@ -225,7 +225,7 @@ namespace FileConv.Code {
                             }
                             offset++;
                         }
-                        if (dataBuf[offset] != TOK_EOL) {
+                        if (offset == length) {
                             output.Notes.AddE("File ended while in a comment");
                             break;
                         }
