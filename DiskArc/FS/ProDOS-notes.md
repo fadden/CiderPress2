@@ -22,7 +22,7 @@ the Apple /// computer.  The version used for ProDOS 8 is structurally identical
 extensions were made for GS/OS.
 
 The filesystem is based on 512-byte blocks, identified by a 16-bit unsigned integer.  This
-yields a maximum volume size of 65535 blocks, one short of 32MB.  (Some hard drive images are
+yields a maximum volume size of 65535 blocks, one short of 32MB.  (Some hard drive image files are
 65536 blocks long; the last block is unused.)  Individual files have a maximum length of 2^24 - 1,
 one byte shy of 16MB.
 
@@ -30,16 +30,10 @@ The filesystem is hierarchical in nature.  Disk directories appear in the filesy
 structured differently from other files.
 
 All files have a "key block" in their directory entry.  The meaning of the key block changes
-for regular files as the file's length changes:
- - [0,512]: "seedling": key block holds file contents.
- - [513,131072]: "sapling": key block is an index block that holds up to 256 block numbers.
-   Each referenced block holds file data.
- - [131073,16777215]: "tree": key block is a "master" index block that holds up to 128 block
-   numbers.  Each referenced block is an index block.
-
-When a file grows long enough to expand, a new key block is allocated.  The seedling key block
-becomes the first data block listed in the new index; the sapling index block becomes the first
-index listed in the new master index.  When a file is truncated, the process is reversed.
+for regular files as the file's length changes.  For a short "seedling" file (<= 512 bytes), the
+key block holds the file contents.  For a medium-length "sapling" file (513 bytes to 128KB),
+the key block is an index block that holds pointers to the data blocks.  For a large "tree" file
+(128KB to 16MB), it holds pointers to index blocks.
 
 Directory files are stored as a simple linear list of file entries.  The volume directory cannot
 change size, but subdirectories are allowed to grow (but not shrink).
@@ -131,13 +125,13 @@ Regular directory entry:
 +$25 / 2: header pointer (key block number of directory that holds this file)
 ```
 
-Storage types (see TN.PDOS.025):
+Storage types (described in more detail later):
 ```
  $00: deleted entry
- $01: seedling - key block holds data (0-512 bytes)
- $02: sapling - key block is list of data blocks (513-131072 bytes)
- $03: tree - key block is list of index blocks (128KB-16MB)
- $04: Pascal area on ProFile hard disk drive (see ProDOS 8 TN #25)
+ $01: seedling
+ $02: sapling
+ $03: tree
+ $04: Pascal area on ProFile hard disk drive (described in ProDOS 8 TN #25)
  $05: GS/OS forked file
  $0d: subdirectory
  $0e: subdirectory header entry
@@ -146,7 +140,7 @@ Storage types (see TN.PDOS.025):
 Setting the storage type to zero is insufficient when deleting a file.  The entire byte, which
 also includes the filename length, must be zeroed.
 
-## Fields ##
+### Fields ###
 
 Filenames are case-insensitive but (with GS/OS extensions) case-preserving.
 
@@ -188,7 +182,34 @@ to use:
 See the ProDOS section in the [TimeStamp code](../../CommonUtil/TimeStamp.cs)
 for the details of how this is handled.
 
-## Extended Files ##
+## Data File Structure ##
+
+The "storage type" field in the directory entry specifies the file structure.  There are
+three basic types of data storage file, determined by the file length:
+
+ - [0,512]: "seedling".  The key block holds the complete file contents.  This block is
+   always allocated, even if the file has zero length.
+ - [513,131072]: "sapling". The key block is an index block that holds up to 256 pointers to
+   data blocks.
+ - [131073,16777215]: "tree". The key block is a "master" index block that holds up to 128
+   pointers to index blocks.  (It can be no more than half full because of the 16MB length limit.)
+
+When a file grows large enough to expand, a new key block is allocated.  The seedling key block
+becomes the first data block listed in the new index; the sapling index block becomes the first
+index listed in the new master index.  When a file is truncated, the process is reversed.
+The index block structure always spans the entire file.  For example, if you create a new file and
+use the `SET_EOF` MLI call to set its length to 131073, the file becomes a 3-block tree file.
+(The first block of the file is always allocated, so there's one for that, one for the index block
+that points to it, and one for the master index block.)
+
+Index blocks and master index blocks hold a series of 16-bit block numbers.  The values are
+stored with the low byte in the first half of the block, and the high byte in the second half
+of the block.  For example, a pointer to the first data block in a sapling file can be obtained by
+combining bytes $00 and $80 from the key block.  Zeroed entries in index and master index blocks
+indicate sparse sections of the file, which are treated as blocks full of $00 bytes.  Unused
+entries in index blocks should be cleared to zero.
+
+### Extended Files ###
 
 The key block for forked files points to an extended key block entry.  The
 block has "mini-entries" for each fork, with data at +$0000 and rsrc at
@@ -208,7 +229,7 @@ GS/OS System 6.0.  The format is:
  +$09 / 1: type of entry (1 for FInfo, 2 for FXInfo)
  +$0a /16: 16 bytes of Finder data
  +$1a / 1: size of second entry (must be 18)
- +$1b / 1: type of entry (1 fir FInfo, 2 for FXInfo)
+ +$1b / 1: type of entry (1 for FInfo, 2 for FXInfo)
  +$1c /16: 16 bytes of Finder data
 ```
 The ProDOS FST creates both, but the software for the Apple //e card for the
