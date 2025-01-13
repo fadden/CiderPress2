@@ -17,8 +17,10 @@ Suggested procedure:
 
  - Start with UnadornedSector or UnadornedNibble525 as appropriate.
  - Write TestKind(), OpenDisk(), and AnalyzeDisk().
+ - Add entry to Defs.FileKind, and Defs.IsDiskImageFIle().
  - Add to FileAnalyzer's PrepareDiskImage(), ExtensionToKind(), TestKind(), sProbeKinds.
  - Update DAExtensions as appropriate.
+ - Add human-readable string to ThingString.
  - Add some sample files to the TestData directory.
  - Write a "prefab" test that opens all of the sample files and does trivial checks (see the
    existing tests for examples).

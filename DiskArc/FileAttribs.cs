@@ -86,10 +86,12 @@ namespace DiskArc {
         // make them runtime variables rather than compiler constants.)
         public const uint CREATOR_CPII = 0x43504949;        // 'CPII' (CiderPress II)
         public const uint CREATOR_PDOS = 0x70646f73;        // 'pdos' (ProDOS)
+        public const uint CREATOR_DART = 0x44415254;        // 'DART' (DART)
         public const uint CREATOR_DCPY = 0x64437079;        // 'dCpy' (DiskCopy)
         public const uint TYPE_AIFC = 0x41494643;           // 'AIFC'
         public const uint TYPE_AIFF = 0x41494646;           // 'AIFF'
         public const uint TYPE_BINA = 0x42494e41;           // 'BINA'
+        public const uint TYPE_DART_SUB = 0x444d6400;       // 'DMd?' (DART - mask off low byte)
         public const uint TYPE_DIMG = 0x64496d67;           // 'dImg'
         public const uint TYPE_MIDI = 0x4d494449;           // 'MIDI'
         public const uint TYPE_PSYS = 0x50535953;           // 'PSYS'

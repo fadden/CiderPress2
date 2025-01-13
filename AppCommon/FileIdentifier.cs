@@ -115,6 +115,11 @@ namespace AppCommon {
                 if (/*entry.HFSCreator == FileAttribs.CREATOR_DCPY &&*/
                         entry.HFSFileType == FileAttribs.TYPE_DIMG) {
                     looksGood = true;
+                } else if (entry.HFSCreator == FileAttribs.CREATOR_DART) {
+                    // File type should be DMd?, where '?' is 0-7 or 'f'.
+                    if ((entry.HFSFileType & 0xffffff00) == FileAttribs.TYPE_DART_SUB) {
+                        looksGood = true;
+                    }
                 } else {
                     hasProType = FileAttribs.ProDOSFromHFS(entry.HFSFileType, entry.HFSCreator,
                             out proType, out proAux);

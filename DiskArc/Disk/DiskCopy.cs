@@ -43,7 +43,7 @@ namespace DiskArc.Disk {
     /// warning note, and fix the checksum when the next modifications are made.</para>
     /// </remarks>
     public class DiskCopy : IDiskImage, IMetadata {
-        public const string DESCRIPTION_NAME = "description";
+        public const string DESCRIPTION_NAME = "description";   // for metadata
         public const int TAG_SIZE = 12;
 
         //
@@ -327,6 +327,13 @@ namespace DiskArc.Disk {
             }
         }
 
+        /// <summary>
+        /// Creates a new disk image.
+        /// </summary>
+        /// <param name="stream">Output stream.  Will be truncated.</param>
+        /// <param name="mediaKind">Type of disk to create.</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <returns>Newly-created disk image object.</returns>
         public static DiskCopy CreateDisk(Stream stream, MediaKind mediaKind, AppHook appHook) {
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek) {
                 throw new ArgumentException("Invalid stream capabilities");
@@ -511,7 +518,7 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Computes the DiskCopy 4.2 checksum.
         /// </summary>
-        private static uint ComputeChecksum(byte[] data, int offset, int length) {
+        internal static uint ComputeChecksum(byte[] data, int offset, int length) {
             uint checksum = 0;
             for (int i = 0; i < length; i += 2) {
                 ushort val = RawData.GetU16BE(data, offset + i);

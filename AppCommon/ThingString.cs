@@ -55,7 +55,9 @@ namespace AppCommon {
         /// Returns a short (&lt;= 9 char) string with a disk image class name.
         /// </summary>
         public static string IDiskImage(IDiskImage disk) {
-            if (disk is DiskCopy) {
+            if (disk is DART) {
+                return "DART";
+            } else if (disk is DiskCopy) {
                 return "DiskCopy";
             } else if (disk is Trackstar) {
                 return "Trackstar";

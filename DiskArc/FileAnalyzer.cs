@@ -341,6 +341,10 @@ namespace DiskArc {
                 case ".2img":
                     fileKind1 = FileKind.TwoIMG;
                     break;
+                case ".dart":
+                    fileKind1 = FileKind.DART;
+                    orderHint1 = SectorOrder.ProDOS_Block;
+                    break;
                 case ".dc":
                 case ".dc42":
                 case ".dc6":
@@ -492,6 +496,7 @@ namespace DiskArc {
             FileKind.NuFX,
             FileKind.GZip,
             FileKind.AppleSingle,
+            FileKind.DART,
             FileKind.DiskCopy,
             FileKind.AppleLink,
             FileKind.Binary2,           // test after NuFX (.BXY > .BNY)
@@ -526,6 +531,8 @@ namespace DiskArc {
                         return true;
                     }
                     return Binary2.TestKind(stream, appHook);
+                case FileKind.DART:
+                    return DART.TestKind(stream, appHook);
                 case FileKind.DDD:
                     return false;       // TODO(someday)
                 case FileKind.DiskCopy:
@@ -581,6 +588,9 @@ namespace DiskArc {
             IDiskImage? diskImage = null;
             try {
                 switch (kind) {
+                    case FileKind.DART:
+                        diskImage = DART.OpenDisk(stream, appHook);
+                        break;
                     case FileKind.DiskCopy:
                         diskImage = DiskCopy.OpenDisk(stream, appHook);
                         break;

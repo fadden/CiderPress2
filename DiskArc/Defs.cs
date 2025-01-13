@@ -115,16 +115,19 @@ namespace DiskArc {
             UnadornedNibble525,         // .nib, .nb2, .raw*
             Woz,                        // .woz
             TwoIMG,                     // .2mg, .2img
-            DiskCopy,                   // .dsk*, .dc, .dc42
+            DiskCopy,                   // .dsk*, .dc, .dc42, .image
+            DART,                       // (HFS types)
             Trackstar,                  // .app
+            DDD,                        // .ddd
             // ? Sim //e HDV
             // ? FDI
             // ? Davex image ($e0/8004)
+            // ? DDDDeluxe
 
             // Multi-file archives.
             Zip,                        // .zip
             NuFX,                       // .shk, .sdk, .bxy, .sea, .bse
-            Binary2,                    // .bny, bqy
+            Binary2,                    // .bny, .bqy
             AppleLink,                  // .acu
             AudioRecording,             // .wav
             // ? StuffIt
@@ -133,8 +136,6 @@ namespace DiskArc {
             GZip,                       // .gz
             AppleSingle,                // .as (includes AppleDouble)
             MacBinary,                  // .bin, .macbin
-            DDD,                        // .ddd
-            // ? DDDDeluxe
         }
         public static bool IsDiskImageFile(FileKind kind) {
             switch (kind) {
@@ -142,6 +143,7 @@ namespace DiskArc {
                 case FileKind.UnadornedNibble525:
                 case FileKind.Woz:
                 case FileKind.TwoIMG:
+                case FileKind.DART:
                 case FileKind.DiskCopy:
                 case FileKind.Trackstar:
                     return true;
