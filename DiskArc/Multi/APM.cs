@@ -268,24 +268,38 @@ namespace DiskArc.Multi {
             chunkAccess.ReadBlock(0, blockBuf, 0);
             DriverDescriptorRecord ddr = new DriverDescriptorRecord();
             ddr.Load(blockBuf, 0);
-            if (ddr.sbSig != DDR_SIGNATURE || ddr.sbBlkSize != BLOCK_SIZE) {
+            if (ddr.sbSig != DDR_SIGNATURE) {
                 return TestResult.No;
             }
-            if (ddr.sbBlkCount > chunkAccess.FormattedLength / BLOCK_SIZE) {
+            TestResult result = TestResult.Yes;
+            if (ddr.sbBlkSize == BLOCK_SIZE || ddr.sbBlkSize == 2048) {
+                // Good block size.  Likely APM.
+                result = TestResult.Yes;
+            } else if (ddr.sbBlkSize == 0 && ddr.sbBlkCount == 0) {
+                // Invalid, but some floptical images look like this.  Allow it, cautiously.
+                result = TestResult.Maybe;
+            } else {
+                // Bad block size.  See if the partition map scan comes up with anything.
+                Debug.WriteLine("DDR bad block size: " + ddr.sbBlkSize);
+                result = TestResult.Barely;
+            }
+            long declSize = ddr.sbBlkSize * ddr.sbBlkCount;
+            if (declSize > chunkAccess.FormattedLength) {
                 // Should be correct value or zero.  Some internal Apple CD-ROMs are totally wrong,
-                // so let's just ignore this.
+                // so let's just note this and ignore it.
                 Debug.WriteLine("DDR block count should be " +
                     (chunkAccess.FormattedLength / BLOCK_SIZE) + " blocks, but is " +
                     ddr.sbBlkCount);
-                //return TestResult.No;
             }
 
             List<Partition>? partitions = LoadPartitions(chunkAccess, true, null, appHook);
             if (partitions == null) {
+                // No partitions found.  Even if it's valid APM, there's nothing for us to do.
+                // (We'll need to reconsider this if we allow partition creation.)
                 return TestResult.No;
             }
 
-            return TestResult.Yes;
+            return result;
         }
 
         // Delegate: returns true if the size (in bytes) is valid for this filesystem.
