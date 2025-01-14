@@ -758,8 +758,16 @@ namespace DiskArc.Disk {
             uint crc32 = RawData.GetU32LE(mBaseData, 8);
             uint calcCrc = CRC32.OnBuffer(0, mBaseData, HEADER_LEN, mBaseData.Length - HEADER_LEN);
             if (crc32 != calcCrc) {
-                Notes.AddE("File CRC mismatch");
-                IsDubious = true;
+                if (crc32 == 0) {
+                    // "If the CRC is 0x00000000, then no CRC has been calculated for the file
+                    // and should be ignored."  The idea is that the CRC represents the original
+                    // imaged state, so if an emulator or utility modifies the file it can zero
+                    // out the CRC to indicate that it has been changed.
+                    Notes.AddI("File CRC was zero");
+                } else {
+                    Notes.AddE("File CRC mismatch");
+                    IsDubious = true;
+                }
                 // keep going
             }
 
