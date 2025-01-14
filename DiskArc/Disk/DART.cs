@@ -59,6 +59,11 @@ namespace DiskArc.Disk {
         private byte[] mUserData;
         private byte[] mTagData;
 
+        private const int BLOCK_DATA_LEN = 512 * 40;
+        private const int BLOCK_TAG_LEN = 12 * 40;
+        private const int BLOCK_TOTAL_LEN = BLOCK_DATA_LEN + BLOCK_TAG_LEN;
+        private enum CompressionType { Fast = 0, Best = 1, None = 2 }
+
         protected class Header {
             private const int SD_COUNT = 40;
             private const int HD_COUNT = 72;
@@ -70,12 +75,12 @@ namespace DiskArc.Disk {
             public byte mSrcCmp;
             public byte mSrcType;
             public ushort mSrcSize;
-            public ushort[] bLength = RawData.EMPTY_USHORT_ARRAY;
+            public ushort[] mBLength = RawData.EMPTY_USHORT_ARRAY;
 
             /// <summary>
             /// Length of the header area.
             /// </summary>
-            public int Length { get { return 4 + bLength.Length * 2; } }
+            public int Length { get { return 4 + mBLength.Length * 2; } }
 
             public Header() { }
 
@@ -85,9 +90,9 @@ namespace DiskArc.Disk {
                 mSrcType = buf[offset++];
                 mSrcSize = RawData.ReadU16BE(buf, ref offset);
                 int lenCount = (mSrcSize <= 800) ? SD_COUNT : HD_COUNT;
-                bLength = new ushort[lenCount];
+                mBLength = new ushort[lenCount];
                 for (int i = 0; i < lenCount; i++) {
-                    bLength[i] = RawData.ReadU16BE(buf, ref offset);
+                    mBLength[i] = RawData.ReadU16BE(buf, ref offset);
                 }
                 Debug.Assert(offset == startOffset + SD_LENGTH ||
                     offset == startOffset + HD_LENGTH);
@@ -157,6 +162,25 @@ namespace DiskArc.Disk {
             if (hdr.mSrcCmp < Header.COMP_MIN || hdr.mSrcCmp > Header.COMP_MAX) {
                 return false;
             }
+            // Check the block-length entries.  We should have nonzero values for the parts
+            // of the disk that exist, zero values for the rest (e.g. last half of 400KB disk).
+            int expected = hdr.mSrcSize / 20;
+            Debug.Assert(hdr.mBLength.Length >= expected);
+            for (int i = 0; i < hdr.mBLength.Length; i++) {
+                if (i < expected && hdr.mBLength[i] == 0) {
+                    Debug.WriteLine("Bad length in block " + i);
+                    return false;
+                } else if (i >= expected && hdr.mBLength[i] != 0) {
+                    Debug.WriteLine("Unexpected data in block " + i);
+                    return false;
+                }
+
+                if (i < expected && hdr.mSrcCmp == (int)CompressionType.None &&
+                        (hdr.mBLength[i] != BLOCK_TOTAL_LEN && (short)hdr.mBLength[i] != -1)) {
+                    Debug.WriteLine("Unexpected length on uncompressed data: " + hdr.mBLength[i]);
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -182,18 +206,102 @@ namespace DiskArc.Disk {
             if (!ValidateHeader(stream, appHook, out Header hdr)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
-            Debug.Assert(hdr.mSrcCmp == 1);
 
             DART disk = new DART(stream, hdr, appHook);
             stream.Position = hdr.Length;
 
-            // TODO: read
+            byte[] tmpBuf = new byte[32768];
+            byte[] uncBuf = new byte[BLOCK_TOTAL_LEN];
+
             disk.mUserData = new byte[hdr.mSrcSize * 2 * 512];
             disk.mTagData = new byte[hdr.mSrcSize * 2 * 12];
+            int userOffset = 0;
+            int tagOffset = 0;
+            for (int i = 0; i < hdr.mBLength.Length; i++) {
+                if (hdr.mBLength[i] == 0) {
+                    break;
+                }
 
-            // TODO: compute checksum
+                // Skip the range checks and just catch the exception if bad data causes failure.
+                try {
+                    Debug.WriteLine("Unpack chunk " + i);
+                    switch ((CompressionType)hdr.mSrcCmp) {
+                        case CompressionType.None:
+                            stream.ReadExactly(uncBuf, 0, BLOCK_TOTAL_LEN);
+                            break;
+                        case CompressionType.Fast:
+                            int wordCount = hdr.mBLength[i];
+                            stream.ReadExactly(tmpBuf, 0, wordCount * 2);
+                            UnpackRLE(tmpBuf, wordCount, uncBuf);
+                            break;
+                        case CompressionType.Best:
+                            // TODO
+                            RawData.MemSet(uncBuf, 0, uncBuf.Length, 0xcc);
+                            disk.IsDubious = true;
+                            break;
+                        default:
+                            Debug.Assert(false);
+                            break;
+                    }
+                } catch (IndexOutOfRangeException ex) {
+                    Debug.WriteLine("Expansion failed: " + ex.Message);
+                    break;
+                }
+
+                Array.Copy(uncBuf, 0, disk.mUserData, userOffset, BLOCK_DATA_LEN);
+                userOffset += BLOCK_DATA_LEN;
+                Array.Copy(uncBuf, BLOCK_DATA_LEN, disk.mTagData, tagOffset, BLOCK_TAG_LEN);
+                tagOffset += BLOCK_TAG_LEN;
+            }
+            if (userOffset != disk.mUserData.Length || tagOffset != disk.mTagData.Length) {
+                disk.Notes.AddE("Failed to unpack complete file");
+                disk.IsDubious = true;
+            }
+
+            // Compute checksums.  The checksum on the original data is stored in the disk image's
+            // resource fork, which we don't have access to.
+            uint dataSum = DiskCopy.ComputeChecksum(disk.mUserData, 0, disk.mUserData.Length);
+            uint tagSum = DiskCopy.ComputeChecksum(disk.mTagData, 0, disk.mTagData.Length);
+            disk.Notes.AddI("Data checksum 0x" + dataSum.ToString("x8") +
+                ", tag checksum 0x" + tagSum.ToString("x8"));
 
             return disk;
+        }
+
+        /// <summary>
+        /// Unpacks a block of DART RLE data into a 20960-byte buffer.  An exception is thrown
+        /// if bad data is encountered (should be very rare).
+        /// </summary>
+        /// <param name="inBuf">Buffer with input data.</param>
+        /// <param name="wordCount">Length of input data, in 16-bit words.</param>
+        /// <param name="outBuf">Output buffer</param>
+        /// <exception cref="IndexOutOfRangeException">Bad data encountered.</exception>
+        private static void UnpackRLE(byte[] inBuf, int wordCount, byte[] outBuf) {
+            //Debug.WriteLine(" RLE wordCount=" + wordCount);
+            int inOffset = 0;
+            int outOffset = 0;
+            while (inOffset < wordCount * 2) {
+                short count = (short)RawData.ReadU16BE(inBuf, ref inOffset);
+                if (count > 0) {
+                    for (int j = 0; j < count * 2; j++) {
+                        outBuf[outOffset++] = inBuf[inOffset++];
+                    }
+                } else if (count < 0) {
+                    ushort pattern = RawData.ReadU16BE(inBuf, ref inOffset);
+                    byte hi = (byte)(pattern >> 8);
+                    byte lo = (byte)pattern;
+                    for (int j = 0; j < -count; j++) {
+                        outBuf[outOffset++] = hi;
+                        outBuf[outOffset++] = lo;
+                    }
+                } else {
+                    Debug.WriteLine("Found zero count in RLE stream");
+                    throw new IndexOutOfRangeException("zero count");
+                }
+            }
+            if (outOffset != BLOCK_TOTAL_LEN) {
+                throw new IndexOutOfRangeException("partial RLE expansion: " + outOffset);
+            }
         }
 
         // IDiskImage

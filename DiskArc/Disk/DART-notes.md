@@ -38,11 +38,11 @@ shows the checksums in human-readable form.
 ## File Structure ##
 
 Files have a header, followed by chunks of data, which may be stored with or without compression.
-Each chunk holds 40 524-byte blocks, stored as 40 512-byte blocks followed by 40 sets of 12-byte
-tag data.  An 800KB disk will have 40 chunks, while a 1440KB disk will have 72 chunks.
+Each 20960-byte chunk holds 40 524-byte blocks, stored as 40 512-byte blocks followed by 40 sets
+of 12-byte tag data.  An 800KB disk will have 40 chunks, while a 1440KB disk will have 72 chunks.
 
-The chosen compression is applied to all blocks, and the output is retained even if it's larger
-than the original.
+The chosen compression is applied individually to each chunk, and the output is retained even if
+it's larger than the original.
 
 All multi-byte values are stored in big-endian order.
 
@@ -70,11 +70,22 @@ The meaning of each block length is somewhat variable:
  - For "fast" (RLE) compression, the length is in 16-bit words, i.e. half the length in bytes.
  - For "best" (LZH) compression, the length is in bytes.
 
+Entries past the end of the disk, e.g. the last half of the entries for a 400KB image, will be
+zero.
+
 ## Compression ##
 
-The "fast" compression algorithm was a simple RLE.
+Compression was always applied by DART v1.5.  It's unclear what generated uncompressed files,
+though it might be an earlier version of the application.
 
-  ...details...
+The "fast" compression algorithm uses a word-oriented run-length encoding algorithm.  The data is
+treated as a series of 16-bit big-endian integers.  The first value is a signed count of 16-bit
+words.  If it's positive, the next N words should be copied directly to the output.  If it's
+negative, the following word is a pattern, and -N copies of the pattern should be written to the
+output.
+
+For example, the sequence `fe00 0000 0003 4244 df19 1e19` generates 1024 zero bytes (0xfe00 == 512),
+followed by the values `42 44 df 19 1e 19`.
 
 "Best" compression was LZH.
 
