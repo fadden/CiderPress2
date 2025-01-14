@@ -55,8 +55,8 @@ namespace cp2 {
                 if (leaf is IArchive) {
                     IArchive archive = (IArchive)leaf;
                     foreach (IFileEntry entry in archive) {
-                        if (leaf is Zip && parms.MacZip && !entry.IsDirectory) {
-                            char zipDirSep = archive.Characteristics.DefaultDirSep;     // '/'
+                        if (leaf is Zip && parms.MacZip /*&& !entry.IsDirectory*/) {
+                            //char zipDirSep = archive.Characteristics.DefaultDirSep;     // '/'
                             if (entry.IsMacZipHeader()) {
                                 // Don't show this one; we'll include it with the main entry.
                                 // TODO: show it if there is no main entry.
@@ -226,8 +226,8 @@ namespace cp2 {
 
                     // Handle MacZip archives, if enabled.
                     IFileEntry adfEntry = IFileEntry.NO_ENTRY;
-                    if (archive is Zip && parms.MacZip && !entry.IsDirectory) {
-                        char zipDirSep = archive.Characteristics.DefaultDirSep;     // '/'
+                    if (archive is Zip && parms.MacZip /*&& !entry.IsDirectory*/) {
+                        //char zipDirSep = archive.Characteristics.DefaultDirSep;     // '/'
 
                         // Only show __MACOSX/ entries when paired with other entries.
                         // TODO: show them anyway if the main entry doesn't exist.

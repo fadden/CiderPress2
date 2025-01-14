@@ -741,6 +741,9 @@ namespace DiskArc {
                         entry.FileName[fnIndex] == AppleSingle.ADF_PREFIX[0] &&
                         entry.FileName[fnIndex + 1] == AppleSingle.ADF_PREFIX[1]) {
                     return true;
+                } else if (entry.IsDirectory) {
+                    // Don't show the directory entries either.
+                    return true;
                 }
                 return false;
             }
