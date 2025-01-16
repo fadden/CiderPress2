@@ -65,6 +65,8 @@ limitations under the License.
                              Checked="CompGroup_CheckedChanged"/>
                 <RadioButton Name="radioCompressLZC16" GroupName="Comp" Content="LZC/16" Margin="0,4,0,0"
                              Checked="CompGroup_CheckedChanged"/>
+                <RadioButton Name="radioCompressLZHuf" GroupName="Comp" Content="LZHUF" Margin="0,4,0,0"
+                             Checked="CompGroup_CheckedChanged"/>
             </StackPanel>
             <Button Grid.Column="2" Grid.Row="2" Name="runButton" HorizontalAlignment="Left" Margin="16,0,0,0"
                     Content="{Binding RunButtonLabel, FallbackValue=Run Test}"

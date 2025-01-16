@@ -1,0 +1,45 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">LZHUF Compression Format</h1><a aria-label="Permalink: LZHUF Compression Format" class="anchor" href="#user-content-lzhuf-compression-format" id="user-content-lzhuf-compression-format" name="user-content-lzhuf-compression-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Source code for LZHUF.C (<a href="http://cd.textfiles.com/rbbsv3n1/pac4/okumura.zip" rel="nofollow">http://cd.textfiles.com/rbbsv3n1/pac4/okumura.zip</a>)</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>LZHUF was developed by Haruyasu Yoshizaki as a faster alternative for Haruhiko Okumura's LZARI.
+Both were distributed in the late 1980s on a Japanese computer network called PC-VAN.</p>
+<p>The algorithms derive from LZSS, which is in the LZ77 family of algorithms.  LZHUF modifies LZSS
+to use adaptive Huffman encoding to compress character literals and match lengths, and static
+Huffman encoding on the upper 6 bits of the 12-bit pointers.</p>
+<p>Various improved versions of the algorithm were devised over the next few years, the most
+popular of which was the Deflate algorithm used by PKZIP, which was eventually standardized
+in RFC 1951.</p>
+<p>The output of LZHUF has no file signature or other header information.  The file starts with a
+32-bit little-endian length of the original file, followed immediately by compressed data.  The
+data stream doesn't have an "end" symbol, so it's necessary to use the length of the uncompressed
+data to know when to stop.  Storing the length at the start of the output prevents compression
+from being streamable.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/LZHuf-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>

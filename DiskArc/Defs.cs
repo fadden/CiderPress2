@@ -250,6 +250,9 @@ namespace DiskArc {
             Shrink = 21,
             Implode = 26,
 
+            // Others.
+            LZHuf = 30,
+
             Unknown = 0x7e,
             Default = 0x7f
         }

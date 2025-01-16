@@ -266,6 +266,38 @@ namespace DiskArcTests {
 #endif
         }
 
+        public static void TestLZHuf(AppHook appHook) {
+            WorkBuffers bufs = new WorkBuffers();
+            CodecStreamCreator creator =
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                    long expandedLength) {
+                        return new LZHufStream(compStream, mode, true, includeLen: true);
+                    };
+            TestBasics(bufs, creator);
+
+#if false
+            byte[] patternBuffer = new byte[bufs.Src.Capacity];   // max length of test buffer
+            Patterns.GenerateTestPattern1(patternBuffer, 0, patternBuffer.Length);
+            using (Stream file = new FileStream(@"C:\src\test\pattern.bin", FileMode.Create)) {
+                file.Write(patternBuffer, 0, patternBuffer.Length);
+            }
+            bufs.ResetSrc(patternBuffer, 0, patternBuffer.Length);
+            TestCopyStream(bufs, creator);
+            using (Stream file = new FileStream(@"C:\src\test\pattern.lzh", FileMode.Create)) {
+                file.Write(bufs.Comp.ToArray(), 0, (int)bufs.Comp.Length);
+            }
+#endif
+
+            // Repeat, omitting the length word from the stream, and using a different init byte.
+            CodecStreamCreator creator1 =
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                    long expandedLength) {
+                        return new LZHufStream(compStream, mode, true, includeLen: false, 0x00,
+                            expandedLength);
+                    };
+            TestBasics(bufs, creator1);
+        }
+
 
         delegate Stream CodecStreamCreator(Stream compStream, CompressionMode mode,
             long compressedLength, long expandedLength);
@@ -360,6 +392,9 @@ namespace DiskArcTests {
             TestSingleStream(bufs, creator);
         }
 
+        /// <summary>
+        /// Compresses / decompresses / verifies data, using Stream.CopyTo().
+        /// </summary>
         private static void TestCopyStream(WorkBuffers bufs, CodecStreamCreator creator) {
             Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1, -1);
             bufs.Src.CopyTo(compressor);
@@ -376,6 +411,9 @@ namespace DiskArcTests {
             }
         }
 
+        /// <summary>
+        /// Compresses / decompresses / verifies data, using ReadByte() / WriteByte().
+        /// </summary>
         private static void TestSingleStream(WorkBuffers bufs, CodecStreamCreator creator) {
             Stream compressor = creator(bufs.Comp, CompressionMode.Compress, -1, -1);
             for (int i = 0; i < bufs.Src.Length; i++) {

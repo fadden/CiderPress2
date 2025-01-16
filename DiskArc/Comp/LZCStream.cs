@@ -144,14 +144,11 @@ namespace DiskArc.Comp {
             base.Dispose(disposing);
         }
 
-        // Single-byte buffer for ReadByte/WriteByte, allocated on first use.
-        private byte[]? mSingleBuf;
+        // Single-byte buffer for ReadByte/WriteByte.
+        private byte[] mSingleBuf = new byte[1];
 
         // Stream
         public override int ReadByte() {
-            if (mSingleBuf == null) {
-                mSingleBuf = new byte[1];
-            }
             if (Read(mSingleBuf, 0, 1) == 0) {
                 return -1;      // EOF reached
             }
@@ -160,9 +157,6 @@ namespace DiskArc.Comp {
 
         // Stream
         public override void WriteByte(byte value) {
-            if (mSingleBuf == null) {
-                mSingleBuf = new byte[1];
-            }
             mSingleBuf[0] = value;
             Write(mSingleBuf, 0, 1);
         }

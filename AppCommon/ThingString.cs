@@ -294,6 +294,8 @@ namespace AppCommon {
                     return "Shrink";
                 case Defs.CompressionFormat.Implode:
                     return "Implode";
+                case Defs.CompressionFormat.LZHuf:
+                    return "LZHuf";
                 default:
                     return "?" + format.ToString();
             }
