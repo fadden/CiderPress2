@@ -243,7 +243,8 @@ namespace cp2 {
         private static bool CreateArchiveByName(string pathName, ParamsBag parms) {
             string? ext = Path.GetExtension(pathName);
             if (ext == null || !FileAnalyzer.ExtensionToKind(ext, out FileKind kind,
-                    out SectorOrder unused1, out FileKind unsued2, out bool unused)) {
+                    out SectorOrder unused1, out FileKind unsued2, out FileKind unused3,
+                    out bool unused)) {
                 Console.Error.WriteLine("Unable to determine file type for '" + pathName + "'");
                 return false;
             }

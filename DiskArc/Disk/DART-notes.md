@@ -40,9 +40,7 @@ shows the checksums in human-readable form.
 Files have a header, followed by chunks of data, which may be stored with or without compression.
 Each 20960-byte chunk holds 40 524-byte blocks, stored as 40 512-byte blocks followed by 40 sets
 of 12-byte tag data.  An 800KB disk will have 40 chunks, while a 1440KB disk will have 72 chunks.
-
-The chosen compression is applied individually to each chunk, and the output is retained even if
-it's larger than the original.
+The chosen compression is applied individually to each chunk.
 
 All multi-byte values are stored in big-endian order.
 
@@ -66,16 +64,17 @@ The disk type identifiers are:
 The `bLength` array will have 40 entries, for disks up to 800KB, or 72 entries, for 1440KB disks.
 The meaning of each block length is somewhat variable:
 
- - For uncompressed data, the block length will be 20960 or -1.
+ - For uncompressed data, the block length will be 20960 or -1 (0xffff).
  - For "fast" (RLE) compression, the length is in 16-bit words, i.e. half the length in bytes.
  - For "best" (LZH) compression, the length is in bytes.
 
 Entries past the end of the disk, e.g. the last half of the entries for a 400KB image, will be
-zero.
+zero.  Individual chunks that fail to compress will be noted with a block length of 0xffff and
+stored without compression.
 
 ## Compression ##
 
-Compression was always applied by DART v1.5.  It's unclear what generated uncompressed files,
+Compression is always applied by DART v1.5.  It's unclear what generated uncompressed files,
 though it might be an earlier version of the application.
 
 The "fast" compression algorithm uses a word-oriented run-length encoding algorithm.  The data is
@@ -87,15 +86,9 @@ output.
 For example, the sequence `fe00 0000 0003 4244 df19 1e19` generates 1024 zero bytes (0xfe00 == 512),
 followed by the values `42 44 df 19 1e 19`.
 
-"Best" compression was LZH.
+"Best" compression uses a slightly modified Yoshizaki/Okumura LZHUF algorithm.  The code was
+changed to omit the leading length word, and to initialize the match window with 0x00 bytes
+instead of 0x20.
 
-  ...details...
-
-
-## Notes ##
-
-https://github.com/rayarachelian/The-Unarchiver
-https://github.com/ashang/unar
-https://github.com/incbee/Unarchiver
-https://lisalist2.com/lisalist1/1044.html
-https://lisalist2.com/lisalist1/2618.html
+Uncompressible chunks are rare, because each chunk includes 480 bytes of tag data, which is
+zero-filled on HFS disks.

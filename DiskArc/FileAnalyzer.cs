@@ -273,11 +273,12 @@ namespace DiskArc {
         /// <param name="fileKind2">Result: alternate possibility for file kind.</param>
         /// <returns>True if the extension was recognized, false if not.</returns>
         public static bool ExtensionToKind(string fileNameExt, out FileKind fileKind1,
-                out SectorOrder orderHint1, out FileKind fileKind2, out bool okayForCreate) {
+                out SectorOrder orderHint1, out FileKind fileKind2, out FileKind fileKind3,
+                out bool okayForCreate) {
             okayForCreate = true;
             fileNameExt = fileNameExt.ToLowerInvariant();
 
-            fileKind1 = fileKind2 = FileKind.Unknown;
+            fileKind1 = fileKind2 = fileKind3 = FileKind.Unknown;
             orderHint1 = SectorOrder.Unknown;
 
             switch (fileNameExt) {
@@ -303,6 +304,7 @@ namespace DiskArc {
                     fileKind1 = FileKind.UnadornedSector;
                     orderHint1 = SectorOrder.Physical;
                     fileKind2 = FileKind.DiskCopy;
+                    fileKind3 = FileKind.DART;
                     break;
                 case ".d13":
                     fileKind1 = FileKind.UnadornedSector;
@@ -351,6 +353,7 @@ namespace DiskArc {
                 case ".image":
                     fileKind1 = FileKind.DiskCopy;
                     fileKind2 = FileKind.UnadornedSector;
+                    fileKind3 = FileKind.DART;
                     orderHint1 = SectorOrder.ProDOS_Block;
                     break;
                 case ".app":
@@ -448,12 +451,14 @@ namespace DiskArc {
 
             kind = FileKind.Unknown;
             if (ExtensionToKind(fileNameExt, out FileKind kind1, out orderHint,
-                    out FileKind kind2, out bool unused)) {
+                    out FileKind kind2, out FileKind kind3, out bool unused)) {
                 // File extension was recognized.  See if the contents match.
                 if (TestKind(stream, kind1, appHook)) {
                     kind = kind1;
                 } else if (TestKind(stream, kind2, appHook)) {
                     kind = kind2;
+                } else if (TestKind(stream, kind3, appHook)) {
+                    kind = kind3;
                 } else {
                     result = AnalysisResult.ExtensionMismatch;
                 }
@@ -496,8 +501,8 @@ namespace DiskArc {
             FileKind.NuFX,
             FileKind.GZip,
             FileKind.AppleSingle,
-            FileKind.DART,
             FileKind.DiskCopy,
+            FileKind.DART,
             FileKind.AppleLink,
             FileKind.Binary2,           // test after NuFX (.BXY > .BNY)
             FileKind.MacBinary,         // very weak format detection

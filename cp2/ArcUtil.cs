@@ -44,7 +44,8 @@ namespace cp2 {
             // Convert the extension to a format.
             string ext = Path.GetExtension(outFileName);
             if (!FileAnalyzer.ExtensionToKind(ext, out FileKind createKind,
-                    out SectorOrder orderHint, out FileKind unused, out bool okayForCreate)) {
+                    out SectorOrder orderHint, out FileKind unused1, out FileKind unused2,
+                    out bool okayForCreate)) {
                 Console.Error.WriteLine("File archive file extension not recognized");
                 return false;
             }

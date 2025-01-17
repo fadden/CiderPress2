@@ -16,9 +16,10 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 
 using CommonUtil;
-using DiskArc.Multi;
+using DiskArc.Comp;
 using static DiskArc.Defs;
 using static DiskArc.IDiskImage;
 
@@ -224,27 +225,40 @@ namespace DiskArc.Disk {
 
                 // Skip the range checks and just catch the exception if bad data causes failure.
                 try {
-                    Debug.WriteLine("Unpack chunk " + i);
+                    //Debug.WriteLine("Unpack chunk " + i);
                     switch ((CompressionType)hdr.mSrcCmp) {
                         case CompressionType.None:
                             stream.ReadExactly(uncBuf, 0, BLOCK_TOTAL_LEN);
                             break;
                         case CompressionType.Fast:
                             int wordCount = hdr.mBLength[i];
-                            stream.ReadExactly(tmpBuf, 0, wordCount * 2);
-                            UnpackRLE(tmpBuf, wordCount, uncBuf);
+                            if (wordCount == 0xffff) {
+                                stream.ReadExactly(uncBuf, 0, BLOCK_TOTAL_LEN);
+                            } else {
+                                stream.ReadExactly(tmpBuf, 0, wordCount * 2);
+                                UnpackRLE(tmpBuf, wordCount, uncBuf);
+                            }
                             break;
                         case CompressionType.Best:
-                            // TODO
-                            RawData.MemSet(uncBuf, 0, uncBuf.Length, 0xcc);
-                            disk.IsDubious = true;
+                            int byteCount = hdr.mBLength[i];
+                            if (byteCount == 0xffff) {
+                                stream.ReadExactly(uncBuf, 0, BLOCK_TOTAL_LEN);
+                            } else {
+                                stream.ReadExactly(tmpBuf, 0, byteCount);
+                                UnpackLZH(tmpBuf, byteCount, uncBuf);
+                            }
                             break;
                         default:
                             Debug.Assert(false);
                             break;
                     }
                 } catch (IndexOutOfRangeException ex) {
-                    Debug.WriteLine("Expansion failed: " + ex.Message);
+                    Debug.WriteLine("Decompression failed: " + ex.Message);
+                    disk.IsDubious = true;
+                    break;
+                } catch (ArgumentException ex) {
+                    Debug.WriteLine("Disk image read failed: " + ex.Message);
+                    disk.IsDubious = true;
                     break;
                 }
 
@@ -254,7 +268,8 @@ namespace DiskArc.Disk {
                 tagOffset += BLOCK_TAG_LEN;
             }
             if (userOffset != disk.mUserData.Length || tagOffset != disk.mTagData.Length) {
-                disk.Notes.AddE("Failed to unpack complete file");
+                disk.Notes.AddE("Failed to unpack complete file: data=" + userOffset + " of " +
+                    disk.mUserData.Length + ", tag=" + tagOffset + " of " + disk.mTagData.Length);
                 disk.IsDubious = true;
             }
 
@@ -301,6 +316,28 @@ namespace DiskArc.Disk {
             }
             if (outOffset != BLOCK_TOTAL_LEN) {
                 throw new IndexOutOfRangeException("partial RLE expansion: " + outOffset);
+            }
+        }
+
+        /// <summary>
+        /// Unpacks a block of DART LZH data into a 20960-byte buffer.  An exception is thrown
+        /// if bad data is encountered.
+        /// </summary>
+        /// <param name="inBuf">Buffer with input data.</param>
+        /// <param name="byteCount">Length of input data, in bytes.</param>
+        /// <param name="outBuf">Output buffer.</param>
+        /// <exception cref="IndexOutOfRangeException">Bad data encountered.</exception>
+        private static void UnpackLZH(byte[] inBuf, int byteCount, byte[] outBuf) {
+            MemoryStream inBufStream = new MemoryStream(inBuf);
+            using (Stream codec = new LZHufStream(inBufStream, CompressionMode.Decompress,
+                    true, false, 0x00, BLOCK_TOTAL_LEN)) {
+                try {
+                    codec.ReadExactly(outBuf, 0, BLOCK_TOTAL_LEN);
+                } catch (Exception ex) {
+                    // Convert exception to what the RLE code throws so we only have to
+                    // catch one thing.
+                    throw new IndexOutOfRangeException("failed: " + ex.Message);
+                }
             }
         }
 
