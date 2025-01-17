@@ -54,6 +54,7 @@ gFileList = [
         "DiskArc/Comp/LZHuf-notes.md",
         "DiskArc/Comp/NuLZW-notes.md",
         "DiskArc/Comp/Squeeze-notes.md",
+        "DiskArc/Disk/DART-notes.md",
         "DiskArc/Disk/DiskCopy-notes.md",
         "DiskArc/Disk/Nibble-notes.md",
         "DiskArc/Disk/Trackstar-notes.md",

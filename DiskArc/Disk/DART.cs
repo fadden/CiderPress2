@@ -413,7 +413,7 @@ namespace DiskArc.Disk {
                 }
                 Contents = null;
             } else {
-                Debug.Assert(false, "GC disposing DiskCopy, dirty=" + IsDirty +
+                Debug.Assert(false, "GC disposing DART, dirty=" + IsDirty +
                     " created:\r\n" + mCreationStackTrace);
             }
             mDisposed = true;

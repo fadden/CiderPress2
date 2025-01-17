@@ -13,9 +13,8 @@ and provided much the same functionality, but with the addition of data compress
 not an official product, and no specifications for the file format were published.
 
 DART files have no official filename extension, though ".image" was sometimes added.  The ".dart"
-filename extension maps to com.apple.disk-image-dart on modern macOS, but some information is
-lost if the HFS file attributes aren't preserved.  The files were meant to be identified by the
-creator 'DART', and the file type was used to clarify the disk's nature:
+filename extension maps to com.apple.disk-image-dart on modern macOS.  The files were meant to be
+identified by the creator 'DART', and the file type was used to clarify the disk's nature:
 
 type | meaning
 ---- | -------
@@ -29,17 +28,17 @@ DMd5 | MS-DOS 720KB
 DMd6 | Macintosh 1440KB
 DMd7 | MS-DOS 1440KB
 
-DART computes the same checksum that Disk Copy 4.2 does, but instead of storing it in the file
-header, it is placed in the resource fork of the DART image file.  The tag checksum is in
-resource 'CKSM' with ID=1, and the data checksum is in 'CKSM' with ID=2.  The resource fork also
-has a 'DART' ID=0 resource, which holds a string that indicates the DART application version and
+DART computes checksums with the same algorithm that Disk Copy 4.2 uses, but instead of storing it
+in the file header, it is placed in the resource fork of the DART image file.  The tag checksum is
+in resource 'CKSM' with ID=1, and the data checksum is in 'CKSM' with ID=2.  The resource fork also
+has a 'DART' ID=0 resource, which holds a string that records the DART application version and
 shows the checksums in human-readable form.
 
 ## File Structure ##
 
 Files have a header, followed by chunks of data, which may be stored with or without compression.
 Each 20960-byte chunk holds 40 524-byte blocks, stored as 40 512-byte blocks followed by 40 sets
-of 12-byte tag data.  An 800KB disk will have 40 chunks, while a 1440KB disk will have 72 chunks.
+of 12-byte tag data.  An 800KB disk will have 40 of these chunks, while a 1440KB disk will have 72.
 The chosen compression is applied individually to each chunk.
 
 All multi-byte values are stored in big-endian order.
@@ -62,7 +61,8 @@ The disk type identifiers are:
  - 18: MS-DOS 1400KB
 
 The `bLength` array will have 40 entries, for disks up to 800KB, or 72 entries, for 1440KB disks.
-The meaning of each block length is somewhat variable:
+This holds the length of the compressed data.  The meaning of each block length can depend on the
+compression type used:
 
  - For uncompressed data, the block length will be 20960 or -1 (0xffff).
  - For "fast" (RLE) compression, the length is in 16-bit words, i.e. half the length in bytes.
@@ -81,10 +81,10 @@ The "fast" compression algorithm uses a word-oriented run-length encoding algori
 treated as a series of 16-bit big-endian integers.  The first value is a signed count of 16-bit
 words.  If it's positive, the next N words should be copied directly to the output.  If it's
 negative, the following word is a pattern, and -N copies of the pattern should be written to the
-output.
+output.  (The count should never be zero.)
 
-For example, the sequence `fe00 0000 0003 4244 df19 1e19` generates 1024 zero bytes (0xfe00 == 512),
-followed by the values `42 44 df 19 1e 19`.
+For example, the sequence `fe00 0000 0003 4244 df19 1e19` generates 1024 zero bytes
+(0xfe00 == -512), followed by the values `42 44 df 19 1e 19`.
 
 "Best" compression uses a slightly modified Yoshizaki/Okumura LZHUF algorithm.  The code was
 changed to omit the leading length word, and to initialize the match window with 0x00 bytes

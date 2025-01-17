@@ -1,0 +1,140 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Disk Archive / Retrieval Tool (DART) Format</h1><a aria-label="Permalink: Disk Archive / Retrieval Tool (DART) Format" class="anchor" href="#user-content-disk-archive--retrieval-tool-dart-format" id="user-content-disk-archive--retrieval-tool-dart-format" name="user-content-disk-archive--retrieval-tool-dart-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>DartInf.h header file - <a href="https://retrocomputing.stackexchange.com/a/31134/56" rel="nofollow">https://retrocomputing.stackexchange.com/a/31134/56</a>
+</li>
+<li>Release notes for v1.5.3 (Sep 1993): <a href="https://macgui.com/downloads/?file_id=23499" rel="nofollow">https://macgui.com/downloads/?file_id=23499</a>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The Disk Archive / Retrieval Tool (DART) was used by Apple to distribute disk images internally
+and in some tech support products.  It was used contemporaneously with Disk Copy 4.2 (early 1990s),
+and provided much the same functionality, but with the addition of data compression.  DART was
+not an official product, and no specifications for the file format were published.</p>
+<p>DART files have no official filename extension, though ".image" was sometimes added.  The ".dart"
+filename extension maps to com.apple.disk-image-dart on modern macOS.  The files were meant to be
+identified by the creator 'DART', and the file type was used to clarify the disk's nature:</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DMdf</td>
+<td>old file type</td>
+</tr>
+<tr>
+<td>DMd0</td>
+<td>DART preferences</td>
+</tr>
+<tr>
+<td>DMd1</td>
+<td>Macintosh 400KB</td>
+</tr>
+<tr>
+<td>DMd2</td>
+<td>Lisa 400KB</td>
+</tr>
+<tr>
+<td>DMd3</td>
+<td>Macintosh 800KB</td>
+</tr>
+<tr>
+<td>DMd4</td>
+<td>Apple II 800KB</td>
+</tr>
+<tr>
+<td>DMd5</td>
+<td>MS-DOS 720KB</td>
+</tr>
+<tr>
+<td>DMd6</td>
+<td>Macintosh 1440KB</td>
+</tr>
+<tr>
+<td>DMd7</td>
+<td>MS-DOS 1440KB</td>
+</tr>
+</tbody>
+</table>
+<p>DART computes checksums with the same algorithm that Disk Copy 4.2 uses, but instead of storing it
+in the file header, it is placed in the resource fork of the DART image file.  The tag checksum is
+in resource 'CKSM' with ID=1, and the data checksum is in 'CKSM' with ID=2.  The resource fork also
+has a 'DART' ID=0 resource, which holds a string that records the DART application version and
+shows the checksums in human-readable form.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Files have a header, followed by chunks of data, which may be stored with or without compression.
+Each 20960-byte chunk holds 40 524-byte blocks, stored as 40 512-byte blocks followed by 40 sets
+of 12-byte tag data.  An 800KB disk will have 40 of these chunks, while a 1440KB disk will have 72.
+The chosen compression is applied individually to each chunk.</p>
+<p>All multi-byte values are stored in big-endian order.</p>
+<pre><code>+$00 / 1: srcCmp - compression identifier (0=fast, 1=best, 2=not)
++$01 / 1: srcType - disk type identifier
++$02 / 2: srcSize - size of source disk, in kiB (e.g. 800 for an 800KB floppy)
++$04 /nn: bLength - array of 16-bit block lengths; nn is either 40*2 or 72*2
++$54 or +$94: compressed disk data
+</code></pre>
+<p>The disk type identifiers are:</p>
+<ul>
+<li>1: Macintosh (400KB/800KB)</li>
+<li>2: Lisa (400KB/800KB)</li>
+<li>3: Apple II (800KB)</li>
+<li>16: Macintosh 1440KB</li>
+<li>17: MS-DOS 720KB</li>
+<li>18: MS-DOS 1400KB</li>
+</ul>
+<p>The <code>bLength</code> array will have 40 entries, for disks up to 800KB, or 72 entries, for 1440KB disks.
+This holds the length of the compressed data.  The meaning of each block length can depend on the
+compression type used:</p>
+<ul>
+<li>For uncompressed data, the block length will be 20960 or -1 (0xffff).</li>
+<li>For "fast" (RLE) compression, the length is in 16-bit words, i.e. half the length in bytes.</li>
+<li>For "best" (LZH) compression, the length is in bytes.</li>
+</ul>
+<p>Entries past the end of the disk, e.g. the last half of the entries for a 400KB image, will be
+zero.  Individual chunks that fail to compress will be noted with a block length of 0xffff and
+stored without compression.</p>
+<div class="markdown-heading"><h2 class="heading-element">Compression</h2><a aria-label="Permalink: Compression" class="anchor" href="#user-content-compression" id="user-content-compression" name="user-content-compression"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Compression is always applied by DART v1.5.  It's unclear what generated uncompressed files,
+though it might be an earlier version of the application.</p>
+<p>The "fast" compression algorithm uses a word-oriented run-length encoding algorithm.  The data is
+treated as a series of 16-bit big-endian integers.  The first value is a signed count of 16-bit
+words.  If it's positive, the next N words should be copied directly to the output.  If it's
+negative, the following word is a pattern, and -N copies of the pattern should be written to the
+output.  (The count should never be zero.)</p>
+<p>For example, the sequence <code>fe00 0000 0003 4244 df19 1e19</code> generates 1024 zero bytes
+(0xfe00 == -512), followed by the values <code>42 44 df 19 1e 19</code>.</p>
+<p>"Best" compression uses a slightly modified Yoshizaki/Okumura LZHUF algorithm.  The code was
+changed to omit the leading length word, and to initialize the match window with 0x00 bytes
+instead of 0x20.</p>
+<p>Uncompressible chunks are rare, because each chunk includes 480 bytes of tag data, which is
+zero-filled on HFS disks.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/DART-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>
