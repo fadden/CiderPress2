@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -2784,6 +2785,41 @@ namespace cp2_wpf {
                 // Ask the dialog to close.  Do the cleanup in the event.
                 mDebugDropTarget.Close();
             }
+        }
+
+        public void Debug_ShowSystemInfo() {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("CiderPress II GUI v" + GlobalAppVersion.AppVersion
+#if DEBUG
+                + " DEBUG"
+#endif
+                );
+            sb.AppendLine("+ DiskArc Library v" + Defs.LibVersion +
+                (string.IsNullOrEmpty(Defs.BUILD_TYPE) ? "" : " (" + Defs.BUILD_TYPE + ")"));
+            sb.AppendLine("+ Runtime: " + RuntimeInformation.FrameworkDescription + " / " +
+                RuntimeInformation.RuntimeIdentifier);
+            sb.AppendLine("  E_V=" + Environment.Version);
+            sb.AppendLine("  E_OV=" + Environment.OSVersion);
+            sb.AppendLine("  E_OV_P=" + Environment.OSVersion.Platform);
+            sb.AppendLine("  E_64=" + Environment.Is64BitOperatingSystem + " / " +
+                Environment.Is64BitProcess);
+            sb.AppendLine("  E_MACH=\"" + Environment.MachineName + "\" cpus=" +
+                Environment.ProcessorCount);
+            sb.AppendLine("  E_CD=\"" + Environment.CurrentDirectory + "\"");
+            sb.AppendLine("  RI_FD=" + RuntimeInformation.FrameworkDescription);
+            sb.AppendLine("  RI_OSA=" + RuntimeInformation.OSArchitecture);
+            sb.AppendLine("  RI_OSD=" + RuntimeInformation.OSDescription);
+            sb.AppendLine("  RI_PA=" + RuntimeInformation.ProcessArchitecture);
+            sb.AppendLine("  RI_RI=" + RuntimeInformation.RuntimeIdentifier);
+            sb.AppendLine(" " +
+                " IsFreeBSD=" + RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) +
+                " IsOSX=" + RuntimeInformation.IsOSPlatform(OSPlatform.OSX) +
+                " IsLinux=" + RuntimeInformation.IsOSPlatform(OSPlatform.Linux) +
+                " IsWindows=" + RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+
+            ShowText dialog = new ShowText(mMainWin, sb.ToString());
+            dialog.Title = "System Info";
+            dialog.ShowDialog();
         }
 
         #endregion Debug

@@ -693,6 +693,9 @@ namespace cp2_wpf {
         private void Debug_ShowDropTargetCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.Debug_ShowDropTarget();
         }
+        private void Debug_ShowSystemInfoCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.Debug_ShowSystemInfo();
+        }
 
         #endregion Command handlers
 
