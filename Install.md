@@ -17,19 +17,19 @@ or use one of the links below to download the most recent stable release.
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x86_sc.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x64_sc.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_osx-x64_sc.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_linux-x64_sc.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x86_sc.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x64_sc.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_osx-x64_sc.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_linux-x64_sc.zip
 
 **Framework-Dependent** (~1 MB)
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x86_fd.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_win-x64_fd.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_osx-x64_fd.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.5/cp2_1.0.5_linux-x64_fd.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x86_fd.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x64_fd.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_osx-x64_fd.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_linux-x64_fd.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they are unzipped.
@@ -52,7 +52,10 @@ In the shell, change to the directory where the files were unzipped.  Then:
    to make it executable.  The system adds a "quarantine" flag to anything downloaded from the
    Internet, so you need to do an extra step before you can execute the program.  In the directory
    where the files were unpacked, run `xattr -d com.apple.quarantine *`.  Run `./cp2 version`
-   to confirm this was successful.
+   to confirm this was successful.  The x64 code requires Rosetta 2 to run on Apple Silicon macs;
+   if you've never run an Intel-based program on your Mac, it won't be present, and you will see
+   "bad CPU type in executable" messages.  [Apple support](https://support.apple.com/en-us/102527)
+   has instructions for getting Rosetta 2 installed.
 
 The commands are:
 

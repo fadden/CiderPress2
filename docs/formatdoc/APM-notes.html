@@ -52,8 +52,8 @@ is treated as unsigned.</p>
 </code></pre>
 <p>Some third-party utilities fill out the fields incorrectly.  For example, the C.V.Tech floptical
 formatter sets both block size and count to zero, and CD-ROMs have been found with a block size
-of 512 but a block count of zero.  It's best to determine the size of the device from the
-device characteristics rather than the DDR.</p>
+of 512 or 2048, but a block count of zero.  It's best to determine the size of the device from the
+image file characteristics rather than the DDR.</p>
 <p>The partition map begins in block 1.  Except for the DDR, every block on a disk must belong to
 a partition (the map is self-referential).  Partitions must not overlap.</p>
 <p>Each partition map entry block looks like this:</p>

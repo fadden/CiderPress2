@@ -155,6 +155,11 @@ specify which character set to use when importing text files.</p>
   <li><samp>Strip Paths</samp> - if set, files will not be extracted with subdirectory
     names.  Only matters for file archives and filesystems that store full pathnames,
     such as ProDOS and HFS.</li>
+  <li><samp>Add Filename Ext to Exports</samp> - if set, a filename extension will
+    be added to exported files.  For example, text files will have ".txt" appended
+    to the filename, and graphics will have ".png" added.  This may be undesirable
+    in certain situations, such as when extracting source code that already has
+    meaningful extensions, such as ".c" or ".asm".</li>
   <li><samp>Raw</samp> - if set, file data forks will be opened in "raw" mode.
     This is only meaningful for DOS 3.2/3.3 files, and should be used when attempting
     to preserve the full file contents.</li>
@@ -223,7 +228,7 @@ or skip import/export of that one file.</p>
 <!-- START: /incl-footer.html -->
 <div id="footer">
     <hr/>
-    <p>Copyright 2024 faddenSoft</p>
+    <p>Copyright 2025 faddenSoft</p>
 </div>
 <!-- END: /incl-footer.html -->
 
