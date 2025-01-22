@@ -10,7 +10,53 @@ Getting it to work can be a little tricky.
 
 ## Linux ##
 
-[ TBD ]
+The first step is to get Wine working on your system.  It's an open-source
+project, so you can download the sources and build it yourself, but it's
+usually easier to get pre-built binaries through your Linux distribution.
+Either way, go to the [Wine project](https://winehq.org/) page, click
+Download, and work through one of the options.
+
+Once you have Wine installed, run `wineboot`.  This populates configuration
+data in `~/.wine/`.  If you've run Wine before, this won't do anything.
+
+Now we need to install the .NET runtime and some fonts.  This is done with
+a script called "winetricks", which may not be included as part of the base
+Wine package, but should be available separately.  Install it, with e.g.
+`sudo apt-get install winetricks`.
+
+Now run it: `winetricks dotnetdesktop6 corefonts consolas`
+
+This might fail with a message indicating that `dotnetdesktop6` is unknown.
+If that's the case, your copy of winetricks is too old.  (Even if you know
+that your Linux distro is stale it's still useful to install the `winetricks`
+package to get some dependencies, like `cabextract`.)  Follow the instructions
+on [this page](https://gitlab.winehq.org/wine/wine/-/wikis/Winetricks) to get
+a fresh script (it's just one file).
+
+If the script succeeds, you should see a Microsoft Windows Desktop Runtime
+installer dialog.  Click through it.  Then click through it again (?).  The
+script will then go and gather some fonts.
+
+Wine is now ready to go.
+
+Download a framework-dependent CiderPress II package for Windows.  Both 32-bit
+and 64-bit should work.  For example, `cp2_1.0.6_win-x86_fd.zip`.  Unzip it
+into a new directory.
+
+Run the application with `wine CiderPress2.exe`.
+
+### Known Issues ###
+
+If you find that the application menus aren't rendering, you can try disabling
+Avalon 3D acceleration:
+
+`wine reg add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Avalon.Graphics" /v DisableHWAcceleration /t REG_DWORD /d 1 /f`
+
+The font rendering looks bad.  The GUI font used by WPF is called "Segoe UI",
+which is not available via winetricks.  Various attempts to make it available
+to Wine have not yielded an improvement.  It's unclear whether the blurry text
+is due to a missing font or to some issue with the font renderer.
+
 
 ## macOS ##
 
@@ -28,10 +74,11 @@ pre-built macOS binary is not.
 ### Wineskin / Kegworks ###
 
 Wrapping the application seems to work a bit better, and is more generally
-useful because it allows people to download a fully functional configuration.
-For macOS, the [Kegworks project](https://github.com/Kegworks-App/Kegworks)
-provides a fairly user-friendly interface for this.  The chief drawback to
-this approach is that the wrapper is well over 1GB.
+useful because it allows people to download a fully functional program
+without having to install and configure Wine.  For macOS, the
+[Kegworks project](https://github.com/Kegworks-App/Kegworks) provides a
+reasonably user-friendly interface for this.  The chief drawback to this
+approach is that the wrapped package is well over 1 GB.
 
 As with Wine, getting started is a little bumpy.  The project page on github
 has download instructions, again using Homebrew and MacPorts, but doesn't
@@ -52,10 +99,10 @@ for v1.0.6 you'd grab `cp2_1.0.6_win-x86_sc.zip` from the releases page.
 Double-click the ZIP to unpack it into `cp2_1.0.6_win-x86_sc`.
 
 In Kegworks, select the 32-bit engine and click "Create New Blank Wrapper".
-Choose an app name, such as `CP2Mac.app`, and click OK.  The application will
-go off and do things for a while (about 45 seconds on a Mac Mini M4), then
-hopefully report that the wrapper was created successfully.  Click "View
-wrapper in Finder".  This will open the ~/Applications/Kegworks directory.
+Choose an app name, such as `CP2Mac.app`, and click "OK".  The application
+will go off and do things for a while (about 45 seconds on a Mac Mini M4),
+then hopefully report that the wrapper was created successfully.  Click "View
+wrapper in Finder".  This will open the `~/Applications/Kegworks` directory.
 
 We now need to put CiderPress II into the wrapper.  Double-click "CP2Mac".
 Click "Install Software".  Click "Copy a Folder Inside".  From the Downloads
@@ -88,8 +135,8 @@ To add it:
 This does a whole bunch of work.  When it's done, you'll have a copy of the
 Consolas font family files in "Contents/drive_c/windows/Fonts".  Unfortunately
 you can't just copy .ttf files in there and have them recognized; otherwise
-you could just copy them out of C:\Windows\Fonts and be done.  (There may be
-some way to install arbitrary fonts that I'm unaware of.)
+you could just copy them out of C:\Windows\Fonts and be done.  (It's possible
+that the emulated app isn't finding Segoe UI for some other reason.)
 
 #### Distribution and Installation ####
 
@@ -117,15 +164,12 @@ NOTE: when the ZIP archive was uploaded to Google Drive, the automated
 system flagged it as potential malware, which prevents it from being
 shared.
 
-#### Known Issues ####
-
- - Sometimes the main window goes almost totally black.  You can force a
-   redraw by minimizing and restoring the application window.
- - The UI font can seem a little blurry in spots.  I don't know if that's
-   because the correct font (Segoe UI) isn't available, or something to do
-   with the rendering engine.
-
-## Notes ##
+It may be useful to included a "README.txt" in the ZIP archive with the
+quarantine removal instructions.  Also, you should remove the CiderPress II
+settings file, so users start with a fresh installation.  In "CP2Mac.app",
+navigate to `Contents/SharedSupport/prefix/drive_c/Program Files`.  There,
+you'll find the directory you installed (e.g. `cp2_1.0.6_win-x86_sc`).
+Remove `CiderPress2-settings.json` from it.
 
 Running x86 code on Apple Silicon requires Rosetta 2 to be installed.  The
 system will offer to install it automatically the first time an x86 application
@@ -136,5 +180,20 @@ or use a trick: open the Applications folder, then Utilities, then Get Info
 on the Terminal application.  Check the "Open using Rosetta" checkbox, then
 close and re-open Terminal.  This should cause the system to install it.
 
-My thanks to Eric Helgeson for showing that Wineskin would work:
-https://github.com/fadden/CiderPress2/discussions/34
+#### Known Issues ####
+
+ - Sometimes the main window goes almost totally black.  You can force a
+   redraw by minimizing and restoring the application window.
+ - The UI font can seem a little blurry in spots.  I don't know if that's
+   because the correct font (Segoe UI) isn't available, or something to do
+   with the rendering engine.
+ - The app can be a little slow to start, since it has to "boot" Windows.
+
+Because this is a Windows emulation and not a native macOS application, the
+"host" file preservation mode (which uses file attributes and resource forks
+in the HFS+ filesystem) is not available.
+
+## Closing Notes ##
+
+My thanks to Eric Helgeson for figuring out a lot of this:
+discussion https://github.com/fadden/CiderPress2/discussions/34
