@@ -14,7 +14,9 @@ For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
  - The command-line tool runs on Windows, macOS, and Linux (anywhere .NET Core 6 runs).
- - The desktop GUI runs only on Windows.
+ - The desktop GUI is written for Windows, but
+   [can be made to run](https://github.com/fadden/CiderPress2/blob/main/WineNotes.md) on other
+   systems with Wine emulation.
  - Video demos:
    - v1.0 quick introduction: https://youtu.be/ZrUfNzscq3g
    - v0.4 drag & drop: https://youtu.be/P2kss3aOEvs

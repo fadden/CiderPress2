@@ -85,7 +85,7 @@ your shell path.
 The CiderPress II command-line utility was developed on x64 CPUs with:
 
  - Windows 10 (build 19044)
- - macOS 11.6.3 "Big Sur"
+ - macOS 11.6.3 "Big Sur"; also tested on Apple silicon with 15.2 "Sequoia"
  - Linux Ubuntu 20.04.6 LTS
 
 Compatibility is determined mostly by the .NET runtime, so more recent versions of the operating
@@ -114,9 +114,10 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
 
 ### Using the GUI on Linux and macOS ###
 
-It's possible to run the GUI application under macOS and Linux using the Wine compatibility layer.
-See [this discussion](https://github.com/fadden/CiderPress2/discussions/34) for an example with
-macOS.  The key seems to be using the self-contained 32-bit (x86) release of CiderPress II
-(`win-x86_sc` package).
+It's possible to run the GUI application under macOS and Linux using the
+[Wine](https://www.winehq.org/) compatibility layer.  Instructions for setting this up can be found
+[here](https://github.com/fadden/CiderPress2/blob/main/WineNotes.md).  In addition, a pre-built
+"wrapped" application for macOS may be available for download from the Releases page.
 
-This is not officially supported and may be unstable.
+The emulation is very good, but not perfect.  You may experience problems that don't occur when
+run natively on Windows.
