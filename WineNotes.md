@@ -24,7 +24,7 @@ a script called "winetricks", which may not be included as part of the base
 Wine package, but should be available separately.  Install it, with e.g.
 `sudo apt-get install winetricks`.
 
-Now run it: `winetricks dotnetdesktop6 corefonts consolas`
+Now run it: `winetricks dotnetdesktop6 corefonts consolas tahoma`
 
 This might fail with a message indicating that `dotnetdesktop6` is unknown.
 If that's the case, your copy of winetricks is too old.  (Even if you know
@@ -54,8 +54,9 @@ Avalon 3D acceleration:
 
 The font rendering looks bad.  The GUI font used by WPF is called "Segoe UI",
 which is not available via winetricks.  Various attempts to make it available
-to Wine have not yielded an improvement.  It's unclear whether the blurry text
-is due to a missing font or to some issue with the font renderer.
+to Wine have not yielded an improvement.  Installing the Tahoma font does seem
+to help, but it's unclear whether the blurry text is due to a missing font or
+to some issue with the font renderer.
 
 
 ## macOS ##
@@ -137,6 +138,9 @@ Consolas font family files in "Contents/drive_c/windows/Fonts".  Unfortunately
 you can't just copy .ttf files in there and have them recognized; otherwise
 you could just copy them out of C:\Windows\Fonts and be done.  (It's possible
 that the emulated app isn't finding Segoe UI for some other reason.)
+
+Installing the Tahoma font helped on Linux, but had no noticeable effect on
+macOS (but macOS without Tahoma looks about the same as Linux with it).
 
 #### Distribution and Installation ####
 
