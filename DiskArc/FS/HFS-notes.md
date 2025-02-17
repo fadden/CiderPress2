@@ -498,7 +498,7 @@ FXInfo / FndrOpaqueInfo (16 bytes)
 +$0c / 4: fdPutAway
 ```
 
-## Boot Blocks ##
+## Bootable Volumes ##
 
 The Macintosh looks for a specific structure in block 0 to decide whether a disk can be booted.
 A number of system parameters are stored here, as well as executable code.  The format is
@@ -530,7 +530,8 @@ The block 0/1 layout is:
 ```
 
 The last two heap size fields are only present in "new"-style boot blocks.  A bit in the version
-flags will tell you whether or not they are present.  These values override the earlier fields.
+flags will tell you whether or not they are present.  These values override the earlier heap size
+fields.
 
 The `bbEntry` value is a 68K branch whose offset is relative to the start of the instruction + 2,
 so `60 00 00 86` is a branch to 4 + $86 + 2 = $8c, appropriate for an "old"-style boot block.
@@ -547,11 +548,18 @@ bit | meaning
   7 | set if the new boot block header format is used
 
 If bit 7 is clear (old format), then bits 5 and 6 are ignored, and the boot code is only executed
-if the version is 0x0d.  If bit 7 is set (new format), then bit 6 determines whether or not the
+if the version is $0d.  If bit 7 is set (new format), then bit 6 determines whether or not the
 code is executed.  IM:Files notes:
 
 > Generally, however, the boot code stored on disk is ignored in favor of boot code stored in a
 > resource in the System file.
+
+Note: the System folder on a bootable Macintosh volume must be "blessed".  There are a few ways
+to accomplish this; on Macintoshes with System 7, this can be done by booting a working system,
+mounting the new volume, and then double-clicking on the System suitcase in the System folder.
+The actual effect of this on the HFS filesystem is to record the CNID of the System folder in the
+first entry of `drFndrInfo` in the MDB.  (There may be other actions, such as updating the EFI
+data; see the Apple open-source [bless command](https://github.com/apple-opensource/bless).)
 
 ## Miscellaneous ##
 
