@@ -498,6 +498,61 @@ FXInfo / FndrOpaqueInfo (16 bytes)
 +$0c / 4: fdPutAway
 ```
 
+## Boot Blocks ##
+
+The Macintosh looks for a specific structure in block 0 to decide whether a disk can be booted.
+A number of system parameters are stored here, as well as executable code.  The format is
+documented in IM:Files starting on page 2-57.
+
+The block 0/1 layout is:
+
+```
++$00 / 2: bbID - signature bytes, for HFS this must be $4c $4b ('LK')
++$02 / 4: bbEntry - entry point to boot code, expressed as a 68K BRA.S instruction
++$06 / 2: bbVersion - flag byte and boot block version number
++$08 / 2: bbPageFlags - "used internally"
++$0a /16: bbSysName - system filename, usually "System" (stored as string with leading length byte)
++$1a /16: bbShellName - Finder filename, usually "Finder"
++$2a /16: bbDbg1Name - first debugger filename, usually "MacsBug"
++$3a /16: bbDbg2Name - second debugger filename, usually "Disassembler"
++$4a /16: bbScreenName - file containing startup screen, usually "StartUpScreen"
++$5a /16: bbHelloName - name of startup program, usually "Finder"
++$6a /16: bbScrapName - name of system scrap file, usually "Clipboard"
++$7a / 2: bbCntFCBs - number of FCBs to allocate
++$7c / 2: bbCntEvts - number of event queue elements
++$7e / 4: bb128KSHeap - system heap size on 128K Mac
++$82 / 4: bb256KSHeap - "used internally"
++$86 / 4: bbSysHeapSize - system heap size on machines with >= 512K of RAM
++$8a / 2: filler - reserved
++$8c / 4: bbSysHeapExtra - minimum amount of additional System heap space required
++$90 / 4: bbSysHeapFract - fraction of RAM to make available for system heap
++$94 /nn: executable code, if any
+```
+
+The last two heap size fields are only present in "new"-style boot blocks.  A bit in the version
+flags will tell you whether or not they are present.  These values override the earlier fields.
+
+The `bbEntry` value is a 68K branch whose offset is relative to the start of the instruction + 2,
+so `60 00 00 86` is a branch to 4 + $86 + 2 = $8c, appropriate for an "old"-style boot block.
+A "new"-style boot block should be `60 00 00 8e`, branching to $94.
+
+The `bbVersion` field is documented as a 16-bit value, but the first (high) byte holds flags,
+while the second (low) byte holds the boot block version number.  The flags are:
+
+bit | meaning
+--- | -------
+0-4 | reserved, must be 0
+  5 | set if relative system heap sizing is to be used
+  6 | set if the boot code in the boot blocks is to be executed
+  7 | set if the new boot block header format is used
+
+If bit 7 is clear (old format), then bits 5 and 6 are ignored, and the boot code is only executed
+if the version is 0x0d.  If bit 7 is set (new format), then bit 6 determines whether or not the
+code is executed.  IM:Files notes:
+
+> Generally, however, the boot code stored on disk is ignored in favor of boot code stored in a
+> resource in the System file.
+
 ## Miscellaneous ##
 
 HFS volumes can checked with the `fsck.hfs` command.  The x86-64 version found on Linux
