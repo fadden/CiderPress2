@@ -427,6 +427,9 @@ namespace DiskArc.FS {
             return "[CP/M" + rawStr + "]";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return null; }
+
         // IDisposable generic finalizer.
         ~CPM() {
             Dispose(false);

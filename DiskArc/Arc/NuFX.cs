@@ -747,6 +747,9 @@ namespace DiskArc.Arc {
             ((NuFX_FileEntry)ientry).DeletePart(part);
         }
 
+        // IArchive
+        public string? DebugDump() { return null; }
+
         /// <summary>
         /// Confirms that we are allowed to modify this entry.
         /// </summary>

@@ -373,5 +373,8 @@ namespace DiskArc.Arc {
                 return pathName;
             }
         }
+
+        // IArchive
+        public string? DebugDump() { return null; }
     }
 }

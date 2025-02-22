@@ -296,5 +296,11 @@ namespace DiskArc {
         /// <exception cref="NotSupportedException">This type of archive does not allow this
         ///   part.</exception>
         void DeletePart(IFileEntry entry, Defs.FilePart part);
+
+        /// <summary>
+        /// Generates detailed human-readable information about the archive.
+        /// </summary>
+        /// <returns>Formatted text, or null if not implemented.</returns>
+        string? DebugDump();
     }
 }

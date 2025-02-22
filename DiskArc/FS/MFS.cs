@@ -163,6 +163,9 @@ namespace DiskArc.FS {
             return "[MFS (" + id + ")]";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return null; }
+
         // IDisposable generic finalizer.
         ~MFS() {
             Dispose(false);

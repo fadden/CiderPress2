@@ -383,6 +383,9 @@ namespace DiskArc.FS {
             return "[DOS " + id + "]";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return null; }
+
 
         // IDisposable generic finalizer.
         ~DOS() {

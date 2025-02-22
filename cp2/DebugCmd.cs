@@ -17,29 +17,90 @@ using System;
 using System.Diagnostics;
 
 using AppCommon;
-using CommonUtil;
+using DiskArc.Arc;
+using DiskArc.Multi;
 using DiskArc;
 using static AppCommon.WorkTree;
 
-namespace cp2.Tests {
-    public static class DebugWorkTree {
+namespace cp2 {
+    public static class DebugCmd {
         /// <summary>
-        /// Handles "debug-wtree" command.
+        /// Handles "debug-show-info" command.
         /// </summary>
-        public static bool HandleDumpTree(string cmdName, string[] args, ParamsBag parms) {
+        public static bool HandleShowInfo(string cmdName, string[] args, ParamsBag parms) {
+            Debug.Assert(args.Length == 1);
+            if (!ExtArchive.OpenExtArc(args[0], false, true, parms, out DiskArcNode? rootNode,
+                    out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
+                return false;
+            }
+            Debug.Assert(rootNode != null && leaf != null);
+
+            using (rootNode) {
+                string? hdrStr = null;
+                string? outStr = null;
+                if (leaf is IArchive) {
+                    IArchive archive = (IArchive)leaf;
+                    hdrStr = "--- " + ThingString.IArchive(archive) + " ---";
+                    outStr = archive.DebugDump();
+                } else if (leaf is IDiskImage) {
+                    IDiskImage disk = (IDiskImage)leaf;
+                    if (disk.Contents is IFileSystem) {
+                        IFileSystem fs = (IFileSystem)disk.Contents;
+                        hdrStr = "--- " + ThingString.IFileSystem(fs) + " ---";
+                        outStr = fs.DebugDump();
+                    } else if (disk.Contents is IMultiPart) {
+                        outStr = "No info available for multi-part filesystem.";
+                    } else {
+                        Console.Error.WriteLine("Error: disk image contents not recognized");
+                        return false;
+                    }
+                } else if (leaf is Partition) {
+                    Partition part = (Partition)leaf;
+                    if (part.FileSystem == null) {
+                        part.AnalyzePartition();
+                    }
+                    if (part.FileSystem != null) {
+                        hdrStr = "--- " + ThingString.IFileSystem(part.FileSystem) + " ---";
+                        outStr = part.FileSystem.DebugDump();
+                    } else {
+                        outStr = "Partition has unknown contents.";
+                    }
+                } else {
+                    Console.Error.WriteLine("Internal issue: what is " + leaf);
+                    Debug.Assert(false);
+                    return false;
+                }
+                if (hdrStr != null) {
+                    Console.WriteLine(hdrStr);
+                }
+                if (outStr != null) {
+                    Console.WriteLine(outStr);
+                } else {
+                    Console.WriteLine("Debug info not available.");
+                }
+                return true;
+            }
+        }
+
+
+        /// <summary>
+        /// Handles "debug-wtree" command.  This displays the WorkTree structure, which is
+        /// only used by the GUI app.
+        /// </summary>
+        public static bool HandleDumpWTree(string cmdName, string[] args, ParamsBag parms) {
             if (args.Length != 1) {
                 CP2Main.ShowUsage(cmdName);
                 return false;
             }
 
-            string extArchive = args[0];
+            string fileName = args[0];  // not processing ext-archive strings
 
             // Include the config parameters in the closure.
             DepthLimiter limiter =
                 delegate (DepthParentKind parentKind, DepthChildKind childKind) {
                     return DepthLimit(parentKind, childKind, parms.Depth);
-            };
-            using (WorkTree tree = new WorkTree(extArchive, limiter, true, null, parms.AppHook)) {
+                };
+            using (WorkTree tree = new WorkTree(fileName, limiter, true, null, parms.AppHook)) {
                 Console.Write(tree.GenerateTreeSummary());
             }
 

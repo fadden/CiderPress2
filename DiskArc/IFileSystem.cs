@@ -399,5 +399,11 @@ namespace DiskArc {
         /// Closes all open files.
         /// </summary>
         void CloseAll();
+
+        /// <summary>
+        /// Generates detailed human-readable information about the filesystem.
+        /// </summary>
+        /// <returns>Formatted text, or null if not implemented.</returns>
+        string? DebugDump();
     }
 }

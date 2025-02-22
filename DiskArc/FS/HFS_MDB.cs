@@ -212,6 +212,13 @@ namespace DiskArc.FS {
 
         /// <summary>drFndrInfo: information used by the Macintosh Finder.</summary>
         private uint[] drFndrInfo = new uint[8];
+        public uint[] FndrInfo {
+            get {
+                uint[] copy = new uint[8];
+                Array.Copy(drFndrInfo, copy, drFndrInfo.Length);
+                return copy;
+            }
+        }
 
         /// <summary>drVCSize / drEmbedSigWord: originally, size (in allocation blocks) of the
         /// volume cache.  Changed to embedded volume signature.</summary>

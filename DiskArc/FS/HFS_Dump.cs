@@ -53,6 +53,7 @@ namespace DiskArc.FS {
             sb.AppendLine("Total Files        : " + mdb.FileCount);
             sb.AppendLine("Total Dirs         : " + mdb.DirCount);
             sb.AppendLine("Next CNID          : " + mdb.NextCatalogID);
+            sb.AppendLine("Blessed system CNID: " + mdb.FndrInfo[0]);
 
             sb.AppendLine("Vol Bitmap Start   : " + mdb.VolBitmapStart);
             sb.AppendLine("Free Blocks        : " + mdb.FreeBlocks);

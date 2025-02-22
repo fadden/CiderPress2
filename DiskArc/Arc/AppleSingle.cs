@@ -429,5 +429,8 @@ namespace DiskArc.Arc {
                 Debug.Assert(entry.ChangeObject != null);
             }
         }
+
+        // IArchive
+        public string? DebugDump() { return null; }
     }
 }

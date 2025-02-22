@@ -253,6 +253,9 @@ namespace DiskArc.FS {
             return "[Pascal vol '" + id + "']";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return null; }
+
         // IDisposable generic finalizer.
         ~Pascal() {
             Dispose(false);

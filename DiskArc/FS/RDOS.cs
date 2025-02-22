@@ -254,6 +254,9 @@ namespace DiskArc.FS {
             return "[RDOS (" + id + ")]";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return null; }
+
         // IDisposable generic finalizer.
         ~RDOS() {
             Dispose(false);

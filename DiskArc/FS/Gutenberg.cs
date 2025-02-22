@@ -173,6 +173,9 @@ namespace DiskArc.FS {
             return "[Gutenberg (" + id + ")]";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return null; }
+
         // IDisposable generic finalizer.
         ~Gutenberg() {
             Dispose(false);

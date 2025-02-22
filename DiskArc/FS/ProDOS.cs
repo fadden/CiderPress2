@@ -246,6 +246,9 @@ namespace DiskArc.FS {
             return "[ProDOS vol '" + id + "']";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return null; }
+
         // IDisposable generic finalizer.
         ~ProDOS() {
             Dispose(false);

@@ -225,6 +225,9 @@ namespace DiskArc.FS {
             return "[HFS vol: " + id + "]";
         }
 
+        // IFileSystem
+        public string? DebugDump() { return HFS_Dump.Dump(this); }
+
         // IDisposable generic finalizer.
         ~HFS() {
             Dispose(false);

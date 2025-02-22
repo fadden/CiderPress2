@@ -397,5 +397,8 @@ namespace DiskArc.Arc {
         public void DeletePart(IFileEntry entry, FilePart part) {
             throw new InvalidOperationException("This archive format is read-only");
         }
+
+        // IArchive
+        public string? DebugDump() { return null; }
     }
 }

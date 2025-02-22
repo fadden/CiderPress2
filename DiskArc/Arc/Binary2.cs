@@ -614,6 +614,9 @@ namespace DiskArc.Arc {
             IsReconstructionNeeded = true;
         }
 
+        // IArchive
+        public string? DebugDump() { return null; }
+
         /// <summary>
         /// Confirms that we are allowed to modify this entry.
         /// </summary>

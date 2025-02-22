@@ -664,6 +664,9 @@ namespace DiskArc.Arc {
             ((Zip_FileEntry)ientry).DeletePart();
         }
 
+        // IArchive
+        public string? DebugDump() { return null; }
+
         /// <summary>
         /// Confirms that we are allowed to modify this entry.
         /// </summary>
