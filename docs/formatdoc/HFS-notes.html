@@ -461,6 +461,79 @@ some fields were deprecated or repurposed.  Many fields were renamed.  Both form
 +$0a / 2: fdComment
 +$0c / 4: fdPutAway
 </code></pre>
+<div class="markdown-heading"><h2 class="heading-element">Bootable Volumes</h2><a aria-label="Permalink: Bootable Volumes" class="anchor" href="#user-content-bootable-volumes" id="user-content-bootable-volumes" name="user-content-bootable-volumes"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The Macintosh looks for a specific structure in block 0 to decide whether a disk can be booted.
+A number of system parameters are stored here, as well as executable code.  The format is
+documented in IM:Files starting on page 2-57.</p>
+<p>The block 0/1 layout is:</p>
+<pre><code>+$00 / 2: bbID - signature bytes, for HFS this must be $4c $4b ('LK')
++$02 / 4: bbEntry - entry point to boot code, expressed as a 68K BRA.S instruction
++$06 / 2: bbVersion - flag byte and boot block version number
++$08 / 2: bbPageFlags - "used internally"
++$0a /16: bbSysName - system filename, usually "System" (stored as string with leading length byte)
++$1a /16: bbShellName - Finder filename, usually "Finder"
++$2a /16: bbDbg1Name - first debugger filename, usually "MacsBug"
++$3a /16: bbDbg2Name - second debugger filename, usually "Disassembler"
++$4a /16: bbScreenName - file containing startup screen, usually "StartUpScreen"
++$5a /16: bbHelloName - name of startup program, usually "Finder"
++$6a /16: bbScrapName - name of system scrap file, usually "Clipboard"
++$7a / 2: bbCntFCBs - number of FCBs to allocate
++$7c / 2: bbCntEvts - number of event queue elements
++$7e / 4: bb128KSHeap - system heap size on 128K Mac
++$82 / 4: bb256KSHeap - "used internally"
++$86 / 4: bbSysHeapSize - system heap size on machines with &gt;= 512K of RAM
++$8a / 2: filler - reserved
++$8c / 4: bbSysHeapExtra - minimum amount of additional System heap space required
++$90 / 4: bbSysHeapFract - fraction of RAM to make available for system heap
++$94 /nn: executable code, if any
+</code></pre>
+<p>The last two heap size fields are only present in "new"-style boot blocks.  A bit in the version
+flags will tell you whether or not they are present.  These values override the earlier heap size
+fields.</p>
+<p>The <code>bbEntry</code> value is a 68K branch whose offset is relative to the start of the instruction + 2,
+so <code>60 00 00 86</code> is a branch to 4 + $86 + 2 = $8c, appropriate for an "old"-style boot block.
+A "new"-style boot block should be <code>60 00 00 8e</code>, branching to $94.</p>
+<p>The <code>bbVersion</code> field is documented as a 16-bit value, but the first (high) byte holds flags,
+while the second (low) byte holds the boot block version number.  The flags are:</p>
+<table>
+<thead>
+<tr>
+<th>bit</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-4</td>
+<td>reserved, must be 0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>set if relative system heap sizing is to be used</td>
+</tr>
+<tr>
+<td>6</td>
+<td>set if the boot code in the boot blocks is to be executed</td>
+</tr>
+<tr>
+<td>7</td>
+<td>set if the new boot block header format is used</td>
+</tr>
+</tbody>
+</table>
+<p>If bit 7 is clear (old format), then bits 5 and 6 are ignored, and the boot code is only executed
+if the version is $0d.  If bit 7 is set (new format), then bit 6 determines whether or not the
+code is executed.  IM:Files notes:</p>
+<blockquote>
+<p>Generally, however, the boot code stored on disk is ignored in favor of boot code stored in a
+resource in the System file.</p>
+</blockquote>
+<p>Note: the System folder on a bootable Macintosh volume must be "blessed".  There are a few ways
+to accomplish this; on Macintoshes with System 7, this can be done by booting a working system,
+mounting the new volume, and then double-clicking on the System suitcase in the System folder.
+The actual effect of this on the HFS filesystem is to record the CNID of the System folder in the
+first entry of <code>drFndrInfo</code> in the MDB.  (There may be other actions, such as updating the EFI
+data; see the Apple open-source <a href="https://github.com/apple-opensource/bless">bless command</a>.)</p>
 <div class="markdown-heading"><h2 class="heading-element">Miscellaneous</h2><a aria-label="Permalink: Miscellaneous" class="anchor" href="#user-content-miscellaneous" id="user-content-miscellaneous" name="user-content-miscellaneous"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>HFS volumes can checked with the <code>fsck.hfs</code> command.  The x86-64 version found on Linux
 crashes immediately (using hfsprogs 332.25-11build1 amd64), but the i386 version still works.

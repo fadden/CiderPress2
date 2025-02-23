@@ -72,6 +72,7 @@ namespace cp2.Tests {
                 TestCopySectors.RunTest(parms);
                 TestCopyBlocks.RunTest(parms);
                 TestCopyPartition.RunTest(parms);
+                TestBless.RunTest(parms);
                 TestDefrag.RunTest(parms);
                 TestMetadata.RunTest(parms);
                 TestPrint.RunTest(parms);
