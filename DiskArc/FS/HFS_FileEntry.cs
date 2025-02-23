@@ -230,7 +230,7 @@ namespace DiskArc.FS {
 
         internal HFS FileSystem { get; private set; }
 
-        internal uint EntryCNID { get; private set; }       // from record
+        public uint EntryCNID { get; private set; }         // from record
         internal uint ParentCNID { get; set; }              // from key; updated by MoveFile
 
         /// <summary>

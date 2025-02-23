@@ -1016,6 +1016,194 @@ namespace cp2 {
 
         #endregion Defragment
 
+        #region Bless
+
+        private const string DEFAULT_BOOT_ARG = "-";
+        private const int BOOT_IMAGE_LEN = 1024;
+
+        /// <summary>
+        /// Handles the "bless" command.
+        /// </summary>
+        public static bool HandleBless(string cmdName, string[] args, ParamsBag parms) {
+            if (args.Length < 2 || args.Length > 3) {
+                CP2Main.ShowUsage(cmdName);
+                return false;
+            }
+            string extArchive = args[0];
+            string systemFolder = args[1];
+            string? bootImagePath = null;
+            if (args.Length == 3) {
+                bootImagePath = args[2];
+            }
+
+            // If a boot image file path has been specified, grab it now.
+            byte[]? bootImage = null;
+            if (bootImagePath != null) {
+                bootImage = GetBootImage(bootImagePath);
+                if (bootImage == null) {
+                    return false;
+                }
+            }
+
+            if (!ExtArchive.OpenExtArc(extArchive, false, false, parms, out DiskArcNode? rootNode,
+                    out DiskArcNode? leafNode, out object? leaf, out IFileEntry endDirEntry)) {
+                return false;
+            }
+            using (rootNode) {
+                if (leaf is not IDiskImage && leaf is not Partition) {
+                    Console.Error.WriteLine(
+                        "Error: this only works with disk images and partitions");
+                    return false;
+                }
+                IFileSystem? fs = Misc.GetTopFileSystem(leaf);
+                if (fs is not HFS) {
+                    Console.Error.WriteLine("Error: this operation is only available for " +
+                        "HFS filesystems.");
+                    return false;
+                }
+                if (!Misc.StdChecks(fs, needWrite: true, parms.FastScan)) {
+                    return false;
+                }
+                if (fs.IsDubious) {
+                    Console.Error.WriteLine("Error: filesystem has unresolved issues");
+                    return false;
+                }
+
+                // Get the directory CNID.
+                uint cnid;
+                try {
+                    IFileEntry entry = fs.EntryFromPath(systemFolder, HFS.SCharacteristics.DirSep);
+                    cnid = ((HFS_FileEntry)entry).EntryCNID;
+                } catch (FileNotFoundException) {
+                    Console.Error.WriteLine("Error: folder '" + systemFolder + "' not found");
+                    return false;
+                }
+
+                // Switch to block-access mode.
+                fs.PrepareRawAccess();
+                IChunkAccess chunks = fs.RawAccess;
+                bool success = DoBless(chunks, cnid, bootImage, parms);
+
+                try {
+                    leafNode.SaveUpdates(parms.Compress);
+                } catch (Exception ex) {
+                    Console.Error.WriteLine("Error: update failed: " + ex.Message);
+                    return false;
+                }
+                if (!success) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Prepares a 1024-byte buffer with a boot image.  If pathName is "-", a default boot
+        /// image is used.
+        /// </summary>
+        /// <param name="pathName">Path to file on disk</param>
+        /// <returns>Boot image, or null if it could not be loaded.</returns>
+        private static byte[]? GetBootImage(string pathName) {
+            byte[] image = new byte[BOOT_IMAGE_LEN];
+            if (pathName == DEFAULT_BOOT_ARG) {
+                Array.Copy(MacBoot.sBootBlock0, image, BLOCK_SIZE);
+                Array.Copy(MacBoot.sBootBlock1, 0, image, BLOCK_SIZE, BLOCK_SIZE);
+            } else {
+                if (!File.Exists(pathName)) {
+                    Console.Error.WriteLine("Boot image file '" + pathName + "' not found");
+                    return null;
+                }
+                using (Stream stream = new FileStream(pathName, FileMode.Open, FileAccess.Read)) {
+                    if (stream.Length != BOOT_IMAGE_LEN) {
+                        Console.Error.WriteLine("Error: boot image file must be " +
+                            BOOT_IMAGE_LEN + " bytes");
+                        return null;
+                    }
+                    stream.ReadExactly(image, 0, BOOT_IMAGE_LEN);
+                }
+            }
+            return image;
+        }
+
+        /// <summary>
+        /// Blesses an HFS filesystem for booting.
+        /// </summary>
+        /// <param name="chunks">Chunk access object.</param>
+        /// <param name="cnid">CNID of system folder.</param>
+        /// <param name="bootImage">New boot image, for blocks 0/1.</param>
+        /// <param name="overwrite">If true, overwrite existing boot image.</param>
+        /// <returns>True on success.</returns>
+        private static bool DoBless(IChunkAccess chunks, uint cnid, byte[]? bootImage,
+                ParamsBag parms) {
+            byte[] mdb = new byte[BLOCK_SIZE];
+            byte[] boot = new byte[BLOCK_SIZE * 2];
+
+            // Read the MDB, and check the signature just to be sure we're in the right place.  We
+            // should be looking at an HFS filesystem, so if this is wrong then we're very confused.
+            chunks.ReadBlock(HFS.MDB_BLOCK_NUM, mdb, 0);
+            uint sig = RawData.GetU16BE(mdb, 0);
+            if (sig != HFS.MDB_SIGNATURE) {
+                throw new Exception("MDB signature bytes not found");
+            }
+
+            if (bootImage != null) {
+                bool doWrite;
+                chunks.ReadBlock(0, boot, 0);
+                chunks.ReadBlock(1, boot, BLOCK_SIZE);
+
+                if (RawData.IsAllZeroes(boot, 0, BLOCK_SIZE * 2)) {
+                    if (parms.Verbose) {
+                        Console.WriteLine("Existing boot blocks are zeroed; overwriting");
+                    }
+                    doWrite = true;
+                } else if (RawData.MemCmp(bootImage, boot, BLOCK_SIZE * 2) == 0) {
+                    if (parms.Verbose) {
+                        Console.WriteLine("Existing boot blocks match new boot image; " +
+                            "not updating");
+                    }
+                    doWrite = false;
+                } else {
+                    if (!parms.Overwrite) {
+                        Console.Error.WriteLine("Boot area is nonzero and doesn't match; " +
+                            "not updating (add --overwrite)");
+                        return false;
+                    }
+                    if (parms.Verbose) {
+                        Console.WriteLine("Existing boot blocks are different; overwriting");
+                    }
+                    doWrite = true;
+                }
+
+                if (doWrite) {
+                    chunks.WriteBlock(0, bootImage, 0);
+                    chunks.WriteBlock(1, bootImage, BLOCK_SIZE);
+                }
+            }
+
+            // The drFndrInfo array starts at +$5c.  We want to update entry 0.  We could do
+            // this with the HFS_MDB class, but this is much simpler.
+            const int FNDR_INFO_OFFSET = 0x5c;
+            uint oldCNID = RawData.GetU32BE(mdb, FNDR_INFO_OFFSET);
+            if (oldCNID == cnid) {
+                if (parms.Verbose) {
+                    Console.WriteLine("Existing CNID matches (" + cnid + "), not updating");
+                }
+            } else {
+                if (parms.Verbose) {
+                    Console.WriteLine("Replacing existing CNID (" + oldCNID + ") with " + cnid);
+                }
+                RawData.SetU32BE(mdb, FNDR_INFO_OFFSET, cnid);
+                chunks.WriteBlock(HFS.MDB_BLOCK_NUM, mdb, 0);
+            }
+
+            if (parms.Verbose) {
+                Console.WriteLine("Done");
+            }
+            return true;
+        }
+
+        #endregion Bless
+
         #region Misc
 
         /// <summary>

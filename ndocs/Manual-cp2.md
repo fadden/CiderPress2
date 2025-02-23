@@ -107,7 +107,8 @@ directories will not be copied to those.
 
 *A*: Use the `read-sector` or `read-block` command to generate a hex dump of
 the contents.  Edit the hexadecimal values, then use `write-sector` or
-`write-block` to write the contents back to the disk.
+`write-block` to write the contents back to the disk.  You can convert the
+output to raw binary with the (open-source) command `xxd -r`.
 
 *Q*: What is the difference between `extract archive.shk DIR:MYFILE` and
 `extract archive.shk:DIR MYFILE`?
@@ -421,6 +422,38 @@ Options:
 Examples:
  - `cp2 add archive.shk file1 file2 dir1`
  - `cp2 a disk.po:DIR1:DIR2 file1`
+
+----
+#### `bless`
+
+Prepares a Macintosh HFS filesystem for booting.
+
+Usage: `cp2 bless [options] <ext-archive> <system-folder> [{boot-image|-}]`
+
+Macintosh disk images must be "blessed" before they can be booted.  This
+requires preparation of the boot blocks, and recording the catalog ID of the
+system folder in a special location.  This command can only be used on HFS
+filesystems, and is known to work with System 7 through System 8.1 (which
+introduced HFS+).
+
+The `system-folder` argument is the name of the folder to bless.  This is
+a case-insensitive partial path starting from the volume root.  On most
+systems, this is just "System Folder".  The folder must exist; you cannot
+bless an empty volume.
+
+The `boot-image` argument specifies the path to a 1024-byte file with the
+Macintosh boot image.  If '-' is given instead, a default boot image that
+is known to work for System 7 through System 8 is used.  If the argument is
+omitted, the boot blocks will not be altered.
+
+For safety, the boot image will only be written if the blocks in the disk
+image are zeroed out, or if the current contents exactly match the new
+contents.  To replace an old image with a new one, the `--overwrite` option
+must be used.
+
+Examples:
+ - `cp2 bless newhd.dsk "System Folder" -`
+ - `cp2 bless -f oldhd.dsk "Folder2" newboot.bin`
 
 ----
 #### `catalog`|`v`
