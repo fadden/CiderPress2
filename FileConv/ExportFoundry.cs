@@ -62,9 +62,9 @@ namespace FileConv {
             new ConverterEntry(typeof(Doc.RandomText)),
             new ConverterEntry(typeof(Doc.Teach)),
 
-            new ConverterEntry(typeof(Gfx.BitmapFont)),
             new ConverterEntry(typeof(Gfx.HiRes)),
             new ConverterEntry(typeof(Gfx.HiRes_Font)),
+            new ConverterEntry(typeof(Gfx.FontrixFont)),
             new ConverterEntry(typeof(Gfx.ShapeTable)),
             new ConverterEntry(typeof(Gfx.HiRes_LZ4FH)),
             new ConverterEntry(typeof(Gfx.DoubleHiRes)),
@@ -75,13 +75,13 @@ namespace FileConv {
             new ConverterEntry(typeof(Gfx.SuperHiRes_DreamGrafix)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Packed)),
             new ConverterEntry(typeof(Gfx.SuperHiRes_Paintworks)),
+            new ConverterEntry(typeof(Gfx.PaintworksAnim)),
+            new ConverterEntry(typeof(Gfx.BitmapFont)),
             new ConverterEntry(typeof(Gfx.GSFinderIcon)),
             new ConverterEntry(typeof(Gfx.PrintShopClip)),
             new ConverterEntry(typeof(Gfx.PrintShopFont)),
-            new ConverterEntry(typeof(Gfx.HostImage)),
             new ConverterEntry(typeof(Gfx.MacPaint)),
-            new ConverterEntry(typeof(Gfx.FontrixFont)),
-
+            new ConverterEntry(typeof(Gfx.HostImage)),
         };
 
         private static readonly Dictionary<string, ConverterEntry> sTagList = GenerateTagList();

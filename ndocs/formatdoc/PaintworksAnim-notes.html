@@ -1,0 +1,74 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">Paintworks Animation</h1><a aria-label="Permalink: Paintworks Animation" class="anchor" href="#user-content-paintworks-animation" id="user-content-paintworks-animation" name="user-content-paintworks-animation"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>File types:</p>
+<ul>
+<li>ANI ($c2) / $0000: animation file</li>
+</ul>
+<p>Primary references:</p>
+<ul>
+<li>Reverse engineering, primarily by Antoine Vignau
+(<a href="https://docs.google.com/document/d/11uAvoMm9SVFfMZCuU71cRhq5zKAH6xfaAckdXMyFGqw/" rel="nofollow">https://docs.google.com/document/d/11uAvoMm9SVFfMZCuU71cRhq5zKAH6xfaAckdXMyFGqw/</a>)</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Overview</h2><a aria-label="Permalink: Overview" class="anchor" href="#user-content-overview" id="user-content-overview" name="user-content-overview"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The file contains an uncompressed super hi-res image, followed by a series of variable-length
+animation frames.  Each frame is a collection of offset/value pairs that change the value of
+one location.</p>
+<p>The inter-frame delay is specified globally, expressed as a whole number of VBLs (16.67 ms at
+60Hz, or 20ms at 50Hz).  This means the animation will run at different speeds on NTSC and PAL
+systems.  A commonly available viewer for the IIgs allowed the animation to be played faster
+or slower.</p>
+<p>Animations are usually played in a loop, so the animation will generally want to return the
+image to its original state at the end of the sequence.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>All multi-byte values are stored in little-endian order.</p>
+<p>The overall file structure is:</p>
+<pre><code>+$0000 /32768: SHR image in $c1/0000 format
++$8000 / 4: length of animation data that follows header (file length minus $8008)
++$8004 / 2: frame delay, in VBLs
++$8006 / 2: ? (usually $00c0 or $00c1)
++$8008 /nn: animation data chunks
+</code></pre>
+<p>A common value for the frame delay is 4, yielding 15 fps on a 60Hz system.</p>
+<p>Each animation data chunk is:</p>
+<pre><code>+$00 / 4: total length of frame data, including this length value
++$04 /nn: animation frame data
+</code></pre>
+<p>There is no count on the number of frames.  When playing the animation, the animation chunk length
+is used to determine when the end has been reached.  Most files have a single animation data chunk,
+so the animation chunk length should be exactly the same as the total length in the file header.</p>
+<p>The animation frame data consists of pairs of 16-bit values:</p>
+<pre><code>+$00 / 2: offset to value, in the range [$0000, $7ffe]
++$02 / 2: 16-bit value to store
+</code></pre>
+<p>Any value in the SHR image data can be changed, including the palette and SCB bytes.  This can
+be used to perform palette-cycling animations.</p>
+<p>The end of each frame is indicated by an offset of $0000.  (Consequently, the pixels at the
+top-left corner of the screen cannot be modified.)  The associated value is not used, and appears
+to be garbage.</p>
+<p>The last pair in the animation data should be an end-of-frame indicator.  It's unclear what should
+happen if it isn't.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/FileConv/Gfx/PaintworksAnim-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>
