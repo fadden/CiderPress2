@@ -181,6 +181,7 @@ limitations under the License.
             </RoutedUICommand>
 
             <RoutedUICommand x:Key="Debug_BulkCompressTestCmd" Text="Bulk Compression Test..."/>
+            <RoutedUICommand x:Key="Debug_ConvertANICmd" Text="Convert ANI to GIF..."/>
             <RoutedUICommand x:Key="Debug_DiskArcLibTestCmd" Text="DiskArc Library Tests...">
                 <RoutedUICommand.InputGestures>
                     <KeyGesture>Ctrl+Shift+T</KeyGesture>
@@ -291,6 +292,8 @@ limitations under the License.
 
         <CommandBinding Command="{StaticResource Debug_BulkCompressTestCmd}"
                         Executed="Debug_BulkCompressTestCmd_Executed"/>
+        <CommandBinding Command="{StaticResource Debug_ConvertANICmd}"
+                        CanExecute="IsANISelected" Executed="Debug_ConvertANICmd_Executed"/>
         <CommandBinding Command="{StaticResource Debug_DiskArcLibTestCmd}"
                         Executed="Debug_DiskArcLibTestCmd_Executed"/>
         <CommandBinding Command="{StaticResource Debug_FileConvLibTestCmd}"
@@ -379,6 +382,8 @@ limitations under the License.
                           Command="{StaticResource Debug_ShowDebugLogCmd}" IsCheckable="True"/>
                 <MenuItem Name="debugShowDropTargetMenuItem"
                           Command="{StaticResource Debug_ShowDropTargetCmd}" IsCheckable="True"/>
+                <Separator/>
+                <MenuItem Command="{StaticResource Debug_ConvertANICmd}"/>
             </MenuItem>
         </Menu>
 

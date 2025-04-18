@@ -117,7 +117,7 @@ namespace FileConv.Gfx {
         /// Converts a 32K screen capture to a bitmap.  This works for 256-color images, but
         /// not for 3200-color images.
         /// </summary>
-        internal static Bitmap8 ConvertBuffer(byte[] buf) {
+        public static Bitmap8 ConvertBuffer(byte[] buf) {
             Bitmap8 output = new Bitmap8(OUTPUT_WIDTH, OUTPUT_HEIGHT);
             output.IsDoubled = true;
 

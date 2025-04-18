@@ -102,6 +102,10 @@ namespace FileConv.Gfx {
                 result.Notes.AddW("Warning: animLen is not a multiple of 4");
             }
             int animEnd = offset + (int)animLen - 4;
+            if (animLen <= 4) {
+                // Work around missing anim len by using the full data len.
+                animEnd = offset + (int)dataLen - 4;
+            }
             int frameCount = 0;
             bool lastWasZero = false;
             while (offset < animEnd) {

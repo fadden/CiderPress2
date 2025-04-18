@@ -467,6 +467,10 @@ namespace cp2_wpf {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.CanEditSectors);
         }
+        private void IsANISelected(object sender, CanExecuteRoutedEventArgs e) {
+            e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
+                mMainCtrl.IsANISelected);
+        }
         private void IsDiskImageSelected(object sender, CanExecuteRoutedEventArgs e) {
             e.CanExecute = (mMainCtrl != null && mMainCtrl.IsFileOpen &&
                 mMainCtrl.IsDiskImageSelected);
@@ -680,6 +684,9 @@ namespace cp2_wpf {
 
         private void Debug_BulkCompressTestCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.Debug_BulkCompressTest();
+        }
+        private void Debug_ConvertANICmd_Executed(object sender, ExecutedRoutedEventArgs e) {
+            mMainCtrl.Debug_ConvertANI();
         }
         private void Debug_DiskArcLibTestCmd_Executed(object sender, ExecutedRoutedEventArgs e) {
             mMainCtrl.Debug_DiskArcLibTests();

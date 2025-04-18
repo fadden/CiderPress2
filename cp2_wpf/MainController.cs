@@ -27,6 +27,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
@@ -40,8 +41,9 @@ using DiskArc;
 using DiskArc.Arc;
 using DiskArc.FS;
 using DiskArc.Multi;
-using static DiskArc.Defs;
 using FileConv;
+using FileConv.Gfx;
+using static DiskArc.Defs;
 
 namespace cp2_wpf {
     /// <summary>
@@ -2785,6 +2787,111 @@ namespace cp2_wpf {
                 // Ask the dialog to close.  Do the cleanup in the event.
                 mDebugDropTarget.Close();
             }
+        }
+
+        public void Debug_ConvertANI() {
+            Debug.Assert(mMainWin.fileListDataGrid.SelectedItems.Count == 1);
+            FileListItem item = (FileListItem)mMainWin.fileListDataGrid.SelectedItems[0]!;
+
+            IFileEntry entry = item.FileEntry;
+            FileAttribs attrs = new FileAttribs(entry);
+            object? archiveOrFileSystem = CurrentWorkObject;
+            if (archiveOrFileSystem == null) {
+                return;
+            }
+            // Just use this as a way to get the data stream from archive or disk image.
+            // Someday we may want to use a converter, but right now we have no way to
+            // represent a series of video frames.
+            Stream? dataStream, rsrcStream;
+            ExportFoundry.GetApplicableConverters(archiveOrFileSystem, entry, attrs, false, true,
+                out dataStream, out rsrcStream, AppHook);
+            if (rsrcStream != null) {
+                rsrcStream.Close();     // unexpected for ANI file
+            }
+            if (dataStream == null) {
+                return;
+            }
+            AnimatedGifEncoder? enc = null;
+            using (dataStream) {
+                enc = DoConvertANI(dataStream);
+            }
+
+            if (enc != null) {
+                SaveFileDialog fileDlg = new SaveFileDialog() {
+                    Filter = "Animated GIF (*.gif)" + "|" + "*.*",
+                    FilterIndex = 1,
+                    ValidateNames = true,
+                    AddExtension = true,
+                    FileName = Path.GetFileName(item.FileName) + ".gif"
+                };
+                if (fileDlg.ShowDialog() != true) {
+                    return;
+                }
+                string pathName = Path.GetFullPath(fileDlg.FileName);
+
+                using (FileStream outStream = new FileStream(pathName, FileMode.OpenOrCreate)) {
+                    enc.Save(outStream, out int maxWidth, out int maxHeight);
+                }
+                Debug.WriteLine("Done (frames=" + enc.Count + ")");
+            }
+        }
+
+        // Quick & dirty ANI file conversion.
+        private static AnimatedGifEncoder? DoConvertANI(Stream dataStream) {
+            const int PIC_LEN = 32768;
+            if (dataStream.Length < PIC_LEN + 12) {
+                Debug.WriteLine("file too short");
+                return null;
+            }
+            dataStream.Position = 0;
+            byte[] buf = new byte[dataStream.Length];
+            dataStream.ReadExactly(buf, 0, buf.Length);
+            uint dataLen = RawData.GetU32LE(buf, PIC_LEN);
+            ushort vblDelay = RawData.GetU16LE(buf, PIC_LEN + 4);
+            uint animLen = RawData.GetU32LE(buf, PIC_LEN + 8);
+            if (buf.Length < PIC_LEN + 8 + animLen) {
+                Debug.WriteLine("file was cut off");
+                return null;
+            }
+            int delayMsec = (int)(vblDelay * (1000 / 60.0));
+            if (delayMsec == 0) {
+                delayMsec = 1;
+            }
+            AnimatedGifEncoder enc = new AnimatedGifEncoder();
+
+            // ANI files have an initial frame, and a series of looping animation frames.  The
+            // initial frame isn't really part of the animated sequence, so we don't want to
+            // output it.
+            int animOff = PIC_LEN + 12;
+            int animEnd = PIC_LEN + 8 + (int)animLen;
+            if (animEnd <= animOff) {
+                // Work around missing anim len by using full data len.
+                animEnd = PIC_LEN + 8 + (int)dataLen;
+            }
+            while (animOff < animEnd) {
+                while (animOff < animEnd) {
+                    Debug.Assert(animOff >= 0 && animOff < buf.Length);
+                    ushort dataOff = RawData.ReadU16LE(buf, ref animOff);
+                    ushort value = RawData.ReadU16LE(buf, ref animOff);
+                    if (dataOff == 0) {
+                        break;
+                    }
+                    if (dataOff > 0x7ffe) {
+                        Debug.WriteLine("found invalid data offset $" + dataOff.ToString("x4"));
+                    } else {
+                        RawData.SetU16LE(buf, dataOff, value);
+                    }
+                }
+                Bitmap8 rawImage = SuperHiRes.ConvertBuffer(buf);
+                BitmapSource bsrc = WinUtil.ConvertToBitmapSource(rawImage);
+                enc.AddFrame(BitmapFrame.Create(bsrc), delayMsec);
+                if (enc.Count > 10000) {
+                    Debug.WriteLine("runaway!");        // this can't be right
+                    break;
+                }
+            }
+
+            return enc;
         }
 
         public void Debug_ShowSystemInfo() {

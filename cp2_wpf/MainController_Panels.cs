@@ -155,6 +155,23 @@ namespace cp2_wpf {
         }
 
         /// <summary>
+        /// True if a single file with type ANI $0000 is selected.
+        /// </summary>
+        public bool IsANISelected {
+            get {
+                IList sel = mMainWin.fileListDataGrid.SelectedItems;
+                if (sel.Count != 1) {
+                    return false;
+                }
+                FileListItem item = (FileListItem)sel[0]!;
+                // Convert to FileAttribs, because it will convert HFS 'pdos' types to ProDOS.
+                FileAttribs attrs = new FileAttribs(item.FileEntry);
+                return (attrs.FileType == FileAttribs.FILE_TYPE_ANI &&
+                    attrs.AuxType == 0x0000);
+            }
+        }
+
+        /// <summary>
         /// True if the item selected in the archive tree is a disk image.
         /// </summary>
         public bool IsDiskImageSelected { get { return CurrentWorkObject is IDiskImage; } }
