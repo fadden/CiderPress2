@@ -76,7 +76,7 @@ namespace CommonUtil {
         ///
         /// <para>Interpretation of fields:</para>
         /// <code>
-        ///  YYYYYYY: the year, minus 1900.  Mostly.
+        ///  YYYYYYY: the year, minus 1900 (mostly)
         ///  MMMM: month, 1-12
         ///  DDDDD: day, 1-31
         ///  hhhhh: hour in 24-hour clock, 0-23
@@ -95,7 +95,7 @@ namespace CommonUtil {
         ///
         /// <para>Best practice: when converting from ProDOS dates, treat 00-39 as 2000-2039,
         /// because 29 is more likely to be 2029 than 1929, but also accept values >= 100 because
-        /// that's what many utilities actually use.</para>
+        /// that's what some utilities actually use.</para>
         ///
         /// <para>Some discussion about extending the date/time field is here:
         /// <see href="https://groups.google.com/g/comp.sys.apple2/c/6MwlJSKTmQc/m/Wb2-yn-VBQAJ"/>
@@ -117,7 +117,7 @@ namespace CommonUtil {
 
             int year = (int)((date >> 9) & 0x7f);
             if (year < 40) {
-                // Optimistically remap these, in case somebody is following the DTS recommendation.
+                // Remap these, for dates that follow the DTS recommendation.
                 year += 100;
             }
             year += 1900;
@@ -153,7 +153,7 @@ namespace CommonUtil {
             if (year >= 1940 && year <= 1999) {
                 prodosYear = year - 1900;   // 40-99
             } else if (year >= 2000 && year <= 2027) {
-                prodosYear = year - 1900;   // 100-127; arguably should subtract 2000
+                prodosYear = year - 2000;   // 0-27 (could also subtract 1900 to use 100-127)
             } else if (year >= 2028 && year <= 2039) {
                 prodosYear = year - 2000;   // 28-39
             } else {

@@ -71,6 +71,10 @@ facilitate bidirectional directory traversal:
 ```
 A block number of zero is used to indicate the end of the list.
 
+Each block holds a whole number of directories entries, i.e. entries do not straddle block
+boundaries.  The length of each entry is defined by the directory header, but is commonly 39
+bytes, allowing 13 entries per block.
+
 The first entry in each directory is a special header that has the same size and general layout
 as a standard entry, but has some different fields.  The volume directory header is different
 from that in subdirectories.
