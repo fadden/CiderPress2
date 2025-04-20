@@ -72,7 +72,8 @@ namespace cp2_wpf.Actions {
                 };
                 ExtractFileWorker extWorker = new ExtractFileWorker(cbFunc,
                     addExportExt: AddExportExt, macZip: EnableMacOSZip, preserve: Preserve,
-                    rawMode: RawMode, stripPaths: StripPaths, DefaultSpecs, mAppHook);
+                    rawMode: RawMode, basePath: string.Empty, stripPaths: StripPaths, DefaultSpecs,
+                    mAppHook);
 
                 // Switch to output directory.
                 Environment.CurrentDirectory = mOutputDir;

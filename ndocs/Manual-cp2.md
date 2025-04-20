@@ -748,6 +748,7 @@ fail.
 
 Options:
  - `--add-ext`, `--no-add-ext`
+ - `--exdir=<path>`
  - `--overwrite`, `--no-overwrite`
  - `--raw`, `--no-raw`
  - `--recurse`, `--no-recurse`
@@ -784,8 +785,9 @@ file extraction for certain 'B' files and for random-access text files.
 Use the `--raw` flag to get all sectors of the file.
 
 Options:
- - `--overwrite`, `--no-overwrite`
+ - `--exdir=<path>`
  - `--mac-zip`, `--no-mac-zip`
+ - `--overwrite`, `--no-overwrite`
  - `--preserve=<mode>`
  - `--raw`
  - `--recurse`, `--no-recurse`
@@ -1371,6 +1373,12 @@ Archive descent depth, used when generating catalogs.
  - `subvol`: descend into sub-volumes, but don't open archives stored as
     files in the archive.
  - `max`: go nuts.
+
+#### `--exdir=<path>` (default="")
+
+Specify the root directory into which files will be extracted or exported.
+If not specified, the current directory is used.  The path may be full or
+partial.
 
 #### `--fast-scan`, `--no-fast-scan` (default)
 

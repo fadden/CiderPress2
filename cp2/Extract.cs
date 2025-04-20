@@ -134,7 +134,8 @@ namespace cp2 {
             };
             ExtractFileWorker worker = new ExtractFileWorker(cbFunc, addExportExt: parms.AddExt,
                 macZip: parms.MacZip, preserve: parms.Preserve, rawMode: parms.Raw,
-                stripPaths: parms.StripPaths, ParamsBag.sExportSpecs, parms.AppHook);
+                basePath: parms.ExDir, stripPaths: parms.StripPaths, ParamsBag.sExportSpecs,
+                parms.AppHook);
             if (parms.ShowNotes && exportSpec != null) {
                 worker.NotesOut = Console.Out;
             }

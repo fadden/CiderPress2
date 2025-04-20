@@ -46,7 +46,7 @@ namespace cp2 {
         /// Option type.  Most options are boolean flags, but a few are name=value.
         /// </summary>
         private enum OptionType {
-            Unknown = 0, Bool, Depth, Sectors, Preserve, ConfigInt
+            Unknown = 0, Bool, String, Depth, Sectors, Preserve, ConfigInt
         }
 
         /// <summary>
@@ -85,6 +85,7 @@ namespace cp2 {
             OptionType.Bool, true);
         private static Option OptDebug = new Option("debug", OptionType.Bool, false);
         private static Option OptDepth = new Option("depth", OptionType.Depth, ScanDepth.SubVol);
+        private static Option OptExDir = new Option("exdir", OptionType.String, string.Empty);
         private static Option OptFastScan = new Option("fast-scan", OptionType.Bool, false);
         private static Option OptFromADF = new Option("from-adf", OptionType.Bool, true);
         private static Option OptFromAS = new Option("from-as", OptionType.Bool, true);
@@ -124,6 +125,7 @@ namespace cp2 {
                 { OptConvertDOSText.Name, OptConvertDOSText },
                 { OptDebug.Name, OptDebug },
                 { OptDepth.Name, OptDepth },
+                { OptExDir.Name, OptExDir },
                 { OptFastScan.Name, OptFastScan },
                 { OptFromADF.Name, OptFromADF },
                 { OptFromAS.Name, OptFromAS },
@@ -193,6 +195,10 @@ namespace cp2 {
         public ScanDepth Depth {
             get => (ScanDepth)GetOption(OptDepth.Name);
             set => SetOption(OptDepth.Name, value);
+        }
+        public string ExDir {
+            get => (string)GetOption(OptExDir.Name);
+            set => SetOption(OptExDir.Name, value);
         }
         public bool FastScan {
             get => GetBoolOption(OptFastScan.Name);
@@ -367,6 +373,9 @@ namespace cp2 {
                 switch (opt.Type) {
                     case OptionType.Bool:
                         opt.CurValue = boolVal;
+                        break;
+                    case OptionType.String:
+                        opt.CurValue = optArg;
                         break;
                     case OptionType.Depth:
                         switch (optArg.ToLowerInvariant()) {
@@ -548,6 +557,12 @@ namespace cp2 {
                     case OptionType.Bool:
                         sb.Append("--[no-]");
                         sb.Append(opt.Name);
+                        break;
+                    case OptionType.String:
+                        sb.Append("--");
+                        sb.Append(opt.Name);
+                        sb.Append("=");
+                        // default is an empty string
                         break;
                     case OptionType.Depth:
                         sb.Append("--");

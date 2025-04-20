@@ -68,6 +68,7 @@ namespace cp2.Tests {
             //
 
             // Configure parameters.
+            parms.ExDir = string.Empty;
             parms.MacZip = true;
             parms.Overwrite = true;
             parms.Raw = false;
@@ -117,6 +118,7 @@ namespace cp2.Tests {
             TestWildNoRecurse(parms);
             TestNAPSEscape(parms);
             TestEmptyDir(parms);
+            TestExDir(parms);
 
             Controller.RemoveTestTmp(parms);
         }
@@ -384,6 +386,48 @@ namespace cp2.Tests {
                 if (!Directory.Exists(dirName2)) {
                     throw new Exception("Extraction of empty dir 2 failed");
                 }
+            } finally {
+                Environment.CurrentDirectory = oldCurrentDir;
+            }
+            RemoveOutputDir();
+        }
+
+        private static void TestExDir(ParamsBag parms) {
+            string diskPath =
+                Path.GetFullPath(Path.Join(Controller.TEST_DATA, "prodos", "extended.do"));
+            string testFileName = "Helvetica";
+            string dataOut = "Helvetica#c80001";
+            string rsrcOut = dataOut + "r";
+
+            CreateOutputDir();
+            string oldCurrentDir = Environment.CurrentDirectory;
+            try {
+                const string SUBDIR_NAME = "subdir";
+                Environment.CurrentDirectory = OUTPUT_DIR;
+                string subDir = Path.Combine(OUTPUT_DIR, SUBDIR_NAME);
+                Directory.CreateDirectory(subDir);
+
+                parms.Preserve = ExtractFileWorker.PreserveMode.NAPS;
+
+                // Extract to current dir.
+                if (!Extract.HandleExtract("x", new string[] { diskPath, testFileName }, parms)) {
+                    throw new Exception("Extract from '" + diskPath + "' failed");
+                }
+                if (!File.Exists(dataOut) || !File.Exists(rsrcOut)) {
+                    throw new Exception("Extract " + testFileName + " to cwd failed");
+                }
+
+                // Extract to subdir, partial path.
+                parms.ExDir = SUBDIR_NAME;
+                if (!Extract.HandleExtract("x", new string[] { diskPath, testFileName }, parms)) {
+                    throw new Exception("Extract from '" + diskPath + "' failed");
+                }
+                if (!File.Exists(Path.Combine(SUBDIR_NAME, dataOut)) ||
+                        !File.Exists(Path.Combine(SUBDIR_NAME, rsrcOut))) {
+                    throw new Exception("Extract " + testFileName + " to subdir failed");
+                }
+
+                parms.ExDir = string.Empty;
             } finally {
                 Environment.CurrentDirectory = oldCurrentDir;
             }

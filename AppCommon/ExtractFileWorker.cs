@@ -63,6 +63,11 @@ namespace AppCommon {
         public bool RawMode { get; set; }
 
         /// <summary>
+        /// Root directory for extraction.  If empty, the current directory is used.
+        /// </summary>
+        public string BasePath { get; set; }
+
+        /// <summary>
         /// If set, strip pathnames off of files before extracting them.
         /// </summary>
         public bool StripPaths { get; set; }
@@ -92,16 +97,19 @@ namespace AppCommon {
         /// <param name="preserve">Attribute preservation mode to use during extract.</param>
         /// <param name="rawMode">True if data forks should be opened in "raw" mode.</param>
         /// <param name="stripPaths">True if pathnames should be stripped down to filenames.</param>
+        /// <param name="basePath">Root directory for extract/export; if empty, the current
+        ///   directory is used.</param>
         /// <param name="defaultSpecs">Default export specs, for "best" mode.</param>
         /// <param name="appHook">Application hook reference.</param>
         public ExtractFileWorker(CallbackFunc func, bool addExportExt, bool macZip,
-                PreserveMode preserve, bool rawMode, bool stripPaths,
+                PreserveMode preserve, bool rawMode, string basePath, bool stripPaths,
                 Dictionary<string, ConvConfig.FileConvSpec>? defaultSpecs, AppHook appHook) {
             mFunc = func;
             AddExportExt = addExportExt;
             IsMacZipEnabled = macZip;
             Preserve = preserve;
             RawMode = rawMode;
+            BasePath = basePath;
             StripPaths = stripPaths;
             DefaultSpecs = defaultSpecs;
             mAppHook = appHook;
@@ -148,6 +156,9 @@ namespace AppCommon {
                 }
                 if (StripPaths) {
                     extractPath = Path.GetFileName(extractPath);
+                }
+                if (!string.IsNullOrEmpty(BasePath)) {
+                    extractPath = Path.Join(BasePath, extractPath);
                 }
 
                 FileAttribs attrs = new FileAttribs(entry);
@@ -299,6 +310,9 @@ namespace AppCommon {
                 }
                 if (StripPaths) {
                     extractPath = Path.GetFileName(extractPath);
+                }
+                if (!string.IsNullOrEmpty(BasePath)) {
+                    extractPath = Path.Join(BasePath, extractPath);
                 }
 
                 FileAttribs attrs = new FileAttribs(entry);
