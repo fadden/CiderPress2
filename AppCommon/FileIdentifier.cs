@@ -142,9 +142,6 @@ namespace AppCommon {
                 ext = Path.GetExtension(GZip.StripGZExtension(gzipName)).ToLowerInvariant();
             } else {
                 ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
-                if (string.IsNullOrEmpty(ext) && !looksGood) {
-                    return false;
-                }
             }
 
             if (!looksGood) {
