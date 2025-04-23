@@ -11,6 +11,7 @@ Contents:
    - [Filenames and Wildcards](#filenames-and-wildcards)
  - [Commands](#commands)
    - [add | a](#adda)
+   - [bless](#bless)
    - [catalog | v](#catalogv)
    - [copy | cp](#copycp)
    - [copy-blocks](#copy-blocks)
@@ -446,10 +447,10 @@ Macintosh boot image.  If '-' is given instead, a default boot image that
 is known to work for System 7 through System 8 is used.  If the argument is
 omitted, the boot blocks will not be altered.
 
-For safety, the boot image will only be written if the blocks in the disk
-image are zeroed out, or if the current contents exactly match the new
-contents.  To replace an old image with a new one, the `--overwrite` option
-must be used.
+For safety, if a boot image is specified, the command will fail unless the
+blocks in the disk image are blank (all zeroes), or the current contents
+exactly match the new contents.  To replace an old boot image with a new one,
+the `--overwrite` option must be used.
 
 Examples:
  - `cp2 bless newhd.dsk "System Folder" -`
@@ -1018,13 +1019,15 @@ recursively searched.
 Usage: `cp2 multi-disk-catalog [options] <archive-or-dir> [archive-or-dir...]`
 
 This generally behaves like the `catalog` command, but operates on
-multiple files.
+multiple files.  This can be used to generate a listing of the contents of a
+large collection of archives.
 
 The `--classic` output roughly matches that of the MDC program included with
 the original CiderPress.  It only displays the contents of disk images.
 It can open disk images stored in ZIP or gzip archives, but only if they
 have a single member, and cannot read .SDK files stored there.  WOZ images
-are skipped.
+are skipped.  (This option primarily exists to facilitate comparisons with the
+original program.  It will likely be removed at some point.)
 
 Options:
  - `--classic`
@@ -2098,7 +2101,6 @@ Some ideas for the future:
  - Add resource fork manipulation routines (`rez`/`derez` commands).
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add a better way to set access flags in `set-attr`, e.g. by letter.
- - Add a way to set attributes for multiple files, e.g. mark as read-only.
  - Add `show-vol-bitmap` to display free/in-use blocks.
  - Allow `test` to descend into the archive (use `--depth` option).
  - Add command to zero out unused blocks on disk images, and perhaps the

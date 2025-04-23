@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 using System;
+using System.Diagnostics;
 
 namespace FileConv.Gfx {
     public static class QuickDrawII {
+        public const int PALETTE_LENGTH = 16;
+
         /// <summary>
         /// Standard color palette in 320 mode.
         /// </summary>
@@ -95,6 +98,41 @@ namespace FileConv.Gfx {
             } else {
                 return sStdColor320[index & 0x0f];
             }
+        }
+
+        /// <summary>
+        /// Creates an ARGB color palette from a 16-entry 640-mode QuickDraw II color palette.
+        /// This is intended for colored text in documents, where the characters are all drawn
+        /// with the same color rather than as individual pixels.  When displayed on screen, the
+        /// odd/even pixels and odd/even pixel pairs would be colored from different parts of
+        /// the palette.
+        /// </summary>
+        /// <param name="gsPalette">IIgs palette data, 16 sets of 444 color as 0RGB in
+        ///   little-endian order.</param>
+        /// <returns>16-entry ARGB color table.</returns>
+        public static int[] Make640Palette(byte[] gsPalette, int offset) {
+            Debug.Assert(offset + PALETTE_LENGTH * 2 < gsPalette.Length);
+            // Convert IIgs entries to separable RGB components, one per byte (000R0G0B).
+            int[] split = new int[PALETTE_LENGTH];
+            for (int i = 0; i < PALETTE_LENGTH; i++) {
+                byte lo = gsPalette[offset + i * 2];
+                byte hi = gsPalette[offset + i * 2 + 1];
+                split[i] = (hi << 16) | ((lo & 0xf0) << 4) | (lo & 0x0f);
+            }
+            int[] newPal = new int[PALETTE_LENGTH];
+            for (int i = 0; i < PALETTE_LENGTH; i++) {
+                // Average the colors from four adjacent pixels.
+                // This approach yields 77 instead of 7f for 50%.  Close enough?
+                int evenIndex = i >> 2;
+                int oddIndex = i & 0x03;
+                int val = split[evenIndex + 8] + split[oddIndex + 12] + split[evenIndex + 0] +
+                    split[oddIndex + 4];
+                val = (val >> 2) & 0x000f0f0f;      // divide by 4 to get the average
+                val |= 0x0f000000;                  // set the alpha value
+                val |= val << 4;                    // smear 0A0R0G0B --> AARRGGBB
+                newPal[i] = val;
+            }
+            return newPal;
         }
     }
 }

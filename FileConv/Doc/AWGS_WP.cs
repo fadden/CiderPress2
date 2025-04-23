@@ -52,7 +52,6 @@ namespace FileConv.Doc {
         private const int MIN_LEN = DOC_HEADER_LEN + GLOBALS_LEN;
         private const int MAX_LEN = 8 * 1024 * 1024;        // arbitrary 8MB cap
 
-        private static readonly int DEFAULT_FG_COLOR = ConvUtil.MakeRGB(0x00, 0x00, 0x00);
         private static readonly int EMBED_FG_COLOR = ConvUtil.MakeRGB(0x00, 0x00, 0xff);
         private static readonly FancyText.FontFamily DEFAULT_FONT = FancyText.DEFAULT_FONT;
         private const int DEFAULT_FONT_SIZE = 10;
@@ -203,6 +202,10 @@ namespace FileConv.Doc {
             }
         }
 
+        private const int PALETTE_LENGTH = 16;
+        private int[] mColorTable = RawData.EMPTY_INT_ARRAY;
+        private int mCurColor;      // ARGB value
+
         // Internal state.
         private bool mShowEmbeds;
         private bool mSingleSpacing;
@@ -264,7 +267,11 @@ namespace FileConv.Doc {
                 strikes++;
             }
 
-            // TODO: 32-byte QuickDraw II color table at offset 56.
+            // Pull the colors out of the color table.  The table holds a single 16-color palette,
+            // two bytes per color in 640-mode QuickDraw II format.  In 640 mode, colors for four
+            // adjacent pixels come from different parts of the palette, so we need to average
+            // them together to simulate dithering.
+            mColorTable = Gfx.QuickDrawII.Make640Palette(fileBuf, 56);
 
             // Look at some stuff in the globals.
             int offset = DOC_HEADER_LEN;
@@ -533,7 +540,7 @@ namespace FileConv.Doc {
                 int offset = tbr.mTextOffset + paraOffset;
                 ParagraphHeader hdr = new ParagraphHeader();
                 hdr.Load(buf, ref offset);
-                Debug.WriteLine("Printing paragraph at offset 0x" + offset.ToString("x4"));
+                //Debug.WriteLine("Printing paragraph at offset 0x" + offset.ToString("x4"));
 
                 FancyText.FontFamily? family = GSDocCommon.FindFont(hdr.mFirstFont);
                 if (family is not null) {
@@ -544,7 +551,15 @@ namespace FileConv.Doc {
                 }
                 output.SetFontSize(hdr.mFirstSize);
                 output.SetGSFontStyle(hdr.mFirstStyle);
-                // TODO: color
+                if (hdr.mFirstColor < PALETTE_LENGTH) {
+                    mCurColor = mColorTable[hdr.mFirstColor];
+                    output.SetForeColor(mCurColor);
+                    Debug.WriteLine("Set initial color " + hdr.mFirstColor + " #" +
+                        mCurColor.ToString("x8"));
+                } else {
+                    output.Notes.AddW("Bad initial color index " + hdr.mFirstColor);
+                    output.SetForeColor(0);
+                }
 
                 while (true) {
                     byte bch = buf[offset++];
@@ -574,8 +589,15 @@ namespace FileConv.Doc {
                             output.SetFontSize(buf[offset++]);
                             break;
                         case SpecialChar.ColorChange:
-                            byte newColorIndex = buf[offset++];
-                            // TODO: color
+                            byte newColorIndex = buf[offset++];     // should be 0-15
+                            if (newColorIndex < PALETTE_LENGTH) {
+                                mCurColor = mColorTable[newColorIndex];
+                                output.SetForeColor(mCurColor);
+                                Debug.WriteLine("Set color " + newColorIndex + " #" +
+                                    mCurColor.ToString("x8"));
+                            } else {
+                                output.Notes.AddW("Invalid color index " + newColorIndex);
+                            }
                             break;
                         case SpecialChar.PageNumber:
                             PrintEmbedString("<page#>", output);
@@ -609,7 +631,7 @@ namespace FileConv.Doc {
             if (mShowEmbeds) {
                 output.SetForeColor(EMBED_FG_COLOR);
                 output.Append(str);
-                output.SetForeColor(DEFAULT_FG_COLOR);
+                output.SetForeColor(mCurColor);
             }
         }
 
@@ -626,7 +648,7 @@ namespace FileConv.Doc {
                 output.SetGSFontStyle(0);
                 output.SetJustification(FancyText.Justification.Center);
                 output.Append(str);
-                output.SetForeColor(DEFAULT_FG_COLOR);
+                output.SetForeColor(mCurColor);
                 output.NewParagraph();
                 output.SetJustification(FancyText.Justification.Left);
             }

@@ -36,6 +36,8 @@ The overall structure is:
 +$xxx / ooo: document header chunk
 +$yyy / ppp: document footer chunk
 ```
+See the filetype note for details on the contents of the document header and globals.
+
 Each "chunk" has three parts:
 
  - SaveArray entries.  One entry per paragraph, 12 bytes each.  The list is preceded by a count
@@ -74,6 +76,6 @@ Paragraphs end with a carriage return ($0d).
 
 The character set may be assumed to be Mac OS Roman.
 
-The theoretical maximum size of an AWGS document is nearly 4GB.  Given the limitations of a
-typical Apple IIgs system, it's unlikely that documents larger than a few hundred KB were created
-for anything other than testing.
+The theoretical maximum size of an AWGS document is nearly 4GB (65535 paragraphs with 65523
+characters).  Given the limitations of a typical Apple IIgs system, it's unlikely that documents
+larger than a few hundred KB were created for anything other than testing.
