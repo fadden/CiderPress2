@@ -11,6 +11,7 @@ Contents:
    - [Filenames and Wildcards](#filenames-and-wildcards)
  - [Commands](#commands)
    - [add | a](#adda)
+   - [bless](#bless)
    - [catalog | v](#catalogv)
    - [copy | cp](#copycp)
    - [copy-blocks](#copy-blocks)
@@ -107,7 +108,8 @@ directories will not be copied to those.
 
 *A*: Use the `read-sector` or `read-block` command to generate a hex dump of
 the contents.  Edit the hexadecimal values, then use `write-sector` or
-`write-block` to write the contents back to the disk.
+`write-block` to write the contents back to the disk.  You can convert the
+output to raw binary with the (open-source) command `xxd -r`.
 
 *Q*: What is the difference between `extract archive.shk DIR:MYFILE` and
 `extract archive.shk:DIR MYFILE`?
@@ -423,6 +425,38 @@ Examples:
  - `cp2 a disk.po:DIR1:DIR2 file1`
 
 ----
+#### `bless`
+
+Prepares a Macintosh HFS filesystem for booting.
+
+Usage: `cp2 bless [options] <ext-archive> <system-folder> [{boot-image|-}]`
+
+Macintosh disk images must be "blessed" before they can be booted.  This
+requires preparation of the boot blocks, and recording the catalog ID of the
+system folder in a special location.  This command can only be used on HFS
+filesystems, and is known to work with System 7 through System 8.1 (which
+introduced HFS+).
+
+The `system-folder` argument is the name of the folder to bless.  This is
+a case-insensitive partial path starting from the volume root.  On most
+systems, this is just "System Folder".  The folder must exist; you cannot
+bless an empty volume.
+
+The `boot-image` argument specifies the path to a 1024-byte file with the
+Macintosh boot image.  If '-' is given instead, a default boot image that
+is known to work for System 7 through System 8 is used.  If the argument is
+omitted, the boot blocks will not be altered.
+
+For safety, if a boot image is specified, the command will fail unless the
+blocks in the disk image are blank (all zeroes), or the current contents
+exactly match the new contents.  To replace an old boot image with a new one,
+the `--overwrite` option must be used.
+
+Examples:
+ - `cp2 bless newhd.dsk "System Folder" -`
+ - `cp2 bless -f oldhd.dsk "Folder2" newboot.bin`
+
+----
 #### `catalog`|`v`
 
 Generates a detailed listing of the contents of an archive.
@@ -715,6 +749,7 @@ fail.
 
 Options:
  - `--add-ext`, `--no-add-ext`
+ - `--exdir=<path>`
  - `--overwrite`, `--no-overwrite`
  - `--raw`, `--no-raw`
  - `--recurse`, `--no-recurse`
@@ -751,8 +786,9 @@ file extraction for certain 'B' files and for random-access text files.
 Use the `--raw` flag to get all sectors of the file.
 
 Options:
- - `--overwrite`, `--no-overwrite`
+ - `--exdir=<path>`
  - `--mac-zip`, `--no-mac-zip`
+ - `--overwrite`, `--no-overwrite`
  - `--preserve=<mode>`
  - `--raw`
  - `--recurse`, `--no-recurse`
@@ -983,13 +1019,15 @@ recursively searched.
 Usage: `cp2 multi-disk-catalog [options] <archive-or-dir> [archive-or-dir...]`
 
 This generally behaves like the `catalog` command, but operates on
-multiple files.
+multiple files.  This can be used to generate a listing of the contents of a
+large collection of archives.
 
 The `--classic` output roughly matches that of the MDC program included with
 the original CiderPress.  It only displays the contents of disk images.
 It can open disk images stored in ZIP or gzip archives, but only if they
 have a single member, and cannot read .SDK files stored there.  WOZ images
-are skipped.
+are skipped.  (This option primarily exists to facilitate comparisons with the
+original program.  It will likely be removed at some point.)
 
 Options:
  - `--classic`
@@ -1338,6 +1376,12 @@ Archive descent depth, used when generating catalogs.
  - `subvol`: descend into sub-volumes, but don't open archives stored as
     files in the archive.
  - `max`: go nuts.
+
+#### `--exdir=<path>` (default="")
+
+Specify the root directory into which files will be extracted or exported.
+If not specified, the current directory is used.  The path may be full or
+partial.
 
 #### `--fast-scan`, `--no-fast-scan` (default)
 
@@ -2057,7 +2101,6 @@ Some ideas for the future:
  - Add resource fork manipulation routines (`rez`/`derez` commands).
  - Support editing of ZIP/NuFX file comments in set-attr.
  - Add a better way to set access flags in `set-attr`, e.g. by letter.
- - Add a way to set attributes for multiple files, e.g. mark as read-only.
  - Add `show-vol-bitmap` to display free/in-use blocks.
  - Allow `test` to descend into the archive (use `--depth` option).
  - Add command to zero out unused blocks on disk images, and perhaps the

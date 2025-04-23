@@ -139,9 +139,10 @@ updating version numbers and running a final set of tests on the app.
     GlobalAppVersion.  It's stored redundantly because the library is
     intended to be separable from the application.  (You don't need to
     update this for a non-final release.)
- 3. Do a full build of the project in Visual Studio, in Debug mode.  It's
-    important to build for Debug to enable assertions and extended checks.
-    Note this step builds MakeDist with the updated version number.
+ 3. Do a full build of the project in Visual Studio, in Debug mode.  Besides
+    confirming that everything works, it builds MakeDist with the updated
+    version number.  It's important to build for Debug to enable assertions
+    and extended checks.
  4. Launch the GUI application (`cp2_wpf` project, built as `CiderPress2.exe`)
     in the debugger.  Verify the version number.  It's good to do this
     because, in a Debug build, some library unit tests are executed during
@@ -170,8 +171,8 @@ always match the current "final" release.
 Finally, build the applications and submit the changes.
 
  9. Run `makedist build` from the top level of the source tree (it'll be in
-    `MakeDist/bin/debug/NET6.0`).  This builds the distribution packages.
-    The output will be in the `DIST` directory.
+    `MakeDist/bin/debug/NET6.0`).  This builds the distribution packages
+    in Release mode.  The output will be in the `DIST` directory.
  10. Submit all changes to git, push them to the server.
  11. Create a new release on github.  Drag `DIST/*.zip` into the release.
  12. Update/close any issues that have been addressed by the new release.
@@ -192,3 +193,6 @@ Modified "-notes.md" files can usually be converted at the time they are
 updated, since their contents aren't really tied to a release.  Doing a full
 refresh as part of generating a "final" release is still prudent to avoid
 missing any changes.
+
+Creating a Wine-wrapped binary for macOS is described in the
+[Wine Notes](WineNotes.md) document.

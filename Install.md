@@ -17,19 +17,19 @@ or use one of the links below to download the most recent stable release.
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x86_sc.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x64_sc.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_osx-x64_sc.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_linux-x64_sc.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_win-x86_sc.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_win-x64_sc.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_osx-x64_sc.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_linux-x64_sc.zip
 
 **Framework-Dependent** (~1 MB)
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x86_fd.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_win-x64_fd.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_osx-x64_fd.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.6/cp2_1.0.6_linux-x64_fd.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_win-x86_fd.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_win-x64_fd.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_osx-x64_fd.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.0.7/cp2_1.0.7_linux-x64_fd.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they are unzipped.

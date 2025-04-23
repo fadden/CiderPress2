@@ -47,6 +47,7 @@ little-endian order.</p>
 +$xxx / ooo: document header chunk
 +$yyy / ppp: document footer chunk
 </code></pre>
+<p>See the filetype note for details on the contents of the document header and globals.</p>
 <p>Each "chunk" has three parts:</p>
 <ul>
 <li>SaveArray entries.  One entry per paragraph, 12 bytes each.  The list is preceded by a count
@@ -79,9 +80,9 @@ A text block can hold multiple paragraphs.</p>
 </code></pre>
 <p>Paragraphs end with a carriage return ($0d).</p>
 <p>The character set may be assumed to be Mac OS Roman.</p>
-<p>The theoretical maximum size of an AWGS document is nearly 4GB.  Given the limitations of a
-typical Apple IIgs system, it's unlikely that documents larger than a few hundred KB were created
-for anything other than testing.</p>
+<p>The theoretical maximum size of an AWGS document is nearly 4GB (65535 paragraphs with 65523
+characters).  Given the limitations of a typical Apple IIgs system, it's unlikely that documents
+larger than a few hundred KB were created for anything other than testing.</p>
 </article>
 </div>
 </div>

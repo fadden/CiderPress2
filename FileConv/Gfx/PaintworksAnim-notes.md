@@ -46,6 +46,9 @@ There is no count on the number of frames.  When playing the animation, the anim
 is used to determine when the end has been reached.  Most files have a single animation data chunk,
 so the animation chunk length should be exactly the same as the total length in the file header.
 
+Some modern creation tools don't set the length to the actual value, e.g. it will be $00000004
+(which would be a length of zero).  In such cases, the full-file length should be used.
+
 The animation frame data consists of pairs of 16-bit values:
 ```
 +$00 / 2: offset to value, in the range [$0000, $7ffe]

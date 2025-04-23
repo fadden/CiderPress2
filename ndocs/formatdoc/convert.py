@@ -96,6 +96,7 @@ gFileList = [
         "FileConv/Gfx/GSFinderIcon-notes.md",
         "FileConv/Gfx/HiRes-notes.md",
         "FileConv/Gfx/MacPaint-notes.md",
+        "FileConv/Gfx/PaintworksAnim-notes.md",
         "FileConv/Gfx/PrintShop-notes.md",
         "FileConv/Gfx/ShapeTable-notes.md",
         "FileConv/Gfx/SuperHiRes-notes.md",
