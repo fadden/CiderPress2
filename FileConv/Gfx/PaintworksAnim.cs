@@ -20,11 +20,19 @@ using CommonUtil;
 using DiskArc;
 
 namespace FileConv.Gfx {
+    /// <summary>
+    /// Converts a Paintworks Animation file.
+    /// </summary>
+    /// <remarks>
+    /// We're not currently set up to output video files, and the WPF image viewer just shows
+    /// the first frame of animated GIFs, so we just convert the first frame to a bitmap as a
+    /// quick preview.
+    /// </remarks>
     public class PaintworksAnim : Converter {
         public const string TAG = "shrani";
         public const string LABEL = "Super Hi-Res Animation";
         public const string DESCRIPTION =
-            "Converts the first frame of an Apple IIgs animation to a bitmap.";
+            "Converts the first frame of an Apple IIgs Paintworks animation to a bitmap.";
         public const string DISCRIMINATOR = "ProDOS ANI/$0000.";
         public override string Tag => TAG;
         public override string Label => LABEL;
@@ -33,7 +41,7 @@ namespace FileConv.Gfx {
 
         public const int SHR_IMAGE_LEN = 32768;
         public const int MIN_LEN = SHR_IMAGE_LEN + 8;
-        public const int MAX_LEN = 1024 * 1024;     // arbitrary 1MB cap
+        public const int MAX_LEN = 16 * 1024 * 1024;        // arbitrary 16MB cap
 
         private PaintworksAnim() { }
 
@@ -67,7 +75,8 @@ namespace FileConv.Gfx {
             }
             Debug.Assert(DataStream != null);
 
-            // Read the whole thing in.
+            // Read the whole thing in.  (We currently only need the first 32KB, but we want to
+            // scan the file contents for curiosity's sake.)
             byte[] fullBuf = new byte[DataStream.Length];
             DataStream.Position = 0;
             DataStream.ReadExactly(fullBuf, 0, (int)DataStream.Length);
