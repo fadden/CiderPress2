@@ -2839,8 +2839,8 @@ namespace cp2_wpf {
         // Quick & dirty ANI file conversion.
         private static AnimatedGifEncoder? DoConvertANI(Stream dataStream) {
             const int PIC_LEN = 32768;
-            if (dataStream.Length < PIC_LEN + 12) {
-                Debug.WriteLine("file too short");
+            if (dataStream.Length < PIC_LEN + 12 || dataStream.Length > 512 * 1024 * 1024) {
+                Debug.WriteLine("unsupported file size: " + dataStream.Length);
                 return null;
             }
             dataStream.Position = 0;

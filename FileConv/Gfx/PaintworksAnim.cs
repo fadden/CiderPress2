@@ -41,7 +41,6 @@ namespace FileConv.Gfx {
 
         public const int SHR_IMAGE_LEN = 32768;
         public const int MIN_LEN = SHR_IMAGE_LEN + 8;
-        public const int MAX_LEN = 16 * 1024 * 1024;        // arbitrary 16MB cap
 
         private PaintworksAnim() { }
 
@@ -57,7 +56,7 @@ namespace FileConv.Gfx {
             }
             // Official definition is 32KB PIC/$0000.
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_ANI && FileAttrs.AuxType == 0x0000 &&
-                    DataStream.Length >= MIN_LEN && DataStream.Length <= MAX_LEN) {
+                    DataStream.Length >= MIN_LEN) {
                 return Applicability.Yes;
             } else {
                 return Applicability.Not;
@@ -75,21 +74,28 @@ namespace FileConv.Gfx {
             }
             Debug.Assert(DataStream != null);
 
-            // Read the whole thing in.  (We currently only need the first 32KB, but we want to
-            // scan the file contents for curiosity's sake.)
-            byte[] fullBuf = new byte[DataStream.Length];
+            // Read the first frame in, and convert it.
+            byte[] shrBuf = new byte[SHR_IMAGE_LEN];
             DataStream.Position = 0;
-            DataStream.ReadExactly(fullBuf, 0, (int)DataStream.Length);
-            return ConvertBuffer(fullBuf);
+            DataStream.ReadExactly(shrBuf, 0, shrBuf.Length);
+            Bitmap8 result = SuperHiRes.ConvertBuffer(shrBuf);
+            // Add some notes on the rest of the stream if it's not too long to reasonably
+            // hold in memory.
+            if (DataStream.Length < 16 * 1024 * 1024) {
+                ScanStream(result);
+            }
+            return result;
         }
 
         /// <summary>
-        /// Converts the first frame of an ANI animation to a 640x400 bitmap.
+        /// Scans the ANI file to gather some stats.
         /// </summary>
-        internal static Bitmap8 ConvertBuffer(byte[] buf) {
-            Bitmap8 result = SuperHiRes.ConvertBuffer(buf);
+        private void ScanStream(Bitmap8 result) {
+            Debug.Assert(DataStream != null);
+            byte[] buf = new byte[DataStream.Length];
+            DataStream.Position = 0;
+            DataStream.ReadExactly(buf, 0, buf.Length);
 
-            // Let's poke at the file a bit.
             int offset = SHR_IMAGE_LEN;
             uint dataLen = RawData.ReadU32LE(buf, ref offset);
             ushort frameDelay = RawData.ReadU16LE(buf, ref offset);
@@ -131,8 +137,6 @@ namespace FileConv.Gfx {
             if (!lastWasZero) {
                 result.Notes.AddW("Warning: animation data did not end on a frame boundary");
             }
-
-            return result;
         }
     }
 }
