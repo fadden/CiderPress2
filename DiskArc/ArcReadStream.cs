@@ -49,8 +49,8 @@ namespace DiskArc {
         }
 
         /// <summary>
-        /// True if a checksum has failed.  This will not be set until a Read() call
-        /// determines that end-of-stream has been reached.
+        /// Indicates that an archive checksum has failed or succeeded.  This will not be set
+        /// until a Read() call determines that end-of-stream has been reached.
         /// </summary>
         /// <remarks>
         /// <para>This is only set for checksums stored in the archive.  Checksums embedded in

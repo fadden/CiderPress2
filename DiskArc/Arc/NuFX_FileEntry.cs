@@ -1335,6 +1335,8 @@ namespace DiskArc.Arc {
                 case CompressionFormat.NuLZW2:
                 case CompressionFormat.LZC12:
                 case CompressionFormat.LZC16:
+                case CompressionFormat.Deflate:
+                case CompressionFormat.ZX0:
                     break;
                 default:
                     throw new ArgumentException("Compression format " + compressFmt +
@@ -1659,6 +1661,13 @@ namespace DiskArc.Arc {
                 case CompressionFormat.LZC16:
                     compStream = new LZCStream(outputStream, CompressionMode.Compress, true,
                         -1, 16, true);
+                    break;
+                case CompressionFormat.Deflate:
+                    compStream = new DeflateStream(outputStream, CompressionMode.Compress, true);
+                    break;
+                case CompressionFormat.ZX0:
+                    compStream = new ZX0Stream(outputStream, CompressionMode.Compress, true,
+                        -1, false);
                     break;
                 default:
                     throw new ArgumentException("Invalid compression format " + format +

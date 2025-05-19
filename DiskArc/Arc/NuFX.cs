@@ -738,6 +738,12 @@ namespace DiskArc.Arc {
             if (partSource == IPartSource.NO_SOURCE) {
                 throw new ArgumentException("Invalid part source");
             }
+            // Allow override of the compression algorithm.  (This is doing a hash lookup for
+            // every part; we could probably just grab this when the object is first constructed.
+            // I don't think this is going to be noticeable though.)
+            compressFmt = (CompressionFormat)AppHook.GetOptionInt(DAAppHook.NUFX_COMP_ALG,
+                (int)compressFmt);
+
             ((NuFX_FileEntry)ientry).AddPart(part, partSource, compressFmt);
         }
 

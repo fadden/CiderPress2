@@ -39,6 +39,9 @@ namespace DiskArc {
         public const string DOS_VTOC_TRACK = "dos-vtoc-track";
         public const string DOS_VTOC_SECTOR = "dos-vtoc-sector";
 
+        // Override the default compression choice when adding files to NuFX archives.
+        public const string NUFX_COMP_ALG = "nufx-comp-alg";
+
         // Audio cassette decoder algorithm.  Ideally this would be passed in directly, but
         // it's a semi-experimental facet of a rarely-used feature, so plumbing it all the
         // way through isn't worthwhile.

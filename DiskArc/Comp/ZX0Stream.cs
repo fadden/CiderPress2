@@ -197,8 +197,8 @@ namespace DiskArc.Comp {
             /// </summary>
             public Block? Optimize(byte[] input, int skip, int offsetLimit) {
                 int arraySize = OffsetCeiling(input.Length - 1, offsetLimit) + 1;
-                Debug.WriteLine("Optimize: input length=" + input.Length +
-                    ", arraySize=" + arraySize);
+                //Debug.WriteLine("Optimize: input length=" + input.Length +
+                //    ", arraySize=" + arraySize);
                 mLastLiteral = new Block[arraySize];
                 mLastMatch = new Block[arraySize];
                 mOptimal = new Block[input.Length];
@@ -483,6 +483,7 @@ namespace DiskArc.Comp {
         private byte mExpBitMask;
         private byte mExpBitValue;
         private bool mExpBackwards;
+        private bool mExpInverted;
         private bool mExpBacktrack;
         private byte mLastByte;
 
@@ -506,6 +507,7 @@ namespace DiskArc.Comp {
             mExpInputIndex = 0;
             mExpBitMask = 0;
             mExpBackwards = false;
+            mExpInverted = true;        // !classic
             mExpBacktrack = false;
         }
 
@@ -543,8 +545,8 @@ namespace DiskArc.Comp {
 
             // Read all of the compressed data into memory.  The algorithm is amenable to
             // streaming, but this is simpler.
-            Debug.WriteLine("Reading compressed data: " + mExpInputLength + " bytes (posn=" +
-                mCompDataStream.Position + ")");
+            //Debug.WriteLine("Reading compressed data: " + mExpInputLength + " bytes (posn=" +
+            //    mCompDataStream.Position + ")");
             mCompDataStream.ReadExactly(mExpInput!, 0, (int)mExpInputLength);
 
             ExpState state = ExpState.CopyLiterals;
@@ -613,9 +615,7 @@ namespace DiskArc.Comp {
         private int GetInterlacedEliasGamma(bool msb) {
             int value = 1;
             while (GetBit() == (mExpBackwards ? 1 : 0)) {
-                // Original Java code tests "msb && inverted", but since we don't support invert
-                // mode this always evaluates to false, which appears incorrect (compare to C++).
-                value = (value << 1) | GetBit() ^ (msb ? 1 : 0);
+                value = (value << 1) | GetBit() ^ (msb && mExpInverted ? 1 : 0);
             }
             return value;
         }

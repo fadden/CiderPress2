@@ -260,6 +260,8 @@ namespace cp2_wpf.LibTest {
                     return new LZCStream(compStream, mode, true, compressedLength, 16, true);
                 case CompressionFormat.LZHuf:
                     return new LZHufStream(compStream, mode, true, true);
+                case CompressionFormat.ZX0:
+                    return new ZX0Stream(compStream, mode, true, compressedLength, true);
                 default:
                     throw new NotImplementedException("Compression format not implemented");
             }
