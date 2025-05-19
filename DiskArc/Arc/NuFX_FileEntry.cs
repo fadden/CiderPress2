@@ -1292,6 +1292,10 @@ namespace DiskArc.Arc {
                     expander = new LZCStream(Archive.DataStream, CompressionMode.Decompress,
                         true, thread.mCompThreadEof, 16, true);
                     break;
+                case CompressionFormat.ZX0:
+                    expander = new ZX0Stream(Archive.DataStream, CompressionMode.Decompress,
+                        true, thread.mCompThreadEof, false);
+                    break;
                 default:
                     throw new NotSupportedException("Compression format not supported");
             }

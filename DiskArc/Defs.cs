@@ -242,9 +242,11 @@ namespace DiskArc {
             LZC12 = 4,
             LZC16 = 5,
 
-            // NuFX Addendum additions.  Also used by other archive types.
+            // NuFX Addendum additions.  (The enums are used by other archive implementations, but
+            // for those the specific value doesn't matter.)
             Deflate = 6,
             Bzip2 = 7,
+            ZX0 = 8,
 
             // Some old ZIP archive types.
             Shrink = 21,

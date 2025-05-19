@@ -298,6 +298,18 @@ namespace DiskArcTests {
             TestBasics(bufs, creator1);
         }
 
+        public static void TestZX0(AppHook appHook) {
+            return;     // too slow, omit from default set
+
+            WorkBuffers bufs = new WorkBuffers();
+            CodecStreamCreator creator =
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                    long expandedLength) {
+                        return new ZX0Stream(compStream, mode, true, compressedLength, true);
+                    };
+            TestBasics(bufs, creator);
+        }
+
 
         delegate Stream CodecStreamCreator(Stream compStream, CompressionMode mode,
             long compressedLength, long expandedLength);

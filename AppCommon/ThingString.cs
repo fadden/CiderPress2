@@ -290,6 +290,8 @@ namespace AppCommon {
                     return "Deflate";
                 case Defs.CompressionFormat.Bzip2:
                     return "Bzip2";
+                case Defs.CompressionFormat.ZX0:
+                    return "ZX0";
                 case Defs.CompressionFormat.Shrink:
                     return "Shrink";
                 case Defs.CompressionFormat.Implode:
