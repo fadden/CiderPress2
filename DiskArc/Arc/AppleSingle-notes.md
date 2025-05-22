@@ -5,18 +5,22 @@
 - v1: Apple II File Type Note $e0/0001 (AppleSingle File)
 - v1: Apple II File Type Note $e0/0002 $e0/0003 (AppleDouble Header/Data)
 - v2: _AppleSingle/AppleDouble Formats for Foreign Files Developer's Note_
+      (https://nulib.com/library/AppleSingle_AppleDouble.pdf)
+- v2: RFC 1740 (https://www.rfc-editor.org/rfc/rfc1740.txt)
 
 ## General ##
 
 AppleSingle is Apple's preferred way to store a forked file as a single file on a "foreign"
 filesystem, along with all of its attributes.  The format does not support compression or
-provide a checksum; it is simply a way to wrap files.
+provide a checksum; it is simply a way to wrap files.  It can be used as a way to preserve
+file attributes for file transfers or archiving, or at a lower level to store forked files on
+an otherwise incompatible filesystem without the user being aware of the details.
 
 There are two versions of the specification.  Version 1 is described by the A/UX documentation
 and in an Apple II file type note.  Version 2 is described in a stand-alone document.  The
 chief difference is a change to the preferred ways of storing file attributes.
 
-GS/ShrinkIt generates and opens v1 files.  It does not recognize v2 files.
+On the Apple II, GS/ShrinkIt generates and opens v1 files.  It does not recognize v2 files.
 
 There is no standard filename extension for AppleSingle, though ".as" is common.
 
@@ -126,8 +130,21 @@ The v2 docs note, "entry IDs 1, 3, and 8 are typically created for all files; en
 Macintosh and ProDOS files, ...".  None of the entries are mandatory, however, and archives
 without filenames are created by some tools.
 
+Entry IDs from 1 to $7fffffff are reserved by Apple.  The rest of the range is available for
+applications to define their own entries.  Apple does not arbitrate the usage.  Applications are
+expected to ignore unknown entities, but preserve them when making changes or copies.
+
 There is no restriction on the order of entries, though most tools output the filename first,
-followed by attributes, then finally the file data.
+followed by attributes, then finally the file data.  This makes it easier to append additional
+data to the file.  For AppleSingle the data fork should come last, since it's the most likely to
+be appended to, and for an AppleDouble file the resource fork should be the last entity in the
+header file.
+
+It's valid to leave "holes" by placing the offset of an entry past the end of a previous entry.
+For example, even if the comment field is only 10 bytes long, you could put the next entry 200
+bytes past the start to leave room for the comment to grow.  Apple recommends allocating the
+resource fork in 4K chunks in AppleSingle files to minimize file rewriting during updates.  This
+is not necessary when the format is used for file transfer or archival purposes.
 
 ## Miscellaneous ##
 

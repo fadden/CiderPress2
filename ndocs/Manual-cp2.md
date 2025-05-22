@@ -1497,10 +1497,13 @@ disk images.
 
 #### `--set-int=name:value`
 
-This is a way to pass certain configuration options to lower-level code.
-For example, `--set-int=dos-vtoc-track:0x15` would direct the DOS filesystem
-code to look for the catalog on track 0x15 instead of 0x11.  You generally
-won't need to use this.
+This is a way to pass certain configuration options to lower-level code.  You
+generally won't need to use this.  Examples:
+
+ - `--set-int=dos-vtoc-track:0x15` directs the DOS filesystem code to look for
+   the catalog on track 0x15 instead of 0x11.
+ - `--set-int=nufx-comp-alg:5` overrides the compression algorithm used when
+   adding files to NuFX (ShrinkIt) archives.
 
 #### `--show-log`, `--no-show-log` (default)
 
