@@ -111,6 +111,8 @@ namespace AppCommon {
             bool hasProType = false;
             byte proType = 0;
             ushort proAux = 0;
+            // TODO(maybe): we're missing DART images in ZIP archives because we're not getting
+            // the HFS types or resource fork info from the ADF header.
             if (entry.HasHFSTypes) {
                 if (/*entry.HFSCreator == FileAttribs.CREATOR_DCPY &&*/
                         entry.HFSFileType == FileAttribs.TYPE_DIMG) {

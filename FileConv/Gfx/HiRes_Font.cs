@@ -56,8 +56,9 @@ namespace FileConv.Gfx {
         internal const int FG_INDEX = 2;
         internal const int FLASH_INDEX = 3;
 
-        private const int SHORT_FONT_LEN = 768;
-        private const int FULL_FONT_LEN = 1024;
+        private const int SHORT_FONT_LEN = 768;     // 96 * 8
+        private const int FULL_FONT_LEN = 1024;     // 128 * 8
+        private const int DOUBLE_FONT_LEN = 3072;   // 96 * 32
 
 
         private HiRes_Font() { }
@@ -72,7 +73,8 @@ namespace FileConv.Gfx {
             if (DataStream == null || IsRawDOS) {
                 return Applicability.Not;
             }
-            if (DataStream.Length != SHORT_FONT_LEN && DataStream.Length != FULL_FONT_LEN) {
+            if (DataStream.Length != SHORT_FONT_LEN && DataStream.Length != FULL_FONT_LEN &&
+                    DataStream.Length != DOUBLE_FONT_LEN) {
                 return Applicability.Not;
             }
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_FNT) {
@@ -117,24 +119,46 @@ namespace FileConv.Gfx {
         private const int VERT_CELLS_LONG = 128 / 16;
 
         private static Bitmap8 ConvertBuffer(byte[] buf, Palette8 palette, bool doFlashHi) {
-            bool isShort = (buf.Length == SHORT_FONT_LEN);
-            int vertCells = isShort ? VERT_CELLS_SHORT : VERT_CELLS_LONG;
-            int width = 1 + HORIZ_CELLS * (CELL_WIDTH + 1);
-            int height = 1 + vertCells * (CELL_HEIGHT + 1);
+            int vertCells, sizeMult = 1;
+            switch (buf.Length) {
+                case SHORT_FONT_LEN:
+                    vertCells = VERT_CELLS_SHORT;
+                    break;
+                case FULL_FONT_LEN:
+                    vertCells = VERT_CELLS_LONG;
+                    break;
+                case DOUBLE_FONT_LEN:
+                    vertCells = VERT_CELLS_SHORT;
+                    sizeMult = 2;
+                    break;
+                default:
+                    Debug.Assert(false);
+                    return new Bitmap8(0, 0);
+            }
+            // Define bitmap width/height to hold an array of cells with a 1-pixel border between
+            // and at the outside edges.
+            int width = 1 + HORIZ_CELLS * (CELL_WIDTH * sizeMult + 1);
+            int height = 1 + vertCells * (CELL_HEIGHT * sizeMult + 1);
             Bitmap8 output = new Bitmap8(width, height);
             output.SetPalette(palette);
 
             // All pixels initially have index 0, our grey background, so we don't need to
-            // render that part.
+            // render the framing between the cells.
 
             int cellX = 1;
             int cellY = 1;
-            for (int chidx = 0; chidx < buf.Length / 8; chidx++) {
-                DrawCell(buf, chidx * 8, cellX, cellY, doFlashHi, output);
-                cellX += CELL_WIDTH + 1;
+            int count = buf.Length / (8 * sizeMult * sizeMult);
+            for (int chidx = 0; chidx < count; chidx++) {
+                if (sizeMult == 1) {
+                    DrawCell(buf, chidx * 8, cellX, cellY, doFlashHi, output);
+                } else {
+                    DrawDoubleCell(buf, chidx * 8 * sizeMult * sizeMult, cellX, cellY, false,
+                        output);
+                }
+                cellX += CELL_WIDTH * sizeMult + 1;
                 if (cellX == output.Width) {
                     cellX = 1;
-                    cellY += CELL_HEIGHT + 1;
+                    cellY += CELL_HEIGHT * sizeMult + 1;
                 }
             }
             return output;
@@ -158,6 +182,28 @@ namespace FileConv.Gfx {
                         output.SetPixelIndex(cellX + col, cellY + row, fgIndex);
                     }
                     bval >>= 1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Renders a double-size hi-res character cell.  Data is stored in row-major order,
+        /// i.e. two bytes for the first line, followed by two bytes for the second line.  These
+        /// are in hi-res screen order, i.e. the first pixel is in the LSB of the first byte,
+        /// and the high bit is ignored.
+        /// </summary>
+        private static void DrawDoubleCell(byte[] buf, int offset, int cellX, int cellY,
+                bool doFlashHi, Bitmap8 output) {
+            for (int row = 0; row < CELL_HEIGHT * 2; row++) {
+                ushort wval = (ushort)((buf[offset] & 0x7f) | (buf[offset+1] << 7));
+                offset += 2;
+                for (int col = 0; col < CELL_WIDTH * 2; col++) {
+                    if ((wval & 0x01) == 0) {
+                        output.SetPixelIndex(cellX + col, cellY + row, BG_INDEX);
+                    } else {
+                        output.SetPixelIndex(cellX + col, cellY + row, FG_INDEX);
+                    }
+                    wval >>= 1;
                 }
             }
         }

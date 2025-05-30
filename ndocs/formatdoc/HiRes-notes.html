@@ -21,6 +21,7 @@
 <li>FOT ($08) / $0000-3fff: uncompressed hi-res image (8KB file)</li>
 <li>FOT ($08) / $4000: compressed hi-res image (PackBytes)</li>
 <li>FOT ($08) / $8066: compressed hi-res image (LZ4FH)</li>
+<li>FNT ($07) / $0000: hi-res font (96 or 128 glpyhs)</li>
 </ul>
 <p>Primary references:</p>
 <ul>
@@ -174,15 +175,15 @@ describe the file format in detail.</p>
 <p>Apple II fonts usually span the printable character range ($20-7f, inclusive),
 but sometimes include the control characters as well.  Each glyph is 7 pixels
 wide by 8 pixels high, with one bit per pixel, so each glyph is 8 bytes.  The
-high bit in each byte is usually zero, but can be set to 1 to cause a
-half-pixel shift.</p>
-<p>The glyphs are stored linearly: all 8 bytes for the first glyph, starting with
-the top row, then all 8 bytes for the second glyph.</p>
+LSB holds the leftmost pixel.  The high bit in each byte is usually zero, but
+can be set to 1 to cause a half-pixel shift.</p>
+<p>The glyphs are stored sequentially: all 8 bytes for the first glyph, starting
+with the top row, then all 8 bytes for the second glyph.</p>
 <p>Apple /// fonts use a similar layout, but define a special purpose for the high
 bit of each byte.  The following explanation is from the file "APPENDIX.D" on
 the Washington Apple PI "CustomFONT Manual"
 <a href="https://www.apple3.org/Software/wap/html/a3fonts.html" rel="nofollow">disk set</a>.</p>
-<hr/>
+<blockquote>
 <p>Appendix D: Technical Reference</p>
 <p>How Character Sets are Stored</p>
 <p>Each character is stored as a 7-by-8 bit array.  Bits corresponding to
@@ -200,7 +201,14 @@ blocks for data and a third block for system information). The character set
 used as the "system character set" is defined in the file "SOS.DRIVER" on any
 boot disk.  The system character set can be changed using the Apple /// System
 Utilities as detailed in Chapter 9 of this manual.</p>
-<hr/>
+</blockquote>
+<p>Synergistic Software's <em>Higher Text</em> program can display double-sized glyphs.
+Each glyph is 14x16, stored sequentially in row-major order as hi-res data
+(top row first, leftmost pixel is in LSB of first byte).  The high bit of both
+bytes should be treated as zero.  <em>Higher Text</em> allowed double-size fonts to
+be drawn in color by applying a bit mask and and setting the high bit.</p>
+<p>ProDOS defines the FNT ($07) type for these fonts, but in practice they're
+often stored as generic BIN.  On UCSD Pascal disks, they use type PDA.</p>
 </article>
 </div>
 </div>
