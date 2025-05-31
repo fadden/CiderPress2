@@ -18,6 +18,8 @@
 
 ## GCR Encoding ##
 
+The various floppy disk technologies developed by Apple use the same basic encoding method.
+
 The Apple II receives a stream of bits from the floppy disk controller.  For a variety of reasons
 (see _Beneath Apple DOS_ for an introduction, or _Understanding the Apple IIe_ chapter 9 for a
 deep dive), it's not possible to write arbitrary values to the stream.  The original Disk ][
@@ -63,7 +65,7 @@ detecting unusual patterns of bits.  (See e.g. https://retrocomputing.stackexcha
 It's possible to make a lower-level recording by measuring the time between magnetic flux
 transitions.  This requires modified drive hardware, and is more difficult to work with.
 
-## 5.25" Floppy Disks ##
+## Apple II 5.25" Floppy Disks ##
 
 Apple II disks are single-sided with 35 tracks, though some drives allowed up to 40 tracks.  The
 drives have a constant angular velocity, so every track stores the same amount of data: 6400 bytes
@@ -267,7 +269,7 @@ It's unclear whether anything actually relies on the value as anything but a hin
 of sides physically present is not determined by the address field of a given disk sector, and
 the sector interleave could be determined by just looking at the order in which sectors appear.
 
-## 5.25" "Twiggy" Disks ##
+## Lisa 5.25" Twiggy Disks ##
 
 The first Apple Lisa computers came with [FileWare](https://en.wikipedia.org/wiki/Apple_FileWare)
 floppy disk drives, commonly referred to as "Twiggy" drives.  These used special 5.25" disks that

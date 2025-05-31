@@ -299,15 +299,26 @@ namespace DiskArcTests {
         }
 
         public static void TestZX0(AppHook appHook) {
-            return;     // too slow, omit from default set
-
+            bool doFullTest = false;
             WorkBuffers bufs = new WorkBuffers();
             CodecStreamCreator creator =
                 delegate (Stream compStream, CompressionMode mode, long compressedLength,
                     long expandedLength) {
                         return new ZX0Stream(compStream, mode, true, compressedLength, true);
                     };
-            TestBasics(bufs, creator);
+            if (doFullTest) {
+                TestBasics(bufs, creator);
+            } else {
+                // The full test takes a few minutes. Do some shorter tests to exercise it.
+                TestSimpleRun(bufs, creator, 0);
+                TestSimpleRun(bufs, creator, 1);
+                TestRLE(bufs, creator);
+
+                byte[] buf = new byte[Patterns.sUlysses.Length];
+                int len = Patterns.StringToBytes(Patterns.sUlysses, buf, 0);
+                bufs.ResetSrc(buf, 0, buf.Length);
+                TestCopyStream(bufs, creator);
+            }
         }
 
 
