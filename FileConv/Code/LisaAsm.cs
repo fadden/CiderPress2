@@ -56,7 +56,8 @@ namespace FileConv.Code {
             if (DataStream == null) {
                 return Applicability.Not;
             }
-            if (FileAttrs.FileType == FILE_TYPE_BB) {
+            if (DataStream is DOS_FileDesc && FileAttrs.FileType == FILE_TYPE_BB) {
+                // Check for LISA v2, on DOS disks.  (The $F4 file type is also used by Pascal.)
                 if (DataStream.Length < MIN_LEN_V2 || DataStream.Length > MAX_LEN) {
                     return Applicability.Not;
                 }
@@ -73,6 +74,7 @@ namespace FileConv.Code {
                 // bytes of the file and that it points at a $ff byte, but that seems unnecessary.
                 return Applicability.Probably;
             } else if (FileAttrs.FileType == FileAttribs.FILE_TYPE_INT) {
+                // Check for LISA v3 / v4; should be on ProDOS.
                 if (LooksLikeLisa3(DataStream, FileAttrs.AuxType)) {
                     return Applicability.Yes;
                 } else if (LooksLikeLisa4(DataStream, FileAttrs.AuxType)) {

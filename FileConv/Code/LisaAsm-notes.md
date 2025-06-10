@@ -13,20 +13,20 @@ Primary references:
 ## General ##
 
 [LISA](https://en.wikipedia.org/wiki/Lazer%27s_Interactive_Symbolic_Assembler) is an assembler
-for Apple II code written by Randall Hyde.  The name is pronounced "LE ZA" rather than "LI SA".
+for Apple II code written by Randall Hyde.  The name is pronounced "LI ZA" rather than "LE SA".
 
 The program kept the source file in tokenized form, which reduced the memory footprint and
 the time required to assemble code.  This is true for all versions, although the file format
 evolved significantly over time.
 
-Version 3.x was the last for 8-bit computers.  Versions 4 and 5 were branded "LISA 8/16", and
-added support for the Apple IIgs.
+Version 2.x ran under DOS.  Version 3.x ran under ProDOS, and was the last for 8-bit computers.
+Versions 4 and 5 were branded "LISA 8/16", and added support for the Apple IIgs.
 
 ## v2 Format ##
 
 The file structure is fairly straightforward:
 ```
-+$00 / 2: program version? - usually $1800, which might indicate v2.4 (2.4 * 2560)
++$00 / 2: program version? - usually $1800, which might indicate v2.4 (* 10 * 256)
 +$02 / 2: length of file data; needed because DOS 3.3 doesn't store this for alternate B
 +$04 /nn: series of lines
 ```
