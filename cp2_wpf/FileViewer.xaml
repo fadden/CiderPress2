@@ -21,11 +21,12 @@ limitations under the License.
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:cp2_wpf"
         mc:Ignorable="d"
-        Title="File Viewer" Width="800" Height="700" MinWidth="700" MinHeight="400"
+        Title="File Viewer" Width="801" Height="700" MinWidth="700" MinHeight="400"
         ResizeMode="CanResizeWithGrip"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
         SourceInitialized="Window_SourceInitialized"
         Closed="Window_Closed">
+    <!-- TODO: disable the Minimize button -->
 
     <Window.Resources>
         <!-- Rotate the tabs 90 degrees.  Use with:
@@ -147,10 +148,11 @@ limitations under the License.
                                 <!-- code sets previewImage width/height to multiple of image size -->
                                 <Image Name="previewImage" Source="/Res/RedX.png"
                                     RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-                                <!-- NearestNeighbor does weirdly on checkerboard dither patterns
+                                <!-- "NearestNeighbor" does weirdly on checkerboard dither patterns
                                      like Print Shop BARNS and badly on MacPaint, though it's much
-                                     better when set to actual size + 1; HighQuality makes everything
-                                     a little fuzzy at the edges and slightly darker -->
+                                     better when set to actual size + 1. "HighQuality" makes everything
+                                     a little fuzzy at the edges and slightly darker.  This may be
+                                     overridden by the code-behind. -->
                             </Grid>
                         </Border>
                     </ScrollViewer>

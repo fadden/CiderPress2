@@ -257,7 +257,8 @@ namespace cp2 {
                             }
                             if (sectorOrder != SectorOrder.ProDOS_Block) {
                                 throw new DAException("unadorned disks of this size must use " +
-                                    "ProDOS block order (not " + sectorOrder + ")");
+                                    "ProDOS block order (not " +
+                                    ThingString.SectorOrder(sectorOrder) + ")");
                             }
                             uint numBlocks = (uint)(byteSize / BLOCK_SIZE);
                             image = UnadornedSector.CreateBlockImage(imgStream, numBlocks, appHook);

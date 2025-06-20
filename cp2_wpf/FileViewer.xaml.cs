@@ -24,6 +24,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using CommonUtil;
@@ -535,9 +536,9 @@ namespace cp2_wpf {
                 IsFindEnabled = IsExportEnabled = true;
             } else if (mCurDataOutput is IBitmap) {
                 IBitmap bitmap = (IBitmap)mCurDataOutput;
-                BitmapSource bsrc = WinUtil.ConvertToBitmapSource(bitmap);
-                Debug.Assert(bsrc.IsFrozen);
-                previewImage.Source = bsrc;
+                //BitmapSource bsrc = WinUtil.ConvertToBitmapSource(bitmap);
+                //Debug.Assert(bsrc.IsFrozen);
+                //previewImage.Source = bsrc;
                 ConfigureMagnification();
                 SetDisplayType(DisplayItemType.Bitmap);
 
@@ -781,8 +782,12 @@ namespace cp2_wpf {
         }
 
         /// <summary>
-        /// Configures the magnification level of the bitmap display.
+        /// Configures the magnification level of the bitmap display.  Sets previewImage.Source
+        /// to the bitmap source.
         /// </summary>
+        /// <remarks>
+        /// For "host" images, the caller sets previewImage.Source.  For IBitmap, we do it here.
+        /// </remarks>
         private void ConfigureMagnification() {
             int tick = (int)magnificationSlider.Value;
             double mult;
@@ -793,22 +798,69 @@ namespace cp2_wpf {
             }
             GraphicsZoomStr = mult.ToString() + "X";
 
-            if (mCurDataOutput is not IBitmap && mCurDataOutput is not HostConv) {
+            if (mCurDataOutput is HostConv) {
+                // Let WPF do the scaling.
+                BitmapSource? bsrc = previewImage.Source as BitmapSource;
+                if (bsrc == null) {
+                    Debug.Assert(false, "Unable to get BitmapSource for magnification");
+                    return;
+                }
+                previewImage.Width = Math.Floor(bsrc.PixelWidth * mult);
+                previewImage.Height = Math.Floor(bsrc.PixelHeight * mult);
+                RenderOptions.SetBitmapScalingMode(previewImage, BitmapScalingMode.HighQuality);
                 return;
             }
-            BitmapSource? bsrc = previewImage.Source as BitmapSource;
-            if (bsrc == null) {
-                Debug.Assert(false, "Unable to get BitmapSource for magnification");
+            if (mCurDataOutput is not IBitmap) {
                 return;
             }
 
-            // I'm not sure why "+1" is needed here, but it significantly improves the
-            // appearance of B&W images with fine detail, e.g. MacPaint graphics.  This
-            // just affects the Windows on-screen scaling, not the export.
-            previewImage.Width = Math.Floor(bsrc.PixelWidth * mult) + 1;
-            previewImage.Height = Math.Floor(bsrc.PixelHeight * mult) + 1;
-            //Debug.WriteLine("Gfx zoom " + mult + " --> " +
-            //    previewImage.Width + "x" + previewImage.Height);
+            if (mult < 1.0) {
+                // Let WPF do the scaling.
+                BitmapSource bsrc = WinUtil.ConvertToBitmapSource((IBitmap)mCurDataOutput);
+                Debug.Assert(bsrc.IsFrozen);
+                previewImage.Width = Math.Floor(bsrc.PixelWidth * mult);
+                previewImage.Height = Math.Floor(bsrc.PixelHeight * mult);
+                previewImage.Source = bsrc;
+                RenderOptions.SetBitmapScalingMode(previewImage,
+                    BitmapScalingMode.NearestNeighbor);
+            } else {
+                // We'd like to let WPF take care of scaling images for us. Unfortunately, scaling
+                // modes like HighQuality make things a little fuzzy, and NearestNeighbor causes
+                // significant distortion in images with checkerboards or fine lines (e.g. some
+                // MacPaint graphics).
+                //
+                // Over-sizing the width and height by 1 pixel eliminates most (but not all) of
+                // the NearestNeighbor distortions, and produces a crisp image.
+                //
+                // The approach that yields the best results for upscaled images is to do the
+                // scaling ourselves, then use a mode like HighQuality, because the fuzziness
+                // is harder to notice when the individual pixels are large.  Unfortunately
+                // there's also a brightness shift that jumps out at you for certain images, so
+                // switching scaling modes based on zoom level isn't great.
+                //
+                // Discussion here: https://github.com/fadden/CiderPress2/issues/8
+                //
+                // This only affects the on-screen scaling in Windows.  Exports are unaffected.
+                BitmapSource bsrc;
+                if (mult == 1) {
+                    bsrc = WinUtil.ConvertToBitmapSource((IBitmap)mCurDataOutput);
+                    previewImage.Width = bsrc.PixelWidth + 1;
+                    previewImage.Height = bsrc.PixelHeight + 1;
+                    RenderOptions.SetBitmapScalingMode(previewImage,
+                        BitmapScalingMode.NearestNeighbor);
+                } else {
+                    IBitmap scaled = ((IBitmap)mCurDataOutput).ScaleUp((int)mult);
+                    bsrc = WinUtil.ConvertToBitmapSource(scaled);
+                    previewImage.Width = bsrc.PixelWidth;
+                    previewImage.Height = bsrc.PixelHeight;
+                    RenderOptions.SetBitmapScalingMode(previewImage,
+                        BitmapScalingMode.NearestNeighbor);
+                }
+                previewImage.Source = bsrc;
+            }
+            Debug.WriteLine("Preview image shown at " + previewImage.Width + "x" +
+                previewImage.Height + " with " +
+                RenderOptions.GetBitmapScalingMode(previewImage));
         }
 
         #region Export and Clip

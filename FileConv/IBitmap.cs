@@ -58,5 +58,12 @@ namespace FileConv {
         /// This makes a copy of the color data.  The array will have 0-255 entries.
         /// </remarks>
         int[]? GetColors();
+
+        /// <summary>
+        /// Generates an upscaled copy.
+        /// </summary>
+        /// <param name="mult">Scale multiplier, must be >= 1.</param>
+        /// <returns>Newly-allocated bitmap object.</returns>
+        IBitmap ScaleUp(int mult);
     }
 }

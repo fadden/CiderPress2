@@ -108,6 +108,26 @@ namespace FileConv {
             //mPixelData[offset + 3] = 0x7f;      // DEBUG alpha test
         }
 
+        // IBitmap
+        public IBitmap ScaleUp(int mult) {
+            if (mult < 1) {
+                throw new ArgumentOutOfRangeException(nameof(mult), "mult must be > 1");
+            }
+            Bitmap32 newBitmap = new Bitmap32(Width * mult, Height * mult);
+            for (int row = 0; row < Height; row++) {
+                int baseRow = row * mult;
+                for (int mrow = row * mult; mrow < row * mult + mult; mrow++) {
+                    for (int col = 0; col < Width; col++) {
+                        int baseCol = col * mult;
+                        for (int mcol = col * mult; mcol < col * mult + mult; mcol++) {
+                            newBitmap.SetPixel(mcol, mrow, GetPixel(col, row));
+                        }
+                    }
+                }
+            }
+            return newBitmap;
+        }
+
         public override string ToString() {
             return "[Bitmap32: " + Width + "x" + Height + "]";
         }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Diagnostics;
 
 using CommonUtil;
 
@@ -88,6 +89,7 @@ namespace FileConv {
         /// <param name="y">Y coordinate.</param>
         /// <returns>Color index.</returns>
         public byte GetPixelIndex(int x, int y) {
+            //Debug.Assert(x >= 0 && x < Width && y >= 0 && y < Height);
             return mPixelData[x + y * Width];
         }
 
@@ -166,6 +168,27 @@ namespace FileConv {
                 xc = origXc;
                 yc++;
             }
+        }
+
+        // IBitmap
+        public IBitmap ScaleUp(int mult) {
+            if (mult < 1) {
+                throw new ArgumentOutOfRangeException(nameof(mult), "mult must be > 1");
+            }
+            Bitmap8 newBitmap = new Bitmap8(Width * mult, Height * mult);
+            newBitmap.SetPalette(mPalette);
+            for (int row = 0; row < Height; row++) {
+                int baseRow = row * mult;
+                for (int mrow = row * mult; mrow < row * mult + mult; mrow++) {
+                    for (int col = 0; col < Width; col++) {
+                        int baseCol = col * mult;
+                        for (int mcol = col * mult; mcol < col * mult + mult; mcol++) {
+                            newBitmap.SetPixelIndex(mcol, mrow, GetPixelIndex(col, row));
+                        }
+                    }
+                }
+            }
+            return newBitmap;
         }
 
         public override string ToString() {
