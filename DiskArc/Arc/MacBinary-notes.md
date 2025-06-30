@@ -49,7 +49,7 @@ some implementations left garbage in the unused fields.)
 The file header is:
 ```
 +$00 / 1: version byte, must be zero
-+$02 /64: filename, with leading length byte
++$01 /64: filename, with leading length byte
 +$41 /16: Finder FInfo block (originated in MFS)
   +$00 / 4: fdType - file type
   +$04 / 4: fdCreator - creator
