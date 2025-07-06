@@ -3,11 +3,14 @@
 The command-line and GUI applications are written in C#, targeted to .NET Core 6.  The .NET
 runtime is available for download from Microsoft for a variety of platforms, including Windows,
 Mac OS, and Linux.  It's even available for the
-[Raspberry PI](https://learn.microsoft.com/en-us/dotnet/iot/deployment).  Officially, .NET Core 6
-only works on Windows 10 and later, though you may have some success with Windows 7.
+[Raspberry PI](https://learn.microsoft.com/en-us/dotnet/iot/deployment).
+The [documentation](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md)
+says that .NET Core 6 is only supported for Windows 10+, MacOS 13+, and recent versions of Linux,
+but in practice the command-line tool has been used successfully on Windows 7 and MacOS 11 (these
+are officially "out of support").
 
-The command-line tool is usable on multiple platforms.  The GUI is currently only available for
-Windows (native or emulated).
+While the command-line tool is usable on multiple platforms, the GUI is currently only available
+for Windows (native or emulated).
 
 There are two types of downloads here: self-contained and framework-dependent.  The former
 includes all necessary parts of the .NET runtime in the package, so there's no need to have .NET
