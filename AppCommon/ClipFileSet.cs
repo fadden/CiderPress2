@@ -262,6 +262,7 @@ namespace AppCommon {
                 attrs.FullPathName = dirName;
                 attrs.FullPathSep = dirSep;
                 attrs.FileNameOnly = PathName.GetFileName(dirName, dirSep);
+                attrs.Access = FileAttribs.FILE_ACCESS_UNLOCKED;
                 attrs.IsDirectory = true;
                 string extractPath = PathName.AdjustPathName(dirName, dirSep,
                     PathName.DEFAULT_REPL_CHAR);

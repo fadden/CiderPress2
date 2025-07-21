@@ -428,7 +428,7 @@ namespace AppCommon {
                 string adjName = fileSystem.AdjustFileName(storageName);
                 if (fileSystem.TryFindFileEntry(subDirEnt, adjName, out IFileEntry newEntry)) {
                     if (mIsSameProcess && newEntry.GetHashCode() == clipEntry.EntryHashCode) {
-                        throw new Exception("Cannot ovewrite entry with itself");
+                        throw new Exception("Cannot overwrite entry with itself");
                     }
                     if (clipEntry.Attribs.IsDirectory && !newEntry.IsDirectory) {
                         throw new Exception("Cannot replace non-directory '" + newEntry.FileName +
