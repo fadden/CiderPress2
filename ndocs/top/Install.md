@@ -4,6 +4,13 @@ The command-line and GUI applications are written in C#, targeted to .NET Core 6
 runtime is available for download from Microsoft for a variety of platforms, including Windows,
 Mac OS, and Linux.  It's even available for the
 [Raspberry PI](https://learn.microsoft.com/en-us/dotnet/iot/deployment).
+The [documentation](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md)
+says that .NET Core 6 is only supported for Windows 10+, MacOS 13+, and recent versions of Linux,
+but in practice the command-line tool has been used successfully on Windows 7 and MacOS 11 (these
+are officially "out of support").
+
+While the command-line tool is usable on multiple platforms, the GUI is currently only available
+for Windows (native or emulated).
 
 There are two types of downloads here: self-contained and framework-dependent.  The former
 includes all necessary parts of the .NET runtime in the package, so there's no need to have .NET
@@ -44,8 +51,7 @@ run "cp2":
 In the shell, change to the directory where the files were unzipped.  Then:
 
  - Windows: run `./cp2 version` to confirm it works.  You will probably need to click through some
-   security warnings.  If you're only interested in the GUI version, just double-click
-   `CiderPress2.exe`.
+   security warnings.  If you're interested in the GUI version, double-click `CiderPress2.exe`.
  - Linux: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
    to fix it.  Run `./cp2 version` to confirm it works.
  - Mac OS: the command should have been made executable when unzipped; if not, use `chmod +x cp2`
@@ -85,7 +91,7 @@ your shell path.
 The CiderPress II command-line utility was developed on x64 CPUs with:
 
  - Windows 10 (build 19044)
- - macOS 11.6.3 "Big Sur"; also tested on Apple silicon with 15.2 "Sequoia"
+ - macOS 11.6.3 "Big Sur" (x86) and 15.2 "Sequoia" (Apple silicon)
  - Linux Ubuntu 20.04.6 LTS
 
 Compatibility is determined mostly by the .NET runtime, so more recent versions of the operating
