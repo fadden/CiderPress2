@@ -33,6 +33,7 @@ namespace FileConv {
 
             new ConverterEntry(typeof(Code.ApplesoftImport)),
             new ConverterEntry(typeof(Code.MerlinAsmImport)),
+            new ConverterEntry(typeof(Code.ApplePascal_TextImport)),
         };
 
         private static readonly Dictionary<string, ConverterEntry> sTagList = GenerateTagList();

@@ -1789,10 +1789,12 @@ The available converters are:
    converting characters
    - `inchar` (multi): define input (host) character set
    - `outchar` (multi): define output (archive) character set
+ - `pastext`: convert text file to UCSD Pascal Textfile format; best used
+   with a Pascal filesystem
 
-The `inchar` setting may be `utf8` (default), `latin` for ISO 8859-1, or
-`1252` for Windows Code Page 1252.  Use `utf8` for plain ASCII; it will also
-work for UTF-16.
+The `inchar` setting for the plain text importer can be `utf8` (default),
+`latin` for ISO 8859-1, or `1252` for Windows Code Page 1252.  Use `utf8` for
+plain ASCII; it will also work for UTF-16.
 
 The `outchar` setting may be `ascii` (default), `hiascii` (DOS characters with
 their high bits set), or `mor` for Mac OS Roman.  `ascii` is automatically

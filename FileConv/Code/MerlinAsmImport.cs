@@ -47,7 +47,8 @@ if you enter more in the editor, they will be stored in the file.
 
 namespace FileConv.Code {
     /// <summary>
-    /// Imports a text file, converting the end-of-line markers and character set.
+    /// Imports a text file, converting the end-of-line markers and character set, removing
+    /// excess spaces.
     /// </summary>
     public class MerlinAsmImport : Importer {
         public const string TAG = "merlin";
@@ -75,7 +76,7 @@ namespace FileConv.Code {
         public override Applicability TestApplicability(string fileName) {
             // Just check for the ".txt", don't worry about the ".S".
             string ext = Path.GetExtension(fileName).ToLowerInvariant();
-            if (ext == ".txt") {
+            if (ext == TXT_EXT) {
                 return Applicability.Yes;
             } else {
                 return Applicability.Maybe;
@@ -120,7 +121,7 @@ namespace FileConv.Code {
 
                 string? line;
                 while ((line = reader.ReadLine()) != null) {
-                    Debug.WriteLine("LINE: " + line);
+                    //Debug.WriteLine("LINE: " + line);
                     int outPos = 0;
                     if (line.Length >= outBuf.Length - 1) {
                         dataOutStream.Write(Encoding.ASCII.GetBytes("!LINE TOO LONG!"));
