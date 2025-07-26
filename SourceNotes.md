@@ -174,25 +174,27 @@ Finally, build the applications and submit the changes.
     `MakeDist/bin/debug/NET6.0`).  This builds the distribution packages
     in Release mode.  The output will be in the `DIST` directory.
  10. Submit all changes to git, push them to the server.
- 11. Create a new release on github.  Drag `DIST/*.zip` into the release.
- 12. Update/close any issues that have been addressed by the new release.
+ 11. Create the pre-packaged Wine release for Mac OS.  (This requires
+     performing several steps on a Macintosh.  See the
+     [Wine Notes](WineNotes.md) document for more information.)
+ 12. Create a new release on github.  Drag `DIST/*.zip` into the release.
+ 13. Update/close any issues that have been addressed by the new release.
 
 Version numbers should follow the semantic versioning scheme: v1.2.3,
 v1.2.3-dev1, etc.
 
-There is an additional step for publishing updates to the files in the
-file format documentation set.  `ndocs/formatdoc/convert.py` will generate
-HTML versions of the Markdown documentation.  This is necessary because the
-major search engines don't like to index github repositories.  The conversion
-script requires an external program, and may need github authentication to
-avoid being cut off by the rate limiter (the HTML conversion is actually
-performed by the github web API), so it's not part of the publication script.
-The `ndocs/publish.py` script just copies them to the `docs` directory.
+There is an additional step for publishing updates to the files in the file
+format documentation set (all of the "*-notes.md" files).  The script
+`ndocs/formatdoc/convert.py` will generate HTML versions of the Markdown
+documentation.  This is necessary because the major search engines don't like
+to index github repositories.  The conversion script requires an external
+program, and may need github authentication to avoid being cut off by the
+rate limiter (the HTML conversion is actually performed by the github web
+API), so it's not part of the publication script. The `ndocs/publish.py`
+script just copies them to the `docs` directory.  Check the comments at the
+top of `convert.py` for further instructions.
 
 Modified "-notes.md" files can usually be converted at the time they are
 updated, since their contents aren't really tied to a release.  Doing a full
 refresh as part of generating a "final" release is still prudent to avoid
 missing any changes.
-
-Creating a Wine-wrapped binary for macOS is described in the
-[Wine Notes](WineNotes.md) document.

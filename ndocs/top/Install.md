@@ -132,7 +132,7 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
 
 It's possible to run the GUI application under macOS and Linux using the
 [Wine](https://www.winehq.org/) compatibility layer.  Instructions for setting this up can be found
-[here](https://github.com/fadden/CiderPress2/blob/main/WineNotes.md). 
+[here](https://github.com/fadden/CiderPress2/blob/main/WineNotes.md).
 
 The emulation is very good, but not perfect.  You may experience problems that don't occur when
 run natively on Windows.

@@ -39,6 +39,7 @@ describes the sector format in detail)</li>
 <em>Lisa Hardware Manual</em>, chapter 6</li>
 </ul>
 <div class="markdown-heading"><h2 class="heading-element">GCR Encoding</h2><a aria-label="Permalink: GCR Encoding" class="anchor" href="#user-content-gcr-encoding" id="user-content-gcr-encoding" name="user-content-gcr-encoding"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The various floppy disk technologies developed by Apple use the same basic encoding method.</p>
 <p>The Apple II receives a stream of bits from the floppy disk controller.  For a variety of reasons
 (see <em>Beneath Apple DOS</em> for an introduction, or <em>Understanding the Apple IIe</em> chapter 9 for a
 deep dive), it's not possible to write arbitrary values to the stream.  The original Disk ][
@@ -77,7 +78,7 @@ sector format, the choice is largely irrelevant, but some copy-protection scheme
 detecting unusual patterns of bits.  (See e.g. <a href="https://retrocomputing.stackexchange.com/q/37/56" rel="nofollow">https://retrocomputing.stackexchange.com/q/37/56</a> .)</p>
 <p>It's possible to make a lower-level recording by measuring the time between magnetic flux
 transitions.  This requires modified drive hardware, and is more difficult to work with.</p>
-<div class="markdown-heading"><h2 class="heading-element">5.25" Floppy Disks</h2><a aria-label='Permalink: 5.25" Floppy Disks' class="anchor" href="#user-content-525-floppy-disks" id="user-content-525-floppy-disks" name="user-content-525-floppy-disks"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Apple II 5.25" Floppy Disks</h2><a aria-label='Permalink: Apple II 5.25" Floppy Disks' class="anchor" href="#user-content-apple-ii-525-floppy-disks" id="user-content-apple-ii-525-floppy-disks" name="user-content-apple-ii-525-floppy-disks"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>Apple II disks are single-sided with 35 tracks, though some drives allowed up to 40 tracks.  The
 drives have a constant angular velocity, so every track stores the same amount of data: 6400 bytes
 at 300rpm.  Minor changes in drive speed will increase or decrease this value slightly.</p>
@@ -254,7 +255,7 @@ uses the bit as a "Lisa" flag.</p>
 <p>It's unclear whether anything actually relies on the value as anything but a hint.  The number
 of sides physically present is not determined by the address field of a given disk sector, and
 the sector interleave could be determined by just looking at the order in which sectors appear.</p>
-<div class="markdown-heading"><h2 class="heading-element">5.25" "Twiggy" Disks</h2><a aria-label='Permalink: 5.25" "Twiggy" Disks' class="anchor" href="#user-content-525-twiggy-disks" id="user-content-525-twiggy-disks" name="user-content-525-twiggy-disks"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Lisa 5.25" Twiggy Disks</h2><a aria-label='Permalink: Lisa 5.25" Twiggy Disks' class="anchor" href="#user-content-lisa-525-twiggy-disks" id="user-content-lisa-525-twiggy-disks" name="user-content-lisa-525-twiggy-disks"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>The first Apple Lisa computers came with <a href="https://en.wikipedia.org/wiki/Apple_FileWare" rel="nofollow">FileWare</a>
 floppy disk drives, commonly referred to as "Twiggy" drives.  These used special 5.25" disks that
 had two windows instead of one.  The drives were intended to be made available for the Apple II

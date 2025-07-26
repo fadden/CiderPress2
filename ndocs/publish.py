@@ -15,7 +15,7 @@ import sys
 
 
 # Current version string.  Used for text substitution.
-app_version = "1.0.7"
+app_version = "1.1.0"
 pkg_version = app_version
 
 # ----- nothing configurable below -----

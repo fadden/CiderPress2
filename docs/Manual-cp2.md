@@ -1497,10 +1497,13 @@ disk images.
 
 #### `--set-int=name:value`
 
-This is a way to pass certain configuration options to lower-level code.
-For example, `--set-int=dos-vtoc-track:0x15` would direct the DOS filesystem
-code to look for the catalog on track 0x15 instead of 0x11.  You generally
-won't need to use this.
+This is a way to pass certain configuration options to lower-level code.  You
+generally won't need to use this.  Examples:
+
+ - `--set-int=dos-vtoc-track:0x15` directs the DOS filesystem code to look for
+   the catalog on track 0x15 instead of 0x11.
+ - `--set-int=nufx-comp-alg:5` overrides the compression algorithm used when
+   adding files to NuFX (ShrinkIt) archives.
 
 #### `--show-log`, `--no-show-log` (default)
 
@@ -1786,10 +1789,12 @@ The available converters are:
    converting characters
    - `inchar` (multi): define input (host) character set
    - `outchar` (multi): define output (archive) character set
+ - `pastext`: convert text file to UCSD Pascal Textfile format; best used
+   with a Pascal filesystem
 
-The `inchar` setting may be `utf8` (default), `latin` for ISO 8859-1, or
-`1252` for Windows Code Page 1252.  Use `utf8` for plain ASCII; it will also
-work for UTF-16.
+The `inchar` setting for the plain text importer can be `utf8` (default),
+`latin` for ISO 8859-1, or `1252` for Windows Code Page 1252.  Use `utf8` for
+plain ASCII; it will also work for UTF-16.
 
 The `outchar` setting may be `ascii` (default), `hiascii` (DOS characters with
 their high bits set), or `mor` for Mac OS Roman.  `ascii` is automatically
