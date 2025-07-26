@@ -100,21 +100,22 @@ for v1.0.6 you'd grab `cp2_1.0.6_win-x86_sc.zip` from the releases page.
 Double-click the ZIP to unpack it into `cp2_1.0.6_win-x86_sc`.
 
 In Kegworks, select the 32-bit engine and click "Create New Blank Wrapper".
-Choose an app name, such as `CP2Mac.app`, and click "OK".  The application
+Choose an app name, such as `CP2Mac106[.app]`, and click "OK".  The application
 will go off and do things for a while (about 45 seconds on a Mac Mini M4),
 then hopefully report that the wrapper was created successfully.  Click "View
 wrapper in Finder".  This will open the `~/Applications/Kegworks` directory.
+(You can quit out of Kegworks at this point.)
 
-We now need to put CiderPress II into the wrapper.  Double-click "CP2Mac".
+We now need to put CiderPress II into the wrapper.  Double-click `CP2Mac106`.
 Click "Install Software".  Click "Copy a Folder Inside".  From the Downloads
 folder, select `cp2_1.0.6_win-x86_sc`, and click "Choose".  When prompted
-to choose an executable, select `[...]/CiderPress2.exe`, and continue.
+to choose an executable, select `[...]/CiderPress2.exe`, and click "OK".
 
-At this point if you quit and double-click the icon, it will launch directly
-into the CiderPress II GUI.  To access Wine settings, Ctrl+click or
-right-click on the app icon to open a menu.  Select "Show Package Contents".
-Double-click "Contents" to open the folder, then double-click "Wineskin"
-to bring up the configuration buttons.
+We're not quite done, but at this point if you quit and double-click the app
+icon, it will launch directly into the CiderPress II GUI.  To access Wine
+settings, you'll need to Ctrl+click or right-click on the app icon to open a
+menu.  Select "Show Package Contents".  Double-click "Contents" to open the
+folder, then double-click "Wineskin" to bring up the configuration buttons.
 
 #### Fonts ####
 
@@ -126,18 +127,18 @@ fixed-width content looks wrong.
 Unfortunately, Segoe UI isn't accessible from Wine.  Fortunately, Consolas is.
 To add it:
 
- - Ctrl+click the app icon, select "Show Package Contents".
- - Open the "Contents" folder, and double-click "Wineskin".
+ - If you're not still in the app configuration menu:
+   - Ctrl+click the app icon, select "Show Package Contents".
+   - Open the "Contents" folder, and double-click "Wineskin".
  - Click "Winetricks".
  - Expand the "fonts" item, and click the checkbox next to "consolas"
    ("MS Consolas console font").
- - Click "Run".
+ - Click "Run".  Click "Yes" to confirm.
 
 This does a whole bunch of work.  When it's done, you'll have a copy of the
-Consolas font family files in "Contents/drive_c/windows/Fonts".  Unfortunately
-you can't just copy .ttf files in there and have them recognized; otherwise
-you could just copy them out of C:\Windows\Fonts and be done.  (It's possible
-that the emulated app isn't finding Segoe UI for some other reason.)
+Consolas font family files in "Contents/drive_c/windows/Fonts".  Click "Close"
+to close Winetricks, close the KegworksConfig window, then double-click on
+the application icon to test your installation.
 
 Installing the Tahoma font helped on Linux, but had no noticeable effect on
 macOS (but macOS without Tahoma looks about the same as Linux with it).
@@ -170,10 +171,11 @@ shared.
 
 It may be useful to included a "README.txt" in the ZIP archive with the
 quarantine removal instructions.  Also, you should remove the CiderPress II
-settings file, so users start with a fresh installation.  In "CP2Mac.app",
+settings file, so users start with a fresh installation.  In `CP2Mac106.app`,
 navigate to `Contents/SharedSupport/prefix/drive_c/Program Files`.  There,
 you'll find the directory you installed (e.g. `cp2_1.0.6_win-x86_sc`).
-Remove `CiderPress2-settings.json` from it.
+Remove `CiderPress2-settings.json` from it.  (The settings file is created on
+first use, so an alternative is to create the package before testing the app.)
 
 Running x86 code on Apple Silicon requires Rosetta 2 to be installed.  The
 system will offer to install it automatically the first time an x86 application
