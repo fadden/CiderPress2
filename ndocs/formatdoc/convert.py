@@ -15,7 +15,7 @@
 # ---
 #
 # NOTE: github has a limit of 60 requests per hour for an unauthenticated user.
-# If you exceed the limit, the files will be trivial "limit exceeded" messages
+# If you exceed the limit, the output will be trivial "limit exceeded" messages
 # instead of converted documents.  The limit is increased to 5,000 for
 # authenticated requests.  To add authentication:
 #  - Create a fine-grained personal access token.  Instructions:
@@ -44,6 +44,7 @@ import gh_md_to_html
 gFileList = [
         "DiskArc/Arc/AppleLink-notes.md",
         "DiskArc/Arc/AppleSingle-notes.md",
+        "DiskArc/Arc/AudioRecording-notes.md",
         "DiskArc/Arc/Binary2-notes.md",
         "DiskArc/Arc/GZip-notes.md",
         "DiskArc/Arc/MacBinary-notes.md",
@@ -54,6 +55,7 @@ gFileList = [
         "DiskArc/Comp/LZHuf-notes.md",
         "DiskArc/Comp/NuLZW-notes.md",
         "DiskArc/Comp/Squeeze-notes.md",
+        "DiskArc/Comp/ZX0-notes.md",
         "DiskArc/Disk/DART-notes.md",
         "DiskArc/Disk/DiskCopy-notes.md",
         "DiskArc/Disk/Nibble-notes.md",

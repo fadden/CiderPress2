@@ -43,7 +43,7 @@ namespace FileConv.Code {
         private const string TXT_EXT = ".txt";
         private const int CHUNK_SIZE = 1024;
         private const int LEADING_OFFSET = 32;
-        private const int MAX_LEADING = 0x6d - LEADING_OFFSET;      // match Editor behavior (77)
+        private const int MAX_LEADING = 0xff - LEADING_OFFSET;
 
         private const byte ASCII_CR = 0x0d;         // Ctrl+M
         private const byte ASCII_DLE = 0x10;        // Ctrl+P
@@ -98,7 +98,7 @@ namespace FileConv.Code {
 
             // Pascal Textfiles start with a 1KB chunk that is reserved for use by the editor.
             // Fill it with zeroes.
-            dataOutStream.Write(outBuf, 0, CHUNK_SIZE);
+            dataOutStream.Write(zeroBuf, 0, CHUNK_SIZE);
 
             // All characters should be plain ASCII.  Treat the input as UTF-8 just in case there
             // are non-ASCII characters that need to be parsed and discarded.

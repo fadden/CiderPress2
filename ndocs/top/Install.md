@@ -15,7 +15,9 @@ for Windows (native or emulated).
 There are two types of downloads here: self-contained and framework-dependent.  The former
 includes all necessary parts of the .NET runtime in the package, so there's no need to have .NET
 installed on your system.  If you happen to have .NET Core 6 or later already installed, the
-framework-dependent package is significantly smaller.
+framework-dependent package is significantly smaller.  You can also download a pre-packaged Wine
+binary that allows you to run the GUI application on recent versions of Mac OS, but this may have
+stability issues and is considered experimental.
 
 You can pick a file to download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
 or use one of the links below to download the most recent stable release.
@@ -38,10 +40,18 @@ Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v${VERSI
 Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_fd.zip
 Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_fd.zip
 
+**Wine Emulation** (EXPERIMENTAL) (450+ MB)
+
+System        | Link
+------------- | ----
+Mac OS        | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2wine_${PKG_VERSION}_mac.zip
+
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they are unzipped.
-On some systems an additional step may be necessary.  You will need a command-line shell to
-run "cp2":
+On some systems an additional step may be necessary.  (For the pre-packaged Wine binary, see the
+README file included in the ZIP for additional instructions.)
+
+You will need a command-line shell to run "cp2":
 
  - Windows: hit Windows+R to open the "run" window.  Enter "cmd" for a classic DOS shell or
    "powershell" for something fancier, and hit return.
@@ -68,10 +78,10 @@ The commands are:
  - `cp2`: command-line interface
  - `CiderPress2`: desktop graphical interface (Windows builds only)
 
-The download includes the manual for cp2, `Manual-cp2.md`, formatted for 80 columns for ease
-of viewing in a terminal window.  The file is in "Markdown" format, which is perfectly readable
-as a plain text file.  The manual for the GUI, and tutorials for both applications, can
-be found on the [web site](https://ciderpress2.com/).
+The download includes the manual for the cp2 command-line utility, `Manual-cp2.md`, formatted for
+80 columns for ease of viewing in a terminal window.  The file is in "Markdown" format, which is
+perfectly readable as a plain text file.  The manual for the GUI, and tutorials for both forms of
+the application, can be found on the [web site](https://ciderpress2.com/).
 
 ### Installing .NET ###
 
@@ -122,8 +132,7 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
 
 It's possible to run the GUI application under macOS and Linux using the
 [Wine](https://www.winehq.org/) compatibility layer.  Instructions for setting this up can be found
-[here](https://github.com/fadden/CiderPress2/blob/main/WineNotes.md).  In addition, a pre-built
-"wrapped" application for macOS may be available for download from the Releases page.
+[here](https://github.com/fadden/CiderPress2/blob/main/WineNotes.md). 
 
 The emulation is very good, but not perfect.  You may experience problems that don't occur when
 run natively on Windows.

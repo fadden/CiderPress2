@@ -28,9 +28,8 @@ with NULs ($00).
 Pascal programs are often indented with spaces (' '), so to reduce the file size, leading spaces
 may be compressed with run-length encoding.  If a line starts with an ASCII DLE ($10), the
 following byte holds the number of spaces, plus 32.  It's valid to encode a lack of indentation
-as $10 $20 (i.e. 0 spaces).  The maximum number of spaces that can be encoded this way is not
-documented, but the Editor appears to stop at $6d (77 spaces), and staying at or below
-$7f (95 spaces) seems prudent.
+as $10 $20 (i.e. 0 spaces).  Values up to $ff (223 spaces) appear to be valid, though the Editor
+won't apply compression at all if the number of spaces exceeds that.
 
 It's unclear to what extent control characters and high-ASCII text are allowed or tolerated,
 though the Editor does not allow control characters to be entered (they're inserted as '?'
