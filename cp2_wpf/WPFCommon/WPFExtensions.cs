@@ -274,7 +274,12 @@ namespace cp2_wpf.WPFCommon {
                     if (cell == null) {
                         /* bring the column into view
                          * in case it has been virtualized away */
-                        dataGrid.ScrollIntoView(rowContainer, dataGrid.Columns[column]);
+                        try {
+                            dataGrid.ScrollIntoView(rowContainer, dataGrid.Columns[column]);
+                        } catch (InvalidOperationException ex) {
+                            Debug.WriteLine("GLITCH: GetCell failed: " + ex.Message);
+                            return null;
+                        }
                         cell = presenter.ItemContainerGenerator.ContainerFromIndex(column)
                             as DataGridCell;
                     }
