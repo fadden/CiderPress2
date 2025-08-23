@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This builds the CiderPress II command-line utility ("cp2").  You must
 # have the .NET development tools installed (this uses the "dotnet build"
