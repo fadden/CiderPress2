@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # Replace blocks of text in an HTML document with the contents of a file.
 #

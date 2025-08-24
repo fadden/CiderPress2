@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # This publishes a new version of the web site from the "ndocs" directory
 # to the "docs" directory.  It should be run from "ndocs".

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # Usage: convert <md-path|all>
 #  where md-path is e.g. "DiskArc/Arc/AppleLink-notes.md"

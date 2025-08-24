@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # Sets the contents of the "prevnext" sections, which have the prev/next
 # buttons.  Pass the directory where the HTML files live as the first
