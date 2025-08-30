@@ -50,8 +50,7 @@ namespace FileConv.Gfx {
         private const ushort PSGS_AUX_MONO_CLIP = 0xc313;
         private const ushort PSGS_AUX_COLOR_CLIP = 0xc323;
 
-        private const int CLASSIC_MONO_LEN = 576;
-        private const int GS_MONO_LEN = 572;
+        private const int MONO_LEN = 572;
         private const int GS_COLOR_LEN = 1716;
         private const int CLIP_WIDTH = 88;
         private const int CLIP_HEIGHT = 52;
@@ -91,7 +90,7 @@ namespace FileConv.Gfx {
             }
 
             if (FileAttrs.FileType == FileAttribs.FILE_TYPE_BIN &&
-                    DataStream.Length == CLASSIC_MONO_LEN) {
+                    (DataStream.Length == MONO_LEN || DataStream.Length == MONO_LEN + 4)) {
                 // Classic PrintShop monochrome.  Check the aux type for additional verification.
                 if (FileAttrs.AuxType == 0x4800 || FileAttrs.AuxType == 0x5800 ||
                         FileAttrs.AuxType == 0x6800 || FileAttrs.AuxType == 0x7800) {
@@ -104,7 +103,7 @@ namespace FileConv.Gfx {
                 }
             } else if (FileAttrs.FileType == PSGS_TYPE &&
                     FileAttrs.AuxType == PSGS_AUX_MONO_CLIP) {
-                if (DataStream.Length == GS_MONO_LEN || DataStream.Length == GS_MONO_LEN + 4) {
+                if (DataStream.Length == MONO_LEN || DataStream.Length == MONO_LEN + 4) {
                     return Applicability.Yes;
                 } else {
                     return Applicability.Maybe;
