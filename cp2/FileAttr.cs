@@ -21,6 +21,7 @@ using AppCommon;
 using CommonUtil;
 using DiskArc;
 using DiskArc.Arc;
+using DiskArc.FS;
 using static DiskArc.Defs;
 using AttrID = AppCommon.SetAttrWorker.AttrID;
 using AttrEdit = AppCommon.SetAttrWorker.AttrEdit;
@@ -121,7 +122,7 @@ namespace cp2 {
                         }
                         if (entries.Count != 1) {
                             Console.Error.WriteLine(
-                                "Error: can only set attributes on a single file");
+                                "Error: can only get attributes on a single file");
                             return false;
                         }
                         entry = entries[0];
@@ -184,6 +185,17 @@ namespace cp2 {
                     "Comment", string.IsNullOrEmpty(entry.Comment) ?
                         "(none)" : "\"" + entry.Comment + "\""));
             } else {
+                // Add this as a special case; useful for retrieving the volume name.
+                if (attrName.ToLower() == "filename") {
+                    if (entry is DOS_FileEntry && entry.IsDirectory) {
+                        DOS_FileEntry dosEntry = (DOS_FileEntry)entry;
+                        int volNum = dosEntry.FileSystem.VolumeNum;
+                        Console.WriteLine(volNum);
+                    } else {
+                        Console.WriteLine(entry.FileName);
+                    }
+                    return;
+                }
                 AttrID id = ParseAttrName(attrName);
                 switch (id) {
                     case AttrID.Type:

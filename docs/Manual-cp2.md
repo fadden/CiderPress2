@@ -824,7 +824,7 @@ Examples:
 
 Gets file attributes, and formats them for display.
 
-Usage: `cp2 set-attr [options] <ext-archive> <file-in-archive> [attr]`
+Usage: `cp2 get-attr [options] <ext-archive> <file-in-archive> [attr]`
 
 By default, a summary of file attributes is displayed.  The display may include
 redundant information, e.g. the ProDOS file type is displayed as both the
