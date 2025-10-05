@@ -89,6 +89,12 @@ namespace DiskArc.FS {
                 if (rawName == null) {
                     throw new ArgumentException("Invalid filename");
                 }
+                // Test for duplicate.
+                foreach (IFileEntry entry in ContainingDir) {
+                    if (entry != this && entry.CompareFileName(value) == 0) {
+                        throw new IOException("A file with that name already exists");
+                    }
+                }
                 mFileName = value;
                 Array.Copy(rawName, mRawFileName, mRawFileName.Length);
                 IsDirty = true;
@@ -123,6 +129,8 @@ namespace DiskArc.FS {
                     throw new ArgumentException("Invalid name length (" + value.Length + ")");
                 }
                 string cookedName = GenerateCookedName(value);  // this does NOT test validity
+                // NOTE: not currently checking for duplicates.  This is intentional: some disks
+                // use the same filename repeatedly for vertical space in their title blocks.
                 mFileName = cookedName;
                 // Copy new value in, and pad the rest of the field with high-ASCII spaces.
                 Array.Copy(value, mRawFileName, value.Length);
@@ -1038,6 +1046,11 @@ namespace DiskArc.FS {
                         ch == CTRL_PIC_DEL)) {
                     return false;
                 }
+                // Enforcing upper-case only is probably wise, since early DOS 3.3 doesn't handle
+                // it, but the 1983 System Master version does allow it.
+                //if (ch >= 'a' && ch <= 'z') {
+                //    return false;
+                //}
                 if (ch == ',') {
                     return false;
                 }
@@ -1193,6 +1206,7 @@ namespace DiskArc.FS {
             }
 
             // Convert to upper case.  Not strictly required, but a good idea.
+            // (NOTE: this is at odds with IsFileNameValid() which doesn't require it.)
             return cleaned.ToUpperInvariant();
         }
 

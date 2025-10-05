@@ -101,6 +101,12 @@ namespace DiskArcTests {
                 IFileEntry file1 = fs.CreateFile(volDir, "FILE1.$$$", CreateMode.File);
                 IFileEntry file2 = fs.CreateFile(volDir, "FILE2", CreateMode.File);
 
+                file0.FileName = "FILE0";           // confirm no-op rename is allowed
+                try {
+                    file0.FileName = "FILE2";
+                    throw new Exception("clashing rename succeeded");
+                } catch (IOException) { /*expected*/ }
+
                 Helper.ExpectString("FILE1.$$$", file1.FileName, "wrong filename");
                 byte[] raw = file1.RawFileName;
                 if (raw.Length != 11 || Encoding.ASCII.GetString(raw) != "FILE1   $$$") {

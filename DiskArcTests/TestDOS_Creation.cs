@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
 
 using CommonUtil;
@@ -313,6 +310,7 @@ namespace DiskArcTests {
                     fs.CreateFile(volDir, name, CreateMode.File);
                     expected.Add(new Helper.FileAttr(name, 0, 1 * SECTOR_SIZE));
                 }
+
                 Helper.ValidateDirContents(volDir, expected);
 
                 try {
@@ -330,9 +328,18 @@ namespace DiskArcTests {
 
             using (IFileSystem fs = Make525Floppy(1, appHook)) {
                 const string NEW_NAME = "NEW NAME";
+                const string FILE = "FILE";
+                const string FILE2 = "FILE2";
 
                 IFileEntry volDir = fs.GetVolDirEntry();
-                IFileEntry file = fs.CreateFile(volDir, "FILE", CreateMode.File);
+                IFileEntry file = fs.CreateFile(volDir, FILE, CreateMode.File);
+                IFileEntry file2 = fs.CreateFile(volDir, FILE2, CreateMode.File);
+
+                file2.FileName = FILE2;         // confirm no-op rename is allowed
+                try {
+                    file2.FileName = FILE;
+                    throw new Exception("clashing rename succeeded");
+                } catch (IOException) { /*expected*/ }
 
                 // Can't set BIN aux type, because the file doesn't have a data sector.  Make
                 // it a text file for now.

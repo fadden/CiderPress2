@@ -188,6 +188,12 @@ namespace cp2.Tests {
                         new string[] { proTest, "PRODOS.1.1.1", "2PRODOS" }, parms)) {
                     throw new Exception("mv " + proTest + " PRODOS failed");
                 }
+                // Rename a file, only changing the case.  ProDOS is case-insensitive but
+                // case-preserving, so this should succeed and appear in the final listing.
+                if (!Move.HandleMove("mv",
+                        new string[] { proTest, "FILES.ADD.WITH", "Files.Add.With" }, parms)) {
+                    throw new Exception("mv " + proTest + " Files.Add.With failed");
+                }
                 // Rename a single directory.
                 if (!Move.HandleMove("mv", new string[] {
                         proTest, "SUBDIR1:SUBDIR2:SUBDIR3", "SUBDIR1:SUBDIR2:SUBDIR3A" }, parms)) {
@@ -268,7 +274,7 @@ namespace cp2.Tests {
                     "SUBDIR1:SUBDIR2:SUBDIR3A:A24",
                     "SUBDIR1:SUBDIR2:SUBDIR3A:A25",
                     "SUBDIR1:SUBDIR2:SUBDIR3A:A26",
-                    "SUBDIR1:FILES.ADD.WITH",
+                    "SUBDIR1:Files.Add.With",
                     "H",
                     "X2PRODOS",         // this will break if ProDOS filename adjuster changes
                 };

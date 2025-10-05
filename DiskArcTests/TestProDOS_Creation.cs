@@ -17,11 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 using CommonUtil;
 using DiskArc;
-using DiskArc.FS;
 using static DiskArc.Defs;
 using static DiskArc.IDiskImage;
 using static DiskArc.IFileSystem;
@@ -403,12 +401,21 @@ namespace DiskArcTests {
             using (IFileSystem fs = Make525Floppy("AttribTest", appHook)) {
                 const string SUBDIR_NAME = "Sub.Dir";
                 const string NEW_NAME = "New.Name";
+                const string FILE = "FILE";
+                const string SECOND_NAME1 = "TestCase";
+                const string SECOND_NAME2 = "TESTcase";
 
                 IFileEntry volDir = fs.GetVolDirEntry();
 
                 IFileEntry subDir = fs.CreateFile(volDir, SUBDIR_NAME, CreateMode.Directory);
-                IFileEntry file = fs.CreateFile(subDir, "FILE", CreateMode.File);
+                IFileEntry file = fs.CreateFile(subDir, FILE, CreateMode.File);
+                IFileEntry fileR = fs.CreateFile(subDir, SECOND_NAME1, CreateMode.File);
 
+                fileR.FileName = SECOND_NAME1;      // confirm no-op rename is allowed
+                try {
+                    fileR.FileName = FILE;
+                    throw new Exception("clashing rename succeeded");
+                } catch (IOException) { /*expected*/ }
 
                 file.FileName = NEW_NAME;
                 file.FileType = FileAttribs.FILE_TYPE_TXT;
@@ -417,6 +424,8 @@ namespace DiskArcTests {
                 file.CreateWhen = TEST_DATE1;
                 file.ModWhen = TEST_DATE2;
 
+                fileR.FileName = SECOND_NAME2;      // test case-change rename
+
                 // Verify name change with a case-sensitive comparison.
                 if (file.FileName != NEW_NAME ||
                         file.FileType != FileAttribs.FILE_TYPE_TXT ||
@@ -424,11 +433,12 @@ namespace DiskArcTests {
                         file.Access != 0x21 ||
                         file.CreateWhen != TEST_DATE1 ||
                         file.ModWhen != TEST_DATE2) {
-                    throw new Exception("Not all changes were saved - file1");
+                    throw new Exception("Not all changes were saved - file1a");
                 }
 
                 // Flush to disk, then bounce the filesystem.
                 file.SaveChanges();
+                fileR.SaveChanges();
 
                 fs.PrepareRawAccess();
                 fs.PrepareFileAccess(DO_SCAN);
@@ -444,7 +454,10 @@ namespace DiskArcTests {
                         file.Access != 0x21 ||
                         file.CreateWhen != TEST_DATE1 ||
                         file.ModWhen != TEST_DATE2) {
-                    throw new Exception("Not all changes were saved - file2");
+                    throw new Exception("Not all changes were saved - file1b");
+                }
+                if (fileR.FileName != SECOND_NAME2) {
+                    throw new Exception("Not all changes were saved - fileR: " + fileR.FileName);
                 }
 
                 // Now do the same thing with a subdirectory.  Some of the fields should be

@@ -293,8 +293,17 @@ namespace cp2 {
 
             // Test the last component.
             string adjFileName = fs.AdjustFileName(parts[parts.Count - 1]);
-            if (fs.TryFindFileEntry(curDirEnt, adjFileName, out IFileEntry fileEnt)) {
-                // Exists; is it a directory?
+            if (fs.TryFindFileEntry(curDirEnt, adjFileName, out IFileEntry fileEnt) &&
+                    entries.Count == 1) {
+                // Found an entry with a matching name; test to see if it's the same as the
+                // first and only entry in the list.  If so, we're doing a no-op rename,
+                // possibly to change the file's case.
+                if (fileEnt == entries[0]) {
+                    fileEnt = IFileEntry.NO_ENTRY;
+                }
+            }
+            if (fileEnt != IFileEntry.NO_ENTRY) {
+                // Last component exists; is it a directory?
                 if (!fileEnt.IsDirectory) {
                     Console.Error.WriteLine("Error: file already exists: '" +
                         fileEnt.FullPathName + "'");

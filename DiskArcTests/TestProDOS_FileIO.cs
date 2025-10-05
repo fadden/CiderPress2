@@ -745,6 +745,7 @@ namespace DiskArcTests {
                 // Move 8 rings from peg1 to peg2, using peg3 as spare.
                 SolveHanoi(fs, NUM_RINGS - 1, peg1, peg2, peg3);
 
+                // Verify.
                 List<IFileEntry> entries = peg1.ToList();
                 if (entries.Count != NUM_DUMMIES) {
                     throw new Exception("Extra stuff on peg1");

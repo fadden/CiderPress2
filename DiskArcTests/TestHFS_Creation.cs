@@ -472,6 +472,8 @@ namespace DiskArcTests {
             const string SUB_SUB = "SubSub";
             const string SUB_SUB_SUB = "SubSub\u240dSub";
             const string FILE = "File";
+            const string MIXED1 = "Mixed";  // same filename but with different case
+            const string MIXED2 = "mIXed";
 
             // Create some files and directories.  Test both to ensure that the appropriate
             // catalog entries and thread records are being updated.
@@ -481,8 +483,15 @@ namespace DiskArcTests {
                 IFileEntry subSubDir = fs.CreateFile(subDir, SUB_SUB, CreateMode.Directory);
                 IFileEntry subSubSubDir = fs.CreateFile(subDir, SUB_SUB_SUB, CreateMode.Directory);
                 IFileEntry file = fs.CreateFile(volDir, FILE, CreateMode.File);
+                IFileEntry mixed = fs.CreateFile(volDir, MIXED1, CreateMode.File);
                 IFileEntry subFile = fs.CreateFile(subDir, FILE, CreateMode.File);
                 IFileEntry subSubFile = fs.CreateFile(subSubDir, FILE, CreateMode.File);
+
+                mixed.FileName = MIXED1;        // confirm no-op rename is allowed
+                try {
+                    mixed.FileName = FILE;
+                    throw new Exception("clashing rename succeeded");
+                } catch (IOException) { /*expected*/ }
 
                 volDir.FileName += "1";
                 volDir.SaveChanges();
@@ -502,6 +511,8 @@ namespace DiskArcTests {
                 raw[raw.Length - 1] = (byte)'7';
                 subSubFile.RawFileName = raw;
                 subSubFile.SaveChanges();
+                mixed.FileName = MIXED2;        // test case-change rename
+                mixed.SaveChanges();
 
                 // Try to sneak a bad change in via raw.
                 try {
@@ -539,6 +550,10 @@ namespace DiskArcTests {
                 file = fs.FindFileEntry(volDir, FILE + "5");
                 subFile = fs.FindFileEntry(subDir, FILE + "6");
                 subSubFile = fs.FindFileEntry(subSubDir, FILE + "7");
+                mixed = fs.FindFileEntry(volDir, MIXED1);
+                if (mixed.FileName != MIXED2) {
+                    throw new Exception("Failed to rename " + MIXED1 + " / " + MIXED2);
+                }
 
                 if (volDir.FileName != VOL + "1") {
                     throw new Exception("Incorrect volume name");

@@ -59,6 +59,12 @@ namespace DiskArc.FS {
                 if (!IsFileNameValid(value)) {
                     throw new ArgumentException("Invalid filename");
                 }
+                // Test for duplicate.
+                foreach (IFileEntry entry in ContainingDir) {
+                    if (entry != this && entry.CompareFileName(value) == 0) {
+                        throw new IOException("A file with that name already exists");
+                    }
+                }
                 // Update all copies of the filename.
                 foreach (Extent ext in mExtentList) {
                     ext.FileName = value;
