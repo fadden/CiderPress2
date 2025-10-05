@@ -152,8 +152,7 @@ that prevents them from being executed.  To undo this, it's necessary to
 run the following command in Terminal:
 
 ```
-% cd ~/Downloads/<place where CP2 was unzipped>
-% find . -print0 | xargs -0 xattr -d com.apple.quarantine
+% xattr -dr com.apple.quarantine ~/Downloads/<directory where CP2 was unzipped>
 ```
 
 If you don't do this, a warning will appear claiming that the application is
