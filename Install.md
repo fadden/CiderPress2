@@ -1,20 +1,18 @@
 # CiderPress II Download and Installation Guide #
 
-The command-line and GUI applications are written in C#, targeted to .NET Core 6.  The .NET
+The command-line and GUI applications are written in C#, targeted to .NET 8.  The .NET
 runtime is available for download from Microsoft for a variety of platforms, including Windows,
 Mac OS, and Linux.  It's even available for the
 [Raspberry PI](https://learn.microsoft.com/en-us/dotnet/iot/deployment).
-The [documentation](https://github.com/dotnet/core/blob/main/release-notes/6.0/supported-os.md)
-says that .NET Core 6 is only supported for Windows 10+, MacOS 13+, and recent versions of Linux,
-but in practice the command-line tool has been used successfully on Windows 7 and MacOS 11 (these
-are officially "out of support").
+The [documentation](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md)
+says that .NET 8 is only supported for Windows 10+, MacOS 13+, and recent versions of Linux.
 
 While the command-line tool is usable on multiple platforms, the GUI is currently only available
 for Windows (native or emulated).
 
 There are two types of downloads here: self-contained and framework-dependent.  The former
 includes all necessary parts of the .NET runtime in the package, so there's no need to have .NET
-installed on your system.  If you happen to have .NET Core 6 or later already installed, the
+installed on your system.  If you happen to have .NET 8 or later already installed, the
 framework-dependent package is significantly smaller.  You can also download a pre-packaged Wine
 binary that allows you to run the GUI application on recent versions of Mac OS, but this may have
 stability issues and is considered experimental.
@@ -109,7 +107,7 @@ systems are expected to work.  Older versions of the operating systems may or ma
 example, the CLI application has been successfully run on Windows 7 32-bit (x86), but this will
 not be tested regularly.
 
-The code is targeted to .NET Core 6, and is expected to work on newer versions of the runtime.
+The code is targeted to .NET 8, and is expected to work on newer versions of the runtime.
 
 ## Support for Other Systems ##
 
