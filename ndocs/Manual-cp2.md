@@ -209,9 +209,9 @@ consider an archive with the following structure:
 The "list" command can be applied to each individual piece:
  - `cp2 list archive.zip`  # lists contents of ZIP file
  - `cp2 list archive.zip:multipart.po`  # lists partitions
- - `cp2 list archive.zip:mulitpart.po:HFS_Part`  # lists contents of named APM partition
- - `cp2 list archive.zip:mulitpart.po:2`  # lists contents of 2nd (ProDOS) partition
- - `cp2 list archive.zip:mulitpart.po:2:subdir:myfiles.SHK`  # lists contents of NuFX archive
+ - `cp2 list archive.zip:multipart.po:HFS_Part`  # lists contents of named APM partition
+ - `cp2 list archive.zip:multipart.po:2`  # lists contents of 2nd (ProDOS) partition
+ - `cp2 list archive.zip:multipart.po:2:subdir:myfiles.SHK`  # lists contents of NuFX archive
 
 The named item must be a disk image or file archive.  There are no
 restrictions on what may be stored inside what, e.g. you can access ShrinkIt
@@ -1536,7 +1536,7 @@ is enabled.  For example, doing a text import of "FOO.TXT" results in "FOO"
 
 #### `--strip-paths`, `--no-strip-paths` (default)
 
-Enable or disable stripping of pathnames from files being added or extacted.
+Enable or disable stripping of pathnames from files being added or extracted.
 For example, adding "foo/bar/ack.bin" with stripping added will remove
 "foo/bar/" from the filename and store the file as "ack.bin".
 
@@ -2070,7 +2070,7 @@ because the standard case-insensitive comparison function won't treat ' ' and
 '.' as equivalent.  If AppleWorks names a file "My File", we need to be able
 to give the filename on the command line as "My File" or "My.File" (or
 even "mY.filE").  A special conversion could be applied for ProDOS disks,
-but if the file is extacted or copied to a filesystem or archive format that
+but if the file is extracted or copied to a filesystem or archive format that
 allows spaces, we could have "My.File" and "My File" on the same volume.  Now
 the file *must* be referenced as "My.File" or you'll get the wrong one, and we
 can't apply the AppleWorks transformation on anything but ProDOS because it
