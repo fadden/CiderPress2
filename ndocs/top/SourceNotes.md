@@ -2,7 +2,7 @@
 
 All of the code is written in C# .NET, using the (free to download) Visual
 Studio Community 2022 IDE as the primary development environment.  All of
-the code targets .NET Core 6.  With the exception of the WPF application,
+the code targets .NET 8.  With the exception of the WPF application,
 none of the code has a machine-specific target.  The projects can be built
 for a 32-bit or 64-bit environment.
 

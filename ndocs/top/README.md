@@ -13,7 +13,7 @@ as copy and replace whole disk partitions.
 For installation instructions, see the [install guide](Install.md).
 
 **Current status:**
- - The command-line tool runs on Windows, macOS, and Linux (anywhere .NET Core 6 runs).
+ - The command-line tool runs on Windows, macOS, and Linux (anywhere .NET 8 runs).
  - The desktop GUI is written for Windows, but [can be made to run](WineNotes.md) on other
    systems with Wine emulation.
  - Brief (3 min) video introduction to v1.0: https://youtu.be/ZrUfNzscq3g
