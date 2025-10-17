@@ -72,19 +72,19 @@ queried with `wine --version`.  This was released nearly a year earlier, and
 does not work well with CiderPress II.  While Wine is updated regularly, the
 pre-built macOS binary is not.
 
-### Wineskin / Kegworks ###
+### Wineskin / Sikarugir ###
 
 Wrapping the application seems to work a bit better, and is more generally
 useful because it allows people to download a fully functional program
 without having to install and configure Wine.  For macOS, the
-[Kegworks project](https://github.com/Kegworks-App/Kegworks) provides a
-reasonably user-friendly interface for this.  The chief drawback to this
-approach is that the wrapped package is well over 1 GB.
+[Sikarugir project](https://github.com/Sikarugir-App/Sikarugir) (formerly
+Kegworks) provides a reasonably user-friendly interface for this.  The chief
+drawback to this approach is that the wrapped package is well over 1 GB.
 
 As with Wine, getting started is a little bumpy.  The project page on github
 has download instructions, again using Homebrew and MacPorts, but doesn't
 tell you what to do next.  The installed program is not a command-line
-utility, but rather a GUI app called "Kegworks Winery" that can be found in
+utility, but rather a GUI app called "Sikarugir Creator" that can be found in
 the Applications folder.
 
 When you launch the app, it will initially be a little blank.  Click on the
@@ -94,17 +94,17 @@ engine with "32Bit" in the name, e.g. `WS11WineCX32Bit21.2.0`, and install
 that.  (With a 64-bit engine there are significant visual glitches, e.g. the
 menus may not render.)
 
-Kegworks is now ready to go.  Download the latest version of CiderPress II,
+Sikarugir is now ready to go.  Download the latest version of CiderPress II,
 selecting the 32-bit (x86) self-contained Windows version.  For example,
 for v1.0.6 you'd grab `cp2_1.0.6_win-x86_sc.zip` from the releases page.
 Double-click the ZIP to unpack it into `cp2_1.0.6_win-x86_sc`.
 
-In Kegworks, select the 32-bit engine and click "Create New Blank Wrapper".
+In Sikarugir, select the 32-bit engine and click "Create New Blank Wrapper".
 Choose an app name, such as `CP2Mac106[.app]`, and click "OK".  The application
 will go off and do things for a while (about 45 seconds on a Mac Mini M4),
 then hopefully report that the wrapper was created successfully.  Click "View
-wrapper in Finder".  This will open the `~/Applications/Kegworks` directory.
-(You can quit out of Kegworks at this point.)
+wrapper in Finder".  This will open the `~/Applications/Sikarugir` directory.
+(You can quit out of Sikarugir at this point.)
 
 We now need to put CiderPress II into the wrapper.  Double-click `CP2Mac106`.
 Click "Install Software".  Click "Copy a Folder Inside".  From the Downloads
@@ -115,7 +115,7 @@ We're not quite done, but at this point if you quit and double-click the app
 icon, it will launch directly into the CiderPress II GUI.  To access Wine
 settings, you'll need to Ctrl+click or right-click on the app icon to open a
 menu.  Select "Show Package Contents".  Double-click "Contents" to open the
-folder, then double-click "Wineskin" to bring up the configuration buttons.
+folder, then double-click "Configure" to bring up the configuration buttons.
 
 #### Fonts ####
 
@@ -129,7 +129,7 @@ To add it:
 
  - If you're not still in the app configuration menu:
    - Ctrl+click the app icon, select "Show Package Contents".
-   - Open the "Contents" folder, and double-click "Wineskin".
+   - Open the "Contents" folder, and double-click "Configure".
  - Click "Winetricks".
  - Expand the "fonts" item, and click the checkbox next to "consolas"
    ("MS Consolas console font").
@@ -137,7 +137,7 @@ To add it:
 
 This does a whole bunch of work.  When it's done, you'll have a copy of the
 Consolas font family files in "Contents/drive_c/windows/Fonts".  Click "Close"
-to close Winetricks, close the KegworksConfig window, then double-click on
+to close Winetricks, close the Configure window, then double-click on
 the application icon to test your installation.
 
 Installing the Tahoma font helped on Linux, but had no noticeable effect on
@@ -189,9 +189,8 @@ close and re-open Terminal.  This should cause the system to install it.
 
  - Sometimes the main window goes almost totally black.  You can force a
    redraw by minimizing and restoring the application window.
- - The UI font can seem a little blurry in spots.  I don't know if that's
-   because the correct font (Segoe UI) isn't available, or something to do
-   with the rendering engine.
+ - The UI font can seem a little blurry in spots.  Resizing the window
+   horizontally can make this better or worse.
  - The app can be a little slow to start, since it has to "boot" Windows.
 
 Because this is a Windows emulation and not a native macOS application, the

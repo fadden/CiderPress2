@@ -44,7 +44,7 @@ Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/c
 
 System        | Link
 ------------- | ----
-Mac OS        | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2wine_1.1.0_mac.zip
+Mac OS        | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2wine_1.1.1_mac.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they are unzipped.
