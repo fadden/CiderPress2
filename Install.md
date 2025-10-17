@@ -5,7 +5,9 @@ runtime is available for download from Microsoft for a variety of platforms, inc
 Mac OS, and Linux.  It's even available for the
 [Raspberry PI](https://learn.microsoft.com/en-us/dotnet/iot/deployment).
 The [documentation](https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md)
-says that .NET 8 is only supported for Windows 10+, MacOS 13+, and recent versions of Linux.
+says that .NET 8 is only supported for Windows 10+, MacOS 13+, and recent versions of Linux,
+but in practice the command-line tool has been used successfully on Windows 7 and MacOS 11 (these
+are officially "out of support").
 
 While the command-line tool is usable on multiple platforms, the GUI is currently only available
 for Windows (native or emulated).
@@ -24,25 +26,25 @@ or use one of the links below to download the most recent stable release.
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_win-x86_sc.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_win-x64_sc.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_osx-x64_sc.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_linux-x64_sc.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_win-x86_sc.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_win-x64_sc.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_osx-x64_sc.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_linux-x64_sc.zip
 
 **Framework-Dependent** (~1 MB)
 
 System        | Link
 ------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_win-x86_fd.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_win-x64_fd.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_osx-x64_fd.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2_1.1.0_linux-x64_fd.zip
+Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_win-x86_fd.zip
+Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_win-x64_fd.zip
+Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_osx-x64_fd.zip
+Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2_1.1.1_linux-x64_fd.zip
 
 **Wine Emulation** (EXPERIMENTAL) (450+ MB)
 
 System        | Link
 ------------- | ----
-Mac OS        | https://github.com/fadden/CiderPress2/releases/download/v1.1.0/cp2wine_1.1.0_mac.zip
+Mac OS        | https://github.com/fadden/CiderPress2/releases/download/v1.1.1/cp2wine_1.1.1_mac.zip
 
 Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
 for you).  There is no installer; the commands are executed directly from where they are unzipped.

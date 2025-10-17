@@ -832,7 +832,9 @@ three-letter mnemonic and the hexadecimal type value.
 
 If an attribute name is given, only that attribute is displayed, in its most
 raw form.  This is intended to be machine-readable.  Valid attribute names
-are `type`, `aux`, `hfstype`, `creator`, `access`, `cdate`, and `mdate`.
+are `type`, `aux`, `hfstype`, `creator`, `access`, `cdate`, and `mdate`.  The
+command also accepts `filename`, which can be useful for obtaining the volume
+name or number from a disk image.
 
 Options:
  - `--mac-zip`, `--no-mac-zip`
