@@ -151,7 +151,7 @@ run on other platforms with the use of the Wine emulation wrapper.  The code was
 using the Windows MFC toolkit.  Some of the lower-level functions were implemented in portable
 libraries that were used by other applications.</p>
 
-<p>CiderPress II is written in C#, targeted at .NET Core 6.  It gives equal importance to
+<p>CiderPress II is written in C# .NET.  It gives equal importance to
 GUI and command-line interfaces, and can run on a variety of systems, including
 Windows, Mac OS, and Linux.</p>
 
@@ -181,7 +181,8 @@ file management, and WOZ disk image support, there are a few more subtle changes
 <p>A few things have been removed and are not expected to return, due to lack of interest:</p>
 
 <ul>
-  <li>NuFX archives with deflate, bzip2, and LZC compression are no longer supported.</li>
+  <li>NuFX archive entries compressed with deflate and bzip2 compression are no
+      longer supported.</li>
   <li>The FDI disk image format has been dropped.</li>
   <li>SST file combining has been dropped.</li>
 </ul>
@@ -191,11 +192,11 @@ file management, and WOZ disk image support, there are a few more subtle changes
 <ul>
   <li>NufxLib and libhfs have been replaced.</li>
   <li>The CiderPress disk image library had some file update limitations, notably that files
-    had to be written all at once.  The new library returns a Stream object that can be used
-    the same way it would for a file on the host filesystem.</li>
-  <li>Compression code uses the same API as the standard System.IO.Compression classes,
-    making it easy to integrate NuFX LZW or Squeeze compression into code that doesn't want
-    the rest of the NuFX archive handling.</li>
+    had to be written in a single operation.  The new library returns a Stream object
+    that can be used the same way it would for a file on the host filesystem.</li>
+  <li>Compression code uses the same API as the standard <code>System.IO.Compression</code>
+    classes, making it easy to integrate NuFX LZW or Squeeze compression into code that
+    doesn't want the rest of the NuFX archive handling.</li>
   <li>The file conversion library returns platform-agnostic objects that can be converted to
     TXT/RTF/PNG/CSV, rather than directly generating Windows-specific bitmaps and RTF.</li>
 </ul>
