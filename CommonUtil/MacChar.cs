@@ -307,8 +307,8 @@ namespace CommonUtil {
         }
 
         /// <summary>
-        /// Converts a 32-bit big-endian value to a four-character strings.  Useful for HFS
-        /// creator and file types, and Mac resource types.  Control characters are converted
+        /// Converts a 32-bit big-endian value to a four-character string ("FourCC").  Useful for
+        /// HFS creator and file types, and Mac resource types.  Control characters are converted
         /// to the printable range.
         /// </summary>
         /// <param name="val">Value to convert.</param>
@@ -323,8 +323,8 @@ namespace CommonUtil {
         }
 
         /// <summary>
-        /// Converts a 4-character Mac OS Roman string to a 4-byte integer.  Control characters
-        /// are expected to be in the printable range.
+        /// Converts a 4-character Mac OS Roman string to a 4-byte integer ("FourCC").  Control
+        /// characters are expected to be in the printable range.
         /// </summary>
         /// <param name="typeStr">String to convert.  All characters must be valid
         ///   Mac OS Roman.</param>

@@ -399,11 +399,18 @@ namespace cp2 {
                 }
                 IFileSystem fs = (IFileSystem)contents;
 
-                // New stream, no need to initialize chunks.  Format the filesystem.
-                fs.Format(Defs.DEFAULT_VOL_NAME, volumeNum, doMakeBootable);
+                try {
+                    // New stream, no need to initialize chunks.  Format the filesystem.
+                    fs.Format(Defs.DEFAULT_VOL_NAME, volumeNum, doMakeBootable);
 
-                // Dispose of the object to ensure everything has been flushed to the chunks.
-                fs.Dispose();
+                    // Dispose of the object to ensure everything has been flushed to the chunks.
+                    fs.Dispose();
+                } catch {
+                    // Not expecting fs.Format() to fail, since this is a new image and we've
+                    // verified all the parameters, but experimental stuff can cause problems.
+                    image.Dispose();
+                    throw;
+                }
             }
             image.Flush();
 

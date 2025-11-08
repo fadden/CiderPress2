@@ -641,6 +641,15 @@ namespace DiskArc.FS {
             if (!IsSizeAllowed(ChunkAccess.FormattedLength)) {
                 throw new ArgumentException("Invalid length for DOS volume");
             }
+            GetVTOCLocation(AppHook, out byte vtocTrack, out byte vtocSector);
+            if (vtocSector != 0) {
+                // We currently format the entire VTOC track, with sector 0 for the VTOC
+                // and sectors 1-N for catalog entries.  A nonzero VTOC sector would require
+                // either stepping around it or stopping early.  Or possibly having the VTOC
+                // in one place and catalog sectors in another.  Whatever the case, we're not
+                // handling it yet.
+                throw new ArgumentException("VTOC must be in sector 0 when formatting filesystem");
+            }
 
             // Validate volume number.  Use default if invalid.  This allows the caller to pass -1
             // as an "I don't care" value, and have it work for all possible filesystems.
@@ -665,7 +674,6 @@ namespace DiskArc.FS {
             }
 
             // Create a VTOC.
-            GetVTOCLocation(AppHook, out byte vtocTrack, out byte vtocSector);
             byte[] vtoc = new byte[SECTOR_SIZE];
             vtoc[0x00] = (TotalScts == 13) ? (byte)2 : (byte)4;
             vtoc[0x01] = vtocTrack;                 // track 17
