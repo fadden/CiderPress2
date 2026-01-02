@@ -680,7 +680,8 @@ namespace cp2_wpf {
         /// <summary>
         /// Verifies that the file list matches the current configuration.
         /// </summary>
-        /// <returns>True if all is well, false if a mismatch was found.</returns>
+        /// <returns>True if all is well, false if a mismatch was found.  Also returns true
+        /// if we're not actually showing a list of files.</returns>
         private bool VerifyFileList() {
             if (CurrentWorkObject is IArchive) {
                 return VerifyFileList(mMainWin.FileList, (IArchive)CurrentWorkObject);
@@ -695,6 +696,11 @@ namespace cp2_wpf {
                 } else {
                     return VerifyFileList(mMainWin.FileList, (IFileSystem)CurrentWorkObject);
                 }
+            } else if (CurrentWorkObject is IMultiPart || CurrentWorkObject is Partition ||
+                    CurrentWorkObject is IDiskImage) {
+                // Showing disk info or partition list, not a file list.
+                Debug.WriteLine("Skipping file list re-check");
+                return true;
             } else {
                 Debug.Assert(false, "can't verify " + CurrentWorkObject);
                 return false;
