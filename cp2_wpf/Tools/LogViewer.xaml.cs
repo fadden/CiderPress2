@@ -17,8 +17,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Win32;
 
 using CommonUtil;
 
@@ -117,6 +120,33 @@ namespace cp2_wpf.Tools {
                 if (mAutoScroll) {
                     sv.ScrollToVerticalOffset(sv.ExtentHeight);
                     //Debug.WriteLine("Auto-scrolling");
+                }
+            }
+        }
+
+        private void SaveLog_Click(object sender, RoutedEventArgs e) {
+            string filter = WinUtil.FILE_FILTER_TEXT;
+            SaveFileDialog fileDlg = new SaveFileDialog() {
+                Title = "Save Debug Log...",
+                Filter = filter + "|" + WinUtil.FILE_FILTER_ALL,
+                FilterIndex = 1,
+                FileName = "cp2-log.txt"
+            };
+            if (fileDlg.ShowDialog() != true) {
+                return;
+            }
+            string pathName = Path.GetFullPath(fileDlg.FileName);
+
+            using (StreamWriter outStream = new StreamWriter(pathName)) {
+                StringBuilder sb = new StringBuilder(128);
+                foreach (LogEntry entry in LogEntries) {
+                    sb.Clear();
+                    sb.Append(entry.When.ToString(@"hh\:mm\:ss\.fff"));
+                    sb.Append(' ');
+                    sb.Append(entry.Priority);
+                    sb.Append(' ');
+                    sb.AppendLine(entry.Message);
+                    outStream.Write(sb.ToString());
                 }
             }
         }

@@ -46,7 +46,10 @@ limitations under the License.
         </DataTemplate>
     </Window.Resources>
 
-    <DockPanel Margin="2">
+    <DockPanel Margin="2" LastChildFill="true">
+        <Button DockPanel.Dock="Bottom" Content="Save to File" Width="80" Margin="0,4,0,0"
+                Click="SaveLog_Click"/>
+
         <ItemsControl ItemsSource="{Binding LogEntries}">
             <!-- Style="{StaticResource LogViewerStyle}" -->
             <ItemsControl.Template>
