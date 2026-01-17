@@ -7,7 +7,10 @@
 CARRIAGE RETURNS
 BEEPS␇␇
 100HGR:HGR2:HCOLOR=3:HPLOT0,0TO279,191
+
 REM --> a REM without a line number is a source-only comment <--
+rem After import, compare binary to test-files.sdk:Code:ALL.TOKENS
+
  110  GR : COLOR= 9: PLOT 0,0: COLOR= 10: HLIN 0,39 AT 15: VLIN 0,23 AT 6
  120  Text:Normal:H O M E
  125  REM NO TERMINATING '"'
