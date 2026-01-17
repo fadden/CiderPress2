@@ -149,8 +149,12 @@ namespace FileConv.Code {
                     return err;
                 }
                 if (lineNum == -1) {
-                    if (line.Trim().Length == 0) {
+                    string trimmed = line.Trim();
+                    if (trimmed.Length == 0) {
                         // Totally blank line.  Ignore it.
+                        continue;
+                    } else if (trimmed[0] == '#' || trimmed.ToUpper().StartsWith("REM")) {
+                        // Source-only comment.
                         continue;
                     } else if (lastWasREM && lastLineNum != -1) {
                         // Special case of REM with an embedded carriage return.  Append to
@@ -305,7 +309,9 @@ namespace FileConv.Code {
                                 // Accept as abbreviation for PRINT.
                                 outBuf[outOffset++] = TOKEN_INDEX_PRINT + 128;
                             } else {
-                                outBuf[outOffset++] = (byte)ch;
+                                // REM, DATA, and quoted text were handled earlier.  Everything
+                                // else must be converted to upper case.
+                                outBuf[outOffset++] = (byte)char.ToUpper(ch);
                             }
                         }
                     }
