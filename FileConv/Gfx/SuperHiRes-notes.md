@@ -113,10 +113,12 @@ probably an uncompressed SHR image.
 
 This is commonly known as "Brooks format", after the designer, John Brooks.  The file has
 32,000 bytes of pixel data (200 lines, 160 bytes per line) followed by 200 sets of 32-byte
-palette entries (one per line).  The color tables are stored in reverse order, i.e. the color
-value for color 15 is stored first.
+palette entries (one per line), for a total of 38400 bytes.  The color tables are stored in
+reverse order, i.e. the color value for color 15 is stored first.
 
 No SCB data is stored, because lines are always 320 mode, and each line has its own palette.
+
+These are sometimes found with a BIN filetype, and a filename ending in ".3200".
 
 ### PNT/$0000: Paintworks Packed ###
 
@@ -266,13 +268,17 @@ PIC/$8003 doesn't appear to be used.
 
 ### ".3201": Compressed 3200-Color Image ###
 
-The origin of these files is uncertain.  The layout is:
+The origin of these files is uncertain.  They generally have the BIN filetype, and a filename
+ending in ".3201".  The file layout is:
 ```
 +$00  /   4: High-ASCII string "APP" followed by $00
 +$04  /6400: 200 sets of color table entries (16 x 2 bytes), one per line
 +$1904/  xx: PackBytes-compressed pixel data (160x200=32000 bytes when uncompressed)
 ```
 The color table is in the same order as PIC/$0002 ("Brooks format").
+
+A rare variant that starts with "NRL" ($ce $d2 $cc $00) has the same layout but uses a custom
+compression scheme.
 
 ### Miscellaneous ###
 
