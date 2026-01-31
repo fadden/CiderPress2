@@ -277,8 +277,8 @@ ending in ".3201".  The file layout is:
 ```
 The color table is in the same order as PIC/$0002 ("Brooks format").
 
-A rare variant that starts with "NRL" ($ce $d2 $cc $00) has the same layout but uses a custom
-compression scheme.
+A rare variant that starts with "NRL" ($ce $d2 $cc $00) has the same layout but uses a
+nibble-oriented RLE compression scheme.
 
 ### Miscellaneous ###
 
