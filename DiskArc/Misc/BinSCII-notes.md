@@ -82,7 +82,8 @@ The 36 bytes of encoded attributes become 27 bytes:
 All multi-byte integers are in little-endian order.  The ProDOS attributes are in the same order
 and format used by the MLI GET/SET_FILE_INFO calls, and should be the same in every chunk.  The
 CRC does not include the filename, because the author wanted people to be able to edit it directly
-in the encoded file.
+in the encoded file.  This potentially makes it vulnerable to corruption, but it's obvious and
+easy to fix.
 
 The data lines start immediately after the header.  Each line is 64 characters long, and may end
 with CR, LF, or CRLF.  Some files appear to be indented with whitespace, but not all decoders
@@ -94,7 +95,7 @@ input file isn't a multiple of 48 bytes, additional zeroes are added as padding 
 data line is encoded.
 
 The last line of the chunk holds a CRC-16/XMODEM of the decoded data, followed by a zero byte,
-encoded as a 4-character string.
+encoded as a 4-character string.  The CRC includes the padding added at the end of the file.
 
 Bytes are encoded by taking three input bytes:
 

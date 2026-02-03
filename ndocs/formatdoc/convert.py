@@ -72,6 +72,7 @@ gFileList = [
         "DiskArc/FS/Pascal-notes.md",
         "DiskArc/FS/ProDOS-notes.md",
         "DiskArc/FS/RDOS-notes.md",
+        "DiskArc/Misc/BinSCII-notes.md",
         "DiskArc/Multi/APM-notes.md",
         "DiskArc/Multi/CFFA-notes.md",
         "DiskArc/Multi/DOS800-notes.md",

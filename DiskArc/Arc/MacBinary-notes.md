@@ -4,7 +4,7 @@
 
  - "Macintosh Binary Transfer Format ("MacBinary") Standard Proposal", revision 3, dated 6-May-1985
  - "MacBinary II Standard", revised 24-Jul-1987
- - "MacBinary III Standard", revised Dec-1996
+ - "MacBinary III Standard", revised Dec 1996
  - https://code.google.com/archive/p/theunarchiver/wikis/MacBinarySpecs.wiki
 
 ## General ##
@@ -25,26 +25,26 @@ Of these, MacBinary II appears to be the most common.
 
 MacBinary files conventionally have the file extension ".bin" or ".macbin".
 
-Distinguishing a MacBinary file from any other binary blob is difficult, because most of the
-fields are or can be zero.  This is probably because the authors intended it for use as a
-transmission wrapper rather than an archival storage format.  MacBinary II added a 16-bit CRC
-on the header, and MacBinary III added a signature word, both of which make positive identification
-easier and more reliable.
+Distinguishing a MacBinary file from any other binary blob is difficult, because many of the
+fields will contain zero or random data.  The lack of identifying bytes is probably due to the
+authors intending it for use as a transmission wrapper rather than an archival storage format.
+MacBinary II added a 16-bit CRC on the header, and MacBinary III added a signature word, both of
+which make positive identification easier and more reliable.
 
 ## File Structure ##
 
 MacBinary files have three parts: the 128-byte header, followed by the data fork, then the
-resource fork.  The file fork data is padded with zeroes to ensure it ends on a 128-byte boundary.
-An "info" section with the Finder "Get Info" FCMT data follows, though the documentation disputes
-whether this actually happened before the MacBinary III era.  (Presumably this should also be
-padded to a 128-byte boundary, but the specification doesn't mention this.)
+resource fork.  The fork data is padded with zeroes to ensure it ends on a 128-byte boundary.
+An "info" section with the Finder "Get Info" FCMT data follows at the end, though the documentation
+disputes whether this actually happened before the MacBinary III era.  (Presumably this should
+also be padded to a 128-byte boundary, but the specification doesn't mention this.)
 
-Files may or may not actually end on a 128-byte boundary.  Some MacBinary creators apparently
-didn't pad the last stretch of file.
+MacBinary files may or may not actually end on a 128-byte boundary; some MacBinary creators
+apparently didn't pad the last part of the file.
 
 All multi-byte integers are in big-endian order.  Fields identified with "(2)" or "(3)" were
-added in MacBinary II or III, and must be zero in earlier versions of the format.  (In practice,
-some implementations left garbage in the unused fields.)
+added in MacBinary II or III, and must be set to zero when writing earlier versions of the
+format.  (In practice, some implementations left garbage in the unused fields.)
 
 The file header is:
 ```
@@ -70,29 +70,29 @@ The file header is:
 +$6b / 1: (3) extended Finder flags (fdXFlags field from FXInfo)
 +$6c / 8: reserved, must be zero
 +$74 / 4: (2) total length of files when unpacked; only meaningful with compression (never used?)
-+$78 / 2: (2) length of a secondary header that immediately follows this one
++$78 / 2: (2) length of an optional secondary header that immediately follows this one
 +$7a / 1: (2) version number of MacBinary II that uploading program is written for ($81/$82)
 +$7b / 1: (2) minimum MacBinary II version needed to read this file ($81)
 +$7c / 2: (2) CRC of previous 124 bytes
 +$7e / 2: computer/OS ID bytes, must be zero; field was dropped in (2)
 ```
 
-If the secondary header is defined, skip that many bytes after the file header is read, rounded
-up to the next 128-byte boundary.  (This has reportedly never been used, outside of a few
-experiments.)
+If the secondary header at +$78 is defined, the unpacking program should skip that many bytes
+after the file header is read, rounded up to the next 128-byte boundary.  (This has reportedly
+never been used, outside of a few experiments.)
 
 Filenames use the Mac OS character set.  Mac OS Roman may be assumed.  The filename field
 holds the filename only, not a partial path, so the maximum length is 31 characters.  The
-original MacBinary standard didn't note this, MacBinary II claimed 1-63 characters, but
+original MacBinary standard didn't note the length, MacBinary II claimed 1-63 characters, and
 MacBinary III reduced it to 1-31.  The filename must not include colons (':').
 
 The CRC is a CRC-16/XMODEM, though that isn't explicitly mentioned in the specification.
 
-For the version fields, MacBinary II is version 129, MacBinary III is version 130.
+For the version fields at +$7a/7b, MacBinary II is version $81, MacBinary III is $82.
 
-MacBinary only stored the high byte of the Finder FInfo flags.  According to the specification,
-the low byte of the flags field must be zero.  The contents of the low byte were later added to
-the MacBinary II header, at +$65.
+MacBinary only stored the high byte of the Finder FInfo `fdFlags` field.  According to the
+specification, the low byte of the flags field must be zero.  The contents of the low byte were
+later added to the MacBinary II header, at +$65.
 
 The flags values are:
 ```
