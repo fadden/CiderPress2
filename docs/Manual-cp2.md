@@ -1503,7 +1503,9 @@ This is a way to pass certain configuration options to lower-level code.  You
 generally won't need to use this.  Examples:
 
  - `--set-int=dos-vtoc-track:0x15` directs the DOS filesystem code to look for
-   the catalog on track 0x15 instead of 0x11.
+   the VTOC (Volume Table of Contents) on track 0x15 instead of 0x11.
+ - `--set-int=dos-vtoc-sector:3` directs the DOS code to look for the VTOC in
+   sector 3 instead of 0.
  - `--set-int=nufx-comp-alg:5` overrides the compression algorithm used when
    adding files to NuFX (ShrinkIt) archives.
 

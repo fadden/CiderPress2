@@ -1,0 +1,129 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">BinSCII Encoding</h1><a aria-label="Permalink: BinSCII Encoding" class="anchor" href="#user-content-binscii-encoding" id="user-content-binscii-encoding" name="user-content-binscii-encoding"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>David Whitney's posts in comp.sys.apple, February 1989:
+<a href="https://groups.google.com/g/comp.sys.apple/c/BT_GGUlL8o4/m/rwZ2ynJpReAJ" rel="nofollow">https://groups.google.com/g/comp.sys.apple/c/BT_GGUlL8o4/m/rwZ2ynJpReAJ</a>
+</li>
+<li>"binscii.5", an unofficial specification written by Neil Parker, based on <code>sciibin</code> code</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Usenet and some e-mail systems aren't 8-bit clean, so binaries posted to forums or attached to
+mail messages may need to be converted to a 7-bit format.  It may also be necessary to avoid
+certain strings, e.g. the system might have to modify your message if a line starts with "From: "
+or is too long.  A further complication arises when messages are passed through a network that
+uses a non-ASCII character set, such as EBCDIC, which could lack punctuation characters like
+'^' and '{'.</p>
+<p>A simple approach to work around these issues is to generate a hex dump, with two hexadecimal
+digits per byte, but this doubles the size of the file.  This can by improved by mapping three
+8-bit values to four 6-bit values, outputting 64 different symbols.  Implementations commonly used
+in the 1980s and 1990s included <a href="https://en.wikipedia.org/wiki/Uuencoding" rel="nofollow">uuencode</a> on UNIX
+systems and <a href="https://en.wikipedia.org/wiki/BinHex" rel="nofollow">BinHex</a> on the Macintosh.  A standard for
+Base64 encoding was published in <a href="https://www.rfc-editor.org/rfc/rfc4648" rel="nofollow">RFC 4648</a> in 2006.</p>
+<p>In 1989, David Whitney <a href="https://groups.google.com/g/comp.sys.apple/c/pLZaErOIwPY/m/azcRAeCEtCwJ" rel="nofollow">developed</a>
+the BinSCII format as a way to encode Apple II files.  It explicitly supports multi-part
+archives, includes the decoder alphabet in the header to work around character set conversion
+issues, and provides a way to encapsulate ProDOS file attributes.  It quickly became the default
+way to distribute Apple II files on Usenet and via e-mail.</p>
+<p>Files in BinSCII format generally use the ".bsc" or ".bsq" extensions, the latter implying that
+the file contains a ShrinkIt archive.</p>
+<div class="markdown-heading"><h2 class="heading-element">File Structure</h2><a aria-label="Permalink: File Structure" class="anchor" href="#user-content-file-structure" id="user-content-file-structure" name="user-content-file-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>When encoding a file, the source is split into 12KB chunks, each of which is encoded independently.
+The chunk size could theoretically be larger or smaller, and could vary between chunks, but most
+decoders would be confused to find anything other than 12288 bytes in every chunk except the last.</p>
+<p>The chunks look like this:</p>
+<pre><code>[Optional human-readable notes about what this file is.]
+
+FiLeStArTfIlEsTaRt
+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789()
+HSHRINKIT       A4ZyAAAAA8)4RJAI2CHA3UxAOIjtAADAA0Y7
+a(voNqXqpOg8z3YIlm0ADQfjNmVqpOA8x3o(M04AO0IwvJKwNCQqdOQsK)LAQfF4
+A3K(CB)(wDeyhnsPiqD8b1LAGAPIEAQn1DN6rgII)CAIgQVZAAABAAAA1aLAyC7w
+[...]
+jAGeAkMfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+A8mR
+[other text may follow]
+</code></pre>
+<p>The first line is the BinSCII chunk signature ("FiLeStArTfIlEsTaRt").  The second line is the
+64-character encoding dictionary.  The third line holds the filename and file attributes:</p>
+<pre><code>+$00 /  1: filename length (1-15) + $40 (this is not encoded with the dictionary)
++$01 / 15: ProDOS filename (ASCII A-Z and '.' only), padded with spaces
++$10 / 36: encoded file attributes
+</code></pre>
+<p>The 36 bytes of encoded attributes become 27 bytes:</p>
+<pre><code>+$00 / 3: total length of file
++$03 / 3: offset in bytes of this segment (should be a multiple of 12288)
++$06 / 1: ProDOS access byte
++$07 / 1: ProDOS file type
++$08 / 2: ProDOS aux type
++$0a / 1: ProDOS storage type
++$0b / 2: ProDOS block count
++$0d / 2: ProDOS creation date
++$0f / 2: ProDOS creation time
++$11 / 2: ProDOS modification date
++$13 / 2: ProDOS modification time
++$15 / 3: length, in bytes, of this segment (should be [1,12288])
++$18 / 2: CRC-16/XMODEM of preceding fields
++$1a / 1: (reserved)
+</code></pre>
+<p>All multi-byte integers are in little-endian order.  The ProDOS attributes are in the same order
+and format used by the MLI GET/SET_FILE_INFO calls, and should be the same in every chunk.  The
+CRC does not include the filename, because the author wanted people to be able to edit it directly
+in the encoded file.  This potentially makes it vulnerable to corruption, but it's obvious and
+easy to fix.</p>
+<p>The data lines start immediately after the header.  Each line is 64 characters long, and may end
+with CR, LF, or CRLF.  Some files appear to be indented with whitespace, but not all decoders
+handle this.  The data section must not include blank lines or other extraneous characters,
+and lines may not be split.</p>
+<p>The 8:6 ratio means each 64-character line contains 48 bytes from the original file.  If the
+input file isn't a multiple of 48 bytes, additional zeroes are added as padding when the last
+data line is encoded.</p>
+<p>The last line of the chunk holds a CRC-16/XMODEM of the decoded data, followed by a zero byte,
+encoded as a 4-character string.  The CRC includes the padding added at the end of the file.</p>
+<p>Bytes are encoded by taking three input bytes:</p>
+<pre><code>abcdefgh ijklmnop qrstuvwx
+</code></pre>
+<p>And shifting them around to get four values:</p>
+<pre><code>00stuvwx 00mnopqr 00ghijkl 00abcdef
+</code></pre>
+<p>The values are used as indices into the encoding dictionary to get the output characters.</p>
+<p>Encoded segments may be transmitted singly or concatenated together, in any order.  This was
+especially useful when posting to systems with tight restrictions on file sizes.  It is the
+responsibility of the decoding software and/or end user to ensure that all segments are present.
+There is no full-file checksum.</p>
+<div class="markdown-heading"><h2 class="heading-element">Software</h2><a aria-label="Permalink: Software" class="anchor" href="#user-content-software" id="user-content-software" name="user-content-software"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>David Whitney's <code>BinSCII</code>, written for ProDOS 8, was the original implementation.</p>
+<p>Marcel J. E. Mol wrote the <code>sciibin</code> decoder for UNIX systems.</p>
+<p>On the Apple IIgs, the <code>GScii+</code> NDA could unpack BinSCII, uuencode, and MacBin files.</p>
+<p>While BinSCII can preserve ProDOS file attributes, it's generally better to store files in a
+ShrinkIt archive before encoding them, because it may otherwise be difficult to tell if you've
+successfully decoded all file segments.  The primary exception to this rule is the distribution
+of ShrinkIt itself.</p>
+<p>While it's theoretically possible to encode resource forks directly in BinSCII by setting the
+storage type, most (if not all) decoders won't or can't handle them, so storing forked files in
+ShinkIt archives is recommended.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Misc/BinSCII-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>
