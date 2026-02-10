@@ -77,6 +77,7 @@ namespace cp2.Tests {
                 TestMetadata.RunTest(parms);
                 TestPrint.RunTest(parms);
                 TestTest.RunTest(parms);
+                TestBinSCII.RunTest(parms);
                 TestClip.RunTest(parms);
                 TestMisc.RunTest(parms);
             } catch (Exception ex) {

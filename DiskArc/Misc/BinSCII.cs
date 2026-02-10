@@ -282,6 +282,18 @@ namespace DiskArc.Misc {
             }
         }
 
+        /// <summary>
+        /// Decodes all chunks destined for a single output file to a memory buffer.  Files with
+        /// chunks from multiple output files will be rejected.
+        /// </summary>
+        /// <param name="inStream">Text input stream.</param>
+        /// <param name="fileName">Result: filename.</param>
+        /// <param name="attrs">Result: decoded file attributes.</param>
+        /// <param name="crcOk">Result: were all of the CRCs we encountered okay?</param>
+        /// <returns>File-sized buffer with decoded data.</returns>
+        /// <exception cref="InvalidDataException">Bad header CRC or bad input data
+        ///   encountered.  Not thrown for data CRC mismatch.  Will also be thrown if data
+        ///   for more than one output file is encountered.</exception>
         public static byte[] DecodeToBuffer(StreamReader inStream, out string fileName,
                 out FileInfo attrs, out bool crcOk) {
             int fileOffset, chunkLen;
@@ -310,9 +322,14 @@ namespace DiskArc.Misc {
             while (offset < fileLength) {
                 // We double-buffer with the chunk buf because the output is always a multiple
                 // of 48 bytes, but we want our buffer to match the actual size.
-                if (!DecodeNextChunk(inStream, chunkBuf, out fileName, out attrs, out fileOffset,
+                string fileName2;
+                FileInfo attrs2;
+                if (!DecodeNextChunk(inStream, chunkBuf, out fileName2, out attrs2, out fileOffset,
                         out chunkLen, out chunkCrcOk)) {
                     break;
+                }
+                if (fileName2 != fileName || attrs2 != attrs) {
+                    throw new InvalidDataException("Found data for more than one file");
                 }
                 crcOk &= chunkCrcOk;
                 Array.Copy(chunkBuf, 0, fileBuf, offset, chunkLen);
@@ -465,17 +482,28 @@ namespace DiskArc.Misc {
         /// <param name="str">Input string.  Length must be a multiple of 4.</param>
         /// <param name="buf">Output buffer.  Must hold (str.Length/4)*3 bytes.</param>
         /// <param name="offset">Start offset in output buffer.</param>
-        /// <returns></returns>
+        /// <exception cref="InvalidDataException">Bad input character found.</exception>
         private static void DecodeString(string str, byte[] buf, int offset, int[] lookup) {
             Debug.Assert(str.Length % 4 == 0);
 
             // Convert ASCII values to indices with the lookup table, then shift the values
-            // to recover the original bytes.
+            // to recover the original bytes.  If the input data has a bad symbol, this will
+            // throw a bad array access exception.
+            //
             //  00stuvwx 00mnopqr 00ghijkl 00abcdef -> abcdefgh ijklmnop qrstuvwx
             for (int i = 0; i < str.Length; i += 4) {
-                buf[offset++] = (byte)((lookup[str[i + 3]] << 2) | (lookup[str[i + 2]] >> 4));
-                buf[offset++] = (byte)((lookup[str[i + 2]] << 4) | (lookup[str[i + 1]] >> 2));
-                buf[offset++] = (byte)((lookup[str[i + 1]] << 6) | (lookup[str[i]]));
+                int l0 = lookup[str[i]];
+                int l1 = lookup[str[i + 1]];
+                int l2 = lookup[str[i + 2]];
+                int l3 = lookup[str[i + 3]];
+
+                if (l0 < 0 || l1 < 0 || l2 < 0 || l3 < 0) {
+                    throw new InvalidDataException("Found char not in dictionary");
+                }
+
+                buf[offset++] = (byte)((l3 << 2) | (l2 >> 4));
+                buf[offset++] = (byte)((l2 << 4) | (l1 >> 2));
+                buf[offset++] = (byte)((l1 << 6) | (l0));
             }
         }
     }

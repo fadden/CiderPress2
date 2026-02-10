@@ -38,6 +38,7 @@ Contents:
    - [set-attr | sa](#set-attrsa)
    - [set-metadata | sm](#set-metadatasm)
    - [test](#test)
+   - [un-binscii | unbsc](#un-binsciiunbsc)
    - [version](#version)
    - [write-sector | ws, write-block | wb, write-block-cpm | wbc](#write-sectorws-write-blockwb-write-block-cpmwbc)
  - [Options](#options)
@@ -1259,6 +1260,39 @@ Examples:
  - `cp2 test disks.zip:file.woz`
 
 ----
+#### `un-binscii`|`unbsc`
+
+Extracts BinSCII segments from files.
+
+Usage: `cp2 un-binscii [options] <bsc-file> [bsc-file...]`
+
+BinSCII is a base-64 text format used to encode binary files for transmission
+on systems that can't handle binary data.  This works differently from other
+extraction operations because the data is broken into chunks that hold at most
+12KB from the original file, so forming a single output file can require
+multiple invocations.  A single input file may contain one segment, multiple
+segments of a single output file, or multiple segments from multiple output
+files.
+
+By default, extracting to an existing file will fail.  If you need to unpack
+multiple segments with multiple invocations (as opposed to providing all
+inputs as arguments to a single command), add the `--overwrite` flag.
+
+Only the `none` and `naps` preservation modes are supported.
+
+If a malformed chunk is detected, processing will halt immediately.  If the
+chunks are properly formed but a bad CRC is encountered, the data will be
+extracted fully, and an error will be reported.
+
+Options:
+ - `--overwrite`, `--no-overwrite`
+ - `--preserve={none,naps}`
+
+Examples:
+ - `cp2 un-binscii myfile.bsc`
+ - `cp2 unbsc -fpn part1.bsq part2.bsq part3.bsq`
+
+----
 #### `version`
 
 Reports the version of the application and associated libraries on stdout.
@@ -2100,7 +2134,7 @@ Some ideas for the future:
    next to each filename.
  - Multi-archive "grep" (same transformation as "print", but does text search).
    Could support modifiers, e.g. search by file type or mod date range.
- - Non-archive file utilities: EOL / high ASCII converter, sciibin, etc.
+ - Non-archive file utilities: EOL / high ASCII converter, etc.
  - Support half/quarter tracks and 524-byte sectors in the read/write sector
    commands.
  - Provide a way to set the volume number when creating a new 5.25" disk image.

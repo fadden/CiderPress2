@@ -24,7 +24,7 @@ namespace DiskArcTests {
     /// <summary>
     /// Test the BinSCII base-64 codec.
     /// </summary>
-    public class TestBinSCII : ITest {
+    public class TestBinSCIICodec : ITest {
         /// <summary>
         /// Tests some arbitrary patterns.
         /// </summary>
@@ -54,6 +54,8 @@ namespace DiskArcTests {
         /// </summary>
         public static void TestFail(AppHook appHook) {
             const string FILENAME = "BadCRC";
+            const int DATA_OFFSET = 40;     // arbitrary guess at location of a data byte
+
             byte[] data = Patterns.sRunPattern;
             MemoryStream textBuf = new MemoryStream();
             BinSCII.FileInfo fileInfo = new BinSCII.FileInfo(
@@ -66,7 +68,7 @@ namespace DiskArcTests {
             }
 
             // Corrupt data at an arbitrary position in the last chunk of data.
-            textBuf.Position = textBuf.Length - 40;
+            textBuf.Position = textBuf.Length - DATA_OFFSET;
             byte val = (byte)textBuf.ReadByte();
             textBuf.Position--;
             if (val == 'A') {
@@ -84,6 +86,20 @@ namespace DiskArcTests {
                 }
                 if (fileInfo != decFileInfo) {
                     throw new Exception("file info mismatch");
+                }
+            }
+
+            // Seriously corrupt data at an arbitrary position.
+            textBuf.Position = textBuf.Length - DATA_OFFSET;
+            textBuf.WriteByte((byte)'{');       // invalid char
+            textBuf.Position = 0;
+            using (StreamReader stream = new StreamReader(textBuf, enc, false, -1, true)) {
+                try {
+                    byte[] decBuf = BinSCII.DecodeToBuffer(stream, out string decFileName,
+                        out BinSCII.FileInfo decFileInfo, out bool decCrcOk);
+                    throw new Exception("failed to notice bad input character");
+                } catch (InvalidDataException) {
+                    // good
                 }
             }
         }

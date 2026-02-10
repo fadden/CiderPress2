@@ -20,7 +20,6 @@ using AppCommon;
 using CommonUtil;
 using DiskArc;
 using DiskArc.Arc;
-using DiskArc.Disk;
 using static DiskArc.Defs;
 
 namespace cp2 {
