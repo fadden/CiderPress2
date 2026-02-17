@@ -109,8 +109,8 @@ namespace cp2_wpf {
             } else {
                 StatusIcon = null;
             }
-            FileName = entry.FileName;
-            PathName = entry.FullPathName;
+            FileName = CommonUtil.PathName.PrintifyControlChars(entry.FileName);
+            PathName = CommonUtil.PathName.PrintifyControlChars(entry.FullPathName);
             CreateDate = fmt.FormatDateTime(entry.CreateWhen);
             ModDate = fmt.FormatDateTime(entry.ModWhen);
             if (adfAttrs != null) {

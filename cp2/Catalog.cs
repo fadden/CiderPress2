@@ -63,7 +63,7 @@ namespace cp2 {
                                 continue;
                             }
                         }
-                        Console.WriteLine(entry.FileName);
+                        Console.WriteLine(PathName.PrintifyControlChars(entry.FileName));
                     }
                     return true;
                 } else if (leaf is IDiskImage) {
@@ -115,7 +115,7 @@ namespace cp2 {
                 //string fileName =
                 //    AWName.ChangeAppleWorksCase(entry.FileName, entry.FileType, entry.AuxType);
                 string fileName = entry.FileName;
-                Console.WriteLine(prefix + fileName);
+                Console.WriteLine(PathName.PrintifyControlChars(prefix + fileName));
                 if (entry.IsDirectory) {
                     // Use the ExtArchive SPLIT_CHAR so the output can be used to form names.
                     ListDirContents(fs, entry, prefix + entry.FileName + ExtArchive.SPLIT_CHAR);
@@ -219,7 +219,7 @@ namespace cp2 {
                 }
 
                 foreach (IFileEntry entry in archive) {
-                    string name = entry.FileName;
+                    string name = PathName.PrintifyControlChars(entry.FileName);
 
                     // Copy attributes into a FileAttribs, so we can override them for MacZip.
                     FileAttribs attrs = new FileAttribs(entry);
@@ -347,7 +347,7 @@ namespace cp2 {
                         if (compLen == 0) {
                             cmpr = "--%";
                         } else {
-                            cmpr = "999%";
+                            cmpr = "0%";        // somebody compressed a zero-length file
                         }
                     } else {
                         int compPerc = (fullLen == 0) ? 0 :
@@ -866,7 +866,7 @@ namespace cp2 {
 
             //string name = prefix +
             //    AWName.ChangeAppleWorksCase(entry.FileName, entry.FileType, entry.AuxType);
-            string name = prefix + entry.FileName;
+            string name = PathName.PrintifyControlChars(prefix + entry.FileName);
             //if (name.Length > 32) {
             //    name = ".." + name.Substring(name.Length - 30);
             //}

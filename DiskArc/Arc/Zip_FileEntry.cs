@@ -100,6 +100,7 @@ namespace DiskArc.Arc {
         }
         public byte[] RawFileName {
             get {
+                // Convert the cooked form to either a UTF-8 byte stream or CP437.
                 if (mCDFH.HasUnicodeText) {
                     return Encoding.UTF8.GetBytes(mFileName);
                 } else {

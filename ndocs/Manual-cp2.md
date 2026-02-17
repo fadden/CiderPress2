@@ -1026,14 +1026,9 @@ multiple files.  This can be used to generate a listing of the contents of a
 large collection of archives.
 
 The `--classic` output roughly matches that of the MDC program included with
-the original CiderPress.  It only displays the contents of disk images.
-It can open disk images stored in ZIP or gzip archives, but only if they
-have a single member, and cannot read .SDK files stored there.  WOZ images
-are skipped.  (This option primarily exists to facilitate comparisons with the
-original program.  It will likely be removed at some point.)
+the original CiderPress.  The option is now deprecated, and will be removed.
 
 Options:
- - `--classic`
  - `--depth={shallow,subvol,max}`
  - `--fast-scan`, `--no-fast-scan`
  - `--mac-zip`, `--no-mac-zip`
@@ -1042,7 +1037,6 @@ Options:
 Examples:
  - `cp2 multi-disk-catalog file1.po file2.zip dir1`
  - `cp2 mdc --depth=max archive.shk`
- - `cp2 mdc --classic dir1 dir2`
 
 ----
 #### `print`|`p`

@@ -175,14 +175,17 @@ namespace DiskArc {
         int Count { get; }
 
         /// <summary>
-        /// Filename, converted to printable Unicode (Basic Multilingual Plane only).  For
-        /// file archives, this may be a partial pathname.
+        /// Filename, converted to Unicode (Basic Multilingual Plane only).  For file archives,
+        /// this may be a partial pathname with multiple filename components.
         /// </summary>
         /// <remarks>
-        /// <para>The original may be ASCII, high ASCII, or Mac OS Roman.  All 8-bit values
-        /// are allowed, so some filenames may include null and control characters.  These are
-        /// mapped to and from code points with printable glyphs, in a filesystem-specific
-        /// or archive-specific fashion.  The transformation may not be reversible.</para>
+        /// <para>The original could be ASCII, high ASCII, Mac OS Roman, CP437, or UTF-8.  Null
+        /// and control characters may be included, despite being illegal or discouraged in every
+        /// known format.  Such characters will generally be returned as raw ASCII control codes,
+        /// though in some cases a filesystem-specific or archive-specific conversion may be
+        /// performed, such as converting them to printable glyphs.  This transformation may not
+        /// be reversible, e.g. normal and inverse characters in DOS 3.3 filenames may map to the
+        /// same values.</para>
         ///
         /// <para>Illegal filenames found on the disk or archive are presented without
         /// correction.  Attempting to set a filename to an illegal value causes an exception
@@ -197,8 +200,8 @@ namespace DiskArc {
         /// pending changes may be flushed at the same time.</para>
         ///
         /// <para>Renaming the volume directory entry renames the volume.  In some cases the
-        /// syntax rules are different for volumes.  If the filesystem doesn't have a volume
-        /// name at all, the call has no effect.</para>
+        /// syntax rules for filenames and volume names are different.  If the filesystem doesn't
+        /// have a volume name at all, the call has no effect.</para>
         /// </remarks>
         /// <exception cref="ArgumentException">Invalid file name.</exception>
         /// <exception cref="IOException">Disk access failure, or duplicate filename.</exception>
