@@ -167,7 +167,7 @@ namespace cp2 {
                 handler: Catalog.HandleList),
             new Command(names: new string[] { "mkdir", "md" },
                 summary: "creates a new directory in a disk image",
-                usage: "<ext-archive> dir-name",
+                usage: "<ext-archive> dir-path",
                 needsArchive: true, acceptsMultipleArgs: true,
                 handler: Mkdir.HandleMkdir),
             new Command(names: new string[] { "move", "rename", "mv" },

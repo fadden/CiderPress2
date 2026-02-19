@@ -73,7 +73,13 @@ namespace cp2 {
         /// </summary>
         private static bool DoMkdir(IFileSystem fs, string newDirPath, IFileEntry curDirEnt,
                 ParamsBag parms) {
-            List<string> dirs = PathName.SplitPartialPath(newDirPath, Glob.STD_DIR_SEP_CHARS);
+            List<string> dirs;
+            try {
+                dirs = PathName.SplitPartialPath(newDirPath, Glob.STD_DIR_SEP_CHARS, false);
+            } catch (ArgumentException ex) {
+                Console.Error.WriteLine("Error: " + ex.Message);
+                return false;
+            }
             if (curDirEnt == IFileEntry.NO_ENTRY) {
                 curDirEnt = fs.GetVolDirEntry();
             }

@@ -181,9 +181,12 @@ namespace CommonUtil {
         /// </summary>
         /// <param name="pathName">Pathname to split.</param>
         /// <param name="dirSepChars">Directory separator characters.</param>
+        /// <param name="volNameOkay">True if a volume reference (usually "/" or ":") is
+        ///   allowed here.</param>
         /// <returns>List of components.</returns>
         /// <exception cref="ArgumentException">An empty path component was found.</exception>
-        public static List<string> SplitPartialPath(string pathName, char[] dirSepChars) {
+        public static List<string> SplitPartialPath(string pathName, char[] dirSepChars,
+                bool volOkay) {
             // Split pathname into a list of path components, separating strings when we encounter
             // one of the path separator chars.  Don't split if the separator is quoted with a
             // backslash.
@@ -208,9 +211,11 @@ namespace CommonUtil {
                 } else {
                     // Check to see if it's one of the directory separator characters.
                     if (dirSepChars.Contains(ch)) {
-                        if (sb.Length == 0 && components.Count != 0) {
-                            // Empty path component, not at start.
-                            throw new ArgumentException("invalid pathname: '" +
+                        if (sb.Length == 0 && (!volOkay || components.Count != 0)) {
+                            // Empty path component.  For a partial path, we don't want to allow
+                            // a leading separator like "/foo", but for some things we want
+                            // to allow a volume reference.
+                            throw new ArgumentException("invalid partial pathname: '" +
                                 pathName + "'");
                         }
                         components.Add(sb.ToString());

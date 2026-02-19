@@ -77,7 +77,7 @@ namespace CommonUtil {
                 return;
             }
 
-            List<string> components = PathName.SplitPartialPath(pattern, dirSepChars);
+            List<string> components = PathName.SplitPartialPath(pattern, dirSepChars, true);
 
             // Create regular expressions for each component.
             foreach (string component in components) {

@@ -146,10 +146,16 @@ namespace cp2.Tests {
                 // the HFS name adjuster implementation changes.)
                 string tooLongVolName = "0123456789012345678901234567";
                 if (!Move.HandleMove("mv", new string[] { hfsTest, ":", tooLongVolName }, parms)) {
-                    throw new Exception("mv " + hfsTest + " " + tooLongVolName + " succeeded");
+                    throw new Exception("mv " + hfsTest + " " + tooLongVolName + " failed");
                 }
                 if (GetVolName(hfsTest, parms) != "0123456789012..678901234567") {
                     throw new Exception("Incorrect volume name #2");
+                }
+
+                // Try to rename to something with a leading dir sep char.  Should fail.
+                string leadingColon = ":BadName";
+                if (Move.HandleMove("mv", new string[] { hfsTest, ":", leadingColon }, parms)) {
+                    throw new Exception("mv " + hfsTest + " " + leadingColon + " succeeded");
                 }
 
                 //
@@ -222,6 +228,11 @@ namespace cp2.Tests {
                 if (Move.HandleMove("mv",
                         new string[] { proTest, "SUBDIR1", "SUBDIR1:SUBDIR2" }, parms)) {
                     throw new Exception("mv " + proTest + " into self succeeded");
+                }
+                // Try with a badly-formed destination name.
+                if (Move.HandleMove("mv",
+                        new string[] { proTest, "SUBDIR1", "SUBDIR1::SUBDIR2" }, parms)) {
+                    throw new Exception("mv " + proTest + " into bad target succeeded");
                 }
 
                 // List the contents and check them.

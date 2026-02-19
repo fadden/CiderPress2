@@ -77,6 +77,12 @@ namespace cp2.Tests {
                     throw new Exception("deep mkdir in ProDOS disk failed");
                 }
 
+                // This should fail cleanly.
+                string badDirName = "a::b";
+                if (Mkdir.HandleMkdir("mkdir", new string[] { proTest, badDirName }, parms)) {
+                    throw new Exception("invalid partial path mkdir succeeded");
+                }
+
                 // Verify results with the output from "list", which uses ':' to separate names.
                 MemoryStream stdout = Controller.CaptureConsoleOut();
                 if (!Catalog.HandleList("list", new string[] { proTest }, parms)) {

@@ -34,10 +34,14 @@ namespace cp2 {
                 return false;
             }
 
-            string newPathName = args[args.Length - 1];
+            string newPathName = args[args.Length - 1];     // could be empty string inside .as
             if (newPathName == "/" || newPathName == ":") {
                 // This is a reference to the volume directory.
                 newPathName = string.Empty;
+            } else if (!string.IsNullOrEmpty(newPathName) &&
+                    (newPathName[0] == '/' || newPathName[0] == ':')) {
+                Console.Error.WriteLine("Error: new pathname must not include volume name");
+                return false;
             }
             string[] oldPaths = new string[args.Length - 2];
             for (int i = 1; i < args.Length - 1; i++) {
@@ -172,7 +176,13 @@ namespace cp2 {
             string newNormal;
             if (entry.DirectorySeparatorChar != IFileEntry.NO_DIR_SEP) {
                 StringBuilder sb = new StringBuilder(newPathName.Length);
-                List<string> parts = PathName.SplitPartialPath(newPathName, Glob.STD_DIR_SEP_CHARS);
+                List<string> parts;
+                try {
+                    parts = PathName.SplitPartialPath(newPathName, Glob.STD_DIR_SEP_CHARS, false);
+                } catch (ArgumentException ex) {
+                    Console.Error.WriteLine("Error: " + ex.Message);
+                    return false;
+                }
                 for (int i = 0; i < parts.Count; i++) {
                     sb.Append(arc.AdjustFileName(parts[i]));
                     if (i != parts.Count - 1) {
@@ -274,7 +284,13 @@ namespace cp2 {
             }
             isCancelled = false;
 
-            List<string> parts = PathName.SplitPartialPath(newPathName, Glob.STD_DIR_SEP_CHARS);
+            List<string> parts;
+            try {
+                parts = PathName.SplitPartialPath(newPathName, Glob.STD_DIR_SEP_CHARS, false);
+            } catch (ArgumentException ex) {
+                Console.Error.WriteLine("Error: " + ex.Message);
+                return false;
+            }
             for (int i = 0; i < parts.Count - 1; i++) {
                 string adjDirName = fs.AdjustFileName(parts[i]);
                 if (!fs.TryFindFileEntry(curDirEnt, adjDirName, out IFileEntry nextDirEnt)) {

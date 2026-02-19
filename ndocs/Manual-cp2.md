@@ -941,10 +941,10 @@ Examples:
 Creates a new directory.  Only useful on disk images with hierarchical
 filesystems, such as ProDOS and HFS.
 
-Usage: `cp2 mkdir [options] <ext-archive> dir-name`
+Usage: `cp2 mkdir [options] <ext-archive> dir-path`
 
-Missing directory components are added automatically, so you can create
-"a/b/c" in one step.
+Nonexistent directory components are added automatically, so you can create
+"a/b/c" in one step even if "a" and "a/b" don't exist.
 
 Wildcards are not processed.  Filenames are adjusted to be valid on the
 target filesystem.
@@ -976,7 +976,7 @@ Files are specified as relative paths from the root directory, except for
 the root directory itself, which is specified as ":" or "/".  The root
 directory may be renamed (to change the volume name) but not moved.  This
 can be used to change the volume number stored in the DOS VTOC, but will not
-affect the volume numbers stored in the sector headers.
+affect the volume numbers stored in the sector headers of 5.25" disks.
 
 Moving a directory into a subdirectory of itself is not allowed.  Moving
 files between file archives or filesystems (e.g. between partitions) is not
