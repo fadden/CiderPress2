@@ -252,6 +252,11 @@ namespace cp2 {
                 handler: SectorEdit.HandleWriteSector),
 
             // For debugging / QA; omitted from "help" command listing unless --debug set.
+            new Command(names: new string[] { "debug-args" },
+                summary: "displays args after option processing",
+                usage: "<whatever>",
+                needsArchive: false, acceptsMultipleArgs: true,
+                handler: DebugCmd.HandleArgs),
             new Command(names: new string[] { "debug-crash" },
                 summary: "crashes",
                 usage: "",
@@ -262,11 +267,6 @@ namespace cp2 {
                 usage: "<ext-archive>",
                 needsArchive: true, acceptsMultipleArgs: false,
                 handler: DebugCmd.HandleShowInfo),
-            new Command(names: new string[] { "debug-wtree" },
-                summary: "displays work tree for an archive",
-                usage: "<archive>",
-                needsArchive: true, acceptsMultipleArgs: false,
-                handler: DebugCmd.HandleDumpWTree),
             new Command(names: new string[] { "debug-test" },
                 summary: "executes program tests",
                 usage: "",
@@ -282,6 +282,11 @@ namespace cp2 {
                 usage: "[test-class [test-method]]",
                 needsArchive: false, acceptsMultipleArgs: true,
                 handler: Tests.LibTestRunner.HandleRunFCTests),
+            new Command(names: new string[] { "debug-wtree" },
+                summary: "displays work tree for an archive",
+                usage: "<archive>",
+                needsArchive: true, acceptsMultipleArgs: false,
+                handler: DebugCmd.HandleDumpWTree),
         };
 
 

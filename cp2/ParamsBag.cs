@@ -606,6 +606,14 @@ namespace cp2 {
             return result;
         }
 
+        public override string ToString() {
+            StringBuilder sb = new StringBuilder();
+            foreach (KeyValuePair<string, Option> opt in mOptions) {
+                sb.AppendLine(opt.Value.Name + "=" + opt.Value.CurValue.ToString());
+            }
+            return sb.ToString();
+        }
+
         #endregion Options
 
         #region Import/Export

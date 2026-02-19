@@ -25,6 +25,20 @@ using static AppCommon.WorkTree;
 namespace cp2 {
     public static class DebugCmd {
         /// <summary>
+        /// Handles "debug-args" command.
+        /// </summary>
+        public static bool HandleArgs(string cmdName, string[] args, ParamsBag parms) {
+            Console.WriteLine("--- got {0} args ---", args.Length);
+            for (int i = 0; i < args.Length; i++) {
+                Console.WriteLine("{0,-2:D}: '{1}'", i, args[i]);
+            }
+            Console.WriteLine();
+            Console.WriteLine("--- options ---");
+            Console.WriteLine(parms);
+            return true;
+        }
+
+        /// <summary>
         /// Handles "debug-show-info" command.
         /// </summary>
         public static bool HandleShowInfo(string cmdName, string[] args, ParamsBag parms) {
