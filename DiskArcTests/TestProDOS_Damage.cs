@@ -27,6 +27,28 @@ namespace DiskArcTests {
     /// via the raw data interface.
     /// </summary>
     public class TestProDOS_Damage : ITest {
+        public static void TestBadVolumeHeader(AppHook appHook) {
+            using (IFileSystem fs = Make525Floppy("BadTotalBlocks", appHook)) {
+                fs.PrepareRawAccess();
+
+                // Zero out the total block count.
+                byte[] blockBuf = new byte[BLOCK_SIZE];
+                fs.RawAccess.ReadBlock(DiskArc.FS.ProDOS.VOL_DIR_START_BLK, blockBuf, 0);
+                RawData.SetU16LE(blockBuf, 0x29, 0);
+                fs.RawAccess.WriteBlock(DiskArc.FS.ProDOS.VOL_DIR_START_BLK, blockBuf, 0);
+
+                fs.PrepareFileAccess(true);
+                if (!fs.IsDubious) {
+                    throw new Exception("Damaged total blocks not detected");
+                }
+                if (((DiskArc.FS.ProDOS)fs).TotalBlocks != 280) {
+                    throw new Exception("Damaged total blocks was not fixed");
+                }
+                // Make sure this works.
+                IFileEntry volDir = fs.GetVolDirEntry();
+            }
+        }
+
         // Confirm detection of overlapping files.
         public static void TestOverlap(AppHook appHook) {
             const string FILE1 = "File1";

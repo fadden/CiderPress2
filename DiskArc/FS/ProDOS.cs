@@ -190,7 +190,9 @@ namespace DiskArc.FS {
             byte volDirEntryLength = blkBuf[0x23];
             byte volDirEntriesPerBlock = blkBuf[0x24];
 
-            if (!(blkBuf[0x00] == 0 && blkBuf[0x01] == 0) ||
+            if (volDirEntryLength < EXPECT_DIR_ENTRY_LENGTH ||
+                volDirEntriesPerBlock == 0 ||
+                !(blkBuf[0x00] == 0 && blkBuf[0x01] == 0) ||
                 !((blkBuf[0x04] & 0xf0) == 0xf0) ||
                 !((blkBuf[0x04] & 0x0f) != 0) ||
                 !(volDirEntryLength * volDirEntriesPerBlock <= BLOCK_SIZE - 4) ||
@@ -437,8 +439,10 @@ namespace DiskArc.FS {
             // and layout of the volume.
             if (!ExtractVolDirHeader()) {
                 // Shouldn't have gotten this far if the volume dir header is fully broken.
+                // We want to throw an exception so that the prepare-filesystem code knows
+                // it can't continue.
                 IsDubious = true;
-                return;
+                throw new DAException("ProDOS volume header is too damaged");
             }
 
             // Load volume bitmap into mVolBitmap.  If the load fails, the bitmap will be an
@@ -612,7 +616,7 @@ namespace DiskArc.FS {
 
             // Check for irregularities and damage.  It's okay to be fault-intolerant here,
             // because if something looks wrong this probably isn't actually ProDOS (though
-            // we should have figured that out earlier).
+            // ideally we whould have figured that out earlier).
             if (mVolDirHeader.mStorageType != (int)StorageType.VolDirHeader) {
                 Notes.AddE("Unexpected storage type in volume header");
                 return false;
@@ -645,15 +649,6 @@ namespace DiskArc.FS {
                 Notes.AddE("Entries per block is bad (" + mVolDirHeader.mEntriesPerBlock + ")");
                 return false;
             }
-            if (mVolDirHeader.mBitMapPointer <= VOL_DIR_START_BLK ||
-                    mVolDirHeader.mBitMapPointer >= mVolDirHeader.mRawTotalBlocks) {
-                Notes.AddE("Invalid volume bitmap pointer: " + mVolDirHeader.mBitMapPointer);
-                // Mark the filesystem as dubious, so we don't try to write to it, then use a
-                // fake bitmap pointer so we don't trip assertions elsewhere.
-                mVolDirHeader.mBitMapPointer = 6;
-                IsDubious = true;
-            }
-
             mVolDirHeader.VolumeName = ProDOS_FileEntry.GenerateMixedCaseName(
                 mVolDirHeader.mRawVolumeName, mVolDirHeader.mNameLength,
                 mVolDirHeader.mLcFlags, out bool isNameValid);
@@ -672,9 +667,12 @@ namespace DiskArc.FS {
             mVolDirHeader.TotalBlocks = mVolDirHeader.mRawTotalBlocks;
             long blocksInFile = ChunkAccess.FormattedLength / BLOCK_SIZE;
             if (mVolDirHeader.mRawTotalBlocks < MIN_VOL_SIZE / BLOCK_SIZE) {
-                // Too small to continue parsing.
-                Notes.AddE("Volume too small for ProDOS (" + mVolDirHeader.mRawTotalBlocks + ")");
-                return false;
+                // Too small to be valid.  This is probably a mildly malformed disk, so we
+                // want to patch around the problem.
+                mVolDirHeader.TotalBlocks = (ushort)(blocksInFile > 65535 ? 65535 : blocksInFile);
+                IsDubious = true;
+                Notes.AddE("Volume header total blocks (" + mVolDirHeader.mRawTotalBlocks +
+                    ") is too small for ProDOS, setting to " + mVolDirHeader.TotalBlocks);
             } else if (mVolDirHeader.mRawTotalBlocks < blocksInFile) {
                 // Extra data at end, e.g. a 140K volume on an 800K floppy.
                 // The excess data will be used if the volume is reformatted.
@@ -686,8 +684,8 @@ namespace DiskArc.FS {
                         " blocks, container holds " + blocksInFile);
                 }
             } else if (mVolDirHeader.mRawTotalBlocks > blocksInFile) {
-                // Volume is larger than image file.  This is possible for expanding
-                // formats like .HDV, but we don't handle expansion.  Cut down the declared
+                // Volume is larger than image file.  This is possible for expanding formats
+                // like Sim //e .HDV, but we don't handle expansion.  Cut down the declared
                 // volume size to match the current size (but be careful not to write it).
                 Notes.AddW("Reducing volume total blocks (" + mVolDirHeader.mRawTotalBlocks +
                     ") to match image size (" + blocksInFile + ")");
@@ -695,6 +693,18 @@ namespace DiskArc.FS {
                 mVolDirHeader.TotalBlocks = (ushort)blocksInFile;
             } else {
                 // Exact match.
+            }
+
+            // Check location of volume bitmap.  If we adjusted the total blocks above, use
+            // that value here.
+            if (mVolDirHeader.mBitMapPointer <= VOL_DIR_START_BLK ||
+                    mVolDirHeader.mBitMapPointer >= mVolDirHeader.TotalBlocks) {
+                Notes.AddE("Invalid volume bitmap pointer (" + mVolDirHeader.mBitMapPointer +
+                    "), total blocks is " + mVolDirHeader.mRawTotalBlocks);
+                // Mark the filesystem as dubious, so we don't try to write to it, then use a
+                // fake bitmap pointer so we don't trip assertions elsewhere.
+                mVolDirHeader.mBitMapPointer = 6;
+                IsDubious = true;
             }
 
             return true;

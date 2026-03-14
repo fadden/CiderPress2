@@ -21,10 +21,11 @@ The ProDOS filesystem was originally developed for the Sophisticated Operating S
 the Apple /// computer.  The version used for ProDOS 8 is structurally identical, though some
 extensions were made for GS/OS.
 
-The filesystem is based on 512-byte blocks, identified by a 16-bit unsigned integer.  This
-yields a maximum volume size of 65535 blocks, one short of 32MB.  (Some hard drive image files are
-65536 blocks long; the last block is unused.)  Individual files have a maximum length of 2^24 - 1,
-one byte shy of 16MB.
+The filesystem is based on 512-byte blocks, referenced by a 16-bit unsigned integer.  This
+yields a maximum volume size of 65536 blocks, but the filesystem size is defined with a 16-bit
+block count, so the limit is actually one block short of 32MB.  (Some hard drive image files are
+65536*512 bytes long; the last 512 bytes are unused.)  Individual files have a maximum length
+of 2^24 - 1, one byte shy of 16MB.
 
 The filesystem is hierarchical in nature.  Disk directories appear in the filesystem, but are
 structured differently from other files.
@@ -46,24 +47,24 @@ such as the HFS creator and file type.
 The filesystem supports "sparse" files.  If the block number listed in an index or master index
 block is zero, any data read from the block in question will simply be zero-filled.  In ProDOS 8,
 sparse files can be created by seeking past the end of the file and then writing data.  In GS/OS,
-any block that is filled entirely with zeroes is stored as a sparse entry.  The only exception is
-the very first data block in the file, which is never sparse.
+any block that is filled entirely with zeroes is stored as a sparse entry when written.  The only
+exception is the very first data block in the file, which is never sparse.
 
-GS/OS repurposed some of the fields to allow lower-case filenames.  For backward compatibility,
-the names are still stored as upper case, but applications that are aware of the case flags can
-choose to display the names as mixed-case.  The filesystem is thus case-insensitive but
-case-preserving.  AppleWorks files use a parallel scheme, storing the case flags in the auxiliary
-type field.
+GS/OS repurposed some of the fields in directory entries to allow lower-case filenames.  For
+backward compatibility, the names are still stored as upper case, but applications that are aware
+of the case flags can choose to display the names as mixed-case.  The filesystem is thus
+case-insensitive but case-preserving.  AppleWorks files use a parallel scheme, storing the case
+flags in the auxiliary type field.
 
 ## Disk Structure ##
 
-The contents of the first 3 512-byte blocks are defined by the system.  Block 0 holds the ProDOS
-boot loader, and block 1 is usually empty but can hold a SOS boot loader (for the Apple ///).  The
-volume directory begins at block 2, and is usually 4 blocks long, but could be longer or shorter
-and doesn't have to occupy contiguous blocks.  The blocks-in-use bitmap usually appears right
-after the volume directory, in block 6, and may occupy up to 16 blocks.
+The contents of the first three 512-byte blocks are defined by the system.  Block 0 holds the
+ProDOS boot loader, and block 1 is usually empty but can hold a SOS boot loader (for the
+Apple ///).  The volume directory begins at block 2, and is usually 4 blocks long, but could be
+longer or shorter and doesn't have to occupy contiguous blocks.  The blocks-in-use bitmap usually
+appears right after the volume directory, in block 6, and may occupy up to 16 consecutive blocks.
 
-All directories, including the volume directory, begin with previous/next block numbers to
+All directory blocks, including the volume directory, begin with previous/next block numbers to
 facilitate bidirectional directory traversal:
 ```
 +$00 / 2: previous dir block number
@@ -73,13 +74,14 @@ A block number of zero is used to indicate the end of the list.
 
 Each block holds a whole number of directories entries, i.e. entries do not straddle block
 boundaries.  The length of each entry is defined by the directory header, but is commonly 39
-bytes, allowing 13 entries per block.
+bytes, allowing 13 entries per block, with only one unused byte per block (39*13+4=511).  Any
+excess bytes at the end of directory blocks are unused, and should be zero.
 
 The first entry in each directory is a special header that has the same size and general layout
 as a standard entry, but has some different fields.  The volume directory header is different
 from that in subdirectories.
 
-Volume directory header:
+Volume directory header (at offset +$04 in block 2):
 ```
 +$00 / 1: storage type / name length ($Fx)
 +$01 /15: volume name (A-Z, 0-9, '.', must start with letter)
@@ -90,13 +92,13 @@ Volume directory header:
 +$1c / 2: version/min_version (min version must be 0 or GS/OS gets upset?)
 +$1e / 1: access flags
 +$1f / 1: directory entry length (usually $27)
-+$20 / 1: entries per directory block (usually $200/$27 = $0d)
++$20 / 1: entries per directory block (usually 508/$27 = $0d)
 +$21 / 2: number of active entries in volume directory (not including header)
 +$23 / 2: volume bitmap start block
 +$25 / 2: total blocks in volume
 ```
 
-Directory header:
+Directory header (at offset +$04 in first block of each directory file):
 ```
 +$00 / 1: storage type / name length ($Ex)
 +$01 /15: subdirectory name (redundant)
@@ -144,9 +146,10 @@ Storage types (described in more detail later):
 Setting the storage type to zero is insufficient when deleting a file.  The entire byte, which
 also includes the filename length, must be zeroed.
 
-### Fields ###
+### Field Details ###
 
-Filenames are case-insensitive but (with GS/OS extensions) case-preserving.
+Filenames are case-insensitive but (with GS/OS extensions) case-preserving.  Padding excess bytes
+with zeroes is not required, but can make file un-deletion more reliable.
 
 Access flags (8-bit value):
 ```
