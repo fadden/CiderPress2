@@ -171,7 +171,7 @@ always match the current "final" release.
 Finally, build the applications and submit the changes.
 
  9. Run `makedist build` from the top level of the source tree (it'll be in
-    `MakeDist/bin/debug/NET6.0`).  This builds the distribution packages
+    `MakeDist/bin/debug/NET8.0`).  This builds the distribution packages
     in Release mode.  The output will be in the `DIST` directory.
  10. Submit all changes to git, push them to the server.
  11. Create the pre-packaged Wine release for Mac OS.  (This requires
