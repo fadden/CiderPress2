@@ -15,102 +15,39 @@
  */
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 using CommonUtil;
-using DiskArc.Multi;
 using static DiskArc.Defs;
-using static DiskArc.IDiskImage;
-using static DiskArc.IMetadata;
 
 namespace DiskArc.Disk {
     /// <summary>
     /// MOOF disk image format.
     /// </summary>
-    /// <remarks>
-    /// <para>The MOOF v1.0 image format is a minor variation on WOZ v2.1, so this implementation
-    /// is just bolted onto the side of Woz.</para>
-    /// <para>We could make this a subclass of Woz, but then "is Woz" would evaluate to
-    /// true.  In practice, WOZ and MOOF are two parallel disk formats that share most of
-    /// their implementation, so it would be more correct to have Woz and Moof be subclasses of
-    /// a common parent.  (TODO?)</para>
-    /// </remarks>
-    public class Moof : IDiskImage, INibbleDataAccess, IMetadata {
-        internal static readonly byte[] SIGNATURE = new byte[8] {
-            0x4d, 0x4f, 0x4f, 0x46, 0xff, 0x0a, 0x0d, 0x0a      // MOOF
-        };
-
+    public class Moof : Wozoof {
         private static readonly NibCharacteristics sCharacteristics = new NibCharacteristics(
             name: "MOOF",
             isByteAligned: false,
             isFixedLength: false,
             hasPartial525Tracks: false);
-
-        private Woz mWoz;
-
-        //
-        // IDiskImage properties.
-        //
-
-        public bool IsReadOnly => mWoz.IsReadOnly;
-
-        public bool IsDirty => mWoz.IsDirty;
-
-        public bool IsModified {
-            get => mWoz.IsModified;
-            set { mWoz.IsModified = value; }
-        }
-
-        public bool IsDubious => mWoz.IsDubious;
-
-        public Notes Notes => mWoz.Notes;
-
-        public GatedChunkAccess? ChunkAccess {
-            get => mWoz.ChunkAccess;
-            set { mWoz.ChunkAccess = value; }
-        }
-
-        public IDiskContents? Contents {
-            get => mWoz.Contents;
-            set { mWoz.Contents = value; }
-        }
-
-        //
-        // INibbleDataAccess properties.
-        //
-
-        public NibCharacteristics Characteristics => sCharacteristics;
-
-        public MediaKind DiskKind => mWoz.DiskKind;
-
-        //
-        // MOOF/WOZ-specific properties.
-        //
-
-        public bool HasMeta => mWoz.HasMeta;
+        public override NibCharacteristics Characteristics => sCharacteristics;
 
 
         // IDiskImage-required delegate
         public static bool TestKind(Stream stream, AppHook appHook) {
             stream.Position = 0;
-            if (stream.Length < Woz.MIN_FILE_LEN || stream.Length > Woz.MAX_FILE_LEN) {
+            if (stream.Length < MIN_FILE_LEN || stream.Length > MAX_FILE_LEN) {
                 // Too big, or too small to hold signature/INFO/TMAP, much less TRKS.
                 return false;
             }
-            byte[] sigBuf = new byte[SIGNATURE.Length];
-            stream.ReadExactly(sigBuf, 0, SIGNATURE.Length);
-            if (RawData.CompareBytes(sigBuf, SIGNATURE, SIGNATURE.Length)) {
+            byte[] sigBuf = new byte[SIGNATURE_M.Length];
+            stream.ReadExactly(sigBuf, 0, SIGNATURE_M.Length);
+            if (RawData.CompareBytes(sigBuf, SIGNATURE_M, SIGNATURE_M.Length)) {
                 return true;
             }
             return false;
         }
 
-        /// <summary>
-        /// Private constructor.
-        /// </summary>
-        private Moof(Woz woz) {
-            mWoz = woz;
-        }
+        protected Moof(Stream stream, AppHook appHook) : base(stream, appHook) { }
 
         /// <summary>
         /// Opens a MOOF disk image file.
@@ -123,85 +60,59 @@ namespace DiskArc.Disk {
             if (!TestKind(stream, appHook)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
-            Moof newDisk = new Moof(new Woz(stream, appHook));
-            newDisk.mWoz.Parse();
+            Moof newDisk = new Moof(stream, appHook);
+            newDisk.Parse();
 
             // Propagate read-only flag.  (See notes in Woz.OpenDisk().)
-            bool metaReadOnly = newDisk.IsReadOnly;
-            newDisk.mWoz.MoofInfo.IsReadOnly = newDisk.IsReadOnly;
-            if (newDisk.mWoz.MetaChunk != null) {
-                newDisk.mWoz.MetaChunk.IsReadOnly = newDisk.IsReadOnly;
+            newDisk.Info.IsReadOnly = newDisk.IsReadOnly;
+            if (newDisk.MetaChunk != null) {
+                newDisk.MetaChunk.IsReadOnly = newDisk.IsReadOnly;
             }
             return newDisk;
         }
 
-        // IDiskImage
-        public bool AnalyzeDisk(SectorCodec? codec, SectorOrder orderHint, AnalysisDepth depth) {
-            return mWoz.AnalyzeDisk(codec, orderHint, depth);
-        }
-
-        // IDiskImage
-        public virtual void CloseContents() {
-            mWoz.CloseContents();
-        }
-
-        // IDiskImage
-        public void Flush() {
-            mWoz.Flush();
-        }
-
-        public void Dispose() {
-            mWoz.Dispose();
-        }
-
+        /// <summary>
+        /// Determines whether the disk configuration is supported.
+        /// </summary>
+        /// <param name="mediaKind">Kind of disk to create.</param>
+        /// <param name="interleave">Disk interleave (2 or 4).</param>
+        /// <param name="errMsg">Result: error message, or empty string on success.</param>
+        /// <returns>True on success.</returns>
         public static bool CanCreateDisk35(MediaKind mediaKind, int interleave, out string errMsg) {
-            return Woz.CanCreateDisk35(mediaKind, interleave, out errMsg);
+            errMsg = string.Empty;
+            if (mediaKind != MediaKind.GCR_SSDD35 && mediaKind != MediaKind.GCR_DSDD35) {
+                errMsg = "Unsupported value for media kind: " + mediaKind;
+            }
+            if (interleave != 2 && interleave != 4) {
+                errMsg = "Interleave must be 2:1 or 4:1";
+            }
+            return errMsg == string.Empty;
         }
+
+
+        /// <summary>
+        /// Creates a new 3.5" disk image.  The disk will be fully formatted.
+        /// </summary>
+        /// <param name="stream">Stream into which the new disk image will be written.</param>
+        /// <param name="mediaKind">Type of disk to create (SSDD or DSDD).</param>
+        /// <param name="interleave">Disk interleave (2 or 4).</param>
+        /// <param name="appHook">Application hook reference.</param>
+        /// <returns>Newly-created disk image.</returns>
         public static Moof CreateDisk35(Stream stream, MediaKind mediaKind, int interleave,
                 SectorCodec codec, AppHook appHook) {
-            return new Moof(Woz.CreateDisk35(stream, mediaKind, interleave, codec, appHook, true));
+            if (!CanCreateDisk35(mediaKind, interleave, out string errMsg)) {
+                throw new ArgumentException(errMsg);
+            }
+
+            Moof newDisk = new Moof(stream, appHook);
+            try {
+                newDisk.DoCreateDisk35(stream, mediaKind, interleave, codec, appHook, true);
+            } catch {
+                newDisk.Dispose();
+                throw;
+            }
+            return newDisk;
         }
-
-        // INibbleDataAccess
-        public bool GetTrackBits(uint trackNum, uint trackFraction,
-                [NotNullWhen(true)] out CircularBitBuffer? cbb) {
-            return mWoz.GetTrackBits(trackNum, trackFraction, out cbb);
-        }
-
-        #region Metadata
-
-        /// <summary>
-        /// Adds a META chunk to a file that doesn't have one.  No effect if the chunk exists.
-        /// </summary>
-        public void AddMETA() {
-            mWoz.AddMETA();
-        }
-
-        // IMetadata
-        public bool CanAddNewEntries => true;
-
-        // IMetadata
-        public List<MetaEntry> GetMetaEntries() => mWoz.GetMetaEntries();
-
-        // IMetadata
-        public string? GetMetaValue(string key, bool verbose) => mWoz.GetMetaValue(key, verbose);
-
-        // IMetadata
-        public bool TestMetaValue(string key, string value) => mWoz.TestMetaValue(key, value);
-
-        // IMetadata
-        public void SetMetaValue(string key, string value) => mWoz.SetMetaValue(key, value);
-
-        // IMetadata
-        public bool DeleteMetaEntry(string key) => mWoz.DeleteMetaEntry(key);
-
-        /// <summary>
-        /// This allows the application to overwrite the creator string, so that it can replace
-        /// the library identifier with its own.  Normally info:creator is not editable.
-        /// </summary>
-        public void SetCreator(string value) => mWoz.SetCreator(value);
-
-        #endregion Metadata
 
         public override string ToString() {
             return "[MOOF " + DiskKind + "]";

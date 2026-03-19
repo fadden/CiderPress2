@@ -28,11 +28,11 @@ namespace DiskArc.Disk {
     /// WOZ/MOOF file META chunk management.
     /// </summary>
     /// <remarks>
-    /// <para>The META chunk format is the same in WOZ v1 and v2 and MOOF.  Duplicate keys are not
+    /// <para>The META chunk format is the same in WOZ v1/v2 and MOOF.  Duplicate keys are not
     /// allowed.  The order in which entries are stored doesn't matter.</para>
     /// <para>The enumeration provides the keys for all entries.</para>
     /// </remarks>
-    public class Woz_Meta {
+    public class Wozoof_Meta {
         public const char NV_SEP_CHAR = '\t';           // tab (0x09)
         public const char ENTRY_SEP_CHAR = '\n';        // linefeed (0x0a)
 
@@ -173,7 +173,7 @@ namespace DiskArc.Disk {
                 "Any requirements for the software.", META_STRING_SYNTAX, canEdit:true),
             new MetaEntry("colordepth", MetaEntry.ValType.String,
                 "Pipe-delimited list of compatible color depths.",
-                "From list: " + ListToString(sColorDepth), canEdit:true),
+                "One or more of: " + ListToString(sColorDepth), canEdit:true),
             new MetaEntry("notes", MetaEntry.ValType.String,
                 "Additional notes.", META_STRING_SYNTAX, canEdit:true),
             new MetaEntry(SIDE_KEY, MetaEntry.ValType.String,
@@ -207,13 +207,13 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Private constructor.
         /// </summary>
-        private Woz_Meta() { }
+        private Wozoof_Meta() { }
 
         /// <summary>
         /// Creates a metadata object for a new disk image.
         /// </summary>
-        public static Woz_Meta CreateMETA(bool isMoof) {
-            Woz_Meta metadata = new Woz_Meta();
+        public static Wozoof_Meta CreateMETA(bool isMoof) {
+            Wozoof_Meta metadata = new Wozoof_Meta();
             // Create standard entries.  Leave them all blank except for image_date.
             MetaEntry[] entries;
             if (isMoof) {
@@ -237,8 +237,8 @@ namespace DiskArc.Disk {
         /// <para>Blatantly bad META entries will be discarded.  If the UTF-8 encoding is broken,
         /// the entire set may be discarded.</para>
         /// </remarks>
-        public static Woz_Meta? ParseMETA(byte[] data, int offset, int length, AppHook appHook) {
-            Woz_Meta metadata = new Woz_Meta();
+        public static Wozoof_Meta? ParseMETA(byte[] data, int offset, int length, AppHook appHook) {
+            Wozoof_Meta metadata = new Wozoof_Meta();
             if (!metadata.Parse(data, offset, length, appHook)) {
                 return null;
             }
@@ -534,7 +534,7 @@ namespace DiskArc.Disk {
         /// Exercises metadata handling.
         /// </summary>
         public static bool DebugTest() {
-            Woz_Meta meta = Woz_Meta.CreateMETA(false);
+            Wozoof_Meta meta = Wozoof_Meta.CreateMETA(false);
 
             // General get/set.
             DebugExpect(meta, "key1", null);
@@ -660,7 +660,7 @@ namespace DiskArc.Disk {
 
             byte[] cereal = meta.Serialize(out int offset, out int length);
 
-            Woz_Meta? newMeta = Woz_Meta.ParseMETA(cereal, offset, length,
+            Wozoof_Meta? newMeta = Wozoof_Meta.ParseMETA(cereal, offset, length,
                 new AppHook(new CommonUtil.SimpleMessageLog()));
             DebugExpect(newMeta!, "publisher", UNI_TEST_STR);
 
@@ -678,7 +678,7 @@ namespace DiskArc.Disk {
             return sb.ToString();
         }
 
-        private static void DebugExpect(Woz_Meta meta, string key, string? expectedValue) {
+        private static void DebugExpect(Wozoof_Meta meta, string key, string? expectedValue) {
             string? actualValue = meta.GetValue(key);
             if (expectedValue != actualValue) {
                 throw new Exception("META fail: key='" + key +

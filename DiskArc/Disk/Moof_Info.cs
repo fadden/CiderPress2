@@ -26,22 +26,7 @@ namespace DiskArc.Disk {
     /// Class for managing the contents of the MOOF file INFO chunk.  Some pieces are fixed when
     /// the disk image is created and may not be changed, others can be modified by applications.
     /// </summary>
-    /// <remarks>
-    /// <para>INFO values in a read-only disk image can be edited, but the changes will be
-    /// discarded.</para>
-    /// </remarks>
-    public class Moof_Info {
-        /// <summary>
-        /// True if modifications should be blocked.
-        /// </summary>
-        public bool IsReadOnly { get; internal set; }
-
-        /// <summary>
-        /// True if one or more fields have been modified.
-        /// </summary>
-        public bool IsDirty { get; internal set; }
-
-
+    public class Moof_Info : Wozoof_Info {
         internal static readonly MetaEntry[] sInfoList = new MetaEntry[] {
             new MetaEntry("info_version", MetaEntry.ValType.Int,
                 "Version number of the INFO chunk.", "", canEdit:false),
@@ -63,11 +48,6 @@ namespace DiskArc.Disk {
             new MetaEntry("largest_flux_track", MetaEntry.ValType.Int,
                 "Number of blocks used by the largest FLUX track.", "", canEdit:false),
         };
-
-        /// <summary>
-        /// Raw INFO chunk data.  All values are read from and written to this.
-        /// </summary>
-        private byte[] mData;
 
         /// <summary>
         /// Constructs a new object for a new disk.
@@ -116,31 +96,7 @@ namespace DiskArc.Disk {
         /// </remarks>
         /// <param name="buffer">Buffer of INFO data.</param>
         /// <param name="offset">Offset of start of INFO data (past the chunk header).</param>
-        public Moof_Info(byte[] buffer, int offset) {
-            mData = new byte[Woz.INFO_LENGTH];
-            Array.Copy(buffer, offset, mData, 0, Woz.INFO_LENGTH);
-        }
-
-        /// <summary>
-        /// Constructs an empty object.
-        /// </summary>
-        public Moof_Info() {
-            mData = new byte[Woz.INFO_LENGTH];
-        }
-
-        /// <summary>
-        /// Obtains the raw chunk data buffer, for output to the disk image file.
-        /// </summary>
-        internal byte[] GetData() {
-            // This is internal-only, so no need to make a copy.
-            return mData;
-        }
-
-        private void CheckAccess() {
-            if (IsReadOnly) {
-                throw new InvalidOperationException("Image is read-only");
-            }
-        }
+        public Moof_Info(byte[] buffer, int offset) : base(buffer, offset) { }
 
         /// <summary>
         /// Gets the value of a metadata entry as a string.
@@ -148,7 +104,7 @@ namespace DiskArc.Disk {
         /// <param name="key">Entry key.</param>
         /// <param name="verbose">True if we want the verbose version.</param>
         /// <returns>Entry value, or null if the key wasn't recognized.</returns>
-        public string? GetValue(string key, bool verbose) {
+        public override string? GetValue(string key, bool verbose) {
             const string TRUE_LOWER = "true";       // return "true" instead of "True"
             const string FALSE_LOWER = "false";     // (bool.ToString() capitalizes the value)
 
@@ -208,7 +164,7 @@ namespace DiskArc.Disk {
         /// <param name="key">Entry key.</param>
         /// <param name="value">Value to test.</param>
         /// <returns>True if a set call would succeed.</returns>
-        public bool TestValue(string key, string value) {
+        public override bool TestValue(string key, string value) {
             switch (key) {
                 case "write_protected":
                     return bool.TryParse(value, out bool wpVal);
@@ -223,7 +179,7 @@ namespace DiskArc.Disk {
         /// <param name="key">Entry key.</param>
         /// <param name="value">Value to set.</param>
         /// <exception cref="ArgumentException">Invalid key or value.</exception>
-        public void SetValue(string key, string value) {
+        public override void SetValue(string key, string value) {
             // Parse the string to a numeric or boolean value, and then set the field.  The
             // field setter may apply additional restrictions.
             switch (key) {
@@ -365,26 +321,6 @@ namespace DiskArc.Disk {
                 RawData.SetU16LE(mData, 42, value);
                 IsDirty = true;
             }
-        }
-
-        /// <summary>
-        /// Converts the string to UTF-8 bytes, and pads the end with spaces.  The encoded
-        /// form is limited to 32 bytes.  Excess characters will be dropped.
-        /// </summary>
-        /// <param name="name">String to encode.</param>
-        /// <returns>32-element byte array, end padded with ASCII spaces.</returns>
-        private static byte[] EncodeCreator(string name) {
-            byte[] enc = Encoding.UTF8.GetBytes(name);
-            int i;
-            byte[] result = new byte[Woz.CREATOR_ID_LEN];
-            // TODO: this will produce bad data if a multi-byte encoded value starts at +31
-            for (i = 0; i < Math.Min(Woz.CREATOR_ID_LEN, enc.Length); i++) {
-                result[i] = enc[i];
-            }
-            for (; i < Woz.CREATOR_ID_LEN; i++) {
-                result[i] = (byte)' ';
-            }
-            return result;
         }
     }
 }
