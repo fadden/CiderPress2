@@ -198,7 +198,6 @@ namespace cp2_wpf {
                         }
                         diskImage = DiskCopy.CreateDisk(stream, mediaKind, mAppHook);
                         break;
-
                     case FileTypeValue.Woz:
                         if (IsFlop525) {
                             if (!GetNumTracksSectors(out tracks, out sectors)) {
@@ -221,6 +220,22 @@ namespace cp2_wpf {
                         Woz woz = (Woz)diskImage;
                         woz.AddMETA();
                         woz.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
+                        break;
+                    case FileTypeValue.Moof:
+                        if (IsFlop525) {
+                            throw new Exception("internal error");
+                        } else {
+                            if (!GetMediaKind(out mediaKind)) {
+                                throw new Exception("internal error");
+                            }
+                            codec = StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex35.Std_35);
+                            diskImage = Moof.CreateDisk35(stream, mediaKind, MOOF_IL_35, codec,
+                                mAppHook);
+                        }
+                        // Let's just add a default META chunk to all disks.
+                        Moof moof = (Moof)diskImage;
+                        moof.AddMETA();
+                        moof.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
                         break;
                     case FileTypeValue.Nib:
                         if (!GetNumTracksSectors(out tracks, out sectors)) {
@@ -349,6 +364,10 @@ namespace cp2_wpf {
                     filter = WinUtil.FILE_FILTER_WOZ;
                     exts = new string[] { ".woz" };
                     break;
+                case FileTypeValue.Moof:
+                    filter = WinUtil.FILE_FILTER_MOOF;
+                    exts = new string[] { ".moof" };
+                    break;
                 case FileTypeValue.Nib:
                     filter = WinUtil.FILE_FILTER_NIB;
                     exts = new string[] { ".nib" };
@@ -425,6 +444,8 @@ namespace cp2_wpf {
             nameof(IsChecked_FT_DiskCopy42),
             nameof(IsEnabled_FT_Woz),
             nameof(IsChecked_FT_Woz),
+            nameof(IsEnabled_FT_Moof),
+            nameof(IsChecked_FT_Moof),
             nameof(IsEnabled_FT_Nib),
             nameof(IsChecked_FT_Nib),
             nameof(IsEnabled_FT_Trackstar),
@@ -522,6 +543,9 @@ namespace cp2_wpf {
                     case FileTypeValue.Woz:
                         needNewType = !IsEnabled_FT_Woz;
                         break;
+                    case FileTypeValue.Moof:
+                        needNewType = !IsEnabled_FT_Moof;
+                        break;
                     case FileTypeValue.Nib:
                         needNewType = !IsEnabled_FT_Nib;
                         break;
@@ -541,6 +565,8 @@ namespace cp2_wpf {
                         mFileType = FileTypeValue.DOSSector;
                     } else if (IsEnabled_FT_Woz) {
                         mFileType = FileTypeValue.Woz;
+                    } else if (IsEnabled_FT_Moof) {
+                        mFileType = FileTypeValue.Moof;
                     } else if (IsEnabled_FT_TwoIMG) {
                         mFileType = FileTypeValue.TwoIMG;
                     } else if (IsEnabled_FT_NuFX) {             // shouldn't get this far
@@ -928,6 +954,8 @@ namespace cp2_wpf {
 
         // Interleave for WOZ 3.5" floppy disks.  Assume 4:1 since WOZ is an Apple II format.
         private const int WOZ_IL_35 = 4;
+        // Interleave for MOOF 3.5" floppy disks.  Assume 2:1 since MOOF is a Macintosh format.
+        private const int MOOF_IL_35 = 2;
 
         public enum FileTypeValue {
             Unknown = 0,
@@ -938,6 +966,7 @@ namespace cp2_wpf {
             DiskCopy42,
             NuFX,
             Woz,
+            Moof,
             Nib,
             Trackstar
         }
@@ -1066,6 +1095,26 @@ namespace cp2_wpf {
                         return false;
                     }
                     return Woz.CanCreateDisk35(kind, WOZ_IL_35, out string errMsg);
+                }
+            }
+        }
+
+        public bool IsChecked_FT_Moof {
+            get { return mFileType == FileTypeValue.Moof; }
+            set {
+                if (value) { mFileType = FileTypeValue.Moof; }
+                UpdateControls();
+            }
+        }
+        public bool IsEnabled_FT_Moof {
+            get {
+                if (IsFlop525) {
+                    return false;
+                } else {
+                    if (!GetMediaKind(out MediaKind kind)) {
+                        return false;
+                    }
+                    return Moof.CanCreateDisk35(kind, MOOF_IL_35, out string errMsg);
                 }
             }
         }

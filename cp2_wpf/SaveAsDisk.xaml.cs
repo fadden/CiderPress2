@@ -110,6 +110,9 @@ namespace cp2_wpf {
                 case FileTypeValue.Woz:
                     needNewType = !IsEnabled_FT_Woz;
                     break;
+                case FileTypeValue.Moof:
+                    needNewType = !IsEnabled_FT_Moof;
+                    break;
                 case FileTypeValue.Nib:
                     needNewType = !IsEnabled_FT_Nib;
                     break;
@@ -132,6 +135,8 @@ namespace cp2_wpf {
                 mFileType = FileTypeValue.DOSSector;
             } else if (IsEnabled_FT_Woz) {
                 mFileType = FileTypeValue.Woz;
+            } else if (IsEnabled_FT_Moof) {
+                mFileType = FileTypeValue.Moof;
             } else if (IsEnabled_FT_TwoIMG) {
                 mFileType = FileTypeValue.TwoIMG;
             } else if (IsEnabled_FT_NuFX) {             // shouldn't get this far
@@ -260,6 +265,19 @@ namespace cp2_wpf {
                         woz.AddMETA();
                         woz.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
                         break;
+                    case FileTypeValue.Moof:
+                        if (!GetMediaKind(out mediaKind)) {
+                            throw new Exception("internal error");
+                        }
+                        codec = StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex35.Std_35);
+                        diskImage = Moof.CreateDisk35(stream, mediaKind, MOOF_IL_35, codec,
+                            mAppHook);
+                        // Let's just add a default META chunk to all disks.
+                        Moof moof = (Moof)diskImage;
+                        moof.AddMETA();
+                        moof.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
+                        break;
+
                     case FileTypeValue.Nib:
                         if (!GetNumTracksSectors(out tracks, out sectors)) {
                             throw new Exception("internal error");
@@ -438,6 +456,8 @@ namespace cp2_wpf {
 
         // Interleave for WOZ 3.5" floppy disks.  Assume 4:1 since WOZ is an Apple II format.
         private const int WOZ_IL_35 = 4;
+        // Interleave for MOOF 3.5" floppy disks.  Assume 2:1 since WOZ is a Macintosh format.
+        private const int MOOF_IL_35 = 2;
 
         private FileTypeValue mFileType;
 
@@ -557,6 +577,30 @@ namespace cp2_wpf {
                             out string errMsg);
                     } else if (blocks == 1600) {
                         return Woz.CanCreateDisk35(MediaKind.GCR_DSDD35, WOZ_IL_35,
+                            out string errMsg);
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        public bool IsChecked_FT_Moof {
+            get { return mFileType == FileTypeValue.Moof; }
+            set {
+                if (value) { mFileType = FileTypeValue.Moof; }
+            }
+        }
+        public bool IsEnabled_FT_Moof {
+            get {
+                if (GetNumBlocks(out uint blocks)) {
+                    if (blocks == 800) {
+                        return Moof.CanCreateDisk35(MediaKind.GCR_SSDD35, MOOF_IL_35,
+                            out string errMsg);
+                    } else if (blocks == 1600) {
+                        return Moof.CanCreateDisk35(MediaKind.GCR_DSDD35, MOOF_IL_35,
                             out string errMsg);
                     } else {
                         return false;

@@ -18,7 +18,7 @@ using System.Diagnostics;
 
 namespace DiskArc.Disk {
     /// <summary>
-    /// "Standard" disk sector codec.  Supports some variety in values and parameters, but
+    /// "Standard" GCR disk sector codec.  Supports some variety in values and parameters, but
     /// expects the data to be generally similar to standard Apple formats.
     /// </summary>
     public class StdSectorCodec : SectorCodec {

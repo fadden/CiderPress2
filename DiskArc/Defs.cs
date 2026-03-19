@@ -87,6 +87,7 @@ namespace DiskArc {
             GCR_525,                    // single-sided, 35-40 tracks (140KB+)
             GCR_SSDD35,                 // single-sided, 80 tracks (400KB), 524 bytes/block
             GCR_DSDD35,                 // double-sided, 80 tracks (800KB), 524 bytes/block
+            GCR_Twiggy,                 // double-sided, 46 tracks (871KB), 524 bytes/block
             MFM_DSDD35,                 // double-sided double-density (720KB), 9 sectors/track
             MFM_DSHD35,                 // double-sided high-density (1.44MB), 18 sectors/track
         }
@@ -114,6 +115,7 @@ namespace DiskArc {
             UnadornedSector,            // .po, .do, .d13, .iso, .dsk*, .hdv, .img, .raw*, .dc6
             UnadornedNibble525,         // .nib, .nb2, .raw*
             Woz,                        // .woz
+            Moof,                       // .moof
             TwoIMG,                     // .2mg, .2img
             DiskCopy,                   // .dsk*, .dc, .dc42, .image
             DART,                       // (HFS types)
@@ -142,10 +144,12 @@ namespace DiskArc {
                 case FileKind.UnadornedSector:
                 case FileKind.UnadornedNibble525:
                 case FileKind.Woz:
+                case FileKind.Moof:
                 case FileKind.TwoIMG:
-                case FileKind.DART:
                 case FileKind.DiskCopy:
+                case FileKind.DART:
                 case FileKind.Trackstar:
+                case FileKind.DDD:
                     return true;
                 default:
                     return false;

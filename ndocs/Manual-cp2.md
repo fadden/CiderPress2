@@ -56,6 +56,7 @@ Contents:
    - [Trackstar](#trackstar)
    - [2IMG](#2img)
    - [WOZ](#woz)
+   - [MOOF](#moof)
  - [Appendix](#appendix)
    - [Mac ZIP](#mac-zip)
    - [AppleWorks Filename Formatting](#appleworks-filename-formatting)
@@ -1625,6 +1626,7 @@ of the extensions are allowed to mean more than one thing.
  - ".nib" - unadorned 35-track 5.25" disk nibble image
  - ".woz" - WOZ format nibble image, for 5.25" (35- or 40-track)
    or 3.5" (SSDD or DSDD) disks
+ - ".moof" - MOOF format nibble image, for 3.5" disks
  - ".2mg", ".2img" - DOS-order 16-sector disks, or ProDOS-order blocks
  - ".dc", ".dc42", ".image" - DiskCopy 4.2 3.5" floppy (400KB, 720KB, 800KB, or 1440KB)
  - ".app" - Trackstar 5.25" (35- or 40-track) disk nibble image
@@ -2023,11 +2025,11 @@ https://applesaucefdc.com/woz/reference2/.  The names of keys stored in
 the INFO chunk must be prefixed with "info:", and those stored in the
 (optional) META chunk must be prefixed with "meta:".
 
-INFO chunk keys:
+INFO chunk keys (some are not available in v1/v2 images):
 
 name                     | acc | description
 ------------------------ | --- | -----------
-info:version             | ro  | numeric
+info:info_version        | ro  | numeric
 info:disk_type           | ro  | numeric
 info:write_protected     | r/w | boolean; "true" marks disk as write-protected for emulators
 info:synchronized        | ro  | boolean
@@ -2038,6 +2040,9 @@ info:boot_sector_format  | r/w | numeric
 info:optimal_bit_timing  | ro  | numeric
 info:compatible_hardware | r/w | 16-bit collection of bit flags
 info:required_ram        | r/w | 16-bit value, in KiB
+info:largest_track       | ro  | 16-bit value, in 512-byte blocks
+info:flux_block          | ro  | 16-bit value; zero, or block offset of start of FLUX chunk
+info:largest_flux_track  | ro  | 16-bit value, in 512-byte blocks
 
 META chunk "standard" keys:
 
@@ -2066,6 +2071,43 @@ characters and the underscore ('_').
 
 Setting a "meta:" key in an image without a META chunk will cause a new
 META chunk to be added.  All fields will be blank except for `image_date`.
+
+### MOOF ###
+
+The MOOF format is very similar to WOZ v2.1.
+
+INFO chunk keys:
+
+name                     | acc | description
+------------------------ | --- | -----------
+info:info_version        | ro  | numeric
+info:disk_type           | ro  | numeric
+info:write_protected     | r/w | boolean; "true" marks disk as write-protected for emulators
+info:synchronized        | ro  | boolean
+info:optimal_bit_timing  | ro  | numeric
+info:creator             | ro  | string
+info:largest_track       | ro  | 16-bit value, in 512-byte blocks
+info:flux_block          | ro  | 16-bit value; zero, or block offset of start of FLUX chunk
+info:largest_flux_track  | ro  | 16-bit value, in 512-byte blocks
+
+META chunk "standard" keys:
+
+name                     | acc | description
+------------------------ | --- | -----------
+meta:title               | r/w | string; product title
+meta:subtitle            | r/w | string; product subtitle
+meta:publisher           | r/w | string; product publisher
+meta:developer           | r/w | string; product developer
+meta:copyright           | r/w | string; copyright
+meta:version             | r/w | string; version
+meta:language            | r/w | language name, from table
+meta:requires            | r/w | string; requirements for the software
+meta:colordepth          | r/w | string; compatible bit depths in pipe-delimited list
+meta:notes               | r/w | string; arbitrary notes
+meta:disk_name           | r/w | string; name of disk side
+meta:disk_number         | r/w | string; for disks that are part of a set
+meta:contributor         | r/w | string; disk imager
+meta:image_date          | r/w | RFC3339 date of imaging
 
 
 ## Appendix ##

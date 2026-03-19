@@ -29,11 +29,11 @@ namespace cp2_wpf {
         public const string FILE_FILTER_KNOWN = "Known formats|" +
             "*.shk;*.sdk;*.sea;*.bny;*.bqy;*.bxy;*.bse;*.wav;" +
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc42;*.dc6;*.image;*.ddd;" +
-            "*.nib;*.nb2;*.raw;*.app;*.woz;" +
+            "*.nib;*.nb2;*.raw;*.app;*.woz;*.moof;" +
             "*.gz;*.zip;*.as;*.bin;*.macbin;*.acu";
         public const string FILE_FILTER_ALL_DISK = "Disk image formats|" +
             "*.sdk;*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc42;*.dc6;*.image;*.ddd;" +
-            "*.nib;*.nb2;*.raw;*.app;*.woz;";
+            "*.nib;*.nb2;*.raw;*.app;*.woz;*.moof";
         public const string FILE_FILTER_2MG = "2IMG disk image (*.2mg)|*.2mg";
         public const string FILE_FILTER_APP = "Trackstar disk image (*.app)|*.app";
         public const string FILE_FILTER_BINARY2 = "Binary II (*.bny/bqy)|*.bny;*.bqy";
@@ -50,6 +50,7 @@ namespace cp2_wpf {
         public const string FILE_FILTER_SDK = "ShrinkIt disk image (*.sdk)|*.sdk";
         public const string FILE_FILTER_TEXT = "Text documents (*.txt)|*.txt";
         public const string FILE_FILTER_WOZ = "WOZ disk image (*.woz)|*.woz";
+        public const string FILE_FILTER_MOOF = "MOOF disk image (*.moof)|*.moof";
         public const string FILE_FILTER_ZIP = "ZIP archive (*.zip)|*.zip";
 
         /// <summary>

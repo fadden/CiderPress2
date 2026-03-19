@@ -355,6 +355,31 @@ namespace cp2 {
                         woz.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
                     }
                     break;
+                case FileKind.Moof: {
+                        // We support 3.5" GCR disks, SSDD and DSDD.  In theory we should support
+                        // MFM DSHD and Twiggy, but we currently don't.
+                        // This is primarily a Macintosh format, so use 2:1 interleave.
+                        const int INTERLEAVE = 2;
+                        if (byteSize == 400 * 1024 || byteSize == 800 * 1024) {
+                            // 3.5" disk image.
+                            if (fsType == FileSystemType.DOS33 || fsType == FileSystemType.DOS32) {
+                                throw new DAException("Can't put DOS on a 3.5\" disk");
+                            }
+                            SectorCodec codec =
+                                StdSectorCodec.GetCodec(StdSectorCodec.CodecIndex35.Std_35);
+                            image = Moof.CreateDisk35(imgStream,
+                                byteSize == 400*1024 ? MediaKind.GCR_SSDD35 : MediaKind.GCR_DSDD35,
+                                INTERLEAVE, codec, appHook);
+                        } else {
+                            throw new DAException("Size not supported for MOOF disks");
+                        }
+                        // Let's just add a default META chunk to all disks.
+                        Moof moof = (Moof)image;
+                        moof.AddMETA();
+                        // Replace the lib creator string.
+                        moof.SetCreator("CiderPress II v" + GlobalAppVersion.AppVersion);
+                    }
+                    break;
                 case FileKind.NuFX: {
                         // Handle like UnadornedSector, but only allow 140K / 800K images, since
                         // that's what Apple II utilities expect.  Create in a temp stream and

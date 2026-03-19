@@ -339,6 +339,10 @@ namespace DiskArc {
                     fileKind1 = FileKind.Woz;
                     orderHint1 = SectorOrder.Physical;
                     break;
+                case ".moof":
+                    fileKind1 = FileKind.Moof;
+                    orderHint1 = SectorOrder.Physical;
+                    break;
                 case ".2mg":
                 case ".2img":
                     fileKind1 = FileKind.TwoIMG;
@@ -497,6 +501,7 @@ namespace DiskArc {
             // These can be detected reliably.
             FileKind.TwoIMG,
             FileKind.Woz,
+            FileKind.Moof,
             FileKind.Zip,
             FileKind.NuFX,
             FileKind.GZip,
@@ -546,6 +551,8 @@ namespace DiskArc {
                     return GZip.TestKind(stream, appHook);
                 case FileKind.MacBinary:
                     return MacBinary.TestKind(stream, appHook);
+                case FileKind.Moof:
+                    return Moof.TestKind(stream, appHook);
                 case FileKind.NuFX:
                     return NuFX.TestKind(stream, appHook);
                 case FileKind.Trackstar:
@@ -598,6 +605,9 @@ namespace DiskArc {
                         break;
                     case FileKind.DiskCopy:
                         diskImage = DiskCopy.OpenDisk(stream, appHook);
+                        break;
+                    case FileKind.Moof:
+                        diskImage = Moof.OpenDisk(stream, appHook);
                         break;
                     case FileKind.Trackstar:
                         diskImage = Trackstar.OpenDisk(stream, appHook);

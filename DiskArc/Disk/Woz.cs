@@ -63,12 +63,15 @@ namespace DiskArc.Disk {
     /// <para>We have "experimental" support for flux data: we convert the flux data to bit
     /// data using the timing value in the INFO block.  The presence of flux data will force
     /// the disk image into read-only mode.</para>
+    /// <para>The MOOF v1.0 image format is a minor variation on WOZ v2.1, so we handle most
+    /// of that here as well.</para>
     /// </remarks>
     public class Woz : IDiskImage, INibbleDataAccess, IMetadata {
         // 3.5" disk images are about 1.2MB.  As flux images they'd be about 6x(?) larger.
-        // Figure the max size for an 800KB floppy is 7.2MB.  Set the "max reasonable" value
-        // to 16MB so we have lots of headroom.
-        private const int MAX_FILE_LEN = 16 * 1024 * 1024;
+        // Figure the max size for an 800KB floppy is 7.2MB.  Increase that for 1.44MB MFM disks.
+        // Setting the "max reasonable" value to 32MB should give us lots of headroom.\
+        internal const int MIN_FILE_LEN = 256;  // too small to hold signature/INFO/TMAP
+        internal const int MAX_FILE_LEN = 32 * 1024 * 1024;
 
         private const int HEADER_LEN = 12;
         private const int CHUNK_HDR_LEN = 8;
@@ -126,7 +129,7 @@ namespace DiskArc.Disk {
                     return true;
                 }
                 // Info chunk changes?
-                return Info.IsDirty;
+                return WozInfo.IsDirty || MoofInfo.IsDirty;
             }
         }
 
@@ -134,7 +137,7 @@ namespace DiskArc.Disk {
             get {
                 // Capture any dirty flags.
                 if (mBufferModFlag.IsSet || (MetaChunk != null && MetaChunk.IsDirty) ||
-                        Info.IsDirty) {
+                        WozInfo.IsDirty || MoofInfo.IsDirty) {
                     mIsModified = true;
                 }
                 // Check chunk status.
@@ -159,9 +162,9 @@ namespace DiskArc.Disk {
 
         public Notes Notes { get; } = new Notes();
 
-        public GatedChunkAccess? ChunkAccess { get; private set; }
+        public GatedChunkAccess? ChunkAccess { get; internal set; }
 
-        public IDiskContents? Contents { get; private set; }
+        public IDiskContents? Contents { get; internal set; }
 
         //
         // INibbleDataAccess properties.
@@ -183,6 +186,11 @@ namespace DiskArc.Disk {
         public WozKind FileRevision { get; private set; } = WozKind.Unknown;
 
         /// <summary>
+        /// True if this is a MOOF file, which can generally be treated as WozKind=Woz2.
+        /// </summary>
+        public bool IsMoof { get; private set; } = false;
+
+        /// <summary>
         /// True if the image has a META chunk.
         /// </summary>
         public bool HasMeta { get { return MetaChunk != null; } }
@@ -193,14 +201,19 @@ namespace DiskArc.Disk {
         public bool HasFlux { get; private set; }
 
         /// <summary>
-        /// INFO chunk data holder.
+        /// INFO chunk data holder for WOZ images.
         /// </summary>
-        private Woz_Info Info { get; set; }
+        private Woz_Info WozInfo { get; set; }
+
+        /// <summary>
+        /// INFO chunk data holder for MOOF images.
+        /// </summary>
+        internal Moof_Info MoofInfo { get; set; }
 
         /// <summary>
         /// META data holder.  Will be null if the disk image doesn't have a META chunk.
         /// </summary>
-        private Woz_Meta? MetaChunk { get; set; }
+        internal Woz_Meta? MetaChunk { get; set; }
 
         //
         // Innards.
@@ -247,7 +260,7 @@ namespace DiskArc.Disk {
         // IDiskImage-required delegate
         public static bool TestKind(Stream stream, AppHook appHook) {
             stream.Position = 0;
-            if (stream.Length < 256 || stream.Length > MAX_FILE_LEN) {
+            if (stream.Length < MIN_FILE_LEN || stream.Length > MAX_FILE_LEN) {
                 // Too big, or too small to hold signature/INFO/TMAP, much less TRKS.
                 return false;
             }
@@ -261,12 +274,13 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Private constructor.
+        /// Semi-private constructor.
         /// </summary>
-        private Woz(Stream stream, AppHook appHook) {
+        internal Woz(Stream stream, AppHook appHook) {
             mDataStream = stream;
             mAppHook = appHook;
-            Info = new Woz_Info();
+            WozInfo = new Woz_Info();
+            MoofInfo = new Moof_Info();
         }
 
         /// <summary>
@@ -280,6 +294,7 @@ namespace DiskArc.Disk {
             if (!TestKind(stream, appHook)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
+
             Woz newDisk = new Woz(stream, appHook);
             newDisk.Parse();
 
@@ -289,7 +304,7 @@ namespace DiskArc.Disk {
             // to separate read-only image (stream / dubious) from read-only tracks (FLUX).  Until
             // then we block META updates when FLUX is present.
             bool metaReadOnly = newDisk.IsReadOnly;
-            newDisk.Info.IsReadOnly = newDisk.IsReadOnly;
+            newDisk.WozInfo.IsReadOnly = newDisk.IsReadOnly;
             if (newDisk.MetaChunk != null) {
                 newDisk.MetaChunk.IsReadOnly = newDisk.IsReadOnly;
             }
@@ -419,8 +434,14 @@ namespace DiskArc.Disk {
 
             // Clear the dirty flags.
             mBufferModFlag.IsSet = false;
-            if (Info != null) {
-                Info.IsDirty = false;
+            if (IsMoof) {
+                if (MoofInfo != null) {
+                    MoofInfo.IsDirty = false;
+                }
+            } else {
+                if (WozInfo != null) {
+                    WozInfo.IsDirty = false;
+                }
             }
             if (MetaChunk != null) {
                 MetaChunk.IsDirty = false;
@@ -490,7 +511,7 @@ namespace DiskArc.Disk {
 
             newDisk.FileRevision = WozKind.Woz2;
             newDisk.DiskKind = MediaKind.GCR_525;
-            newDisk.Info = new Woz_Info(WOZ_CREATOR_NAME, MediaKind.GCR_525, lrgTrkBlkCnt);
+            newDisk.WozInfo = new Woz_Info(WOZ_CREATOR_NAME, MediaKind.GCR_525, lrgTrkBlkCnt);
 
             // Write header and INFO.
             newDisk.WriteHeaderAndInfo(tmpBuf);
@@ -593,6 +614,11 @@ namespace DiskArc.Disk {
         /// <returns>Newly-created disk image.</returns>
         public static Woz CreateDisk35(Stream stream, MediaKind mediaKind, int interleave,
                 SectorCodec codec, AppHook appHook) {
+            return CreateDisk35(stream, mediaKind, interleave, codec, appHook, false);
+        }
+
+        internal static Woz CreateDisk35(Stream stream, MediaKind mediaKind, int interleave,
+                SectorCodec codec, AppHook appHook, bool isMoof) {
             if (!CanCreateDisk35(mediaKind, interleave, out string errMsg)) {
                 throw new ArgumentException(errMsg);
             }
@@ -639,7 +665,12 @@ namespace DiskArc.Disk {
 
             newDisk.FileRevision = WozKind.Woz2;
             newDisk.DiskKind = mediaKind;
-            newDisk.Info = new Woz_Info(WOZ_CREATOR_NAME, mediaKind, lrgTrkBlkCnt);
+            if (isMoof) {
+                newDisk.IsMoof = true;
+                newDisk.MoofInfo = new Moof_Info(WOZ_CREATOR_NAME, mediaKind, lrgTrkBlkCnt);
+            } else {
+                newDisk.WozInfo = new Woz_Info(WOZ_CREATOR_NAME, mediaKind, lrgTrkBlkCnt);
+            }
 
             // Write header and INFO.
             newDisk.WriteHeaderAndInfo(tmpBuf);
@@ -718,7 +749,9 @@ namespace DiskArc.Disk {
         /// </summary>
         private void WriteHeaderAndInfo(byte[] buffer) {
             // Write signature, leave room for CRC.
-            if (FileRevision == WozKind.Woz1) {
+            if (IsMoof) {
+                Array.Copy(Moof.SIGNATURE, buffer, Moof.SIGNATURE.Length);
+            } else if (FileRevision == WozKind.Woz1) {
                 Array.Copy(SIGNATURE1, buffer, SIGNATURE1.Length);
             } else {
                 Array.Copy(SIGNATURE2, buffer, SIGNATURE2.Length);
@@ -728,15 +761,20 @@ namespace DiskArc.Disk {
             RawData.WriteU32LE(buffer, ref offset, ID_INFO);
             RawData.WriteU32LE(buffer, ref offset, INFO_LENGTH);
 
-            byte[] data = Info.GetData();
+            byte[] data;
+            if (IsMoof) {
+                data = MoofInfo.GetData();
+            } else {
+                data = WozInfo.GetData();
+            }
             Array.Copy(data, 0, buffer, INFO_CHUNK_START, INFO_LENGTH);
         }
 
         /// <summary>
-        /// Parses the contents of a WOZ file.
+        /// Parses the contents of a WOZ or MOOF file.
         /// </summary>
-        private void Parse() {
-            if (mDataStream.Length < 256 || mDataStream.Length > MAX_FILE_LEN) {
+        internal void Parse() {
+            if (mDataStream.Length < MIN_FILE_LEN || mDataStream.Length > MAX_FILE_LEN) {
                 // Too big, or too small to hold signature/INFO/TMAP, much less TRKS.
                 throw new InvalidDataException("Incompatible data stream");
             }
@@ -750,6 +788,9 @@ namespace DiskArc.Disk {
                 FileRevision = WozKind.Woz1;
             } else if (RawData.CompareBytes(mBaseData, SIGNATURE2, SIGNATURE2.Length)) {
                 FileRevision = WozKind.Woz2;
+            } else if (RawData.CompareBytes(mBaseData, Moof.SIGNATURE, Moof.SIGNATURE.Length)) {
+                FileRevision = WozKind.Woz2;
+                IsMoof = true;
             } else {
                 throw new InvalidDataException("Incompatible data stream");
             }
@@ -821,28 +862,53 @@ namespace DiskArc.Disk {
             }
 
             // Extract the INFO chunk.  Validate the items that are critical for us.
-            Info = new Woz_Info(mBaseData, INFO_CHUNK_START);
-            if (Info.DiskType != 1 & Info.DiskType != 2) {
-                throw new InvalidDataException("Unknown disk type: " + Info.DiskType);
-            }
-            if (Info.Version > 1) {
-                if (Info.DiskSides != 1 && Info.DiskSides != 2) {
-                    throw new InvalidDataException("Unexpected number of sides: " + Info.DiskSides);
+            if (IsMoof) {
+                MoofInfo = new Moof_Info(mBaseData, INFO_CHUNK_START);
+                switch (MoofInfo.DiskType) {
+                    case 1:
+                        DiskKind = MediaKind.GCR_SSDD35;
+                        break;
+                    case 2:
+                        DiskKind = MediaKind.GCR_DSDD35;
+                        break;
+                    case 3:
+                        DiskKind = MediaKind.MFM_DSHD35;
+                        break;
+                    case 4:
+                        DiskKind = MediaKind.GCR_Twiggy;
+                        break;
+                    default:
+                        throw new InvalidDataException("Unknown disk type: " + MoofInfo.DiskType);
                 }
-            }
-            if (Info.DiskType == 1) {
-                DiskKind = MediaKind.GCR_525;
-            } else {
-                if (Info.Version > 1 && Info.DiskSides == 1) {
-                    DiskKind = MediaKind.GCR_SSDD35;
-                } else {
-                    DiskKind = MediaKind.GCR_DSDD35;
-                }
-            }
-            if (Info.Version >= 3) {
-                if (Info.FluxBlock != 0 && Info.LargestFluxTrack != 0) {
+                if (MoofInfo.FluxBlock != 0 && MoofInfo.LargestFluxTrack != 0) {
                     Notes.AddI("Found FLUX data, writing will be disabled");
                     HasFlux = true;
+                }
+            } else {
+                WozInfo = new Woz_Info(mBaseData, INFO_CHUNK_START);
+                if (WozInfo.DiskType != 1 & WozInfo.DiskType != 2) {
+                    throw new InvalidDataException("Unknown disk type: " + WozInfo.DiskType);
+                }
+                if (WozInfo.Version > 1) {
+                    if (WozInfo.DiskSides != 1 && WozInfo.DiskSides != 2) {
+                        throw new InvalidDataException("Unexpected number of sides: " +
+                            WozInfo.DiskSides);
+                    }
+                }
+                if (WozInfo.DiskType == 1) {
+                    DiskKind = MediaKind.GCR_525;
+                } else {
+                    if (WozInfo.Version > 1 && WozInfo.DiskSides == 1) {
+                        DiskKind = MediaKind.GCR_SSDD35;
+                    } else {
+                        DiskKind = MediaKind.GCR_DSDD35;
+                    }
+                }
+                if (WozInfo.Version >= 3) {
+                    if (WozInfo.FluxBlock != 0 && WozInfo.LargestFluxTrack != 0) {
+                        Notes.AddI("Found FLUX data, writing will be disabled");
+                        HasFlux = true;
+                    }
                 }
             }
 
@@ -938,10 +1004,12 @@ namespace DiskArc.Disk {
                     if (trackNum < 0 || trackNum > SectorCodec.MAX_TRACK_35) {
                         throw new ArgumentOutOfRangeException("Invalid track: " + trackFraction);
                     }
-                    int diskSides = (Info.Version > 1) ? Info.DiskSides : 1;
-                    if (trackFraction < 0 || trackFraction >= diskSides) {
-                        throw new ArgumentOutOfRangeException("Invalid trackFraction: " +
-                            trackFraction);
+                    if (!IsMoof) {
+                        int diskSides = (WozInfo.Version > 1) ? WozInfo.DiskSides : 1;
+                        if (trackFraction < 0 || trackFraction >= diskSides) {
+                            throw new ArgumentOutOfRangeException("Invalid trackFraction: " +
+                                trackFraction);
+                        }
                     }
                     if (FileRevision == WozKind.Woz1) {
                         tmapIndex = (int)(trackNum + SectorCodec.MAX_TRACK_35 * trackFraction);
@@ -950,7 +1018,7 @@ namespace DiskArc.Disk {
                     }
                     break;
                 default:
-                    throw new InvalidOperationException("Invalid disk type: " + DiskKind);
+                    throw new InvalidOperationException("Unsupported disk type: " + DiskKind);
             }
 
             if (HasFlux && mFluxChunkOffset != -1) {
@@ -1028,7 +1096,7 @@ namespace DiskArc.Disk {
 
             const int VERY_LONG_TRACK = 20000;      // 2x byte count of longest track on 3.5" disk
 
-            int bitTime = Info.OptimalBitTiming;
+            int bitTime = IsMoof ? MoofInfo.OptimalBitTiming : WozInfo.OptimalBitTiming;
             if (bitTime < 8 || bitTime > 64) {
                 // Something is horribly wrong.
                 bitCount = -1;
@@ -1083,7 +1151,7 @@ namespace DiskArc.Disk {
         public void AddMETA() {
             CheckAccess();
             if (MetaChunk == null) {
-                MetaChunk = Woz_Meta.CreateMETA();
+                MetaChunk = Woz_Meta.CreateMETA(IsMoof);
             }
         }
 
@@ -1099,20 +1167,27 @@ namespace DiskArc.Disk {
 
             // We need to generate the list of Info entries that are appropriate for the
             // Info.Version.
-            foreach (MetaEntry met in Woz_Info.sInfo1List) {
-                entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
-                    met.Description, met.ValueSyntax, met.CanEdit, false));
-            }
-            if (Info.Version > 1) {
-                foreach (MetaEntry met in Woz_Info.sInfo2List) {
+            if (IsMoof) {
+                foreach (MetaEntry met in Moof_Info.sInfoList) {
                     entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
                         met.Description, met.ValueSyntax, met.CanEdit, false));
                 }
-            }
-            if (Info.Version > 2) {
-                foreach (MetaEntry met in Woz_Info.sInfo3List) {
+            } else {
+                foreach (MetaEntry met in Woz_Info.sInfo1List) {
                     entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
                         met.Description, met.ValueSyntax, met.CanEdit, false));
+                }
+                if (WozInfo.Version > 1) {
+                    foreach (MetaEntry met in Woz_Info.sInfo2List) {
+                        entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
+                            met.Description, met.ValueSyntax, met.CanEdit, false));
+                    }
+                }
+                if (WozInfo.Version > 2) {
+                    foreach (MetaEntry met in Woz_Info.sInfo3List) {
+                        entries.Add(new MetaEntry(INFO_PFX + met.Key, met.ValueType,
+                            met.Description, met.ValueSyntax, met.CanEdit, false));
+                    }
                 }
             }
 
@@ -1123,7 +1198,9 @@ namespace DiskArc.Disk {
             // values, which we can present in any order.
             if (MetaChunk != null) {
                 Dictionary<string, string> metaEntries = MetaChunk.GetEntryDict();
-                foreach (MetaEntry met in Woz_Meta.sStandardEntries) {
+                MetaEntry[] stdEntries =
+                    IsMoof ? Woz_Meta.sStandardMoofEntries : Woz_Meta.sStandardWozEntries;
+                foreach (MetaEntry met in stdEntries) {
                     if (metaEntries.ContainsKey(met.Key)) {
                         entries.Add(new MetaEntry(META_PFX + met.Key, met.ValueType,
                             met.Description, met.ValueSyntax, met.CanEdit, false));
@@ -1143,7 +1220,11 @@ namespace DiskArc.Disk {
         public string? GetMetaValue(string key, bool verbose) {
             string? value = null;
             if (key.StartsWith(INFO_PFX)) {
-                value = Info.GetValue(key.Substring(INFO_PFX.Length), verbose);
+                if (IsMoof) {
+                    value = MoofInfo.GetValue(key.Substring(INFO_PFX.Length), verbose);
+                } else {
+                    value = WozInfo.GetValue(key.Substring(INFO_PFX.Length), verbose);
+                }
             } else if (key.StartsWith(META_PFX)) {
                 if (MetaChunk != null) {
                     value = MetaChunk.GetValue(key.Substring(META_PFX.Length));
@@ -1157,7 +1238,11 @@ namespace DiskArc.Disk {
         // IMetadata
         public bool TestMetaValue(string key, string value) {
             if (key.StartsWith(INFO_PFX)) {
-                return Info.TestValue(key.Substring(INFO_PFX.Length), value);
+                if (IsMoof) {
+                    return MoofInfo.TestValue(key.Substring(INFO_PFX.Length), value);
+                } else {
+                    return WozInfo.TestValue(key.Substring(INFO_PFX.Length), value);
+                }
             } else if (key.StartsWith(META_PFX)) {
                 if (MetaChunk != null) {
                     return MetaChunk.TestValue(key.Substring(META_PFX.Length), value,
@@ -1173,7 +1258,11 @@ namespace DiskArc.Disk {
         // IMetadata
         public void SetMetaValue(string key, string value) {
             if (key.StartsWith(INFO_PFX)) {
-                Info.SetValue(key.Substring(INFO_PFX.Length), value);
+                if (IsMoof) {
+                    MoofInfo.SetValue(key.Substring(INFO_PFX.Length), value);
+                } else {
+                    WozInfo.SetValue(key.Substring(INFO_PFX.Length), value);
+                }
             } else if (key.StartsWith(META_PFX)) {
                 if (MetaChunk != null) {
                     MetaChunk.SetValue(key.Substring(META_PFX.Length), value);
@@ -1198,7 +1287,11 @@ namespace DiskArc.Disk {
         /// the library identifier with its own.  Normally info:creator is not editable.
         /// </summary>
         public void SetCreator(string value) {
-            Info.Creator = value;
+            if (IsMoof) {
+                MoofInfo.Creator = value;
+            } else {
+                WozInfo.Creator = value;
+            }
         }
 
         #endregion Metadata

@@ -25,11 +25,11 @@ using static DiskArc.IMetadata;
 
 namespace DiskArc.Disk {
     /// <summary>
-    /// WOZ file META chunk management.
+    /// WOZ/MOOF file META chunk management.
     /// </summary>
     /// <remarks>
-    /// <para>The META chunk is the same in WOZ v1 and v2.  Duplicate keys are not allowed.  The
-    /// order in which entries are stored doesn't matter.</para>
+    /// <para>The META chunk format is the same in WOZ v1 and v2 and MOOF.  Duplicate keys are not
+    /// allowed.  The order in which entries are stored doesn't matter.</para>
     /// <para>The enumeration provides the keys for all entries.</para>
     /// </remarks>
     public class Woz_Meta {
@@ -76,11 +76,12 @@ namespace DiskArc.Disk {
         //
 
         // Keys that require special handling.
+        public const string COLORDEPTH_KEY = "colordepth";
+        public const string IMAGE_DATE_KEY = "image_date";
         public const string LANGUAGE_KEY = "language";
         public const string REQUIRES_RAM_KEY = "requires_ram";
         public const string REQUIRES_MACHINE_KEY = "requires_machine";
         public const string SIDE_KEY = "side";
-        public const string IMAGE_DATE_KEY = "image_date";
 
         private const string META_STRING_SYNTAX =
             "String may not contain linefeed or tab characters, and may only contain pipe ('|') " +
@@ -108,13 +109,16 @@ namespace DiskArc.Disk {
             "2e+", "2gs", "2c+", "3",
             "3+",
         };
+        private static readonly string[] sColorDepth = new string[] {
+            "1", "2", "4", "8", "16", "24"
+        };
 
         /// <summary>
         /// Standard keys, defined by the WOZ specification.  All WOZ files with a META chunk
         /// are expected to have these.  They don't have to appear in a specific order.  Some
         /// fields have a restricted set of values or a rigidly defined format.
         /// </summary>
-        internal static readonly MetaEntry[] sStandardEntries = new MetaEntry[] {
+        internal static readonly MetaEntry[] sStandardWozEntries = new MetaEntry[] {
             new MetaEntry("title", MetaEntry.ValType.String,
                 "Name/title of the product.", META_STRING_SYNTAX, canEdit:true),
             new MetaEntry("subtitle", MetaEntry.ValType.String,
@@ -135,6 +139,41 @@ namespace DiskArc.Disk {
             new MetaEntry(REQUIRES_MACHINE_KEY, MetaEntry.ValType.String,
                 "Pipe-delimited list of computers this runs on.",
                 "From list: " + ListToString(sRequiresMachine), canEdit:true),
+            new MetaEntry("notes", MetaEntry.ValType.String,
+                "Additional notes.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry(SIDE_KEY, MetaEntry.ValType.String,
+                "Physical disk side description.",
+                "Format: \"Disk #, Side[A|B]\".", canEdit:true),
+            new MetaEntry("side_name", MetaEntry.ValType.String,
+                "Name of the disk side.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("contributor", MetaEntry.ValType.String,
+                "Name of person who imaged the disk.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry(IMAGE_DATE_KEY, MetaEntry.ValType.String,
+                "Date and time when the disk was imaged.",
+                "RFC3339 format, e.g. 2018-01-07T05:00:02.511Z", canEdit:true),
+        };
+
+        internal static readonly MetaEntry[] sStandardMoofEntries = new MetaEntry[] {
+            new MetaEntry("title", MetaEntry.ValType.String,
+                "Name/title of the product.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("subtitle", MetaEntry.ValType.String,
+                "Subtitle of the product.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("publisher", MetaEntry.ValType.String,
+                "Publisher of the software.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("developer", MetaEntry.ValType.String,
+                "Developer of the software. May be a pipe-delimited list.", META_STRING_SYNTAX,
+                canEdit:true),
+            new MetaEntry("copyright", MetaEntry.ValType.String,
+                "Copyright date and holder.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("version", MetaEntry.ValType.String,
+                "Version number of the software.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry(LANGUAGE_KEY, MetaEntry.ValType.String,
+                "Primary language.", "From list: " + ListToString(sLanguage), canEdit:true),
+            new MetaEntry("requires", MetaEntry.ValType.String,
+                "Any requirements for the software.", META_STRING_SYNTAX, canEdit:true),
+            new MetaEntry("colordepth", MetaEntry.ValType.String,
+                "Pipe-delimited list of compatible color depths.",
+                "From list: " + ListToString(sColorDepth), canEdit:true),
             new MetaEntry("notes", MetaEntry.ValType.String,
                 "Additional notes.", META_STRING_SYNTAX, canEdit:true),
             new MetaEntry(SIDE_KEY, MetaEntry.ValType.String,
@@ -173,10 +212,16 @@ namespace DiskArc.Disk {
         /// <summary>
         /// Creates a metadata object for a new disk image.
         /// </summary>
-        public static Woz_Meta CreateMETA() {
+        public static Woz_Meta CreateMETA(bool isMoof) {
             Woz_Meta metadata = new Woz_Meta();
             // Create standard entries.  Leave them all blank except for image_date.
-            foreach (MetaEntry met in sStandardEntries) {
+            MetaEntry[] entries;
+            if (isMoof) {
+                entries = sStandardMoofEntries;
+            } else {
+                entries = sStandardWozEntries;
+            }
+            foreach (MetaEntry met in entries) {
                 metadata.mEntries.Add(met.Key, string.Empty);
             }
             metadata.mEntries[IMAGE_DATE_KEY] =
@@ -201,7 +246,7 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Makes a copy of the key/value dictionary.
+        /// Returns a copy of the key/value dictionary.
         /// </summary>
         internal Dictionary<string, string> GetEntryDict() {
             Dictionary<string, string> newDict = new Dictionary<string, string>(mEntries.Count);
@@ -284,6 +329,18 @@ namespace DiskArc.Disk {
                         }
                     }
                     break;
+                case COLORDEPTH_KEY:
+                    // Confirm value is a pipe-separated list of numbers from a specific set.
+                    list = value.Split('|');
+                    foreach (string listItem in list) {
+                        // This returns false for empty strings, so we should catch minor
+                        // syntactical issues like "1|2|" and "1||2".
+                        if (!IsInList(listItem, sColorDepth)) {
+                            errMsg = "Invalid colordepth list item: '" + listItem + "'";
+                            return false;
+                        }
+                    }
+                    break;
                 case SIDE_KEY:
                     // Entry has form "Disk #, Side [A|B]", e.g. "Disk 1, Side A".
                     matches = VALID_SIDE_REGEX.Matches(value);
@@ -355,12 +412,18 @@ namespace DiskArc.Disk {
         }
 
         /// <summary>
-        /// Determines whether a string is in the standard key set.  Case-sensitive.
+        /// Determines whether a string is in the standard key set of either WOZ or MOOF.
+        /// Case-sensitive.
         /// </summary>
         /// <param name="str">String to search for.</param>
         /// <returns>True if the value was found, false if not.</returns>
         private static bool IsStandardKey(string key) {
-            foreach (MetaEntry met in sStandardEntries) {
+            foreach (MetaEntry met in sStandardWozEntries) {
+                if (met.Key == key) {
+                    return true;
+                }
+            }
+            foreach (MetaEntry met in sStandardMoofEntries) {
                 if (met.Key == key) {
                     return true;
                 }
@@ -471,7 +534,7 @@ namespace DiskArc.Disk {
         /// Exercises metadata handling.
         /// </summary>
         public static bool DebugTest() {
-            Woz_Meta meta = Woz_Meta.CreateMETA();
+            Woz_Meta meta = Woz_Meta.CreateMETA(false);
 
             // General get/set.
             DebugExpect(meta, "key1", null);
@@ -518,7 +581,7 @@ namespace DiskArc.Disk {
                 meta.SetValue("key2", "a|b");               // no pipe chars generally
                 throw new Exception("value pipe allowed");
             } catch (ArgumentException) { /*expected*/ }
-#pragma warning disable CS8625
+#pragma warning disable CS8625      // don't complain about passing null key
             try {
                 meta.SetValue(null, "value2");
                 throw new Exception("null key allowed");

@@ -61,6 +61,9 @@ limitations under the License.
             <RadioButton GroupName="FileType" Content="WOZ (.woz)" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FT_Woz}"
                              IsChecked="{Binding IsChecked_FT_Woz}"/>
+            <RadioButton GroupName="FileType" Content="MOOF (.moof)" Margin="0,2,0,0"
+                             IsEnabled="{Binding IsEnabled_FT_Moof}"
+                             IsChecked="{Binding IsChecked_FT_Moof}"/>
             <RadioButton GroupName="FileType" Content="Nibble (.nib)" Margin="0,2,0,0"
                              IsEnabled="{Binding IsEnabled_FT_Nib}"
                              IsChecked="{Binding IsChecked_FT_Nib}"/>

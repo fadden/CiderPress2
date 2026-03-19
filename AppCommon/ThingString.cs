@@ -59,6 +59,8 @@ namespace AppCommon {
                 return "DART";
             } else if (disk is DiskCopy) {
                 return "DiskCopy";
+            } else if (disk is Moof) {
+                return "MOOF";
             } else if (disk is Trackstar) {
                 return "Trackstar";
             } else if (disk is TwoIMG) {
@@ -242,6 +244,8 @@ namespace AppCommon {
                     return "Unadorned 5.25\" Nibble";
                 case Defs.FileKind.Woz:
                     return "WOZ";
+                case Defs.FileKind.Moof:
+                    return "MOOF";
                 case Defs.FileKind.TwoIMG:
                     return "2IMG";
                 case Defs.FileKind.DiskCopy:

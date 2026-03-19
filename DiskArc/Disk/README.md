@@ -18,7 +18,8 @@ Suggested procedure:
  - Start with UnadornedSector or UnadornedNibble525 as appropriate.
  - Write TestKind(), OpenDisk(), and AnalyzeDisk().
  - Add entry to Defs.FileKind, and Defs.IsDiskImageFIle().
- - Add to FileAnalyzer's PrepareDiskImage(), ExtensionToKind(), TestKind(), sProbeKinds.
+ - Add to FileAnalyzer's PrepareDiskImage(), ExtensionToKind(), TestKind(), sProbeKinds,
+   and sDiskExts.
  - Update DAExtensions as appropriate.
  - Add human-readable string to ThingString.
  - Add some sample files to the TestData directory.
@@ -30,3 +31,4 @@ Suggested procedure:
  - Update cp2 "create-disk-image" to create images.  Update the GUI equivalent.
  - If the disk format has metadata, confirm that cp2 can read/write the fields.
  - Update the cp2 manual with the file extension and metadata information.
+ - Add to the GUI app's list of recognized file extensions (WinUtil).

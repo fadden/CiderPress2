@@ -1,0 +1,45 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">MOOF Disk Image Format</h1><a aria-label="Permalink: MOOF Disk Image Format" class="anchor" href="#user-content-moof-disk-image-format" id="user-content-moof-disk-image-format" name="user-content-moof-disk-image-format"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li><a href="https://applesaucefdc.com/moof-reference/" rel="nofollow">https://applesaucefdc.com/moof-reference/</a></li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The MOOF format was developed by John K. Morris as a way to store the data coming from low-level
+disk reading hardware, such as the <a href="https://applesaucefdc.com/hardware/" rel="nofollow">Applesauce</a>.  It's
+essentially a minor modification of his WOZ v2.1 format that emphasizes support for the Macintosh
+instead of the Apple II.</p>
+<p>Differences from WOZ:</p>
+<ul>
+<li>Some of the fields in the INFO chunk are different, or have different interpretations.
+For example, the Disk Type field drops 140KB GCR floppies and adds 1.4MB MFM disks.</li>
+<li>The set of standard fields in the META chunk is different.  Fields whose meaning changed
+were given different names, e.g. <code>side_name</code> vs. <code>disk_name</code>, avoiding ambiguity.</li>
+<li>The bit data may be MFM instead of GCR.</li>
+</ul>
+<p>For additional commentary, please refer to the <a href="Woz-notes.html">WOZ notes</a>.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Disk/Moof-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>

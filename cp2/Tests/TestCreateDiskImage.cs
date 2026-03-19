@@ -63,6 +63,9 @@ namespace cp2.Tests {
             new string[] { "800k-prodos.po", "800K", "prodos" },
             new string[] { "319m-prodos.po", "65535blk", "prodos" },
             new string[] { "32m-prodos.po", "32m", "prodos" },
+
+            new string[] { "800k-hfs.woz", "800kB", "hfs" },
+            new string[] { "400k-hfs.moof", "400kiB", "hfs" },
         };
 
         // Create a bunch of disk images with different characteristics, and then verify that

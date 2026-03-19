@@ -21,7 +21,7 @@ using DiskArc.Disk;
 
 namespace DiskArc {
     /// <summary>
-    /// Disk sector encoder and decoder, for nibble images.
+    /// Disk sector encoder and decoder, for GCR nibble images.
     /// </summary>
     /// <remarks>
     /// <para>This is an abstract class.  Sub-classes should configure the various properties,

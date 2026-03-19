@@ -461,8 +461,13 @@ namespace cp2_wpf {
             try {
                 mCurDataOutput = item.Converter.ConvertFile(mConvOptions);
             } catch (Exception ex) {
-                mCurDataOutput = new SimpleText("Error: converter (" +
-                    item.Converter.GetType().Name + ") crashed:\r\n" + ex);
+                if (ex is BadBlockException) {
+                    mCurDataOutput = new SimpleText("Error: bad disk block encountered: " +
+                        ex.Message);
+                } else {
+                    mCurDataOutput = new SimpleText("Error: converter (" +
+                        item.Converter.GetType().Name + ") crashed:\r\n" + ex);
+                }
             }
             DateTime dataDoneWhen = DateTime.Now;
 
