@@ -2025,7 +2025,7 @@ https://applesaucefdc.com/woz/reference2/.  The names of keys stored in
 the INFO chunk must be prefixed with "info:", and those stored in the
 (optional) META chunk must be prefixed with "meta:".
 
-INFO chunk keys (some are not available in v1/v2 images):
+INFO chunk keys (some are not present in v1/v2 images):
 
 name                     | acc | description
 ------------------------ | --- | -----------

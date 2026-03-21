@@ -38,6 +38,7 @@ Contents:
    - [set-attr | sa](#set-attrsa)
    - [set-metadata | sm](#set-metadatasm)
    - [test](#test)
+   - [un-binscii | unbsc](#un-binsciiunbsc)
    - [version](#version)
    - [write-sector | ws, write-block | wb, write-block-cpm | wbc](#write-sectorws-write-blockwb-write-block-cpmwbc)
  - [Options](#options)
@@ -55,6 +56,7 @@ Contents:
    - [Trackstar](#trackstar)
    - [2IMG](#2img)
    - [WOZ](#woz)
+   - [MOOF](#moof)
  - [Appendix](#appendix)
    - [Mac ZIP](#mac-zip)
    - [AppleWorks Filename Formatting](#appleworks-filename-formatting)
@@ -940,10 +942,10 @@ Examples:
 Creates a new directory.  Only useful on disk images with hierarchical
 filesystems, such as ProDOS and HFS.
 
-Usage: `cp2 mkdir [options] <ext-archive> dir-name`
+Usage: `cp2 mkdir [options] <ext-archive> dir-path`
 
-Missing directory components are added automatically, so you can create
-"a/b/c" in one step.
+Nonexistent directory components are added automatically, so you can create
+"a/b/c" in one step even if "a" and "a/b" don't exist.
 
 Wildcards are not processed.  Filenames are adjusted to be valid on the
 target filesystem.
@@ -975,7 +977,7 @@ Files are specified as relative paths from the root directory, except for
 the root directory itself, which is specified as ":" or "/".  The root
 directory may be renamed (to change the volume name) but not moved.  This
 can be used to change the volume number stored in the DOS VTOC, but will not
-affect the volume numbers stored in the sector headers.
+affect the volume numbers stored in the sector headers of 5.25" disks.
 
 Moving a directory into a subdirectory of itself is not allowed.  Moving
 files between file archives or filesystems (e.g. between partitions) is not
@@ -1025,14 +1027,9 @@ multiple files.  This can be used to generate a listing of the contents of a
 large collection of archives.
 
 The `--classic` output roughly matches that of the MDC program included with
-the original CiderPress.  It only displays the contents of disk images.
-It can open disk images stored in ZIP or gzip archives, but only if they
-have a single member, and cannot read .SDK files stored there.  WOZ images
-are skipped.  (This option primarily exists to facilitate comparisons with the
-original program.  It will likely be removed at some point.)
+the original CiderPress.  The option is now deprecated, and will be removed.
 
 Options:
- - `--classic`
  - `--depth={shallow,subvol,max}`
  - `--fast-scan`, `--no-fast-scan`
  - `--mac-zip`, `--no-mac-zip`
@@ -1041,7 +1038,6 @@ Options:
 Examples:
  - `cp2 multi-disk-catalog file1.po file2.zip dir1`
  - `cp2 mdc --depth=max archive.shk`
- - `cp2 mdc --classic dir1 dir2`
 
 ----
 #### `print`|`p`
@@ -1257,6 +1253,39 @@ Options: (none)
 Examples:
  - `cp2 test archive.shk`
  - `cp2 test disks.zip:file.woz`
+
+----
+#### `un-binscii`|`unbsc`
+
+Extracts BinSCII segments from files.
+
+Usage: `cp2 un-binscii [options] <bsc-file> [bsc-file...]`
+
+BinSCII is a base-64 text format used to encode binary files for transmission
+on systems that can't handle binary data.  This works differently from other
+extraction operations because the data is broken into chunks that hold at most
+12KB from the original file, so forming a single output file can require
+multiple invocations.  A single input file may contain one segment, multiple
+segments of a single output file, or multiple segments from multiple output
+files.
+
+By default, extracting to an existing file will fail.  If you need to unpack
+multiple segments with multiple invocations (as opposed to providing all
+inputs as arguments to a single command), add the `--overwrite` flag.
+
+Only the `none` and `naps` preservation modes are supported.
+
+If a malformed chunk is detected, processing will halt immediately.  If the
+chunks are properly formed but a bad CRC is encountered, the data will be
+extracted fully, and an error will be reported.
+
+Options:
+ - `--overwrite`, `--no-overwrite`
+ - `--preserve={none,naps}`
+
+Examples:
+ - `cp2 un-binscii myfile.bsc`
+ - `cp2 unbsc -fpn part1.bsq part2.bsq part3.bsq`
 
 ----
 #### `version`
@@ -1597,6 +1626,7 @@ of the extensions are allowed to mean more than one thing.
  - ".nib" - unadorned 35-track 5.25" disk nibble image
  - ".woz" - WOZ format nibble image, for 5.25" (35- or 40-track)
    or 3.5" (SSDD or DSDD) disks
+ - ".moof" - MOOF format nibble image, for 3.5" disks
  - ".2mg", ".2img" - DOS-order 16-sector disks, or ProDOS-order blocks
  - ".dc", ".dc42", ".image" - DiskCopy 4.2 3.5" floppy (400KB, 720KB, 800KB, or 1440KB)
  - ".app" - Trackstar 5.25" (35- or 40-track) disk nibble image
@@ -1995,11 +2025,11 @@ https://applesaucefdc.com/woz/reference2/.  The names of keys stored in
 the INFO chunk must be prefixed with "info:", and those stored in the
 (optional) META chunk must be prefixed with "meta:".
 
-INFO chunk keys:
+INFO chunk keys (some are not present in v1/v2 images):
 
 name                     | acc | description
 ------------------------ | --- | -----------
-info:version             | ro  | numeric
+info:info_version        | ro  | numeric
 info:disk_type           | ro  | numeric
 info:write_protected     | r/w | boolean; "true" marks disk as write-protected for emulators
 info:synchronized        | ro  | boolean
@@ -2010,6 +2040,9 @@ info:boot_sector_format  | r/w | numeric
 info:optimal_bit_timing  | ro  | numeric
 info:compatible_hardware | r/w | 16-bit collection of bit flags
 info:required_ram        | r/w | 16-bit value, in KiB
+info:largest_track       | ro  | 16-bit value, in 512-byte blocks
+info:flux_block          | ro  | 16-bit value; zero, or block offset of start of FLUX chunk
+info:largest_flux_track  | ro  | 16-bit value, in 512-byte blocks
 
 META chunk "standard" keys:
 
@@ -2038,6 +2071,43 @@ characters and the underscore ('_').
 
 Setting a "meta:" key in an image without a META chunk will cause a new
 META chunk to be added.  All fields will be blank except for `image_date`.
+
+### MOOF ###
+
+The MOOF format is very similar to WOZ v2.1.
+
+INFO chunk keys:
+
+name                     | acc | description
+------------------------ | --- | -----------
+info:info_version        | ro  | numeric
+info:disk_type           | ro  | numeric
+info:write_protected     | r/w | boolean; "true" marks disk as write-protected for emulators
+info:synchronized        | ro  | boolean
+info:optimal_bit_timing  | ro  | numeric
+info:creator             | ro  | string
+info:largest_track       | ro  | 16-bit value, in 512-byte blocks
+info:flux_block          | ro  | 16-bit value; zero, or block offset of start of FLUX chunk
+info:largest_flux_track  | ro  | 16-bit value, in 512-byte blocks
+
+META chunk "standard" keys:
+
+name                     | acc | description
+------------------------ | --- | -----------
+meta:title               | r/w | string; product title
+meta:subtitle            | r/w | string; product subtitle
+meta:publisher           | r/w | string; product publisher
+meta:developer           | r/w | string; product developer
+meta:copyright           | r/w | string; copyright
+meta:version             | r/w | string; version
+meta:language            | r/w | language name, from table
+meta:requires            | r/w | string; requirements for the software
+meta:colordepth          | r/w | string; compatible bit depths in pipe-delimited list
+meta:notes               | r/w | string; arbitrary notes
+meta:disk_name           | r/w | string; name of disk side
+meta:disk_number         | r/w | string; for disks that are part of a set
+meta:contributor         | r/w | string; disk imager
+meta:image_date          | r/w | RFC3339 date of imaging
 
 
 ## Appendix ##
@@ -2100,7 +2170,7 @@ Some ideas for the future:
    next to each filename.
  - Multi-archive "grep" (same transformation as "print", but does text search).
    Could support modifiers, e.g. search by file type or mod date range.
- - Non-archive file utilities: EOL / high ASCII converter, sciibin, etc.
+ - Non-archive file utilities: EOL / high ASCII converter, etc.
  - Support half/quarter tracks and 524-byte sectors in the read/write sector
    commands.
  - Provide a way to set the volume number when creating a new 5.25" disk image.

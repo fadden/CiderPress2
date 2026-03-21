@@ -42,8 +42,8 @@ Applications:
 
 Other (not included in binary distribution):
 
- - Examples/*: some simple command-line applications that demonstrate
-   the use of the libraries.
+ - Examples/AddFile and Examples/ListContents: simple command-line
+   applications that demonstrate the use of the libraries.
  - MakeDist: build utility that creates distribution packages.
  - TestData: not actually a project.  This is a collection of file archives
    and disk images, used by the DiskArc library tests and the cp2
@@ -54,7 +54,7 @@ Other (not included in binary distribution):
 The tests in the DiskArcTests and FileConvTests libraries can be run in two
 different ways:
 
- 1. `cp2 debug-libtest-da` and `cp2 debug-libtest-fc`
+ 1. `cp2 debug-test-da` and `cp2 debug-test-fc`
  2. From the hidden "DEBUG" menu in the cp2_wpf application.
 
 The cp2 command-line application has its own set of tests that can be run with
@@ -162,11 +162,11 @@ always match the current "final" release.
     for text substitution in the descriptive text and installer links.
  7. If file format docs have changed, use the `ndocs/formatdoc/convert.py`
     script (see below).
- 8. From the command line, in the `ndocs` directory, run `publish.py`
-    (you may need to explicitly run python if the shell isn't set up to
-    execute scripts directly).  This will update the contents of the `docs`
-    directory and the top-level documentation (including this file) with the
-    contents of `ndocs`.  Check the diffs.
+ 8. From the command line, change into the `ndocs` directory and run
+    `publish.py` (you may need to explicitly run python if the shell isn't
+    set up to execute scripts directly).  This will update the contents of
+    the `docs` directory and the top-level documentation (including this file)
+    with the contents of `ndocs`.  Check the diffs.
 
 Finally, build the applications and submit the changes.
 
