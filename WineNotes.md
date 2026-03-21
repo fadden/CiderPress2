@@ -136,20 +136,27 @@ To add it:
  - Click "Run".  Click "Yes" to confirm.
 
 This does a whole bunch of work.  When it's done, you'll have a copy of the
-Consolas font family files in "Contents/drive_c/windows/Fonts".  Click "Close"
-to close Winetricks, close the Configure window, then double-click on
-the application icon to test your installation.
+Consolas font family files in `Contents/drive_c/windows/Fonts`.  Click "Close"
+to close the Winetricks dialog, then close the Configure window.
 
 Installing the Tahoma font helped on Linux, but had no noticeable effect on
 macOS (but macOS without Tahoma looks about the same as Linux with it).
 
 #### Distribution and Installation ####
 
-The wrapped application can be copied into a ZIP archive and distributed.
-Others can download it and launch it directly, with one minor issue.  When
-macOS downloads files from the Internet, it adds a "quarantine" attribute
-that prevents them from being executed.  To undo this, it's necessary to
-run the following command in Terminal:
+Create a downloadable package by creating a ZIP archive.  Select the .app
+app folder (CP2Mac106) and a helpful README.txt in the Finder, then use
+File > Compress to create a new ZIP archive.  Rename it to
+`cp2wine_1.0.6_mac.zip`.
+
+It would be prudent to test the installation at this time by launching the
+app and opening some sample files.
+
+This archive can be downloaded and the application launched directly, once
+one minor issue is addressed.  When macOS downloads files from the Internet,
+it adds a "quarantine" attribute that prevents them from being executed.  To
+undo this, it's necessary for the end user to run the following command in
+Terminal:
 
 ```
 % xattr -dr com.apple.quarantine ~/Downloads/<directory where CP2 was unzipped>
@@ -164,17 +171,17 @@ Settings, Privacy & Security, Files & Folders, and look for an entry for
 the Terminal app.  It should be configured to allow access to Downloads
 and Desktop.
 
-NOTE: when the ZIP archive was uploaded to Google Drive, the automated
-system flagged it as potential malware, which prevents it from being
-shared.
+NOTE: the last time I tried to upload a ZIP archive to Google Drive, the
+automated system flagged it as potential malware, which prevents it from being
+shared.  A request for review was ignored.
 
-It may be useful to included a "README.txt" in the ZIP archive with the
-quarantine removal instructions.  Also, you should remove the CiderPress II
-settings file, so users start with a fresh installation.  In `CP2Mac106.app`,
-navigate to `Contents/SharedSupport/prefix/drive_c/Program Files`.  There,
-you'll find the directory you installed (e.g. `cp2_1.0.6_win-x86_sc`).
-Remove `CiderPress2-settings.json` from it.  (The settings file is created on
-first use, so an alternative is to create the package before testing the app.)
+If you launched the app before creating the ZIP distribution archive, a
+settings file was created automatically.  This should be removed so that the
+end user starts with a fresh installation.
+In `CP2Mac106.app`, navigate to
+`Contents/SharedSupport/prefix/drive_c/Program Files`.  There, you'll find the
+directory you installed (e.g. `cp2_1.0.6_win-x86_sc`).  Remove
+`CiderPress2-settings.json` from it.
 
 Running x86 code on Apple Silicon requires Rosetta 2 to be installed.  The
 system will offer to install it automatically the first time an x86 application
