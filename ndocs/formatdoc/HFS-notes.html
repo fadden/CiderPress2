@@ -186,7 +186,7 @@ are created by the Linux HFS implementation.  They would be helpful if files wer
 solely by CNID, but in practice the Macintosh OS uses an "FSSpec" (IM:F 2-86), which includes
 the directory CNID and filename -- exactly what's needed to form a catalog file key.</p>
 <p>The volume (root) directory uses CNID 2, with the volume name as the filename.  The search key
-for the volume directory is "1/"; it's the only record with CNID 1.  Because the keys
+for the volume directory is "1/[VolumeName]"; it's the only record with CNID 1.  Because the keys
 are sorted primarily by CNID, the entry for the volume directory always appears first in the
 leaves.  (It's also possible to find the root directory by searching for its thread, using
 key "2/".  This works even if the MDB's volume name is out of sync, but assumes the directory
@@ -216,9 +216,8 @@ could very well have one extent per allocation block.</p>
 <p><strong>Find root directory:</strong></p>
 <p>There are at least three ways to find the directory record for the root:</p>
 <ol>
-<li>Look for "1/", where  comes from the MDB.  This works unless the
-MDB is out of sync, in which case the volume becomes unreadable.
-</li>
+<li>Look for "1/[VolumeName]", where [VolumeName] comes from the MDB.  This works unless the
+MDB is out of sync, in which case the volume becomes unreadable.</li>
 <li>Get the first record from the first leaf node of the catalog tree.  Sounds convenient, but
 the code needed to do this isn't useful for anything else.</li>
 <li>Look for a directory thread with key "2/", and use the data in the thread record to form the

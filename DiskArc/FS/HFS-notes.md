@@ -195,7 +195,7 @@ solely by CNID, but in practice the Macintosh OS uses an "FSSpec" (IM:F 2-86), w
 the directory CNID and filename -- exactly what's needed to form a catalog file key.
 
 The volume (root) directory uses CNID 2, with the volume name as the filename.  The search key
-for the volume directory is "1/<VolumeName>"; it's the only record with CNID 1.  Because the keys
+for the volume directory is "1/[VolumeName]"; it's the only record with CNID 1.  Because the keys
 are sorted primarily by CNID, the entry for the volume directory always appears first in the
 leaves.  (It's also possible to find the root directory by searching for its thread, using
 key "2/".  This works even if the MDB's volume name is out of sync, but assumes the directory
@@ -234,7 +234,7 @@ could very well have one extent per allocation block.
 
 There are at least three ways to find the directory record for the root:
 
- 1. Look for "1/<VolumeName>", where <VolumeName> comes from the MDB.  This works unless the
+ 1. Look for "1/[VolumeName]", where [VolumeName] comes from the MDB.  This works unless the
     MDB is out of sync, in which case the volume becomes unreadable.
  2. Get the first record from the first leaf node of the catalog tree.  Sounds convenient, but
     the code needed to do this isn't useful for anything else.
