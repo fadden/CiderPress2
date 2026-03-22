@@ -50,13 +50,15 @@ reference number, directory number, and file name.  (The use of full pathnames i
 Files and directories can be uniquely identified with a 32-bit integer, based on the "catalog
 node ID" (CNID).  File and directory IDs exist in the same name space but are referred to
 independently in the documentation as "directory ID" and "file ID".  The first 16 CNIDs are
-reserved by Apple.  The defined values are:
-  0 invalid (used as an argument in certain situations)
-  1 (fsRtParID) is the root directory's parent (which doesn't actually exist)
-  2 (fsRtDirID) is the root directory
-  3 file number of the extents file
-  4 file number of the catalog file
-  5 file number of the bad allocation block file
+defined by Apple:
+
+  - 0: invalid (used as an argument in certain situations)
+  - 1: (fsRtParID) is the root directory's parent (which doesn't actually exist)
+  - 2: (fsRtDirID) is the root directory
+  - 3: file number of the extents file
+  - 4: file number of the catalog file
+  - 5: file number of the bad allocation block file
+  - 6-15: reserved
 
 With regard to CNIDs, the documentation notes (IM:Files page 2-25): "once an ID has been
 assigned to a file, that number is not reused even after the file has been deleted".  It's
