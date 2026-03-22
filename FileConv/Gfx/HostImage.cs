@@ -71,7 +71,8 @@ namespace FileConv.Gfx {
             if (DataStream == null || DataStream.Length < TEST_LEN) {
                 return Applicability.Not;
             }
-            string ext = Path.GetExtension(FileAttrs.FileNameOnly).ToLowerInvariant();
+            // Don't use FileAttrs.FileNameOnly, as MacZip AppleDouble can clear it.
+            string ext = Path.GetExtension(FileAttrs.FullPathName).ToLowerInvariant();
             byte[] buf = new byte[TEST_LEN];
             DataStream.Position = 0;
             DataStream.ReadExactly(buf, 0, buf.Length);
