@@ -19,7 +19,7 @@ framework-dependent package is significantly smaller.  You can also download a p
 binary that allows you to run the GUI application on recent versions of Mac OS, but this may have
 stability issues and is considered experimental.
 
-You can pick a file to download from the [Releases page](https://github.com/fadden/ciderpress2/releases),
+You can pick a file to download from the [Releases page](https://github.com/fadden/CiderPress2/releases),
 or use one of the links below to download the most recent stable release.
 
 **Self-Contained** (30-65 MB)
@@ -109,7 +109,7 @@ systems are expected to work.  Older versions of the operating systems may or ma
 example, the CLI application has been successfully run on Windows 7 32-bit (x86), but this will
 not be tested regularly.
 
-The code is targeted to .NET 8, and is expected to work on newer versions of the runtime.
+The code is targeted to .NET 8.
 
 ## Support for Other Systems ##
 
@@ -127,6 +127,13 @@ on whether your target is 32-bit or 64-bit, respectively).  You can then run the
 
     #!/bin/sh
     exec PATH/TO/dotnet PATH/TO/cp2.dll $@
+
+If you would prefer to build the sources from scratch, the steps for doing so are:
+
+ 1. Install the .NET 8 SDK for your system.  If you're using a package manager, look for
+    a package with "dotnet-sdk" in the name.
+ 2. Clone the source tree: `git clone https://github.com/fadden/CiderPress2`.
+ 3. From the `CiderPress2` directory, run the `mkcp2.sh` shell script.
 
 ### Using the GUI on Linux and macOS ###
 
