@@ -82,7 +82,7 @@ namespace DiskArc.Disk {
             // - data field (prolog*3, 410 data bytes, checksum, epilog*3)
             // - inter-sector gap 3 (35 self-sync $ff)
             //
-            // Ignoring gap 1, this yields:
+            // Ignoring gap 1 (where the track wraps around), this yields:
             //   (14 + 10 + (3 + 410 + 1 + 3) + 35) * 13 = 6188 ($182c)
             // If long bytes are represented, add ((10 + 35) * 13 / 8) ~= 73 bytes ($1875)
 
@@ -122,7 +122,7 @@ namespace DiskArc.Disk {
             // - data field (prolog*3, 342 bytes, checksum, epilog*3)
             // - inter-sector gap 3 (20 self-sync $ff)
             //
-            // Ignoring gap 1, this yields:
+            // Ignoring gap 1 (where the track wraps around), this yields:
             //   (14 + 5 + (3 + 342 + 1 + 3) + 20) * 16 = 6208 ($1840)
             // If long bytes are represented, add ((5 + 20) * 16 * 2 / 8) = 100 bytes ($18a4)
 

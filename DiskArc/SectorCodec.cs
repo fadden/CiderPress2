@@ -442,7 +442,12 @@ namespace DiskArc {
             newPtr.DataPrologBitOffset = trkData.FindNextLatchSequence(mDataProlog,
                 mDataProlog.Length, (MAX_ADDR_DATA_GAP + mDataProlog.Length) * 8);
             if (newPtr.DataPrologBitOffset != -1) {
-                byte sector = trkData.LatchNextByte();       // consume the duplicate sector num
+                byte sector = trkData.LatchNextByte();       // read the duplicate sector num
+                if (sector != newPtr.Sector) {
+                    // TODO: make this an error? (see issue #72)
+                    //Debug.WriteLine("Warning: duplicate sector number does not match");
+                }
+
                 newPtr.DataFieldBitOffset = trkData.BitPosition;
 
                 // We're not attempting to verify data fields now, so just skip past it.  We
@@ -610,6 +615,13 @@ namespace DiskArc {
             for (int i = 0; i < TrackInit.GAP2_525_13_LEN; i++) {
                 trkData.LatchNextByte();
             }
+            // If the nibble storage format is bit-oriented, then we will not have consumed the
+            // trailing '0' bit on the last self-sync byte.  We can address this by latching one
+            // additional byte and then backing up 8 bits.  I don't *think* this can get too weird
+            // since a newly-initialized track should be full of FFs.
+            trkData.LatchNextByte();
+            trkData.BitPosition -= 8;
+
             // Record this position.
             sctPtr.DataPrologBitOffset = trkData.BitPosition;
             // Set the buffer position and write the prolog.
