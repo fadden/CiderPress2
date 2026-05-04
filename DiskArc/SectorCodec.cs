@@ -1207,7 +1207,7 @@ namespace DiskArc {
                 throw new ArgumentOutOfRangeException("Cannot convert to 6&2 value: 0x"
                     + val.ToString("x2"));
             }
-            return sInvDiskBytes62[val];
+            return sDiskBytes62[val];
         }
 
         /// <summary>
