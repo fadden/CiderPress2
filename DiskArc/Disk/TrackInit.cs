@@ -166,10 +166,13 @@ namespace DiskArc.Disk {
         /// <param name="track">Track number to generate.</param>
         /// <param name="side">Disk side (0 or 1).</param>
         /// <param name="format">Format byte; low nibble indicates interleave (2:1 or 4:1).</param>
+        /// <param name="isIIgs">If true, use the wider sector gaps created by the Apple IIgs
+        ///   disk formatter.</param>
         /// <param name="bitCount">Result: length, in bits, of formatted data.</param>
         /// <returns>Initialized track data array.</returns>
         public static byte[] GenerateTrack35(SectorCodec codec, bool isByteAligned,
-                byte track, int side, byte format, out int bitCount) {
+                byte track, int side, byte format, bool isIIgs, out int bitCount) {
+            //
             // Each sector has the following format, assuming 3-byte prolog/epilog:
             // - address field (10 bytes: prolog*3, track, sector, side, format, checksum,
             //   epilog*2)
@@ -179,11 +182,16 @@ namespace DiskArc.Disk {
             // - pad byte
             // - inter-sector gap 3 (36 self-sync $ff)
             //
+            // The IIgs uses different bit timing, so gap 3 is ~54 bytes instead.
+            //
             // Ignoring gap 1, this yields:
             //   (10 + 1 + 5 + (3 + 1 + 699 + 4 + 2) + 1 + 36) = 762 per sector
             // If long bytes are represented, add ((5 + 36) * 2 / 8) = 10.25 bytes
             //
-            // Tracks have 8 to 12 sectors, requiring 6178-9267 ($1822-$2433) octets.
+            // Tracks have 8 to 12 sectors, depending on zone.
+            //
+            // TODO(maybe): for MOOF, we may want to emulate the sync field generation by
+            //   outputting repeated sequences of FF 3F CF F3 FC instead of sync bytes.
 
             if (codec.AddressProlog.Length != 3 ||
                     codec.AddressEpilog.Length != 2 ||
@@ -193,10 +201,23 @@ namespace DiskArc.Disk {
                 throw new DAException("Invalid prolog/epilog length");
             }
 
-            const int GAP1_LEN = 64;                    // not sure if this ought to be larger
-            const int GAP2_LEN = 5;
-            const int GAP3_LEN = 36;
-            const int OCTETS_PER_SECTOR = 762 + 11;     // size buffer assuming "wide" bytes
+            // Select the gap sizes.  If the track is too short, an emulator that tries to reformat
+            // the disk will fail when the write wraps around.  If it's too long, the emulated
+            // software may conclude that the disk is spinning too slowly.  We want to use
+            // different values for the Mac and IIgs to better emulate the machine's behavior.
+            int gap1Len, gap2Len, gap3Len;
+            if (isIIgs) {
+                gap3Len = 54;               // self-sync bytes between sectors
+                gap2Len = 5;                // self-sync bytes between addr/data fields
+                gap1Len = 200 - gap3Len;    // self-sync bytes at track wrap
+            } else {
+                gap3Len = 36;
+                gap2Len = 5;
+                gap1Len = 100 - gap3Len;
+            }
+
+            int bitsPerSector = (10 * 8) + (1 * 8) + (gap2Len * 10) +
+                ((3 + 1 + 699 + 4 + 2) * 8) + (1 * 8) + (gap3Len * 10);
 
             int interleave = format & 0x0f;
             if (interleave != 2 && interleave != 4) {
@@ -211,25 +232,25 @@ namespace DiskArc.Disk {
 
             int speedZone = track / 16;                 // 0-4
             int numSectors = 8 + (4 - speedZone);
-            byte[] buffer = new byte[GAP1_LEN + numSectors * OCTETS_PER_SECTOR];
+            int octetsPerTrack = (gap1Len * 10 + numSectors * bitsPerSector + 7) / 8;
+            byte[] buffer = new byte[octetsPerTrack];
             CircularBitBuffer circ = new CircularBitBuffer(buffer, 0, 0, buffer.Length * 8);
 
             int selfSyncWidth = isByteAligned ? 8 : 10;
-            // Fill track; anything we don't subsequently overwrite will be gap 1.
+            // Fill track buffer. Anything we don't overwrite below will become gap 1.
             circ.Fill(0xff, selfSyncWidth);
 
-            // Write sectors.  Start with gap 3, so that the start of the track is self-sync.  This
-            // might help if the wrap point isn't a whole nibble.
+            // Write sectors.  Start with gap 3, so that the start of the track is self-sync.
             byte[] itable = GetInterleaveTable(numSectors, interleave);
 
             for (int sctIdx = 0; sctIdx < numSectors; sctIdx++) {
                 byte sector = itable[sctIdx];
 
-                for (int i = 0; i < GAP3_LEN; i++) {
+                for (int i = 0; i < gap3Len; i++) {
                     circ.WriteByte(0xff, selfSyncWidth);
                 }
                 codec.WriteAddressField_35(circ, track, sector, side, format);
-                for (int i = 0; i < GAP2_LEN; i++) {
+                for (int i = 0; i < gap2Len; i++) {
                     circ.WriteByte(0xff, selfSyncWidth);
                 }
                 circ.WriteOctets(codec.DataProlog);

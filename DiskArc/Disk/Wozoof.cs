@@ -103,7 +103,7 @@ namespace DiskArc.Disk {
         private const int WOZ_BLOCK_SIZE = 512;
 
         internal static int CREATOR_ID_LEN = 32;
-        private static readonly string WOZ_CREATOR_NAME = Defs.NAME_AND_VERSION;
+        private static readonly string WOZOOF_CREATOR_NAME = Defs.NAME_AND_VERSION;
 
         private static readonly NibCharacteristics sCharacteristics = new NibCharacteristics(
             name: "Wozoof",
@@ -438,7 +438,7 @@ namespace DiskArc.Disk {
 
             FileRevision = WozKind.Woz2;
             DiskKind = MediaKind.GCR_525;
-            Info = new Woz_Info(WOZ_CREATOR_NAME, MediaKind.GCR_525, lrgTrkBlkCnt);
+            Info = new Woz_Info(WOZOOF_CREATOR_NAME, MediaKind.GCR_525, lrgTrkBlkCnt);
 
             // Write header and INFO.
             WriteHeaderAndInfo(tmpBuf);
@@ -536,7 +536,7 @@ namespace DiskArc.Disk {
             for (byte trk = 0; trk < SectorCodec.MAX_TRACK_35; trk++) {
                 for (int i = 0; i < numSides; i++) {
                     byte[] trkData =  TrackInit.GenerateTrack35(codec, false, trk, i, formatVal,
-                        out int bitLength);
+                        !isMoof, out int bitLength);
                     tracks[trk * numSides + i] = trkData;
                     lengths[trk * numSides + i] = trkData.Length * 8;
 
@@ -558,9 +558,9 @@ namespace DiskArc.Disk {
             DiskKind = mediaKind;
             IsMoof = isMoof;
             if (isMoof) {
-                Info = new Moof_Info(WOZ_CREATOR_NAME, mediaKind, lrgTrkBlkCnt);
+                Info = new Moof_Info(WOZOOF_CREATOR_NAME, mediaKind, lrgTrkBlkCnt);
             } else {
-                Info = new Woz_Info(WOZ_CREATOR_NAME, mediaKind, lrgTrkBlkCnt);
+                Info = new Woz_Info(WOZOOF_CREATOR_NAME, mediaKind, lrgTrkBlkCnt);
             }
 
             // Write header and INFO.

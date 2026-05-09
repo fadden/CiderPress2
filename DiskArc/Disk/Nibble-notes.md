@@ -68,8 +68,8 @@ transitions.  This requires modified drive hardware, and is more difficult to wo
 ## Apple II 5.25" Floppy Disks ##
 
 Apple II disks are single-sided with 35 tracks, though some drives allowed up to 40 tracks.  The
-drives have a constant angular velocity, so every track stores the same amount of data: 6400 bytes
-at 300rpm.  Minor changes in drive speed will increase or decrease this value slightly.
+drives have a constant angular velocity, so every track stores the same amount of data: ~6400
+octets at 300rpm.  Minor changes in drive speed will increase or decrease this value slightly.
 
 Track 0 is at the outside of the disk.
 
@@ -88,7 +88,7 @@ On a 13-sector disk, each sector looks like this:
 +$1b6 / 3: data epilog ($de $aa $eb)
 +$1b9 /nn: ~40 self-sync 9-bit $ff bytes between sectors
 ```
-Given approximately 481 bytes/sector, 6400/481 = 13.3 sectors/track.
+Given approximately 481 octets/sector, 6400/481 = 13.3 sectors/track.
 
 The DOS 3.2 formatter only writes address fields.  The data prolog and epilog aren't written
 until the first time a sector is written, so attempting to read new sectors on a 13-sector disk
@@ -109,13 +109,13 @@ On a 16-sector disk, each sector looks like this:
 +$16d / 3: data epilog ($de $aa $eb)
 +$170 /nn: ~20 self-sync 10-bit $ff bytes between sectors (~50 octets)
 ```
-Given approximately 400 bytes/sector, 6400/400 = 16 sectors/track.
+Given approximately 400 octets/sector, 6400/400 = 16 sectors/track.
 
 The DOS 3.3 formatter wants to distribute the sectors evenly across the track, but is not able
 to know the rotational speed of the drive ahead of time. It begins by writing 128 self-sync bytes
 to try to avoid having an unwritten gap between sectors 15 and 0, and sets the initial number of
 sync bytes between sectors to 40.  This is likely too large to fit on the track, so the formatter
-repeatedly writes and verifies the track,  decrementing the inter-sector sync byte count each
+repeatedly writes and verifies the track, decrementing the inter-sector sync byte count each
 time.  When the full track has been successfully written, the formatter moves on to the next
 track, without resetting the count.  Since the drive uses a constant angular velocity, the same
 spacing should be usable on every track, though the sync count can be reduced further if necessary.
@@ -141,11 +141,13 @@ changes to the timing at which bits are read and written.  This is a form of ZBR
 In practical terms, we start with 12 sectors per track at the outside of the disk, and subtract
 one sector for every 16 tracks closer to the center.  This forms 5 speed zones:
 
- - track 0-15 : 12 sectors
- - track 16-31: 11 sectors
- - track 32-47: 10 sectors
- - track 48-63: 9 sectors
- - track 64-79: 8 sectors
+Tracks | Sectors | RPM (489.6kb/s / 500kb/s)
+------ | ------- | -----
+ 0-15  | 12      | 394/402
+ 16-31 | 11      | 429/438
+ 32-47 | 10      | 472/482
+ 48-63 | 9       | 525/536
+ 64-79 | 8       | 590/603
 
 (Math: 12\*16 + 11\*16 + 10\*16 + 9\*16 + 8\*16 = 800 sectors per side.)
 
@@ -172,21 +174,11 @@ Because of the self-sync bytes, the 762-byte sector actually spans 772.25 octets
 699-0285-A doc, on page 34, says the minimum size is "733.5 code bytes", but that's because
 it only shows the minimum 5 self-sync bytes at the start.)
 
-The Mac-vs-IIgs memo says the Apple IIgs formatter has a lower FCLK frequency, and compensates
-for the shorter bits by writing 30 extra self-sync "nybles" between sectors.  The document
-lists the "sector size" as increasing from 762 to 792, and explains how this results in a similar
-sector spacing.
-
-A track dump of an Apple IIgs disk showed ~51 octets between sectors (~41 sync bytes), though
-it's not clear what hardware was used to format the disk.  The 699-0258-A document mandates 5
-self-sync bytes at a minimum, though strictly speaking only 4 are required to achieve bit
-synchronization.
-
 The first 12 bytes in the 524-byte sector are "tag" bytes, which were used by the Lisa OS
-to hold filesystem structures, and later used by the Macintosh MFS filesystem to hold redundant
-data that could be used by disk recovery applications.  These bytes are also available to HFS,
-but they don't appear to be used there, presumably because HFS was used on a wider range of disk
-devices and couldn't rely on the presence of the tags.
+to hold filesystem structures, and later were supposedly used by the Macintosh MFS filesystem to
+hold redundant data that could be used by disk recovery applications.  These bytes are also
+available to HFS, but they don't appear to be used there, presumably because HFS was used on a
+wider range of disk devices and couldn't rely on the availability of the tags.
 
 The 24-bit checksum on the data area is calculated with a fairly complicated algorithm.  The
 AppleDisk 3.5" driver for GS/OS has a text string indicating that the software is protected
@@ -194,7 +186,25 @@ under US Patent 4,564,941, "Error detection system" (filed 1983, granted 1986). 
 describes, among other things, an "interleaved" checksum algorithm that may be what was used for
 the checksum here.
 
-### Disk Interleave ###
+#### Mac vs. IIgs ####
+
+The Mac-vs-IIgs memo says the Apple IIgs formatter has a lower FCLK frequency, and compensates
+for the shorter bits by writing 30 extra self-sync "nybles" between sectors.  The document
+lists the "sector size" as increasing from 762 to 792, and explains how this results in a similar
+sector spacing.  A test image created on an Apple IIgs showed 50-55 self-sync nibbles between
+sectors, with a track start sync area of about 200 bytes.  The exact size of the track-start
+area varied, but was fairly consistent within a given speed zone.  Mac-created images had 36
+self-sync nibbles, as documented, and had a track-wrap gap of 60-120 bytes.
+
+The 699-0258-A document mandates 5 self-sync bytes per field at a minimum, though strictly
+speaking only 4 are required to achieve bit synchronization.  It should be noted that some drive
+hardware is only capable of writing 8-bit bytes, so fields of 10-bit self-sync bytes are generated
+with the repeating pattern `FF 3F CF F3 FC`, which means every 5th byte in the sync field is
+actually a plain FF.  (This pattern is described in the 699-0285-A spec; see sheet 34.)  In
+practice, this pattern is present on disks formatted by a Mac, but may not be on disks formatted
+by an Apple IIgs.
+
+### Sector Interleave ###
 
 Sectors on 3.5" disks are physically interleaved by the disk initializer.  The layout is
 complicated slightly by the fact that the number of sectors varies as you move across the disk.
@@ -256,7 +266,7 @@ https://www.discferret.com/wiki/Apple_DiskCopy_4.2 claims that Mac 400K should b
 0x12 is actually Lisa 400K.  720KB/1440KB MFM disks are double-sided, and so use 0x22.
 
 The crux of the issue is the meaning of bit 4, which by the Apple definitions is zero for all
-disks except Mac 400K.  It would be more consistent to use the discferret definition, which
+disks except Mac 400K.  It would be more consistent to use the DiscFerret definition, which
 uses the bit as a "Lisa" flag.
 
 The MAME ap_dsk35.cpp source code has a completely different take:
