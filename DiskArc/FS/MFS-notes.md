@@ -141,7 +141,7 @@ Renaming a file could necessitate relocating the entry to a different directory 
 
 Page IV-90 in _Inside Macintosh: Volume IV_ notes:
 > The 64K ROM version of the File Manager allows file names of up to 255 characters.  File names
-> should be contrained to 31 characters, however, to maintain compatibility with the 128K ROM
+> should be constrained to 31 characters, however, to maintain compatibility with the 128K ROM
 > version of the File Manager.
 
 With regard to the `flTyp` version number field, it continues:

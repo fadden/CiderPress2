@@ -5,7 +5,7 @@ File types:
  - FOT ($08) / $0000-3fff: uncompressed hi-res image (8KB file)
  - FOT ($08) / $4000: compressed hi-res image (PackBytes)
  - FOT ($08) / $8066: compressed hi-res image (LZ4FH)
- - FNT ($07) / $0000: hi-res font (96 or 128 glpyhs)
+ - FNT ($07) / $0000: hi-res font (96 or 128 glyphs)
 
 Primary references:
  - Apple II File Type Note $08/0000, "Apple II Graphics File"

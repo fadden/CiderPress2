@@ -28,7 +28,7 @@ structure (defined on page 49-31):
 +$06 / N: theRulerList - array of TERuler structures
 +$xx / 4: styleListLength - length, in bytes, of theStyleList
 +$xx / N: theStyleList - array of TEStyle structures
-+$xx / 4: numberOfStyles - numer of StyleItems contained in theStyles
++$xx / 4: numberOfStyles - number of StyleItems contained in theStyles
 +$xx / N: theStyles - array of StyleItems specifying which actual styles (stored in theStyleList)
           apply to which text within the TextEdit record
 ```
