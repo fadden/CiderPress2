@@ -118,7 +118,8 @@ David Whitney's `BinSCII`, written for ProDOS 8, was the original implementation
 
 Marcel J. E. Mol wrote the `sciibin` decoder for UNIX systems.
 
-On the Apple IIgs, the `GScii+` NDA could unpack BinSCII, uuencode, and MacBin files.
+On the Apple IIgs, the `GScii+` NDA by Derek Taubert could unpack BinSCII, uuencode, and
+MacBin files.
 
 While BinSCII can preserve ProDOS file attributes, it's generally better to store files in a
 ShrinkIt archive before encoding them, because it may otherwise be difficult to tell if you've
@@ -127,4 +128,4 @@ of ShrinkIt itself.
 
 While it's theoretically possible to encode resource forks directly in BinSCII by setting the
 storage type, most (if not all) decoders won't or can't handle them, so storing forked files in
-ShinkIt archives is recommended.
+ShrinkIt archives is recommended.
