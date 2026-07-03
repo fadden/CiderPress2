@@ -20,15 +20,23 @@ using CommonUtil;
 
 namespace MakeDist {
     internal static class Build {
+        // Build targets.
         private static string[] sTargets = new string[] {
             "cp2",
+            "cp2_avalonia",
             //"Examples/AddFile",
             //"Examples/ListContents",
         };
+        // Files to be marked as executable on non-Windows systems.
+        private static string[] sExecables = new string[] {
+            "cp2",
+            "CiderPress2",
+        };
+        // Additional Windows-only targets.
         private static string[] sWinTargets = new string[] {
             "cp2_wpf",
         };
-
+        // Files to add to the bundle.
         private static string[] sDistFiles = new string[] {
             "README.md",
             "LegalStuff.txt",
@@ -178,10 +186,10 @@ namespace MakeDist {
 
             // Set the "exec" permission flags for non-Windows builds.
             if (!Path.GetFileName(dir).StartsWith("win-")) {
-                string[] args = new string[sTargets.Length + 1];
+                string[] args = new string[sExecables.Length + 1];
                 args[0] = zipPath;
-                for (int i = 0; i < sTargets.Length; i++) {
-                    args[i + 1] = Path.GetFileName(sTargets[i]);
+                for (int i = 0; i < sExecables.Length; i++) {
+                    args[i + 1] = Path.GetFileName(sExecables[i]);
                 }
 
                 if (!SetExec.HandleSetExec(args, true)) {
