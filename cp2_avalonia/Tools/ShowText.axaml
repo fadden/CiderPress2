@@ -1,0 +1,41 @@
+<!--
+Copyright 2019 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_avalonia.Tools.ShowText"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_avalonia.Tools"
+        mc:Ignorable="d"
+        Title="{Binding WindowTitle}"
+        Width="708" Height="500" MinWidth="100" MinHeight="100"
+        CanResize="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        KeyDown="Window_KeyDown">
+
+    <Grid Margin="8">
+        <TextBox Name="textBox"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 ScrollViewer.VerticalScrollBarVisibility="Visible"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 Text="{Binding DisplayText}"
+                 FontFamily="{DynamicResource GeneralMonoFont}"/>
+    </Grid>
+</Window>

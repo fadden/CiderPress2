@@ -1,0 +1,50 @@
+<!--
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="cp2_avalonia.Views.AsciiChartWindow"
+        mc:Ignorable="d"
+        Title="ASCII Chart"
+        Width="505"
+        Height="620"
+        MinWidth="460"
+        MinHeight="420"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="*,Auto" Margin="10">
+        <TextBox Grid.Row="0"
+                 Name="asciiChartTextBox"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 FontFamily="{DynamicResource GeneralMonoFont}"
+                 FontSize="{DynamicResource ViewerDefaultFontSize}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        <ComboBox Grid.Row="1"
+                  Name="asciiRangeComboBox"
+                  Margin="0,10,0,0"
+                  Width="120"
+                  HorizontalAlignment="Left"
+                  SelectionChanged="AsciiRangeComboBox_SelectionChanged">
+            <ComboBoxItem Content="Low ASCII" />
+            <ComboBoxItem Content="High ASCII" />
+        </ComboBox>
+    </Grid>
+</Window>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2023 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. -->
+<Application x:Class="cp2_avalonia.App"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:common="clr-namespace:cp2_avalonia.Common"
+             Name="CiderPress II">
+    <!-- macOS system app menu (the bold first entry in the menu bar).
+         On Windows/Linux, NativeMenu.Menu on Application is ignored.
+         Items here appear directly in the app menu — no wrapper NativeMenuItem needed. -->
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="About CiderPress II"
+                            Click="OnNativeAboutClick"/>
+            <NativeMenuItemSeparator/>
+            <NativeMenuItem Header="Settings..."
+                            Click="OnNativeSettingsClick"/>
+        </NativeMenu>
+    </NativeMenu.Menu>
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <!-- Fade icon images when their parent toolbar button is disabled.
+             Must live here (not in Icons.axaml) because ResourceDictionary
+             cannot host free-standing selector styles. -->
+        <Style Selector="Button:disabled Image">
+            <Setter Property="Opacity"
+                    Value="{DynamicResource IconDisabledOpacity}" />
+        </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="Padding"
+                    Value="1,0" />
+            <Setter Property="FontSize"
+                    Value="12" />
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center" />
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Padding"
+                    Value="1,1" />
+            <Setter Property="FontSize"
+                    Value="12" />
+        </Style>
+        <Style Selector="TreeViewItem">
+            <!-- Reduce the vertical padding -->
+            <Setter Property="Padding"
+                    Value="2,2" />
+            <!-- Reduce the minimum row height -->
+            <Setter Property="MinHeight"
+                    Value="20" />
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="FontSize"
+                    Value="14" />
+                    <Setter Property="Padding"
+                    Value="6,2" />
+        </Style>
+        <Style Selector="Button"><Setter Property="HorizontalContentAlignment" Value="Center"/></Style>
+
+    </Application.Styles>
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://CiderPress2/Res/Icons.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="SectionHeaderBrush" Color="LightSteelBlue"/>
+                    <SolidColorBrush x:Key="SubSectionHeaderBrush" Color="#E6EEF8"/>
+                    <SolidColorBrush x:Key="ArchiveTypeTextBrush" Color="Green"/>
+                    <SolidColorBrush x:Key="InfoWarningTextBrush" Color="OrangeRed"/>
+                    <SolidColorBrush x:Key="ViewerBackgroundBrush" Color="White"/>
+                    <SolidColorBrush x:Key="ViewerInverseForegroundBrush" Color="White"/>
+                    <SolidColorBrush x:Key="ViewerInverseBackgroundBrush" Color="Black"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="SectionHeaderBrush" Color="#3D5A80"/>
+                    <SolidColorBrush x:Key="SubSectionHeaderBrush" Color="#2A3A50"/>
+                    <SolidColorBrush x:Key="ArchiveTypeTextBrush" Color="#66BB6A"/>
+                    <SolidColorBrush x:Key="InfoWarningTextBrush" Color="#FF8A65"/>
+                    <SolidColorBrush x:Key="ViewerBackgroundBrush" Color="#3F3F3F"/>
+                    <SolidColorBrush x:Key="ViewerInverseForegroundBrush" Color="#3F3F3F"/>
+                    <SolidColorBrush x:Key="ViewerInverseBackgroundBrush" Color="White"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <!-- Cross-platform monospace fallback chain: Win (Cascadia/Consolas), macOS (Menlo/Monaco), Linux (DejaVu/Liberation/Noto). -->
+            <FontFamily x:Key="GeneralMonoFont">Cascadia Mono, Consolas, Menlo, Monaco, DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, monospace</FontFamily>
+            <FontFamily x:Key="ViewerMonoFont">Cascadia Mono, Consolas, Menlo, Monaco, DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, monospace</FontFamily>
+            <!-- Monospace serif (Courier-style): Courier New (Win/macOS), Liberation Mono (Linux) -->
+            <FontFamily x:Key="ViewerMonoSerifFont">Courier New, Courier, Liberation Mono, DejaVu Sans Mono, monospace</FontFamily>
+            <!-- Proportional serif: Georgia (Win/macOS/common Linux), Liberation Serif (Linux), Times New Roman (Win/macOS) -->
+            <FontFamily x:Key="ViewerSerifFont">Georgia, Times New Roman, Liberation Serif, Times, serif</FontFamily>
+            <!-- Proportional sans-serif: Arial (Win/macOS), Liberation Sans (Linux), Helvetica (macOS/Unix) -->
+            <FontFamily x:Key="ViewerSansSerifFont">Arial, Helvetica, Liberation Sans, sans-serif</FontFamily>
+            <x:Double x:Key="ViewerDefaultFontSize">13</x:Double>
+            <!-- Icon brushes and disabled opacity: initial defaults for Light theme.
+                 These are updated imperatively in App.ApplyTheme() on every theme switch
+                 because DynamicResource in ThemeDictionaries does not reliably re-resolve. -->
+            <SolidColorBrush x:Key="IconForegroundBrush" Color="#212121"/>
+            <SolidColorBrush x:Key="IconForegroundFillBrush" Color="#212121" Opacity="0.1"/>
+            <x:Double x:Key="IconDisabledOpacity">0.4</x:Double>
+            <x:Double x:Key="ControlContentThemeFontSize">14</x:Double>
+            <common:InverseBooleanConverter x:Key="InvertBool" />
+            <!-- Checkerboard background for bitmap image display.
+                 Replicates the pattern from cp2_wpf/App.xaml: 16x16 tile with #e8e8e8/#f0f0f0. -->
+            <DrawingBrush x:Key="CheckerBackground"
+                          TileMode="Tile"
+                          DestinationRect="0,0,16,16">
+                <DrawingBrush.Drawing>
+                    <DrawingGroup>
+                        <GeometryDrawing Geometry="M0,0 H2 V2 H0Z"
+                                         Brush="#B8B8B8" />
+                        <GeometryDrawing Geometry="M0,0 H1 V1 H2 V2 H1 V1 H0Z"
+                                         Brush="#9A9A9A" />
+                    </DrawingGroup>
+                </DrawingBrush.Drawing>
+            </DrawingBrush>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

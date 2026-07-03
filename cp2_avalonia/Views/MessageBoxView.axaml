@@ -1,0 +1,87 @@
+<!--
+Copyright 2026 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_avalonia.Views.MessageBoxView"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="{Binding Caption}"
+        Width="400" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Content area: optional icon + message text -->
+        <Grid Grid.Row="0" Margin="0,4,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Icon panel — four overlapping TextBlocks; only one is ever visible -->
+            <Panel Grid.Column="0" IsVisible="{Binding ShowIcon}"
+                   Width="48" VerticalAlignment="Top"
+                   Margin="0,0,12,0">
+                <TextBlock Text="ℹ" FontSize="32" HorizontalAlignment="Center"
+                           Foreground="DodgerBlue"
+                           IsVisible="{Binding IsInfoIcon}"/>
+                <TextBlock Text="⚠" FontSize="32" HorizontalAlignment="Center"
+                           Foreground="Orange"
+                           IsVisible="{Binding IsWarningIcon}"/>
+                <TextBlock Text="✖" FontSize="32" HorizontalAlignment="Center"
+                           Foreground="Crimson"
+                           IsVisible="{Binding IsErrorIcon}"/>
+                <TextBlock Text="?" FontSize="32" HorizontalAlignment="Center"
+                           Foreground="SteelBlue"
+                           IsVisible="{Binding IsQuestionIcon}"/>
+            </Panel>
+
+            <TextBlock Grid.Column="1" Text="{Binding Message}"
+                       TextWrapping="Wrap" MaxWidth="340"
+                       VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Button row — all four buttons always present; visibility controls which appear -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Spacing="6">
+            <Button Content="OK" MinWidth="75"
+                    IsVisible="{Binding ShowOkButton}"
+                    IsDefault="{Binding ShowOkButton}"
+                    Command="{Binding OkCommand}"/>
+            <Button Content="Yes" MinWidth="75"
+                    IsVisible="{Binding ShowYesButton}"
+                    IsDefault="{Binding ShowYesButton}"
+                    Command="{Binding YesCommand}"/>
+            <Button Content="No" MinWidth="75"
+                    IsVisible="{Binding ShowNoButton}"
+                    Command="{Binding NoCommand}"/>
+            <Button Content="Cancel" MinWidth="75"
+                    IsVisible="{Binding ShowCancelButton}"
+                    IsCancel="{Binding ShowCancelButton}"
+                    Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+
+</Window>

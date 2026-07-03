@@ -1,0 +1,299 @@
+<!--
+Copyright 2023 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_avalonia.Views.EditAttributes"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_avalonia"
+        xmlns:common="clr-namespace:cp2_avalonia.Controls"
+        mc:Ignorable="d"
+        Title="Edit Attributes"
+        Width="500" SizeToContent="Height" CanResize="False"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.invalid">
+            <Setter Property="Foreground" Value="Red"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Row 0: Filename -->
+        <Grid Grid.Row="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Filename:" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Name="fileNameTextBox" Margin="8,0,0,0"
+                         Text="{Binding FileName}"
+                         FontFamily="{DynamicResource GeneralMonoFont}"
+                         MaxLength="1024" IsReadOnly="{Binding IsAllReadOnly}"/>
+            </Grid>
+            <TextBlock Grid.Row="1" Margin="0,2,0,0" TextWrapping="Wrap"
+                       Text="{Binding SyntaxRulesText, FallbackValue='o Syntax rules here.'}"
+                       Classes.invalid="{Binding !IsSyntaxValid}"/>
+            <TextBlock Grid.Row="2" Margin="0,2,0,0"
+                       Text="&#x2022; Name must be unique."
+                       IsVisible="{Binding IsUniqueTextVisible}"
+                       Classes.invalid="{Binding !IsUniqueNameValid}"/>
+            <TextBlock Grid.Row="3" Margin="0,2,0,0"
+                       IsVisible="{Binding IsDirSepTextVisible}"
+                       Text="{Binding DirSepText, FallbackValue='o Directory separator character is X.'}"/>
+        </Grid>
+
+        <!-- Row 1: ProDOS Type GroupBox -->
+        <common:GroupBox Grid.Row="1" Header="ProDOS Type (for DOS/Pascal/ProDOS)" Padding="2,4" Margin="0,12,0,0"
+                         IsVisible="{Binding IsProTypeVisible}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="File Type:" Margin="0,2,0,0" VerticalAlignment="Center"/>
+                <ComboBox Grid.Row="0" Grid.Column="1" Name="proTypeCombo" Width="80" Margin="8,0,0,0"
+                          HorizontalAlignment="Left"
+                          IsEnabled="{Binding IsProTypeListEnabled}"
+                          ItemsSource="{Binding ProTypeList}"
+                          DisplayMemberBinding="{Binding Label}"
+                          SelectedItem="{Binding SelectedProTypeItem}"
+                          FontFamily="{DynamicResource GeneralMonoFont}"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Aux Type:" Margin="0,4,0,0"
+                           VerticalAlignment="Center"
+                           Classes.invalid="{Binding !IsProAuxValid}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Width="65" Margin="8,4,0,0"
+                         HorizontalAlignment="Left" MaxLength="4"
+                         IsEnabled="{Binding IsProAuxEnabled}"
+                         Text="{Binding ProAuxString}"
+                         FontFamily="{DynamicResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Margin="8,4,0,0" VerticalAlignment="Center"
+                           Text="(hexadecimal)"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Description:" Margin="0,6,0,0" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="8,6,0,0"
+                           VerticalAlignment="Center"
+                           Text="{Binding ProTypeDescString, FallbackValue='Stuff about the file type here'}"/>
+            </Grid>
+        </common:GroupBox>
+
+        <!-- Row 2: HFS Type GroupBox -->
+        <common:GroupBox Grid.Row="2" Header="HFS Type" Padding="2,4" Margin="0,12,0,0"
+                         IsVisible="{Binding IsHFSTypeVisible}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="File Type:" VerticalAlignment="Center"
+                           Classes.invalid="{Binding !IsHFSTypeValid}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Width="40" Margin="8,0,0,0"
+                         MaxLength="4"
+                         Text="{Binding HFSTypeCharsString}"
+                         FontFamily="{DynamicResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
+                <TextBox Grid.Row="0" Grid.Column="2" Width="65" Margin="8,0,0,0"
+                         MaxLength="8" HorizontalAlignment="Left"
+                         Text="{Binding HFSTypeHexString}"
+                         FontFamily="{DynamicResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Creator:" Margin="0,4,0,0"
+                           VerticalAlignment="Center"
+                           Classes.invalid="{Binding !IsHFSCreatorValid}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Width="40" Margin="8,4,0,0"
+                         MaxLength="4"
+                         Text="{Binding HFSCreatorCharsString}"
+                         FontFamily="{DynamicResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
+                <TextBox Grid.Row="1" Grid.Column="2" Width="65" Margin="8,4,0,0"
+                         MaxLength="8" HorizontalAlignment="Left"
+                         Text="{Binding HFSCreatorHexString}"
+                         FontFamily="{DynamicResource GeneralMonoFont}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
+                           Text="&#x2022; Enter four-character string or hexadecimal value."/>
+            </Grid>
+        </common:GroupBox>
+
+        <!-- Row 3: Timestamps GroupBox -->
+        <common:GroupBox Grid.Row="3" Header="Timestamp" Padding="2,4" Margin="0,12,0,0"
+                         IsVisible="{Binding IsTimestampVisible}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,4,0,0"
+                           VerticalAlignment="Center"
+                           Text="Creation:" Classes.invalid="{Binding !IsCreateWhenValid}"/>
+                <DatePicker Grid.Row="0" Grid.Column="1" Margin="8,0,0,0"
+                            IsEnabled="{Binding CreateWhenEnabled}"
+                            MinYear="{Binding TimestampStart}"
+                            MaxYear="{Binding TimestampEnd}"
+                            SelectedDate="{Binding CreateDate}"/>
+                <TextBox Grid.Row="0" Grid.Column="2" Width="60" Margin="16,0,0,0"
+                         MaxLength="8" HorizontalAlignment="Left"
+                         VerticalContentAlignment="Center"
+                         IsEnabled="{Binding CreateWhenEnabled}"
+                         Text="{Binding CreateTimeString}"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,6,0,0"
+                           VerticalAlignment="Center"
+                           Text="Modification:" Classes.invalid="{Binding !IsModWhenValid}"/>
+                <DatePicker Grid.Row="1" Grid.Column="1" Margin="8,2,0,0"
+                            IsEnabled="{Binding ModWhenEnabled}"
+                            MinYear="{Binding TimestampStart}"
+                            MaxYear="{Binding TimestampEnd}"
+                            SelectedDate="{Binding ModDate}"/>
+                <TextBox Grid.Row="1" Grid.Column="2" Width="60" Margin="16,2,0,0"
+                         MaxLength="8" HorizontalAlignment="Left"
+                         VerticalContentAlignment="Center"
+                         IsEnabled="{Binding ModWhenEnabled}"
+                         Text="{Binding ModTimeString}"
+                         IsReadOnly="{Binding IsAllReadOnly}"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
+                           Text="&#x2022; Dates are in local format."/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
+                           Text="&#x2022; Times are in 24-hour format, HH:MM or HH:MM:SS."/>
+                <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="&#x2022; Date range: "/>
+                    <TextBlock Text="{Binding TimestampStartStr, FallbackValue=START}"/>
+                    <TextBlock Text=" - "/>
+                    <TextBlock Text="{Binding TimestampEndStr, FallbackValue=END}"/>
+                </StackPanel>
+            </Grid>
+        </common:GroupBox>
+
+        <!-- Row 4: Access GroupBox -->
+        <common:GroupBox Grid.Row="4" Header="Access" Padding="2,4" Margin="0,12,0,0"
+                         IsVisible="{Binding IsAccessVisible}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <!-- Locked-only display (DOS, HFS, Zip+MacZip, etc.) -->
+                <Grid Grid.Row="0" IsVisible="{Binding IsLockedOnlyVisible}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <CheckBox Grid.Row="0" Content="_Locked (read-only)"
+                              IsChecked="{Binding AccessLocked}"
+                              IsEnabled="{Binding AccessLockedEnabled}"/>
+                    <CheckBox Grid.Row="1" Margin="0,4,0,0" Content="_Invisible"
+                              IsEnabled="{Binding AccessInvisibleEnabled}"
+                              IsChecked="{Binding AccessInvisible}"/>
+                </Grid>
+                <!-- Full flags display (ProDOS, NuFX, CPM) -->
+                <Grid Grid.Row="1" IsVisible="{Binding IsAllFlagsVisible}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Grid.Row="0" Grid.Column="0" Content="_Read"
+                              IsChecked="{Binding AccessRead}"
+                              IsEnabled="{Binding AccessReadEnabled}"/>
+                    <CheckBox Grid.Row="1" Grid.Column="0" Content="_Write"
+                              IsChecked="{Binding AccessWrite}"
+                              IsEnabled="{Binding AccessWriteEnabled}"/>
+                    <CheckBox Grid.Row="2" Grid.Column="0" Content="Re_name"
+                              IsChecked="{Binding AccessRename}"
+                              IsEnabled="{Binding AccessRenameEnabled}"/>
+                    <CheckBox Grid.Row="0" Grid.Column="1" Content="_Backup"
+                              IsChecked="{Binding AccessBackup}"
+                              IsEnabled="{Binding AccessBackupEnabled}"/>
+                    <CheckBox Grid.Row="1" Grid.Column="1" Content="_Delete"
+                              IsChecked="{Binding AccessDelete}"
+                              IsEnabled="{Binding AccessDeleteEnabled}"/>
+                    <CheckBox Grid.Row="2" Grid.Column="1" Content="_Invisible"
+                              IsChecked="{Binding AccessInvisible}"
+                              IsEnabled="{Binding AccessInvisibleEnabled}"/>
+                </Grid>
+            </Grid>
+        </common:GroupBox>
+
+        <!-- Row 5: Comment GroupBox -->
+        <common:GroupBox Grid.Row="5" Header="Comment" Padding="2,4" Margin="0,12,0,0"
+                         IsVisible="{Binding IsCommentVisible}">
+            <TextBox Height="120"
+                     Text="{Binding CommentText}"
+                     MaxLength="65535" IsReadOnly="{Binding IsAllReadOnly}"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     AcceptsReturn="True" TextWrapping="Wrap"/>
+        </common:GroupBox>
+
+        <!-- Row 6: OK/Cancel -->
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Name="okButton" Content="OK" IsDefault="True" Width="70"
+                    Command="{Binding OkCommand}"/>
+            <Button Name="cancelButton" Content="Cancel" IsCancel="True"
+                    Width="70" Margin="4,0,0,0" Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window>
