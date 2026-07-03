@@ -1,0 +1,73 @@
+<!--
+Copyright 2023 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_avalonia.Tools.LogViewer"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_avalonia.Tools"
+        mc:Ignorable="d"
+        Title="Debug Log" Height="450" Width="800"
+        CanResize="True"
+        Closed="Window_Closed">
+
+    <DockPanel Margin="2" LastChildFill="True">
+        <Grid DockPanel.Dock="Bottom" Margin="10,4,10,0" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Orientation="Horizontal"
+                        VerticalAlignment="Center" Spacing="6">
+                <TextBlock Text="Minimum priority:" VerticalAlignment="Center"/>
+                <ComboBox Width="130"
+                          ItemsSource="{Binding PriorityLabels}"
+                          SelectedIndex="{Binding MinPriorityIndex}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" 
+                        HorizontalAlignment="Right" Spacing="8">
+                <Button Content="Copy to Clipboard" Width="130"
+                        Command="{Binding CopyCommand}"/>
+                <Button Content="Save to File" Width="100"
+                        Command="{Binding SaveCommand}"/>
+            </StackPanel>
+        </Grid>
+
+        <ListBox Name="logListBox"
+                 ItemsSource="{Binding LogEntries}"
+                 FontFamily="{DynamicResource GeneralMonoFont}"
+                 SelectionMode="Single">
+            <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="0"/>
+                </Style>
+                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,Auto,*">
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding When, StringFormat='{}{0:yyyy/MM/dd HH:mm:ss.fff}'}"/>
+                        <TextBlock Grid.Column="1" Margin="8,0,0,0"
+                                   Text="{Binding Priority}" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2" Margin="8,0,0,0"
+                                   Text="{Binding Message}" TextWrapping="Wrap"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>

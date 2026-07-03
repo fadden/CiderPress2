@@ -1,0 +1,61 @@
+<!--
+Copyright 2023 faddenSoft
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="cp2_avalonia.Views.ReplacePartition"
+        Title="Replace Partition"
+        Width="400" SizeToContent="Height" CanResize="False"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.invalid">
+            <Setter Property="Foreground" Value="Red"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="This will replace the contents of the partition with the contents of the disk image, destroying all existing data."
+                   TextWrapping="Wrap" FontWeight="Bold"/>
+
+        <TextBlock Grid.Row="1" Margin="0,4,0,0" Text="{Binding SrcSizeText, FallbackValue=SrcSizeText}"/>
+
+        <TextBlock Grid.Row="2" Margin="0,4,0,0" Text="{Binding DstSizeText, FallbackValue=DestinationSizeText}"/>
+
+        <TextBlock Grid.Row="3" Margin="0,4,0,0" Text="{Binding SizeDiffText, FallbackValue=SizeDiff}"
+                   TextWrapping="Wrap" Foreground="{Binding SizeDiffForeground}"
+                   IsVisible="{Binding IsSizeDiffVisible}"/>
+
+        <StackPanel Grid.Row="4" Margin="0,8,0,0"
+                    Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Copy" Width="70"
+                    IsEnabled="{Binding IsValid}" Command="{Binding CopyCommand}"/>
+            <Button Content="Cancel" IsCancel="True" Width="70" Margin="4,0,0,0"
+                    Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window>

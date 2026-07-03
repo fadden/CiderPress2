@@ -1,0 +1,92 @@
+<!--
+Copyright 2024 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="cp2_avalonia.Views.OverwriteQueryDialog"
+        Title="Overwrite Existing File?"
+        SizeToContent="Height" Width="500" CanResize="False"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="There is already a file with the same name in the destination directory."
+                   TextWrapping="Wrap"/>
+
+        <Grid Grid.Row="1" Margin="0,8,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,4"
+                       Text="You can replace the existing file with the new one:"/>
+            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="3" Width="80" Height="60"
+                    Margin="0,0,8,0" HorizontalAlignment="Left"
+                    Content="Copy and&#x0a; Replace"
+                    Command="{Binding OverwriteCommand}"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding NewFileName, FallbackValue=NewFile}"
+                       FontWeight="Bold"/>
+            <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding NewDirName, FallbackValue=NewDir}"/>
+            <TextBlock Grid.Column="1" Grid.Row="3" Text="{Binding NewModWhen, FallbackValue=Modified:today}"/>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,4"
+                       Text="Or leave the existing file alone:"/>
+            <Button Grid.Column="0" Grid.Row="1" Grid.RowSpan="3" Width="80" Height="60"
+                    Margin="0,0,8,0" HorizontalAlignment="Left"
+                    Content="Don't Copy"
+                    Command="{Binding SkipCommand}"/>
+            <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding ExistFileName, FallbackValue=ExistFile}"
+                       FontWeight="Bold"/>
+            <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding ExistDirName, FallbackValue=ExistDir}"/>
+            <TextBlock Grid.Column="1" Grid.Row="3" Text="{Binding ExistModWhen, FallbackValue=Modified:yesterday}"/>
+        </Grid>
+
+        <DockPanel Grid.Row="3" Margin="0,16,0,0" LastChildFill="False">
+            <CheckBox DockPanel.Dock="Left" Content="Do this for all conflicts"
+                      IsChecked="{Binding UseForAll}"/>
+            <Button DockPanel.Dock="Right" Name="cancelButton" Content="Cancel"
+                    Width="70" Margin="4,0,0,0" Command="{Binding CancelCommand}"/>
+        </DockPanel>
+    </Grid>
+</Window>

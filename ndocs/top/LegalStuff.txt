@@ -1,6 +1,7 @@
-CiderPress II is copyright faddenSoft.  Source and binaries may be
-distributed under terms of the Apache 2.0 license (attached below, and
-in the LICENSE file included with the source code).
+CiderPress II includes source code and binaries copyright faddenSoft and
+Lydian Scale Software.  Unless otherwise noted in individual files, source
+and binaries may be distributed under terms of the Apache 2.0 license
+(attached below, and in the LICENSE file included with the source code).
 
 The program icon and other images are distributed under terms of
 Creative Commons ShareAlike 4.0 International
@@ -218,3 +219,6 @@ is embedded in the code.  Copyright David A. Lyons.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+Additional third-party license notices for bundled dependencies are provided
+in the THIRD_PARTY_NOTICES file.

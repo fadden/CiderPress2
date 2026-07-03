@@ -1,0 +1,232 @@
+<!--
+Copyright 2023 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="clr-namespace:cp2_avalonia"
+    xmlns:common="clr-namespace:cp2_avalonia.Controls" mc:Ignorable="d" x:Class="cp2_avalonia.Views.EditSector" Title="{Binding DialogTitle}" SizeToContent="Width" Height="560" CanResize="True" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Opened="Window_Opened" Closing="Window_Closing" KeyDown="Window_KeyDown">
+
+    <Window.Styles>
+        <!-- Validation error: labels turn red when input is invalid -->
+        <Style Selector="TextBlock.invalid">
+            <Setter Property="Foreground" Value="Red"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Column 0: label and sector edit DataGrid -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding SectorDataLabel, FallbackValue=LABEL}" HorizontalAlignment="Center"/>
+
+        <DataGrid Name="sectorDataGrid" Grid.Row="1" Grid.Column="0" Margin="0,4,8,0" ItemsSource="{Binding SectorData}" IsVisible="{Binding IsSectorDataGridVisible}" IsReadOnly="True" GridLinesVisibility="None" AutoGenerateColumns="False" HeadersVisibility="Column" CanUserReorderColumns="False" CanUserResizeColumns="False" CanUserSortColumns="False" SelectionMode="Single" CurrentCellChanged="SectorDataGrid_CurrentCellChanged" KeyDown="SectorDataGrid_KeyDown" FontFamily="{DynamicResource GeneralMonoFont}" FontSize="{DynamicResource ViewerDefaultFontSize}">
+            <DataGrid.Styles>
+                <!-- Override Fluent theme's ControlContentThemeFontSize on cells/headers -->
+                <Style Selector="DataGridCell">
+                    <Setter Property="FontSize" Value="{DynamicResource ViewerDefaultFontSize}"/>
+                    <Setter Property="Padding" Value="2,2"/>
+                    <Setter Property="Margin" Value="0,0"/>
+                    <Setter Property="MinHeight" Value="3"/>
+                    <Setter Property="MinWidth" Value="3"/>
+                </Style>
+                <Style Selector="DataGridColumnHeader">
+                    <Setter Property="FontSize" Value="{DynamicResource ViewerDefaultFontSize}"/>
+                    <Setter Property="Padding" Value="2,2"/>
+                    <Setter Property="Margin" Value="0,0"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="MinWidth" Value="3"/>
+                </Style>
+                <!-- Use system selection color as cell background highlight, keeping the
+                     border rectangle visible too (adapts to light/dark theme). -->
+                <Style Selector="DataGridCell:current:not(.RowHeaderCell):not(.RowTextCell)">
+                    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentMediumBrush}"/>
+                </Style>
+                <!-- Hide the currency border rectangle on first and last columns -->
+                <Style Selector="DataGridCell.RowHeaderCell:current /template/ Rectangle#CurrencyVisual,
+                                 DataGridCell.RowTextCell:current /template/ Rectangle#CurrencyVisual">
+                    <Setter Property="IsVisible" Value="False"/>
+                </Style>
+                <Style Selector="DataGridCell.RowHeaderCell:current /template/ Rectangle#CurrencyVisual2,
+                                 DataGridCell.RowTextCell:current /template/ Rectangle#CurrencyVisual2">
+                    <Setter Property="IsVisible" Value="False"/>
+                </Style>
+                <Style Selector="DataGridCell.RowHeaderCell:current /template/ Rectangle#CurrentBorder,
+                                 DataGridCell.RowTextCell:current /template/ Rectangle#CurrentBorder">
+                    <Setter Property="IsVisible" Value="False"/>
+                </Style>
+                <Style Selector="DataGridCell.RowHeaderCell:current /template/ Rectangle#CurrentBackground,
+                                 DataGridCell.RowTextCell:current /template/ Rectangle#CurrentBackground">
+                    <Setter Property="IsVisible" Value="False"/>
+                </Style>
+                <!-- Suppress row-level selection highlight; cell CurrencyVisual
+                     provides single-cell focus indicator -->
+                <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+                    <Setter Property="Fill" Value="Transparent"/>
+                </Style>
+                <Style Selector="DataGridRow:selected:pointerover /template/ Rectangle#BackgroundRectangle">
+                    <Setter Property="Fill" Value="Transparent"/>
+                </Style>
+                <Style Selector="DataGridRow:selected:focus /template/ Rectangle#BackgroundRectangle">
+                    <Setter Property="Fill" Value="Transparent"/>
+                </Style>
+                <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+                    <Setter Property="Fill" Value="Transparent"/>
+                </Style>
+                <Style Selector="DataGridRow">
+                    <Setter Property="Margin" Value="0,0"/>
+                    <Setter Property="Padding" Value="2,2"/>
+                    <Setter Property="MinHeight" Value="3"/>
+                    <Setter Property="MinWidth" Value="3"/>
+                </Style>
+            </DataGrid.Styles>
+            <DataGrid.Columns>
+                <!-- Column 0: offset (frozen, acts as row header) -->
+                <DataGridTextColumn Header="" Binding="{Binding RowLabel}" IsReadOnly="True" Width="Auto" CellStyleClasses="RowHeaderCell"/>
+                <!-- Columns 1-16: hex bytes -->
+                <DataGridTextColumn Header="0" Binding="{Binding C0}" Width="Auto"/>
+                <DataGridTextColumn Header="1" Binding="{Binding C1}" Width="Auto"/>
+                <DataGridTextColumn Header="2" Binding="{Binding C2}" Width="Auto"/>
+                <DataGridTextColumn Header="3" Binding="{Binding C3}" Width="Auto"/>
+                <DataGridTextColumn Header="4" Binding="{Binding C4}" Width="Auto"/>
+                <DataGridTextColumn Header="5" Binding="{Binding C5}" Width="Auto"/>
+                <DataGridTextColumn Header="6" Binding="{Binding C6}" Width="Auto"/>
+                <DataGridTextColumn Header="7" Binding="{Binding C7}" Width="Auto"/>
+                <DataGridTextColumn Header="8" Binding="{Binding C8}" Width="Auto"/>
+                <DataGridTextColumn Header="9" Binding="{Binding C9}" Width="Auto"/>
+                <DataGridTextColumn Header="A" Binding="{Binding Ca}" Width="Auto"/>
+                <DataGridTextColumn Header="B" Binding="{Binding Cb}" Width="Auto"/>
+                <DataGridTextColumn Header="C" Binding="{Binding Cc}" Width="Auto"/>
+                <DataGridTextColumn Header="D" Binding="{Binding Cd}" Width="Auto"/>
+                <DataGridTextColumn Header="E" Binding="{Binding Ce}" Width="Auto"/>
+                <DataGridTextColumn Header="F" Binding="{Binding Cf}" Width="Auto"/>
+                <!-- Column 17: ASCII text -->
+                <DataGridTextColumn Header="Text" Binding="{Binding AsText}" IsReadOnly="True" Width="Auto" CellStyleClasses="RowTextCell"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding IOErrorMsg}" FontSize="20" IsVisible="{Binding IsIOErrorMsgVisible}"/>
+
+        <!-- Column 1: control panel on right side -->
+        <Grid Grid.Row="1" Grid.Column="1" Grid.RowSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Rectangle Grid.Column="1" Grid.RowSpan="4" Margin="4,0,4,0" HorizontalAlignment="Center" Width="1" Stroke="{DynamicResource SystemControlForegroundBaseLowBrush}" Fill="Transparent"/>
+
+            <!-- Column 1, left side: location edit boxes and navigation buttons -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,4" Background="{DynamicResource SubSectionHeaderBrush}">
+                        <TextBlock Text="Location" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,2,0,0" Text="{Binding TrackBlockLabel, FallbackValue=Track:}" Classes.invalid="{Binding !IsTrackBlockValid}"/>
+                    <TextBox Name="trackBlockNumBox" Grid.Row="1" Grid.Column="1" Margin="8,2,0,0" Text="{Binding TrackBlockNumString, UpdateSourceTrigger=PropertyChanged}" Width="75" MaxLength="12"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,4,0,0" Text="Sector:" IsVisible="{Binding IsSectorVisible}" Classes.invalid="{Binding !IsSectorValid}"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" Margin="8,4,0,0" IsVisible="{Binding IsSectorVisible}" Text="{Binding SectorNumString, UpdateSourceTrigger=PropertyChanged}" Width="75" MaxLength="4"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,0" Text="{Binding TrackBlockInfoLabel, FallbackValue=o INFO1}"/>
+                    <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" IsVisible="{Binding IsSectorVisible}" Text="{Binding SectorInfoLabel, FallbackValue=o INFO2}"/>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Margin="0,0,5,0" Content="_Prev" HorizontalAlignment="Right" HorizontalContentAlignment="Center" Command="{Binding PrevCommand}"/>
+                    <Button Grid.Column="1" Margin="5,0,0,0" Content="_Next" HorizontalAlignment="Left" HorizontalContentAlignment="Center" Command="{Binding NextCommand}"/>
+                </Grid>
+
+                <Button Grid.Row="2" Width="90" Content="_Read" Margin="0,16,0,0" IsDefault="True" HorizontalContentAlignment="Center" Command="{Binding ReadCommand}"/>
+                <Button Grid.Row="3" Width="90" Content="_Write" Margin="0,16,0,0" HorizontalContentAlignment="Center" Command="{Binding WriteCommand}"/>
+                <Button Grid.Row="4" Content="Copy to Clipboard" Margin="0,16,0,0" HorizontalContentAlignment="Center" Command="{Binding CopyToClipboardCommand}"/>
+            </Grid>
+
+            <!-- Column 1, right side: advanced configuration -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,4" Background="{DynamicResource SubSectionHeaderBrush}">
+                    <TextBlock Text="Configuration" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <common:GroupBox Grid.Row="1" Header="Text Conversion" Padding="2,4">
+                    <StackPanel>
+                        <RadioButton GroupName="TxtConv" Content="High/low ASCII" IsChecked="{Binding IsChecked_ConvHighASCII}"/>
+                        <RadioButton GroupName="TxtConv" Content="Mac OS Roman" Margin="0,2,0,0" IsChecked="{Binding IsChecked_ConvMOR}"/>
+                        <RadioButton GroupName="TxtConv" Content="ISO Latin-1" Margin="0,2,0,0" IsChecked="{Binding IsChecked_ConvLatin}"/>
+                    </StackPanel>
+                </common:GroupBox>
+
+                <common:GroupBox Grid.Row="2" Header="Advanced" Padding="2,4">
+                    <StackPanel>
+                        <TextBlock Text="Block order:" IsVisible="{Binding IsBlockOrderVisible}"/>
+                        <ComboBox Name="blockOrderCombo" HorizontalAlignment="Stretch" Margin="0,2,0,0" IsVisible="{Binding IsBlockOrderVisible}" IsEnabled="{Binding IsBlockOrderEnabled}" ItemsSource="{Binding BlockOrderList}" SelectedIndex="{Binding SelectedBlockOrderIndex}"/>
+
+                        <TextBlock Text="Sector skew:" Margin="0,8,0,0"/>
+                        <ComboBox Name="sectorOrderCombo" HorizontalAlignment="Stretch" Margin="0,2,0,0" IsEnabled="{Binding IsSectorOrderEnabled}" ItemsSource="{Binding SectorOrderList}" SelectedIndex="{Binding SelectedSectorOrderIndex}"/>
+
+                        <TextBlock Text="Sector format:" Margin="0,8,0,0"/>
+                        <TextBlock Text="{Binding SectorCodecName, FallbackValue=DOS_33}" Margin="4,4,0,0"/>
+                    </StackPanel>
+                </common:GroupBox>
+            </Grid>
+        </Grid>
+
+        <Button Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" Name="closeButton" Content="Close" IsCancel="True" Width="90" Margin="0,12,0,0" HorizontalAlignment="Right" Command="{Binding CloseCommand}"/>
+    </Grid>
+</Window>

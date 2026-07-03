@@ -13,6 +13,9 @@ CiderPress2-settings.json
 cp2/Properties/launchSettings.json
 MakeDist/Properties/launchSettings.json
 
+# macOS
+.DS_Store
+
 # User-specific files
 *.rsuser
 *.suo
@@ -406,3 +409,5 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+*.idea
+.idea

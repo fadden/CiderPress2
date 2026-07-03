@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AssemblyName>CiderPress2</AssemblyName>
+    <ApplicationIcon>Res/cp2_app.ico</ApplicationIcon>
+    <UseAppHost>true</UseAppHost>
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ApplicationTitle>CiderPress II</ApplicationTitle>
+    <AvaloniaMacOSBundleName>CiderPress II</AvaloniaMacOSBundleName>
+  </PropertyGroup>
+
+<PropertyGroup>
+  <SelfContained>true</SelfContained>
+  <PublishReadyToRun>true</PublishReadyToRun>
+</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.*" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.6" />
+    <PackageReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task" Version="8.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Res/cp2_app.ico" />
+    <AvaloniaResource Include="Res/RedX.png" />
+    <None Include="Res/Info.plist" />
+  </ItemGroup>
+
+  <!-- macOS .app bundle: assembled after: dotnet publish -r osx-x64 -c Release -p:SelfContained=true -->
+  <Target Name="BundleMacOSApp" AfterTargets="Publish" Condition="$(RuntimeIdentifier.StartsWith('osx'))">
+    <PropertyGroup>
+      <_BundleName>$(AvaloniaMacOSBundleName)</_BundleName>
+      <_ExeName>$(AssemblyName)</_ExeName>
+      <!-- .app sits alongside publish/ in bin/Release/net8.0/osx-x64/ -->
+      <_AppDir>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(PublishDir)', '..', '$(_BundleName).app'))))</_AppDir>
+      <_ContentsDir>$(_AppDir)/Contents</_ContentsDir>
+      <_MacOSDir>$(_ContentsDir)/MacOS</_MacOSDir>
+      <_ResourcesDir>$(_ContentsDir)/Resources</_ResourcesDir>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(_AppDir)" />
+    <MakeDir Directories="$(_MacOSDir);$(_ResourcesDir)" />
+
+    <!-- Copy every published file into Contents/MacOS/, preserving subdirectory layout -->
+    <ItemGroup>
+      <_PublishFiles Include="$(PublishDir)**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_PublishFiles)" DestinationFolder="$(_MacOSDir)/%(RecursiveDir)" SkipUnchangedFiles="false" />
+
+    <!-- Ensure the entry-point binary is executable -->
+    <Exec Command="chmod +x &quot;$(_MacOSDir)/$(_ExeName)&quot;" />
+
+    <!-- Info.plist into Contents/ -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/Res/Info.plist" DestinationFolder="$(_ContentsDir)" />
+
+    <!-- App icon (cp2_app.icns) into Contents/Resources/ if it exists -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/Res/cp2_app.icns" DestinationFolder="$(_ResourcesDir)" Condition="Exists('$(MSBuildProjectDirectory)/Res/cp2_app.icns')" />
+
+    <Message Text="Created: $(_AppDir)" Importance="High" />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppCommon\AppCommon.csproj" />
+    <ProjectReference Include="..\CommonUtil\CommonUtil.csproj" />
+    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" />
+    <ProjectReference Include="..\DiskArc\DiskArc.csproj" />
+    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" />
+    <ProjectReference Include="..\FileConv\FileConv.csproj" />
+  </ItemGroup>
+
+</Project>
