@@ -1,0 +1,59 @@
+<!--
+Copyright 2023 faddenSoft
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="cp2_avalonia.Views.FindFile"
+        Title="Find File"
+        Width="400" SizeToContent="Height" CanResize="False"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        Opened="Window_Opened">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Filename:"/>
+            <TextBox x:Name="fileNameTextBox" Grid.Column="1" Margin="4,1,0,0"
+                     Text="{Binding FileName, Mode=TwoWay, FallbackValue=FileName_Here}"
+                     FontFamily="{DynamicResource GeneralMonoFont}"/>
+        </Grid>
+
+        <CheckBox Grid.Row="1" Content="Current archive only" Margin="0,6,0,0"
+                  IsChecked="{Binding IsCurrentArchiveOnlyChecked}"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="findPrev" Content="Find Previous" Width="100"
+                    Command="{Binding FindPrevCommand}"/>
+            <Button x:Name="findNext" Content="Find Next" Width="100" Margin="4,0,0,0"
+                    Command="{Binding FindNextCommand}"
+                    IsDefault="True"/>
+            <Button x:Name="cancelButton" Content="Cancel" IsCancel="True"
+                    Width="70" Margin="4,0,0,0" Command="{Binding CloseCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window>

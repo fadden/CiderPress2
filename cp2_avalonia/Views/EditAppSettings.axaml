@@ -1,0 +1,152 @@
+<!--
+Copyright 2023 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_avalonia"
+        mc:Ignorable="d"
+        x:Class="cp2_avalonia.Views.EditAppSettings"
+        Title="Edit Application Settings"
+        Width="900" Height="460" CanResize="False"
+        ShowInTaskbar="true" WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="8">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Name="okButton" Content="OK" IsDefault="True"
+                    Width="70" Command="{Binding OkCommand}"/>
+            <Button Name="cancelButton" Content="Cancel" IsCancel="True"
+                    Width="70" Margin="4,0,0,0" Command="{Binding CancelCommand}"/>
+        </StackPanel>
+
+        <TabControl Name="tabControl" DockPanel.Dock="Top" Margin="0,0,0,8">
+            <TabItem Name="generalTab" Header="General">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="4,0,0,0">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1" CornerRadius="2" Padding="4" >
+                            <StackPanel>
+                                <TextBlock Text="Auto-Open Depth" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <RadioButton Content="Shallow" GroupName="AutoOpen"
+                                             ToolTip.Tip="Don't scan for disks and archives"
+                                             IsChecked="{Binding AutoOpenDepth_Shallow}"/>
+                                <RadioButton Content="Sub-Volume (recommended)" GroupName="AutoOpen"
+                                             ToolTip.Tip="Scan for filesystem sub-volumes, and disk images in archives"
+                                             IsChecked="{Binding AutoOpenDepth_SubVol}"/>
+                                <RadioButton Content="Max" GroupName="AutoOpen"
+                                             ToolTip.Tip="Scan for disk images and file archives in all files"
+                                             IsChecked="{Binding AutoOpenDepth_Max}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <CheckBox Content="Enable MacZip handling" Margin="0,4,0,0"
+                                  ToolTip.Tip="Combine __MACOSX pairs automatically"
+                                  IsChecked="{Binding EnableMacZip}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="2">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1" CornerRadius="2" Padding="4" >
+                            <StackPanel>
+                                <TextBlock Text="Import/Export Conversion" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <Button Content="Configure Import Options" 
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding ConfigureImportCommand}"/>
+                                <Button Content="Configure Export Options" Margin="0,4,0,0"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding ConfigureExportCommand}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <CheckBox Content="Enable DOS text conversion" Margin="0,4,0,0"
+                                  ToolTip.Tip="Convert DOS text files when copying and pasting between filesystems"
+                                  IsChecked="{Binding EnableDOSTextConv}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="4">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1" CornerRadius="2" Padding="4" >
+                            <StackPanel>
+                                <TextBlock Text="Apple II Cassette Decoder" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <RadioButton Content="Zero-Crossing (recommended)" GroupName="AudioDec"
+                                             ToolTip.Tip="Decode signal by detecting zero crossings"
+                                             IsChecked="{Binding Audio_Zero}"/>
+                                <RadioButton Content="Peak-to-Peak Width, Sharp" GroupName="AudioDec"
+                                             ToolTip.Tip="Decode signal by measuring peak-to-peak distance, with sharp parameters"
+                                             IsChecked="{Binding Audio_PTP_Sharp}"/>
+                                <RadioButton Content="Peak-to-Peak Width, Round" GroupName="AudioDec"
+                                             ToolTip.Tip="Decode signal by measuring peak-to-peak distance, with round parameters"
+                                             IsChecked="{Binding Audio_PTP_Round}"/>
+                                <RadioButton Content="Peak-to-Peak Width, Shallow" GroupName="AudioDec"
+                                             ToolTip.Tip="Decode signal by measuring peak-to-peak distance, with shallow parameters"
+                                             IsChecked="{Binding Audio_PTP_Shallow}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,8,0,0">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1" CornerRadius="2" Padding="4">
+                            <StackPanel>
+                                <TextBlock Text="Dialog Messages" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding SuppressedDialogLabel}" Margin="0,0,0,4"/>
+                                <Button Content="Reset suppressed messages"
+                                        HorizontalAlignment="Left"
+                                        ToolTip.Tip="Re-enable all previously suppressed warning dialogs"
+                                        Command="{Binding ResetDialogMessagesCommand}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Grid.Column="0" Margin="4,8,0,0">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1" CornerRadius="2" Padding="4">
+                            <StackPanel>
+                                <TextBlock Text="Theme" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox SelectedIndex="{Binding ThemeModeIndex}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBoxItem>Light</ComboBoxItem>
+                                    <ComboBoxItem>Dark</ComboBoxItem>
+                                    <ComboBoxItem>System Default</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <CheckBox Grid.Column="0" Grid.Row="4" Content="Enable DEBUG menu" Margin="4,16,0,0"
+                              IsChecked="{Binding EnableDebugMenu}"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

@@ -1,0 +1,66 @@
+<!--
+Copyright 2023 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<Window x:Class="cp2_avalonia.Views.CreateDirectory"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cp2_avalonia"
+        mc:Ignorable="d"
+        Title="Create Directory"
+        Width="400" SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Opened="Window_Opened">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.invalid">
+            <Setter Property="Foreground" Value="Red"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Enter directory name:"/>
+        <TextBox Grid.Row="1" Name="newFileNameTextBox"
+                 Text="{Binding NewFileName, Mode=TwoWay}"
+                 FontFamily="{DynamicResource GeneralMonoFont}"/>
+        <TextBlock Grid.Row="2" Margin="0,4,0,0" TextWrapping="Wrap"
+                   Text="{Binding SyntaxRulesText}"
+                   Classes.invalid="{Binding !IsNameValid}"/>
+        <TextBlock Grid.Row="3" Margin="0,4,0,0"
+                   Text="&#x2022; Name must be unique."
+                   Classes.invalid="{Binding !IsUniqueNameValid}"/>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right"
+                    Margin="0,8,0,0">
+            <Button Name="okButton" Content="OK" IsDefault="True" Width="70"
+                    IsEnabled="{Binding IsValid}" Command="{Binding OkCommand}"/>
+            <Button Name="cancelButton" Content="Cancel" IsCancel="True"
+                    Width="70" Margin="4,0,0,0" Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window>

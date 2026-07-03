@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Copyright 2026 faddenSoft
+Copyright 2026 Lydian Scale Software
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. -->
+<Window
+        x:Class="cp2_avalonia.Views.FileViewer"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:local="clr-namespace:cp2_avalonia.Views"
+                     xmlns:ftv="clr-namespace:cp2_avalonia.Controls.FancyTextViewer"
+                     xmlns:common="clr-namespace:cp2_avalonia.Controls"
+                     mc:Ignorable="d"
+                     x:DataType="vm:FileViewerViewModel"
+                     Title="{Binding WindowTitle}"
+                     Width="1200"
+                     Height="700"
+                     MinWidth="700"
+                     MinHeight="400"
+                     ShowInTaskbar="False"
+                     WindowStartupLocation="CenterOwner">
+    <Window.KeyBindings>
+        <KeyBinding Gesture="F3"
+                    Command="{Binding FindNextCommand}" />
+        <KeyBinding Gesture="Shift+F3"
+                    Command="{Binding FindPrevCommand}" />
+        <KeyBinding Gesture="OemMinus"
+                    Command="{Binding DecrementMagTickCommand}" />
+        <KeyBinding Gesture="OemPlus"
+                    Command="{Binding IncrementMagTickCommand}" />
+    </Window.KeyBindings>
+    <Window.Styles>
+        <!-- Give the file-viewer tabs a WPF-like shape and explicit outlines. -->
+        <Style Selector="TabControl#tabControl">
+            <Setter Property="Background"
+                    Value="{DynamicResource ViewerBackgroundBrush}" />
+            <Setter Property="Padding"
+                    Value="0" />
+        </Style>
+        <Style Selector="TabControl#tabControl TabItem">
+            <Setter Property="Background"
+                    Value="{DynamicResource SystemControlBackgroundChromeLowBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="CornerRadius"
+                    Value="0,0,6,6" />
+            <Setter Property="Padding"
+                    Value="12,4" />
+            <Setter Property="Margin"
+                    Value="0,0,2,0" />
+            <Setter Property="MinHeight"
+                    Value="0" />
+        </Style>
+        <Style Selector="TabControl#tabControl TabItem:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background"
+                    Value="{DynamicResource ViewerBackgroundBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <!-- Bottom tabs: remove the seam line where selected tab meets content. -->
+            <Setter Property="BorderThickness"
+                    Value="1,0,1,1" />
+        </Style>
+        <Style Selector="TabControl#tabControl TabItem:selected">
+            <!-- Lift and slightly enlarge selected tab for stronger active-state emphasis. -->
+            <Setter Property="Margin"
+                    Value="0,-2,2,2" />
+        </Style>
+        <Style Selector="TabControl#tabControl /template/ ItemsPresenter#PART_ItemsPresenter">
+            <Setter Property="Panel.ZIndex"
+                    Value="1" />
+        </Style>
+        <Style Selector="TabControl#tabControl /template/ ContentPresenter#PART_SelectedContentHost">
+            <Setter Property="Panel.ZIndex"
+                    Value="0" />
+        </Style>
+        <Style Selector="TabControl#tabControl TabItem:selected /template/ Border#PART_SelectedPipe">
+            <Setter Property="IsVisible"
+                    Value="False" />
+            <Setter Property="Height"
+                    Value="0" />
+        </Style>
+        <!-- Make selected/available/unavailable fork tab headers visually distinct. -->
+        <Style Selector="TabControl#tabControl TabItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground"
+                    Value="LightGray" />
+            <Setter Property="FontWeight"
+                    Value="Normal" />
+        </Style>
+        <Style Selector="TabControl#tabControl TabItem:not(:disabled) /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource ViewerInverseBackgroundBrush}" />
+            <Setter Property="FontWeight"
+                    Value="Normal" />
+        </Style>
+        <Style Selector="TabControl#tabControl TabItem:not(:disabled):selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource ViewerInverseBackgroundBrush}" />
+            <Setter Property="FontWeight"
+                    Value="ExtraBold" />
+        </Style>
+        <Style Selector="TabControl#tabControl TabItem:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground"
+                    Value="LightGray" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel DragDrop.AllowDrop="True">
+        <Border DockPanel.Dock="Top" 
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1"
+                Padding="4,2">
+            <DockPanel>
+                <!-- History navigation buttons -->
+                <Button x:Name="backButton"
+                        DockPanel.Dock="Left" Width="30" Height="30"
+                        FontSize="22"
+                        Margin="1,2"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Content="←"
+                        Padding="0"
+                        ToolTip.Tip="{Binding BackTip}"
+                        IsEnabled="{Binding HasBackHistory}"
+                        Command="{Binding BackCommand}">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="backContextMenu" />
+                    </Button.ContextMenu>
+                </Button>
+                <Button x:Name="forwardButton"
+                        DockPanel.Dock="Left"
+                        Width="30" Height="30"
+                        FontSize="22"
+                        Margin="0,2"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Content="→"
+                        Padding="0"
+                        ToolTip.Tip="{Binding ForwardTip}"
+                        IsEnabled="{Binding HasForwardHistory}"
+                        Command="{Binding ForwardCommand}">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="forwardContextMenu" />
+                    </Button.ContextMenu>
+                </Button>
+
+                <Border DockPanel.Dock="Left" 
+                        Width="1" 
+                        Height="30"
+                        Margin="10,0"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" 
+                        BorderThickness="1" />
+
+                <!-- List navigation buttons -->
+                <Button DockPanel.Dock="Left" Width="30" Height="30"
+                        FontSize="22"
+                        Margin="1,2"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Content="↑"
+                        Padding="0"
+                        ToolTip.Tip="{Binding PrevInListTip}"
+                        IsEnabled="{Binding HasPrevInList}"
+                        Click="PrevInList_Click" />
+                <Button DockPanel.Dock="Left"
+                        Width="30" Height="30"
+                        FontSize="22"
+                        Margin="0,2"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Content="↓"
+                        Padding="0"
+                        ToolTip.Tip="{Binding NextInListTip}"
+                        IsEnabled="{Binding HasNextInList}"
+                        Click="NextInList_Click" />
+
+                <Border DockPanel.Dock="Left" 
+                        Width="1" 
+                        Height="30"
+                        Margin="10,0"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" 
+                        BorderThickness="1" />
+
+                
+                <StackPanel DockPanel.Dock="Left"
+                            Orientation="Horizontal">
+                    <Button Width="40" 
+                            Height="30" 
+                            HorizontalContentAlignment="Center"
+                            Content="★"
+                            Margin="0,0,0,0"
+                            ToolTip.Tip="Use best conversion"
+                            Click="SelectBest_Click" />
+                    <Button Width="40" 
+                            Height="30"  
+                            HorizontalContentAlignment="Center"
+                            Content="Aa"
+                            Margin="0,0,0,0"
+                            ToolTip.Tip="Display as text"
+                            Click="SelectPlainText_Click" />
+                    <Button Width="40"  
+                            Height="30" 
+                            HorizontalContentAlignment="Center"
+                            Content="0x"
+                            Margin="0,0,0,0"
+                            ToolTip.Tip="Display as hex dump"
+                            Click="SelectHexDump_Click" />
+                </StackPanel>
+
+                <Border DockPanel.Dock="Left" 
+                        Width="1" 
+                        Height="30"
+                        Margin="10,0"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" 
+                        BorderThickness="1" />
+
+            
+
+                <StackPanel DockPanel.Dock="Right"
+                            IsVisible="{Binding IsBitmapVisible}"
+                            Orientation="Horizontal" Spacing="0" >
+                    <Button Content="-"
+                            Width="30"
+                            Height="30"
+                            VerticalContentAlignment="Center"
+                            FontSize="14"
+                            ToolTip.Tip="Reduce graphics zoom"
+                            Command="{Binding DecrementMagTickCommand}" />
+                    <TextBlock
+                        Width="36"
+                        Margin="0,0,0,0"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        TextAlignment="Center"
+                        Text="{Binding GraphicsZoomStr, FallbackValue=1X}" />
+                    <Button Content="+"
+                            FontSize="14"
+                            Width="30"
+                            Height="30"
+                            VerticalContentAlignment="Center"           
+                            ToolTip.Tip="Increase graphics zoom"
+                            Command="{Binding IncrementMagTickCommand}" />
+                </StackPanel>
+
+                <Grid DockPanel.Dock="Right" IsVisible="{Binding IsFindEnabled}"
+                      Margin="0,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                               Text="Find:" />
+                    <TextBox Grid.Column="2"
+                             Margin="4,0,0,0"
+                             Name="searchStringTextBox"
+                             Text="{Binding SearchString}"
+                             IsEnabled="{Binding IsFindEnabled}"
+                             MaxWidth="250"
+                             KeyDown="SearchStringTextBox_KeyDown" />
+                    <Button Grid.Column="3"
+                            Width="70"
+                            Margin="4,0,0,0"
+                            Content="Prev" HorizontalContentAlignment="Center"
+                            IsEnabled="{Binding IsFindButtonsEnabled}"
+                            Command="{Binding FindPrevCommand}" />
+                    <Button Grid.Column="4"
+                            Width="70"
+                            Margin="4,0,0,0"
+                            Content="Next" HorizontalContentAlignment="Center"
+                            IsEnabled="{Binding IsFindButtonsEnabled}"
+                            Command="{Binding FindNextCommand}" />
+                </Grid>
+
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Left"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,0,1,0"
+                Padding="10,0">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+
+                <StackPanel Grid.Row="0" Orientation="Vertical">
+                    <TextBlock Text="Conversion:"
+                               Margin="0,2,4,3" />
+                    <ComboBox Name="convComboBox"
+                              Width="240"
+                              HorizontalAlignment="Left"
+                              ItemsSource="{Binding ConverterList}"
+                              SelectedIndex="{Binding SelectedConverterIndex}"
+                              SelectionChanged="ConvComboBox_SelectionChanged" />
+                </StackPanel>
+                <common:GroupBox Grid.Row="1" Header="Options"
+                                 MinHeight="120"
+                                 IsEnabled="{Binding IsOptionsBoxEnabled}">
+                    <StackPanel>
+                        <TextBlock Name="noOptions" Margin="0,20"
+                                   Text="No conversion options available."
+                                   HorizontalAlignment="Center" />
+                        <CheckBox Name="checkBox1"
+                                  Content="Check 1"
+                                  Margin="0,2,0,0" />
+                        <CheckBox Name="checkBox2"
+                                  Content="Check 2"
+                                  Margin="0,2,0,0" />
+                        <CheckBox Name="checkBox3"
+                                  Content="Check 3"
+                                  Margin="0,2,0,0" />
+                        <StackPanel Name="stringInput1"
+                                    Orientation="Horizontal"
+                                    Margin="0,2,0,0">
+                            <TextBlock Name="stringInput1_Label"
+                                       Text="Entry label:"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <TextBox Name="stringInput1_Box"
+                                     Width="70"
+                                     Text="100" />
+                        </StackPanel>
+                        <common:GroupBox Name="multiGroup1"
+                                         Header="Multi Group 1">
+                            <StackPanel>
+                                <RadioButton Name="radioButton1_1"
+                                             GroupName="group1"
+                                             Content="Radio 1"
+                                             Margin="0,2,0,0" />
+                                <RadioButton Name="radioButton1_2"
+                                             GroupName="group1"
+                                             Content="Radio 2"
+                                             Margin="0,2,0,0" />
+                                <RadioButton Name="radioButton1_3"
+                                             GroupName="group1"
+                                             Content="Radio 3"
+                                             Margin="0,2,0,0" />
+                                <RadioButton Name="radioButton1_4"
+                                             GroupName="group1"
+                                             Content="Radio 4"
+                                             Margin="0,2,0,0" />
+                            </StackPanel>
+                        </common:GroupBox>
+                        <common:GroupBox Name="multiGroup2"
+                                         Header="Multi Group 2">
+                            <StackPanel>
+                                <RadioButton Name="radioButton2_1"
+                                             GroupName="group2"
+                                             Content="Radio 1"
+                                             Margin="0,2,0,0" />
+                                <RadioButton Name="radioButton2_2"
+                                             GroupName="group2"
+                                             Content="Radio 2"
+                                             Margin="0,2,0,0" />
+                                <RadioButton Name="radioButton2_3"
+                                             GroupName="group2"
+                                             Content="Radio 3"
+                                             Margin="0,2,0,0" />
+                                <RadioButton Name="radioButton2_4"
+                                             GroupName="group2"
+                                             Content="Radio 4"
+                                             Margin="0,2,0,0" />
+                            </StackPanel>
+                        </common:GroupBox>
+                    </StackPanel>
+                </common:GroupBox>
+
+                <Button Grid.Row="3" Margin="0,10,0,10"
+                        HorizontalAlignment="Center"
+                        Content="Save as _Default Configuration"
+                        Command="{Binding SaveDefaultsCommand}" />
+            </Grid>
+
+        </Border>
+
+        <DockPanel DockPanel.Dock="Bottom"
+                   Margin="10,0,10,8"
+                   LastChildFill="False">
+            <Button DockPanel.Dock="Right"
+                    Margin="8,0,0,0"
+                    Content="Done" HorizontalContentAlignment="Center"
+                    Command="{Binding CloseCommand}" />
+            <Button DockPanel.Dock="Right"
+                    Content="_Export..." HorizontalContentAlignment="Center"
+                    Margin="8,0,0,0"
+                    Command="{Binding ExportCommand}" />
+            <Button DockPanel.Dock="Right"
+                    Content="Copy" HorizontalContentAlignment="Center"
+                    Margin="8,0,0,0"
+                    Command="{Binding CopyTextCommand}" />
+            <CheckBox DockPanel.Dock="Left"
+                      Margin="0,8,0,0"
+                      Content="Open _raw (DOS 3.x only)"
+                      IsEnabled="{Binding IsDOSRawEnabled}"
+                      IsChecked="{Binding IsDOSRaw}" />
+        </DockPanel>
+        <Grid Margin="10,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TabControl Name="tabControl"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        TabStripPlacement="Bottom"
+                        SelectionChanged="TabControl_SelectionChanged">
+                    <!-- Data Fork tab -->
+                    <TabItem Name="dataTabItem"
+                             Header="Data Fork"
+                             IsEnabled="{Binding IsDataTabEnabled}">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4,4,4,0"
+                                Padding="3"
+                                Background="{DynamicResource ViewerBackgroundBrush}">
+                            <Grid>
+                                <!-- Text viewer for simple and fancy text content -->
+                                <ScrollViewer Name="dataForkScroll"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Auto"
+                                              Background="{DynamicResource ViewerBackgroundBrush}"
+                                              PointerReleased="DataForkScroll_PointerReleased"
+                                              IsVisible="{Binding IsTextVisible}">
+                                    <ftv:FancyTextViewer Name="dataForkTextViewer"
+                                                         Document="{Binding DataTextViewModel.Document}"
+                                                         PageWidth="{Binding DataTextViewModel.PageWidth}"
+                                                         ShowPageBoundaries="{Binding DataTextViewModel.ShowPageBoundaries, Mode=TwoWay}"
+                                                         ShowMarginBoundaries="{Binding DataTextViewModel.ShowMarginBoundaries, Mode=TwoWay}" />
+                                </ScrollViewer>
+                                <!-- Bitmap viewer with checkerboard background -->
+                                <ScrollViewer Name="dataBitmapScroll"
+                                              IsVisible="{Binding IsBitmapVisible}"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Auto">
+                                    <Border BorderThickness="0"
+                                            HorizontalAlignment="Stretch"
+                                            Background="{StaticResource CheckerBackground}">
+                                        <Image Name="previewImage"
+                                               RenderOptions.BitmapInterpolationMode="None"
+                                               Source="{Binding PreviewBitmap}"
+                                               Width="{Binding PreviewImageWidth}"
+                                               Height="{Binding PreviewImageHeight}"
+                                               PointerPressed="PreviewImage_PointerPressed"
+                                               PointerEntered="PreviewImage_PointerEntered"
+                                               PointerMoved="PreviewImage_PointerMoved"
+                                               PointerReleased="PreviewImage_PointerReleased"
+                                               PointerCaptureLost="PreviewImage_PointerCaptureLost"
+                                               PointerExited="PreviewImage_PointerExited" />
+                                    </Border>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </TabItem>
+                    <!-- Resource Fork tab -->
+                    <TabItem Name="rsrcTabItem"
+                             Header="Resource Fork"
+                             IsEnabled="{Binding IsRsrcTabEnabled}">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4,4,4,0"
+                                Padding="3"
+                                Background="{DynamicResource ViewerBackgroundBrush}">
+                            <ScrollViewer Name="rsrcForkScroll"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Background="{DynamicResource ViewerBackgroundBrush}"
+                                          PointerReleased="RsrcForkScroll_PointerReleased">
+                                <ftv:FancyTextViewer Name="rsrcForkTextViewer"
+                                                    Document="{Binding RsrcTextViewModel.Document}"
+                                                    PageWidth="{Binding RsrcTextViewModel.PageWidth}"
+                                                    ShowPageBoundaries="{Binding RsrcTextViewModel.ShowPageBoundaries, Mode=TwoWay}"
+                                                    ShowMarginBoundaries="{Binding RsrcTextViewModel.ShowMarginBoundaries, Mode=TwoWay}" />
+                            </ScrollViewer>
+                        </Border>
+                    </TabItem>
+                    <!-- Notes tab -->
+                    <TabItem Name="noteTabItem"
+                             Header="Notes"
+                             IsEnabled="{Binding IsNoteTabEnabled}">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4,4,4,0"
+                                Padding="3"
+                                Background="{DynamicResource ViewerBackgroundBrush}">
+                            <ScrollViewer Name="noteScroll"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Background="{DynamicResource ViewerBackgroundBrush}">
+                                <SelectableTextBlock Name="noteTextBlock"
+                                                     FontFamily="{DynamicResource ViewerMonoFont}"
+                                                     FontSize="{DynamicResource ViewerDefaultFontSize}"
+                                                     TextWrapping="Wrap"
+                                                     Padding="4"
+                                                     Background="Transparent"
+                                                     Width="{Binding $parent[ScrollViewer].Viewport.Width}"
+                                                     MinHeight="{Binding $parent[ScrollViewer].Viewport.Height}" />
+                            </ScrollViewer>
+                        </Border>
+                    </TabItem>
+                </TabControl>
+            <!-- Bottom panel -->
+            <Grid Grid.Row="1"
+                  Grid.Column="1"
+                  Margin="0,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+
+            </Grid>
+        </Grid>
+    </DockPanel>
+
+</Window>
