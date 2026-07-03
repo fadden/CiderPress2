@@ -106,7 +106,7 @@ namespace DiskArcTests {
         }
         private static void CheckTag(DiskFileStream fd, int fileNum, bool isRsrc, int iter) {
             fd.Seek(TAG_MULT * iter, SeekOrigin.Begin);
-            fd.Read(sTagBuf, 0, sTagBuf.Length);
+            fd.ReadExactly(sTagBuf, 0, sTagBuf.Length);
             int readFileNum = sTagBuf[0];
             bool readIsRsrc = sTagBuf[1] != 0;
             uint readIter = RawData.GetU32BE(sTagBuf, 2);
@@ -140,7 +140,7 @@ namespace DiskArcTests {
 
                     // Verify that the extended area is zeroed out.
                     Array.Clear(buf);
-                    fd.Read(buf, 0, buf.Length);
+                    fd.ReadExactly(buf, 0, buf.Length);
 
                     for (int i = 0; i < buf.Length; i++) {
                         byte expected;

@@ -109,7 +109,7 @@ namespace DiskArcTests {
                     using (DiskFileStream stuff = fs.OpenFile(entry,
                             FileAccessMode.ReadWrite, FilePart.DataFork)) {
                         byte[] buf = new byte[Patterns.sRunPattern.Length];
-                        stuff.Read(buf, 0, buf.Length);
+                        stuff.ReadExactly(buf, 0, buf.Length);
                         if (!RawData.CompareBytes(buf, Patterns.sRunPattern,
                                 Patterns.sRunPattern.Length)) {
                             throw new Exception("data mismatch");

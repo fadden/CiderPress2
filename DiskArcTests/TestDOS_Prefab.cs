@@ -139,7 +139,7 @@ namespace DiskArcTests {
             // Try again, reading one byte at a time.
             fd1.Seek(0, SeekOrigin.Begin);
             for (int i = 2; i < sTextNormalHome.Length - 2; i++) {
-                fd1.Read(buf1, 0, 1);
+                fd1.ReadExactly(buf1, 0, 1);
                 if (buf1[0] != sTextNormalHome[i]) {
                     throw new Exception("Single byte read failed");
                 }
@@ -217,7 +217,7 @@ namespace DiskArcTests {
                     fileOffset = newPos;
 
                     Array.Clear(buf);
-                    fd.Read(buf, 0, buf.Length / 2);    // don't read full sector
+                    fd.ReadExactly(buf, 0, buf.Length / 2);    // don't read full sector
 
                     // The block index is printed into the record, followed by CR.
                     string foundStr = RawData.GetNullTermString(buf, 0, buf.Length, 0x7f);

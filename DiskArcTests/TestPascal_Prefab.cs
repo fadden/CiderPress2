@@ -95,7 +95,7 @@ namespace DiskArcTests {
 
             DiskFileStream fd1 = fs.OpenFile(file1, FileAccessMode.ReadOnly, FilePart.DataFork);
             fd1.Seek(MATCH_OFF, SeekOrigin.Begin);
-            fd1.Read(buf, 0, MATCH_STR.Length);
+            fd1.ReadExactly(buf, 0, MATCH_STR.Length);
             string conv = Encoding.ASCII.GetString(buf, 0, MATCH_STR.Length);
             if (conv != MATCH_STR) {
                 throw new Exception("Read did not find correct data");

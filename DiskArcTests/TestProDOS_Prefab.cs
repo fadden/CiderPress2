@@ -239,7 +239,7 @@ namespace DiskArcTests {
                     FilePart.DataFork)) {
                 long posn = 0;
                 for (int i = 0; i < 10; i++) {
-                    desc.Read(buffer, 1, 1);
+                    desc.ReadExactly(buffer, 1, 1);
                     if (buffer[1] != i) {
                         throw new Exception("Bad value in sparse bin, i=" + i + ", val=" +
                             buffer[1]);
@@ -257,7 +257,7 @@ namespace DiskArcTests {
                     FilePart.DataFork)) {
                 long posn = 0;
                 for (int i = 0; i < 9; i++) {
-                    desc.Read(buffer, 0, 2);
+                    desc.ReadExactly(buffer, 0, 2);
                     if (buffer[0] != i + 0x30 || buffer[1] != 0x0d) {
                         throw new Exception("Bad value in random txt, i=" + i + ", val=" +
                             buffer[0]);

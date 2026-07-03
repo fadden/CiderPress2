@@ -124,7 +124,7 @@ namespace DiskArcTests {
                 using (DiskFileStream stuff = embedFs.OpenFile(entry,
                         FileAccessMode.ReadOnly, FilePart.DataFork)) {
                     byte[] buf = new byte[Patterns.sUlyssesBytes.Length];
-                    stuff.Read(buf, 0, buf.Length);
+                    stuff.ReadExactly(buf, 0, buf.Length);
                     if (!RawData.CompareBytes(buf, Patterns.sUlyssesBytes,
                             Patterns.sUlyssesBytes.Length)) {
                         throw new Exception("data mismatch");

@@ -86,7 +86,10 @@ namespace cp2_wpf {
         /// </summary>
         /// <param name="dropObject">Data object from drop, or null to check clipboard.</param>
         public static bool IsDataFromCP2(IDataObject? dropObject) {
-            IDataObject dataObj = (dropObject == null) ? Clipboard.GetDataObject() : dropObject;
+            IDataObject? dataObj = (dropObject == null) ? Clipboard.GetDataObject() : dropObject;
+            if (dataObj == null) {
+                return false;
+            }
             object? metaData = dataObj.GetData(XFER_METADATA_NAME);
             if (!(metaData is MemoryStream)) {
                 return false;
@@ -104,7 +107,11 @@ namespace cp2_wpf {
         /// <param name="dropObject">Data object from drop, or null to check clipboard.</param>
         /// <returns>ClipInfo object, or null if it couldn't be found.</returns>
         public static ClipInfo? GetClipInfo(IDataObject? dropObject) {
-            IDataObject dataObj = (dropObject == null) ? Clipboard.GetDataObject() : dropObject;
+            IDataObject? dataObj = (dropObject == null) ? Clipboard.GetDataObject() : dropObject;
+            if (dataObj is null) {
+                Debug.WriteLine("Didn't find drop object");
+                return null;
+            }
             object? metaData = dataObj.GetData(XFER_METADATA_NAME);
             if (metaData is null) {
                 Debug.WriteLine("Didn't find " + XFER_METADATA_NAME);

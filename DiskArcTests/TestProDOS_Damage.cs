@@ -119,7 +119,7 @@ namespace DiskArcTests {
                 using (DiskFileStream fd = fs.OpenFile(file1, IFileSystem.FileAccessMode.ReadOnly,
                         FilePart.DataFork)) {
                     blockBuf[0] = 0xff;     // make sure we're actually reading
-                    fd.Read(blockBuf, 0, 1);
+                    fd.ReadExactly(blockBuf, 0, 1);
                     if (blockBuf[0] != 0xcc) {
                         throw new Exception("Found wrong data in file1" +
                             blockBuf[0].ToString("x2"));
@@ -128,7 +128,7 @@ namespace DiskArcTests {
                 using (DiskFileStream fd = fs.OpenFile(file2, IFileSystem.FileAccessMode.ReadOnly,
                         FilePart.DataFork)) {
                     blockBuf[0] = 0xff;
-                    fd.Read(blockBuf, 0, 1);
+                    fd.ReadExactly(blockBuf, 0, 1);
                     if (blockBuf[0] != 0xcc) {
                         throw new Exception("Found wrong (original?) data in file1: " +
                             blockBuf[0].ToString("x2"));
@@ -138,7 +138,7 @@ namespace DiskArcTests {
                 using (DiskFileStream fd = fs.OpenFile(file3, IFileSystem.FileAccessMode.ReadWrite,
                         FilePart.DataFork)) {
                     blockBuf[0] = 0xff;
-                    fd.Read(blockBuf, 0, 1);
+                    fd.ReadExactly(blockBuf, 0, 1);
                     if (blockBuf[0] != 0xee) {
                         throw new Exception("Found wrong data in file3: " +
                             blockBuf[0].ToString("x2"));

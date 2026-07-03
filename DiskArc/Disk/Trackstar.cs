@@ -236,7 +236,7 @@ namespace DiskArc.Disk {
             Trackstar disk = new Trackstar(stream, appHook);
             appHook.LogI("Opening Trackstar image, numTracks=" + disk.mNumTracks);
             stream.Position = 0;
-            stream.Read(disk.mDescription, 0, disk.mDescription.Length);
+            stream.ReadExactly(disk.mDescription, 0, disk.mDescription.Length);
             disk.CreateBitBuffers();
             return disk;
         }
@@ -461,7 +461,7 @@ namespace DiskArc.Disk {
                 }
 
                 mStream.Position = trk * TRACK_AREA_LENGTH + DATA_START_OFFSET;
-                mStream.Read(trackBuf, 0, trackLen);
+                mStream.ReadExactly(trackBuf, 0, trackLen);
                 mTrackData[trk] =
                     new TrackData(trackBuf, 0, trackLen, true, mBufferModFlag, IsReadOnly);
             }

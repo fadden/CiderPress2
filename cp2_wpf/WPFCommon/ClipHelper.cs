@@ -159,11 +159,13 @@ namespace cp2_wpf.WPFCommon {
                 delegate () {
                     // Need to query for the clipboard data here or we get an error that says the
                     // object was marshalled for a different thread (RPC_E_WRONG_THREAD).
-                    System.Windows.IDataObject dataObj = Clipboard.GetDataObject();
+                    System.Windows.IDataObject? dataObj = Clipboard.GetDataObject();
 
                     // The Stream will have all of the data written into it already.  The result
                     // will be null if there was a read error on the remote side.
-                    inStream = GetFileContents(dataObj, index, formatId);
+                    if (dataObj != null) {
+                        inStream = GetFileContents(dataObj, index, formatId);
+                    }
                 });
             staThread.SetApartmentState(ApartmentState.STA);
             staThread.Start();

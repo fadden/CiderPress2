@@ -69,7 +69,7 @@ namespace DiskArcTests {
                 // Read data back, compare to original.
                 byte[] rdBuf = new byte[wrBuf.Length];
                 using (fd = fs.OpenFile(entry, FileAccessMode.ReadOnly, FilePart.DataFork)) {
-                    fd.Read(rdBuf, 0, rdBuf.Length);
+                    fd.ReadExactly(rdBuf, 0, rdBuf.Length);
                     if (!RawData.CompareBytes(wrBuf, rdBuf, rdBuf.Length)) {
                         throw new Exception("Read data doesn't match written");
                     }
@@ -192,7 +192,7 @@ namespace DiskArcTests {
                 // Edit the length and load address in raw mode.
                 using (DiskFileStream fd = fs.OpenFile(entry, FileAccessMode.ReadWrite,
                         FilePart.RawData)) {
-                    fd.Read(rdBuf, 0, 4);
+                    fd.ReadExactly(rdBuf, 0, 4);
                     if (RawData.GetU16LE(rdBuf, 0) != 0x1234 ||
                             RawData.GetU16LE(rdBuf, 2) != rdBuf.Length) {
                         throw new Exception("Unexpected data in first sector");
@@ -373,7 +373,7 @@ namespace DiskArcTests {
                     fd.Seek(0, SEEK_ORIGIN_DATA);
                     for (int i = 1100 - 50; i >= 0; i -= 50) {
                         fd.Seek(i, SeekOrigin.Begin);
-                        fd.Read(rdBuf, i, 50);
+                        fd.ReadExactly(rdBuf, i, 50);
                     }
                 }
 

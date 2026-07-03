@@ -91,7 +91,7 @@ namespace DiskArcTests {
                 byte[] rdBuf = new byte[wrBuf.Length];
                 using (fd = fs.OpenFile(entry, FileAccessMode.ReadOnly,
                         FilePart.DataFork)) {
-                    fd.Read(rdBuf, 0, rdBuf.Length);
+                    fd.ReadExactly(rdBuf, 0, rdBuf.Length);
                     if (!RawData.CompareBytes(wrBuf, rdBuf, rdBuf.Length)) {
                         throw new Exception("Read data doesn't match written");
                     }
@@ -129,7 +129,7 @@ namespace DiskArcTests {
                 fd = fs.OpenFile(entry, FileAccessMode.ReadWrite, FilePart.DataFork);
                 using (fd) {
                     fd.Seek(-1, SeekOrigin.End);
-                    fd.Read(rdBuf, 0, 1);
+                    fd.ReadExactly(rdBuf, 0, 1);
                     if (rdBuf[0] != 0x04) {
                         throw new Exception("Read byte doesn't match written (got $" +
                             rdBuf[0].ToString("x2") + ")");
@@ -594,7 +594,7 @@ namespace DiskArcTests {
                         throw new Exception("Unexpected volume directory size");
                     }
                     fd.Seek(0, SeekOrigin.Begin);
-                    fd.Read(data, 0, BLOCK_SIZE / 2);
+                    fd.ReadExactly(data, 0, BLOCK_SIZE / 2);
                     if (RawData.GetU16LE(data, 0) != 0 || RawData.GetU16LE(data, 2) != 3) {
                         throw new Exception("Unexpected data in vol dir header");
                     }
@@ -618,13 +618,13 @@ namespace DiskArcTests {
                 using (DiskFileStream fd = fs.OpenFile(subDir, FileAccessMode.ReadOnly,
                         FilePart.DataFork)) {
                     fd.Seek(BLOCK_SIZE + 4 + 7 * DIR_ENTRY_LEN, SeekOrigin.Begin);
-                    fd.Read(data, 0, DIR_ENTRY_LEN);
+                    fd.ReadExactly(data, 0, DIR_ENTRY_LEN);
                     // Should be entry for "File.19".
                     if ((data[0] & 0xf0) != 0x10 || data[1] != 'F') {
                         throw new Exception("Didn't find expected data #1");
                     }
                     // Should be first unused entry.
-                    fd.Read(data, 0, DIR_ENTRY_LEN);
+                    fd.ReadExactly(data, 0, DIR_ENTRY_LEN);
                     if (data[0] != 0) {
                         throw new Exception("Didn't find expected data #2");
                     }

@@ -1218,7 +1218,7 @@ namespace cp2_wpf {
                 return;
             }
 
-            IDataObject dataObj = (dropObj != null) ? dropObj : Clipboard.GetDataObject();
+            IDataObject? dataObj = (dropObj != null) ? dropObj : Clipboard.GetDataObject();
             ClipInfo? clipInfo = ClipInfo.GetClipInfo(dropObj);
             if (clipInfo == null || clipInfo.ClipEntries == null) {
                 // TODO? handle paste from Windows Explorer ZIP folder

@@ -74,8 +74,10 @@ namespace cp2_wpf.Tools {
         }
 
         private void DoPaste() {
-            IDataObject clipData = Clipboard.GetDataObject();
-            ShowDataObject(clipData);
+            IDataObject? clipData = Clipboard.GetDataObject();
+            if (clipData != null) {
+                ShowDataObject(clipData);
+            }
         }
 
         private void TextArea_Drop(object sender, DragEventArgs e) {
