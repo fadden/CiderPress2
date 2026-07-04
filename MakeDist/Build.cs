@@ -125,7 +125,8 @@ namespace MakeDist {
             string cmdStr = "dotnet build " + target + " --runtime " + rid +
                 (isContained ? " --self-contained" : " --no-self-contained") +
                 " --configuration " + (isDebug ? "Debug" : "Release") +
-                (isDebug ? "" : " /p:DebugType=None") +     // suppress PDB generation
+                (isDebug ? "" : " -p:DebugType=None") +     // suppress PDB generation
+                //" -p:CodesignKey=-" +
                 " --output " + outputDir;
             Console.WriteLine("--- Invoking: " + cmdStr);
             ShellCommand cmd = new ShellCommand("dotnet", cmdStr, string.Empty,
