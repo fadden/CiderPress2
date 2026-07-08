@@ -1,10 +1,9 @@
 # CiderPress II Source Code Notes #
 
 All of the code is written in C# .NET, using the (free to download) Visual
-Studio Community 2022 IDE as the primary development environment.  All of
-the code targets .NET 8.  With the exception of the WPF application,
-none of the code has a machine-specific target.  The projects can be built
-for a 32-bit or 64-bit environment.
+Studio Community 2026 IDE as the primary development environment.  All of
+the code targets .NET 10, and none of the code has a machine-specific target.
+The projects can be built for a 32-bit or 64-bit environment.
 
 When installing Visual Studio, be sure to include ".NET Desktop Development".
 
@@ -36,9 +35,9 @@ Libraries:
 
 Applications:
 
- - cp2: command-line application for Windows, Linux, Mac, et.al. (regression
-   tests are built in).
- - cp2_wpf: GUI application for Windows.
+ - cp2: command-line application (regression tests are built in).
+ - cp2_avalonia: GUI application, built with Avalonia toolkit.
+ - cp2_wpf: GUI application for Windows only (deprecated).
 
 Other (not included in binary distribution):
 
@@ -72,46 +71,6 @@ menu that will compress all files in a disk image or file archive with a
 specific compression algorithm, then decompress them and verify that the output
 matches the input.  This can be used for performance and correctness testing
 of compression code.
-
-## GUI Tool Development ##
-
-During development, the command-line interface was developed first.  The
-graphical interface is currently implemented with WPF (Windows Presentation
-Foundation).  This might seem an odd choice, since WPF is several years old
-and Windows-only, and there are multi-platform UI toolkits.  The motivations
-for using it are:
-
- 1. Some multi-platform UI toolkits don't work on all of my target platforms.
-    For example, Microsoft's MAUI doesn't currently work on Linux.
- 2. Some UI toolkits emphasize mobile device interaction, making them less
-    suitable for what is primarily a desktop application.
- 3. Some UI toolkits are missing important pieces, like robust display of
-    formatted text.
- 4. I'm familiar with WPF.
-
-My goal with the WPF implementation was to provide a useful program that
-proves out the API in the underlying libraries.  The bulk of the
-implementation is shared between the CLI and GUI apps, but you can't trust an
-API until it has been used for a real application.  I had initially planned to
-use a platform-independent UI toolkit for the first version, but I wasn't able
-to find one that seemed both appropriate and ready.  WPF has a lot of issues,
-but I've already fought those battles and know how to solve the problems.
-Learning a new API and working through a new set of issues was just going to
-slow things down.
-
-The final reason for sticking with WPF is that I'm not convinced that a
-platform-neutral implementation is the right choice.  Some features, like
-managing physical media, are specific to each platform.  Drag & drop
-operations are provided by some GUI toolkits, but only within an application.
-Copying files between program instances, or to and from a system
-Finder/Explorer window, requires platform-specific handling.  The right answer
-may be that every platform needs a custom implementation that can take full
-advantage of the system's characteristics.
-
-Since I don't know what the right answer is, I'm going to forge ahead with the
-WPF version.  This will ensure that the various APIs work correctly with a GUI
-app, and demonstrate how I think the tool should behave.  Fortunately, the GUI
-application code is a relatively small part of the overall package.
 
 ## Source Code Proportions ##
 
@@ -171,14 +130,11 @@ always match the current "final" release.
 Finally, build the applications and submit the changes.
 
  9. Run `makedist build` from the top level of the source tree (it'll be in
-    `MakeDist/bin/debug/NET8.0`).  This builds the distribution packages
+    `MakeDist/bin/debug/net10.0`).  This builds the distribution packages
     in Release mode.  The output will be in the `DIST` directory.
  10. Submit all changes to git, push them to the server.
- 11. Create the pre-packaged Wine release for Mac OS.  (This requires
-     performing several steps on a Macintosh.  See the
-     [Wine Notes](WineNotes.md) document for more information.)
- 12. Create a new release on github.  Drag `DIST/*.zip` into the release.
- 13. Update/close any issues that have been addressed by the new release.
+ 11. Create a new release on github.  Drag `DIST/*.zip` into the release.
+ 12. Update/close any issues that have been addressed by the new release.
 
 Version numbers should follow the semantic versioning scheme: v1.2.3,
 v1.2.3-dev1, etc.

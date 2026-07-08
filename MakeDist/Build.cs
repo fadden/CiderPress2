@@ -38,7 +38,7 @@ namespace MakeDist {
         };
         // Files to add to the bundle.
         private static string[] sDistFiles = new string[] {
-            "README.md",
+            "ndocs/top/README.md",
             "LegalStuff.txt",
             "sample.cp2rc",
             "docs/Manual-cp2.md",
