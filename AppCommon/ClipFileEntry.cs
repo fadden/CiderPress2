@@ -127,7 +127,14 @@ namespace AppCommon {
                             return mAttribs.DataLength;
                         } else {
                             // Resource fork is generated.
-                            return -1;
+                            // https://github.com/fadden/CiderPress2/issues/77 requires us to
+                            // generate the stream to get an accurate length.
+                            long length;
+                            using (MemoryStream tmpStream = new MemoryStream()) {
+                                GenerateADFHeader(tmpStream);
+                                length = tmpStream.Length;
+                            }
+                            return length;
                         }
                     case ExtractFileWorker.PreserveMode.AS:
                     default:
