@@ -239,6 +239,7 @@ namespace cp2.Tests {
             TestRecurse(parms);
             TestNAPSUnescape(parms);
             TestASNoName(parms);
+            TestAltADF(parms);
             TestTurducken(parms);
 
             //throw new Exception("CHECK IT");
@@ -677,6 +678,57 @@ namespace cp2.Tests {
                 "MacIP.RES",
             };
             Controller.CompareLines(expected, stdout);
+
+            parms.StripPaths = false;
+        }
+
+        private static void TestAltADF(ParamsBag parms) {
+            string testFileDir = Path.Join(Controller.TEST_DATA, "adf");
+            testFileDir = Path.GetFullPath(testFileDir);
+            // List of files to add.
+            string[] testFiles = {
+                "alt-ext1",         // omit header from list
+                "alt-ext2",
+                "alt-ext2.rsrc",    // include header in list
+                "not-adf",
+                "._not_adf",        // not actually a header file
+            };
+            // List of files as they will appear on an HFS volume.
+            string[] expectedOut = {
+                "._not_adf",
+                "alt-ext1",
+                "alt-ext2",
+                "not-adf",
+            };
+            string diskFileName = Path.Combine(Controller.TEST_TMP, "test-alt-adf.po");
+            diskFileName = Path.GetFullPath(diskFileName);
+            parms.StripPaths = true;
+
+            string oldCurrentDir = Environment.CurrentDirectory;
+            try {
+                Environment.CurrentDirectory = SAMPLE_DIR;
+
+                if (!DiskUtil.HandleCreateDiskImage("cdi",
+                        new string[] { diskFileName, "800k", "HFS" }, parms)) {
+                    throw new Exception("Error: cdi failed");
+                }
+                List<string> args = new List<string>() { diskFileName };
+                foreach (string str in testFiles) {
+                    args.Add(Path.Join(testFileDir, str));
+                }
+                if (!Add.HandleAdd("add", args.ToArray(), parms)) {
+                    throw new Exception("Error: add " + diskFileName + " (multiple) failed");
+                }
+            } finally {
+                Environment.CurrentDirectory = oldCurrentDir;
+            }
+
+            // Verify.  Should be the name of the file on disk, without the ".as" extension.
+            MemoryStream stdout = Controller.CaptureConsoleOut();
+            if (!Catalog.HandleList("list", new string[] { diskFileName }, parms)) {
+                throw new Exception("Error: list '" + diskFileName + "' failed");
+            }
+            Controller.CompareLines(expectedOut, stdout);
 
             parms.StripPaths = false;
         }

@@ -35,6 +35,16 @@ namespace DiskArc.Arc {
         /// </summary>
         public const string ADF_PREFIX = "._";
 
+        /// <summary>
+        /// Old A/UX / HFVExplorer prefix for AppleDouble header files.
+        /// </summary>
+        public const string ADF_PREFIX_OLD = "%";
+
+        /// <summary>
+        /// Suffix used for AppleDouble header files by some tools.
+        /// </summary>
+        public const string ADF_SUFFIX = ".rsrc";
+
         internal const uint SIGNATURE = 0x00051600;
         internal const uint ADF_SIGNATURE = 0x00051607;
         internal const uint VERSION_1 = 0x00010000;
@@ -146,7 +156,8 @@ namespace DiskArc.Arc {
         }
 
         /// <summary>
-        /// Tests a stream to see if it is an AppleDouble file.
+        /// Tests a stream to see if it is an AppleDouble "header" file.  Does not fully validate
+        /// the file.
         /// </summary>
         /// <param name="stream">Stream to test.</param>
         /// <param name="appHook">Application hook reference.</param>
@@ -160,11 +171,46 @@ namespace DiskArc.Arc {
             byte[] buf = new byte[8];
             stream.ReadExactly(buf, 0, buf.Length);
             if (RawData.GetU32BE(buf, 0) == ADF_SIGNATURE) {
-                // AppleDouble "header" file
+                // Has the right signature, see if the version number looks valid.
                 uint version = RawData.GetU32BE(buf, 4);
                 return (version == VERSION_1 || version == VERSION_2);
             } else {
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the filename matches one of the ADF header file patterns.
+        /// </summary>
+        /// <remarks>
+        /// The most common pattern is a leading "._", which makes it a hidden file on UNIX
+        /// systems.  The designated pattern for A/UX systems was a leading "%", which was also
+        /// adopted by the old HFVExplorer tool.  Some tools use a ".rsrc" suffix, which is
+        /// misleading and might also be a plain resource fork.
+        /// </remarks>
+        public static bool IsHeaderFileName(string fileName) {
+            return fileName.StartsWith(ADF_PREFIX) ||
+                fileName.StartsWith(ADF_PREFIX_OLD) ||
+                fileName.EndsWith(ADF_SUFFIX, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        /// <summary>
+        /// Returns an ADF header filename without the identifying prefix/suffix.  If we don't
+        /// find a prefix/suffix, or if stripping the identifier would result in an empty
+        /// filename, this returns the original filename.
+        /// </summary>
+        public static string RemoveADFNamePart(string fileName) {
+            if (fileName.Length > ADF_PREFIX.Length && fileName.StartsWith(ADF_PREFIX)) {
+                return fileName.Substring(ADF_PREFIX.Length);
+            } else if (fileName.Length > ADF_PREFIX_OLD.Length &&
+                    fileName.StartsWith(ADF_PREFIX_OLD)) {
+                return fileName.Substring(ADF_PREFIX_OLD.Length);
+            } else if (fileName.Length > ADF_SUFFIX.Length &&
+                    fileName.EndsWith(ADF_SUFFIX, StringComparison.InvariantCultureIgnoreCase)) {
+                return fileName.Substring(0, fileName.Length - ADF_SUFFIX.Length);
+            } else {
+                Debug.Assert(false, "not ADF name: '" + fileName + ";");
+                return fileName;
             }
         }
 

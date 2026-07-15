@@ -35,7 +35,7 @@ Various filename tweaks are recommended for the AppleDouble header file: ProDOS 
 prefixed with "R.", MS-DOS should end in ".ADF" (AppleDouble File), UNIX should prefix with "%".
 Some applications put the files in a parallel ".AppleDouble" folder.  On modern systems, the
 trend is to store the header file next to the data file, prefixing it with "._" and treating it
-as hidden.
+as hidden.  Some utilities may instead append ".rsrc".
 
 Modern Mac OS ZIP archive tools create AppleDouble header files when adding files with resource
 forks or extended attributes, but prefix them with `__MACOSX/`, so that they appear as a parallel

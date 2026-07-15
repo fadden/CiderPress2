@@ -1852,7 +1852,7 @@ same directory.
 For most methods, both forks must be specified on the command line.  For
 example, to add a NAPS-preserved file with data and resource forks, you must
 include both files in the argument list.  AppleDouble is an exception:
-because the AppleDouble header files are "hidden" from some shells (the names
+because the AppleDouble header files may be "hidden" from some shells (names
 start with '.'), they won't automatically be included in wildcards, so they
 are explicitly searched for.  For "host" preservation, the resource fork is a
 part of the same file, and it will be included automatically.
@@ -1890,6 +1890,10 @@ a plain file with the original name, while the resource fork and file
 attributes are stored in a file that starts with "._".  The second file
 is created even for files without resource forks, because that's where
 the file attributes are stored.
+
+AppleDouble "header" files may also be named with a leading "%" or a
+".rsrc" suffix.  These will also be recognized automatically, but are not
+generated when extracting files.
 
 AppleDouble preserves file types, creation and modifications dates,
 and access flags.  The filename used for the data fork will be used when

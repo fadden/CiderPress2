@@ -258,8 +258,14 @@ namespace AppCommon {
         }
 
         /// <summary>
-        /// Scans all explicitly-listed files for AppleDouble components.
+        /// Scans all explicitly-listed files for matching AppleDouble header files.
         /// </summary>
+        /// <remarks>
+        /// The purpose of this function is to find "._" files that would have been missed
+        /// with shell wildcards.  It's also handy to be able to select files, e.g. by dragging
+        /// them, without having to explicitly select both parts.  This is only viable because
+        /// AppleDouble headers have a recognizable signature that lets us avoid false-positives.
+        /// </remarks>
         private void ScanForADF(string[] pathNames) {
             foreach (string path in pathNames) {
                 string fullPath = Path.GetFullPath(path);
@@ -276,16 +282,32 @@ namespace AppCommon {
                     continue;
                 }
                 string fileName = Path.GetFileName(fullPath);
-                if (fileName.StartsWith(AppleSingle.ADF_PREFIX)) {
-                    // This is the AppleDouble header file, and we've already handled it.
-                    // (Which is weird, since it shouldn't be stored with "._" in the key.)
-                    Debug.Assert(false, "Weird key: " + fullPath);
+                if (AppleSingle.IsHeaderFileName(fileName)) {
+                    // This looks like the AppleDouble header file, but we've already handled it.
+                    // Which would be weird, since it shouldn't be stored with "._" in the key.
+                    // This happens when a non-AppleDouble header file has an AppleDouble-looking
+                    // filename.
+                    Debug.WriteLine("Found non-AppleDouble file with name '" + fullPath + "'");
                     continue;
                 }
+                // Doesn't look like a header file, adjust the filename and see if a matching
+                // header exists.  Try 3 variations.
                 string adfName = AppleSingle.ADF_PREFIX + fileName;
                 string checkPath = Path.Combine(Path.GetDirectoryName(fullPath)!, adfName);
                 if (File.Exists(checkPath)) {       // File.Exists() will not find directories
                     ProcessPath(checkPath);
+                } else {
+                    adfName = AppleSingle.ADF_PREFIX_OLD + fileName;
+                    checkPath = Path.Combine(Path.GetDirectoryName(fullPath)!, adfName);
+                    if (File.Exists(checkPath)) {       // File.Exists() will not find directories
+                        ProcessPath(checkPath);
+                    } else {
+                        adfName = fileName + AppleSingle.ADF_SUFFIX;
+                        checkPath = Path.Combine(Path.GetDirectoryName(fullPath)!, adfName);
+                        if (File.Exists(checkPath)) {       // File.Exists() will not find directories
+                            ProcessPath(checkPath);
+                        }
+                    }
                 }
             }
         }
@@ -392,7 +414,7 @@ namespace AppCommon {
                 return;
             }
 
-            if (mAddOpts.ParseADF && fileName.StartsWith(AppleSingle.ADF_PREFIX)) {
+            if (mAddOpts.ParseADF && AppleSingle.IsHeaderFileName(fileName)) {
                 // Confirm that the file is in AppleDouble format.  If so, extract the file
                 // type information and look for a resource fork.  Ignore data forks.
                 if (CheckAppleDouble(fullPath)) {
@@ -549,9 +571,9 @@ namespace AppCommon {
                     return false;
                 }
 
-                // Look for a matching entry.  Clip the leading "._".
+                // Look for a matching entry.  Strip the "._" / "%" / ".rsrc".
                 string fileName = Path.GetFileName(fullPath);
-                fileName = fileName.Substring(2);
+                fileName = AppleSingle.RemoveADFNamePart(fileName);
                 string clipPath = Path.Combine(Path.GetDirectoryName(fullPath)!, fileName);
 
                 AddFileEntry? fileEntry;
