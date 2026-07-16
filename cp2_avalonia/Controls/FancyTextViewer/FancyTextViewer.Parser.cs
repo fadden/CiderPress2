@@ -28,12 +28,22 @@ public class FancyTextParser
     /// Parses a FancyText document into the logical structure consumed by the viewer layout engine.
     /// </summary>
     /// <param name="fancyText">The source document to parse.</param>
-    /// <param name="pageWidthInches"></param>
+    /// <param name="pageWidthInches">The page width in inches.</param>
+    /// <param name="coarseLineFragments">When <c>true</c> and the document carries no
+    /// annotations, each line becomes a single fragment instead of being split into
+    /// word/whitespace runs. Only valid when word wrapping is disabled, since coarse
+    /// fragments contain no line-break opportunities.</param>
     /// <returns>The parsed logical document.</returns>
     public FancyTextLogicalDocument Parse(
             FancyTextDocument fancyText,
-            float pageWidthInches = ViewerLayoutConstants.DefaultPageWidth)
+            float pageWidthInches = ViewerLayoutConstants.DefaultPageWidth,
+            bool coarseLineFragments = false)
     {
+        if (coarseLineFragments && !fancyText.Any())
+        {
+            return ParsePlainLines(fancyText, pageWidthInches);
+        }
+
         var factory = new FancyTextLogicalDocumentBuilder(pageWidthInches);
         var currAnnotationIndex = 0;
         var length = fancyText.Text.Length;
@@ -75,6 +85,59 @@ public class FancyTextParser
         factory.Flush();
         var parsedDocument = factory.GetDocument();
         return parsedDocument;
+    }
+
+    private static readonly char[] LineBreakChars = ['\r', '\n'];
+
+    /// <summary>
+    /// Fast path for plain (annotation-free) documents: splits the text on line breaks
+    /// and emits one fragment per line, avoiding per-character classification and
+    /// word/whitespace fragment splitting. A viewport line then realizes as a single
+    /// shaped run instead of one per word and space.
+    /// </summary>
+    /// <param name="fancyText">The annotation-free source document.</param>
+    /// <param name="pageWidthInches">The page width in inches.</param>
+    /// <returns>The parsed logical document.</returns>
+    private static FancyTextLogicalDocument ParsePlainLines(
+            FancyTextDocument fancyText, float pageWidthInches)
+    {
+        var factory = new FancyTextLogicalDocumentBuilder(pageWidthInches);
+        string text = fancyText.Text.ToString();
+        int length = text.Length;
+        int offset = 0;
+
+        while (offset < length)
+        {
+            int lineEnd = text.IndexOfAny(LineBreakChars, offset);
+            if (lineEnd < 0)
+            {
+                factory.AddTextRun(text[offset..], offset);
+                break;
+            }
+
+            if (lineEnd > offset)
+            {
+                factory.AddTextRun(text[offset..lineEnd], offset);
+            }
+            factory.ProcessAnnotation(new FancyTextDocument.Annotation(
+                FancyTextDocument.AnnoType.NewParagraph, null, 0, lineEnd));
+
+            // Consume CR, LF, CRLF, or LFCR (same as TryHandleUnannotatedParagraphBreak).
+            int breakLength = 1;
+            if (lineEnd + 1 < length)
+            {
+                char ch = text[lineEnd];
+                char next = text[lineEnd + 1];
+                if ((ch == '\r' && next == '\n') || (ch == '\n' && next == '\r'))
+                {
+                    breakLength = 2;
+                }
+            }
+            offset = lineEnd + breakLength;
+        }
+
+        factory.Flush();
+        return factory.GetDocument();
     }
 
     /// <summary>

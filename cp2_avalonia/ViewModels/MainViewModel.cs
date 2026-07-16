@@ -127,7 +127,7 @@ public class MainViewModel : ObservableObject
         ArchiveTree = new ArchiveTreeViewModel();
         DirectoryTree = new DirectoryTreeViewModel();
         CenterInfo = new CenterInfoViewModel(mDialogService);
-        Options = new OptionsPanelViewModel(_settingsService, _clipboardService);
+        Options = new OptionsPanelViewModel(_settingsService, _clipboardService, mDialogService);
         StatusBar = new StatusBarViewModel();
         // FileList needs AppHook which lives on _workspaceService; created after it's assigned.
         FileList = new FileListViewModel(_viewActions, _settingsService,
@@ -204,11 +204,14 @@ public class MainViewModel : ObservableObject
         });
 
 
-        // 18. ViewFilesCommand — async, needs file open + entries selected + file list visible
-        ViewFilesCommand = new AsyncRelayCommand(
-            () => ViewFiles(), CanViewFiles);
-        ViewFilesInNewViewerCommand = new AsyncRelayCommand(
-            () => ViewFilesInNew(), CanViewFiles);
+        // 18. ViewFilesCommand — needs file open + entries selected + file list visible.
+        // Routes through HandleFileListDoubleClick (like WPF's ViewFilesCmd) so activating a
+        // directory navigates into it instead of opening a (useless, slow) viewer on it; only
+        // real files fall through to the viewer.
+        ViewFilesCommand = new RelayCommand(
+            () => HandleFileListDoubleClick(forceNew: false), CanViewFiles);
+        ViewFilesInNewViewerCommand = new RelayCommand(
+            () => HandleFileListDoubleClick(forceNew: true), CanViewFiles);
 
         // 19. AddFilesCommand — async, needs open + writable + multi-file + file list visible
         AddFilesCommand = new AsyncRelayCommand(
@@ -262,9 +265,9 @@ public class MainViewModel : ObservableObject
         ReplacePartitionCommand = new AsyncRelayCommand(
             () => ReplacePartition(), CanReplacePartition);
 
-        // 32. ScanForBadBlocksCommand — sync, always disabled (not yet implemented)
-        ScanForBadBlocksCommand = new RelayCommand(
-            () => { /* Not yet implemented */ }, () => false);
+        // 32. ScanForBadBlocksCommand — async, needs open + nibble image selected
+        ScanForBadBlocksCommand = new AsyncRelayCommand(
+            () => ScanForBadBlocks(), CanScanForBadBlocks);
 
         // 33. ScanForSubVolCommand — sync, needs open + file system
         ScanForSubVolCommand = new RelayCommand(
@@ -337,6 +340,9 @@ public class MainViewModel : ObservableObject
             var vm = new AboutBoxViewModel();
             await mDialogService.ShowDialogAsync(vm);
         });
+
+        // ShowAsciiChartCommand — sync, always enabled; opens the ASCII Chart window (view-level).
+        ShowAsciiChartCommand = new RelayCommand(() => _viewActions.ShowAsciiChart());
 
         // 44. Debug_DiskArcLibTestCommand — async, always enabled
         Debug_DiskArcLibTestCommand = new AsyncRelayCommand(async () => {
@@ -755,10 +761,28 @@ public class MainViewModel : ObservableObject
             {
                 if (fs != null)
                 {
-                    FileList.RequestFocusAfterPopulate();
-                    if (!_viewActions.SelectDirectoryTreeItemByEntry(DirectoryTree.TreeRoot, entry))
+                    if (ShowSingleDirFileList)
                     {
-                        Debug.WriteLine("Unable to find dir tree entry for " + entry);
+                        // Single-directory mode: switch the file list to show the new
+                        // directory's contents, keeping focus in the file list.
+                        FileList.RequestFocusAfterPopulate();
+                        if (!_viewActions.SelectDirectoryTreeItemByEntry(DirectoryTree.TreeRoot, entry))
+                        {
+                            Debug.WriteLine("Unable to find dir tree entry for " + entry);
+                        }
+                    }
+                    else
+                    {
+                        // Full-list mode: point the directory tree at the new directory and
+                        // move focus to it (WPF behavior).  The file list stays as the full
+                        // listing; OnDirectoryTreeSelectionChanged highlights the new dir in it,
+                        // which makes the DataGrid grab focus asynchronously -- so the focus shift
+                        // must be deferred past that settle to win.
+                        if (!_viewActions.SelectDirectoryTreeItemByEntry(DirectoryTree.TreeRoot, entry))
+                        {
+                            Debug.WriteLine("Unable to find dir tree entry for " + entry);
+                        }
+                        _viewActions.FocusDirectoryTreeDeferred();
                     }
                 }
                 // else: directory file in a file archive — nothing to do.
@@ -1487,12 +1511,26 @@ public class MainViewModel : ObservableObject
 
         if (!GetFileSelection(omitDir: false, omitOpenArc: false, closeOpenArc: true,
                 oneMeansAll: false, out archiveOrFileSystem, out IFileEntry unusedDir,
-                out List<IFileEntry>? selected, out int firstSelIndex)) {
+                out List<IFileEntry>? selected, out int _)) {
             return;
         }
         if (selected.Count == 0) {
             await mDialogService.ShowMessageAsync("No files selected.", "Empty");
             return;
+        }
+
+        // Remember the topmost selected row so we can reselect the item above it after
+        // deletion.  GetFileSelection only reports an index in oneMeansAll mode (WPF reads
+        // the DataGrid's SelectedIndex here), so compute it from the current selection.
+        int firstSelIndex = int.MaxValue;
+        foreach (FileListItem selItem in FileList.Selection) {
+            int idx = FileList.Items.IndexOf(selItem);
+            if (idx >= 0 && idx < firstSelIndex) {
+                firstSelIndex = idx;
+            }
+        }
+        if (firstSelIndex == int.MaxValue) {
+            firstSelIndex = 0;
         }
 
         string msg = string.Format("Delete {0} file {1}?", selected.Count,
@@ -1516,10 +1554,14 @@ public class MainViewModel : ObservableObject
         }
 
         if (!(didCancel && archiveOrFileSystem is IArchive)) {
-            // Put the selection on the item above the first one we deleted.
-            int selectIdx = Math.Max(0, Math.Min(firstSelIndex - 1, FileList.Items.Count - 1));
-            if (FileList.Items.Count > 0) {
-                _viewActions.SetFileListSelectionFocus(selectIdx);
+            // Put the selection on the item above the first one we deleted, matching WPF.
+            // FileList.Items still holds the pre-delete rows, so the neighbor entry is valid;
+            // setting the view-model selection lets RefreshDirAndFileList preserve it by entry
+            // (and scroll it into view).  Without this the now-deleted selected entry is lost
+            // and the selection resets to the top of the list.
+            if (firstSelIndex > 0 && FileList.Items.Count > 0) {
+                int selectIdx = Math.Min(firstSelIndex - 1, FileList.Items.Count - 1);
+                FileList.SelectedItem = FileList.Items[selectIdx];
             }
         }
 
@@ -2437,6 +2479,56 @@ public class MainViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Handles Actions → Scan For Bad Blocks.
+    /// </summary>
+    private async Task ScanForBadBlocks() {
+        IDiskImage? diskImage = mCurrentWorkObject as IDiskImage;
+        if (diskImage == null) {
+            Debug.Assert(false);
+            return;
+        }
+        if (diskImage.ChunkAccess == null) {
+            await mDialogService.ShowMessageAsync(
+                "Disk format was not recognized, so all blocks are \"bad\".", "Nope");
+            return;
+        }
+
+        ScanBlocksProgress prog = new ScanBlocksProgress(diskImage, _workspaceService.AppHook);
+        var workVm = new WorkProgressViewModel(prog, false);
+        if (await mDialogService.ShowDialogAsync(workVm) == true) {
+            List<ScanBlocksProgress.Failure>? results = prog.FailureResults!;
+            if (results.Count != 0) {
+                StringBuilder sb = new StringBuilder();
+                sb.Append("Unreadable blocks/sectors: ");
+                sb.AppendLine(results.Count.ToString());
+                sb.AppendLine();
+                foreach (ScanBlocksProgress.Failure failure in results) {
+                    if (failure.IsBlock) {
+                        sb.Append("Block ");
+                        sb.Append(failure.BlockOrTrack);
+                    } else {
+                        sb.Append("T");
+                        sb.Append(failure.BlockOrTrack);
+                        sb.Append(" S");
+                        sb.Append(failure.Sector);
+                    }
+                    if (!failure.IsUnwritable) {
+                        sb.Append(" (writable)");
+                    }
+                    sb.AppendLine();
+                }
+
+                var reportVm = new ShowTextViewModel(sb.ToString(), "Errors");
+                await mDialogService.ShowDialogAsync(reportVm);
+            } else {
+                _viewActions.ShowToast("Scan successful, no errors", true);
+            }
+        } else {
+            _viewActions.ShowToast("Cancelled", false);
+        }
+    }
+
+    /// <summary>
     /// Handles Actions → Scan For Sub-Volumes.
     /// </summary>
     private void ScanForSubVol() {
@@ -2588,8 +2680,10 @@ public class MainViewModel : ObservableObject
 
                     var vm = new EditAttributesViewModel(
                         archiveOrFileSystem, entry, adfArchiveEntry, curAttribs, isReadOnly);
-                    await mDialogService.ShowDialogAsync(vm);
-                    if (!vm.IsValid) {
+                    // Only apply changes if the user accepted (OK).  IsValid just tracks
+                    // field validity and is true for Cancel too, so gate on the dialog result.
+                    bool? accepted = await mDialogService.ShowDialogAsync(vm);
+                    if (accepted != true) {
                         return;
                     }
 
@@ -2609,7 +2703,10 @@ public class MainViewModel : ObservableObject
                     }
                 }
             }
-            RefreshDirAndFileList(false);
+            // Refresh with focus on the file list (WPF default) so the repopulate reselects
+            // the edited entry — otherwise a rename that moves the row (e.g. HFS re-sorts by
+            // name) loses the selection entirely.
+            RefreshDirAndFileList();
             return;
         }
 
@@ -2626,8 +2723,10 @@ public class MainViewModel : ObservableObject
 
             var vm2 = new EditAttributesViewModel(
                 archiveOrFileSystem, entry, IFileEntry.NO_ENTRY, curAttribs, isReadOnly);
-            await mDialogService.ShowDialogAsync(vm2);
-            if (!vm2.IsValid) {
+            // Only apply changes if the user accepted (OK).  IsValid just tracks
+            // field validity and is true for Cancel too, so gate on the dialog result.
+            bool? accepted = await mDialogService.ShowDialogAsync(vm2);
+            if (accepted != true) {
                 return;
             }
 
@@ -2646,7 +2745,10 @@ public class MainViewModel : ObservableObject
             }
         }
 
-        RefreshDirAndFileList(false);
+        // Refresh with focus on the file list (WPF default) so the repopulate reselects
+        // the edited entry — otherwise a rename that moves the row (e.g. HFS re-sorts by
+        // name) loses the selection entirely.
+        RefreshDirAndFileList();
     }
 
     private void FinishEditAttributes(IFileEntry entry, IFileEntry adfEntry,
@@ -2660,6 +2762,11 @@ public class MainViewModel : ObservableObject
             if (index >= 0) {
                 FileList.Items[index] = newFli;
                 FileList.SelectedItem = newFli;
+                // Replacing the selected item makes the DataGrid advance its visual
+                // selection (it doesn't two-way bind SelectedItem the way WPF does);
+                // re-select the edited entry so the grid highlight stays put and a
+                // follow-up Alt-Enter edits the item the user is actually looking at.
+                _viewActions.SelectFileListItemByEntry(entry);
             }
 
             ArchiveTreeItem? ati =
@@ -2695,6 +2802,8 @@ public class MainViewModel : ObservableObject
             }
             if (newSelection != null) {
                 FileList.SelectedItem = newSelection;
+                // Keep the DataGrid's visual selection in sync (see note above).
+                _viewActions.SelectFileListItemByEntry(entry);
             }
         }
     }
@@ -3296,6 +3405,7 @@ public class MainViewModel : ObservableObject
     private bool CanEditBlocksCmd() => IsFileOpen && CanEditBlocks;
     private bool CanSaveAsDiskImage() => IsFileOpen && IsDiskOrPartitionSelected && HasChunks;
     private bool CanReplacePartition() => IsFileOpen && CanWrite && IsPartitionSelected;
+    private bool CanScanForBadBlocks() => IsFileOpen && IsNibbleImageSelected;
     private bool CanScanForSubVol() => IsFileOpen && IsFileSystemSelected;
     private bool CanDefragment() => IsFileOpen && IsDefragmentableSelected && CanWrite;
     private bool CanCloseSubTree() => IsFileOpen && IsClosableTreeSelected;
@@ -3336,6 +3446,7 @@ public class MainViewModel : ObservableObject
         EditBlocksCommand.NotifyCanExecuteChanged();
         SaveAsDiskImageCommand.NotifyCanExecuteChanged();
         ReplacePartitionCommand.NotifyCanExecuteChanged();
+        ScanForBadBlocksCommand.NotifyCanExecuteChanged();
         ScanForSubVolCommand.NotifyCanExecuteChanged();
         DefragmentCommand.NotifyCanExecuteChanged();
         CloseSubTreeCommand.NotifyCanExecuteChanged();
@@ -3402,6 +3513,9 @@ public class MainViewModel : ObservableObject
     // Navigate
     public IRelayCommand NavToParentDirCommand { get; }
     public IRelayCommand NavToParentCommand { get; }
+
+    // Tools
+    public IRelayCommand ShowAsciiChartCommand { get; }
 
     // Help
     public IRelayCommand HelpCommand { get; }

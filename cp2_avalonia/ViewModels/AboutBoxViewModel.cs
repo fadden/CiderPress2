@@ -22,6 +22,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using AppCommon;
 
+using cp2_avalonia.Common;
 using cp2_avalonia.Services;
 
 namespace cp2_avalonia.ViewModels;
@@ -66,7 +67,7 @@ public class AboutBoxViewModel : ObservableObject
     public AboutBoxViewModel()
     {
         // Load legal text before commands are created so the binding finds the value.
-        string pathName = Path.Combine(GetRuntimeDataDir(), LEGAL_STUFF_FILE_NAME);
+        string pathName = Path.Combine(PlatformUtil.GetRuntimeDataDir(), LEGAL_STUFF_FILE_NAME);
         try {
             LegalStuffText = File.ReadAllText(pathName);
         } catch (Exception ex) {
@@ -76,26 +77,5 @@ public class AboutBoxViewModel : ObservableObject
 
         CloseCommand = new AsyncRelayCommand(async () =>
             CloseRequested?.Invoke(true));
-    }
-
-    private static string GetRuntimeDataDir()
-    {
-        string baseDir = AppContext.BaseDirectory;
-        // In dev builds the base dir ends with e.g. cp2_avalonia/bin/Debug/net8.0/.
-        // Walk up four levels to reach the solution root.
-        string marker = Path.Combine(baseDir, LEGAL_STUFF_FILE_NAME);
-        if (File.Exists(marker))
-        {
-            return baseDir;
-        }
-        for (int i = 0; i < 4; i++) {
-            baseDir = Path.GetDirectoryName(baseDir) ?? baseDir;
-            marker = Path.Combine(baseDir, LEGAL_STUFF_FILE_NAME);
-            if (File.Exists(marker))
-            {
-                return baseDir;
-            }
-        }
-        return AppContext.BaseDirectory; // fallback
     }
 }

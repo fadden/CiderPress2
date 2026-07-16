@@ -17,9 +17,11 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using FileConv;
 
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using cp2_avalonia.Models;
 using cp2_avalonia.Services;
@@ -33,11 +35,18 @@ namespace cp2_avalonia.ViewModels;
 public class OptionsPanelViewModel : ObservableObject {
     private readonly ISettingsService _settingsService;
     private readonly IClipboardService _clipboardService;
+    private readonly IDialogService _dialogService;
+
+    /// <summary>Opens the Import conversion-settings dialog.</summary>
+    public IRelayCommand ConfigureImportSettingsCommand { get; }
+    /// <summary>Opens the Export conversion-settings dialog.</summary>
+    public IRelayCommand ConfigureExportSettingsCommand { get; }
 
     public OptionsPanelViewModel(ISettingsService settingsService,
-            IClipboardService clipboardService) {
+            IClipboardService clipboardService, IDialogService dialogService) {
         _settingsService = settingsService;
         _clipboardService = clipboardService;
+        _dialogService = dialogService;
 
         // Initialize backing fields from settings so property getters are consistent.
         mDdcpAddExtract = _settingsService.GetBool(AppSettings.DDCP_ADD_EXTRACT, true);
@@ -45,6 +54,19 @@ public class OptionsPanelViewModel : ObservableObject {
             AppCommon.ExtractFileWorker.PreserveMode.None);
         mShowOptionsPanel = _settingsService.GetBool(AppSettings.MAIN_RIGHT_PANEL_VISIBLE, true);
         mShowHideRotation = mShowOptionsPanel ? 0 : 90;
+
+        ConfigureImportSettingsCommand = new AsyncRelayCommand(() => OpenConvertOpts(isExport: false));
+        ConfigureExportSettingsCommand = new AsyncRelayCommand(() => OpenConvertOpts(isExport: true));
+    }
+
+    /// <summary>
+    /// Opens the Import/Export conversion-settings dialog.  The dialog merges any changed
+    /// keys into global settings itself when the user clicks OK.
+    /// </summary>
+    private async Task OpenConvertOpts(bool isExport)
+    {
+        var vm = new EditConvertOptsViewModel(isExport, _settingsService);
+        await _dialogService.ShowDialogAsync(vm);
     }
 
     // ---- Panel visibility ----

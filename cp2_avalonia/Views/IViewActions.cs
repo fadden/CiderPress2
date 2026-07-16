@@ -72,6 +72,13 @@ public interface IViewActions
     /// <summary>Re-applies the last user-chosen column sort after file-list repopulation.</summary>
     void ReapplyFileListSort();
 
+    /// <summary>
+    /// Sizes the visible Filename/Pathname column to fit the widest value in the entire
+    /// file-list model, so the column doesn't grow as rows scroll into view under
+    /// virtualization.  Does nothing once the user has manually resized that column.
+    /// </summary>
+    void PreSizeNameColumn();
+
     // --- Recent files menu (native platform menu construction) ---
     void PopulateRecentFilesMenu();
 
@@ -86,4 +93,13 @@ public interface IViewActions
 
     /// <summary>Moves keyboard focus to the archive tree.</summary>
     void FocusArchiveTree();
+
+    /// <summary>
+    /// Moves keyboard focus to the directory tree after a short delay, so it wins over the
+    /// focus the file-list DataGrid grabs asynchronously while repopulating.
+    /// </summary>
+    void FocusDirectoryTreeDeferred();
+
+    /// <summary>Opens (or re-focuses) the ASCII Chart window.</summary>
+    void ShowAsciiChart();
 }

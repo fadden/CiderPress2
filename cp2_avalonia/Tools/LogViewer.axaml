@@ -31,15 +31,15 @@ limitations under the License.
             <StackPanel Grid.Column="0" Orientation="Horizontal"
                         VerticalAlignment="Center" Spacing="6">
                 <TextBlock Text="Minimum priority:" VerticalAlignment="Center"/>
-                <ComboBox Width="130"
+                <ComboBox Width="140"
                           ItemsSource="{Binding PriorityLabels}"
                           SelectedIndex="{Binding MinPriorityIndex}"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" 
                         HorizontalAlignment="Right" Spacing="8">
-                <Button Content="Copy to Clipboard" Width="130"
+                <Button Content="Copy to Clipboard" 
                         Command="{Binding CopyCommand}"/>
-                <Button Content="Save to File" Width="100"
+                <Button Content="Save to File" 
                         Command="{Binding SaveCommand}"/>
             </StackPanel>
         </Grid>

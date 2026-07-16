@@ -346,8 +346,11 @@ public partial class FileViewer : Window
         FileViewerViewModel.ConverterComboItem? item =
             convComboBox.SelectedItem as FileViewerViewModel.ConverterComboItem;
         if (item == null) {
+            // No converter selected (list cleared mid-load): hide the whole Options box
+            // rather than showing an empty shell or a misleading "no options" message.
             HideConvControls(mCustomCtrls);
-            noOptions.IsVisible = true;
+            noOptions.IsVisible = false;
+            optionsGroupBox.IsVisible = false;
             return;
         }
         ConfigureControls(item.Converter);
@@ -419,6 +422,9 @@ public partial class FileViewer : Window
         HideConvControls(mCustomCtrls);
         noOptions.IsVisible = (conv.OptionDefs.Count == 0);
         ConfigOptCtrl.ConfigureControls(mCustomCtrls, conv.OptionDefs, VM.GetConvOptions());
+        // A converter is configured: show the Options box (with either its option
+        // controls or the "no options" message).
+        optionsGroupBox.IsVisible = true;
         Dispatcher.UIThread.Post(() => VM?.EndConfiguring());
     }
 

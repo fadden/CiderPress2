@@ -404,6 +404,7 @@ public class EditSectorViewModel : ObservableObject
     // Constructor
 
     private bool CanRead() => IsReadButtonEnabled;
+    private bool CanWrite() => IsWriteButtonEnabled;
     private bool CanPrev() => IsPrevEnabled;
     private bool CanNext() => IsNextEnabled;
 
@@ -492,7 +493,7 @@ public class EditSectorViewModel : ObservableObject
         // Commands
 
         ReadCommand  = new AsyncRelayCommand(ReadButtonClickedAsync, CanRead);
-        WriteCommand = new AsyncRelayCommand(WriteButtonClickedAsync);
+        WriteCommand = new AsyncRelayCommand(WriteButtonClickedAsync, CanWrite);
         PrevCommand  = new AsyncRelayCommand(PrevButtonClickedAsync, CanPrev);
         NextCommand  = new AsyncRelayCommand(NextButtonClickedAsync, CanNext);
 
@@ -660,6 +661,7 @@ public class EditSectorViewModel : ObservableObject
         OnPropertyChanged(nameof(IsReadButtonEnabled));
         ReadCommand?.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(IsWriteButtonEnabled));
+        WriteCommand?.NotifyCanExecuteChanged();
     }
 
     private bool TryEnableWrites() {

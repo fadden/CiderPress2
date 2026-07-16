@@ -205,6 +205,19 @@ public class FileViewerViewModel : ObservableObject, IDisposable
         set => SetProperty(ref mIsOptionsBoxEnabled, value);
     }
 
+    // Starts true so the very first frame shows the loading indicator instead of the
+    // uninitialized conversion panel; cleared when the first (deferred) load completes.
+    private bool mIsLoading = true;
+    /// <summary>
+    /// True while a file conversion/display operation is pending or in progress. Drives
+    /// the "Loading..." overlay and disables the conversion panel.
+    /// </summary>
+    public bool IsLoading
+    {
+        get => mIsLoading;
+        set => SetProperty(ref mIsLoading, value);
+    }
+
     private bool mIsSaveDefaultsEnabled;
     public bool IsSaveDefaultsEnabled
     {
@@ -483,7 +496,7 @@ public class FileViewerViewModel : ObservableObject, IDisposable
         UpdateNavigationControls();
         AppendCurrentHistoryEntry(clearForward: false);
         if (mPrePopulateForwardOnInit) PrePopulateForwardHistory();
-        ShowFile(true);
+        ShowFileDeferred(true);
     }
 
     public bool IsSourceObject(object archiveOrFileSystem) =>
@@ -534,7 +547,7 @@ public class FileViewerViewModel : ObservableObject, IDisposable
         UpdateNavigationControls();
         AppendCurrentHistoryEntry(clearForward: true);
         if (prePopulateForward) PrePopulateForwardHistory();
-        ShowFile(true);
+        ShowFileDeferred(true);
     }
 
     public void CaptureSelectionPaths()
@@ -765,7 +778,7 @@ public class FileViewerViewModel : ObservableObject, IDisposable
         } else {
             ReplaceCurrentHistoryEntry();
         }
-        ShowFile(true);
+        ShowFileDeferred(true);
         FileNavigated?.Invoke(mSelected[mCurIndex]);
     }
 
@@ -778,7 +791,7 @@ public class FileViewerViewModel : ObservableObject, IDisposable
         } else {
             ReplaceCurrentHistoryEntry();
         }
-        ShowFile(true);
+        ShowFileDeferred(true);
         FileNavigated?.Invoke(mSelected[mCurIndex]);
     }
 
@@ -868,6 +881,42 @@ public class FileViewerViewModel : ObservableObject, IDisposable
 
     // -----------------------------------------------------------------------------------------
     // File display
+
+    private bool mShowFilePending;
+    private bool mPendingFileChanged;
+
+    /// <summary>
+    /// Shows the loading indicator and defers the (synchronous, potentially slow) file
+    /// conversion until after the next render pass, so the user sees "Loading..." instead
+    /// of a frozen or uninitialized viewer. Rapid navigation clicks coalesce into a
+    /// single load of the most recent target, since navigation state is updated by the
+    /// caller before this is invoked.
+    /// </summary>
+    /// <param name="fileChanged">Passed through to <see cref="ShowFile"/>.</param>
+    private void ShowFileDeferred(bool fileChanged)
+    {
+        IsLoading = true;
+        mPendingFileChanged |= fileChanged;
+        if (mShowFilePending)
+        {
+            return;
+        }
+        mShowFilePending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            mShowFilePending = false;
+            bool changed = mPendingFileChanged;
+            mPendingFileChanged = false;
+            try
+            {
+                ShowFile(changed);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }, DispatcherPriority.Background);
+    }
 
     private void ShowFile(bool fileChanged)
     {
@@ -1759,7 +1808,7 @@ public class FileViewerViewModel : ObservableObject, IDisposable
         mPendingHistoryRestore = mHistory[historyIndex];
         mIsRestoringHistory = true;
         UpdateNavigationControls();
-        ShowFile(false);
+        ShowFileDeferred(false);
         return true;
     }
 

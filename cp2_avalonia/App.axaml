@@ -17,6 +17,7 @@ limitations under the License. -->
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:common="clr-namespace:cp2_avalonia.Common"
+             xmlns:controls="clr-namespace:cp2_avalonia.Controls"
              Name="CiderPress II">
     <!-- macOS system app menu (the bold first entry in the menu bar).
          On Windows/Linux, NativeMenu.Menu on Application is ignored.
@@ -47,6 +48,12 @@ limitations under the License. -->
                     Value="12" />
             <Setter Property="VerticalContentAlignment"
                     Value="Center" />
+            <!-- Compact row height, matching the file-list grid, so all DataGrids share a
+                 consistent row height. -->
+            <Setter Property="MinHeight"
+                    Value="20" />
+            <Setter Property="Height"
+                    Value="20" />
         </Style>
         <Style Selector="DataGridColumnHeader">
             <Setter Property="Padding"
@@ -69,6 +76,22 @@ limitations under the License. -->
                     Value="6,2" />
         </Style>
         <Style Selector="Button"><Setter Property="HorizontalContentAlignment" Value="Center"/></Style>
+
+        <!-- Avalonia's overlay scrollbars auto-hide down to a thin resting-state bar that
+             still overlaps content (there's no gap reserved for it), which reads as broken
+             text rendering rather than an obvious scrollbar. Keeping them always at full
+             size avoids that; overlapping content while at full size (i.e. while being
+             actively scrolled/dragged) is an acceptable, obviously-a-scrollbar tradeoff.
+             ":not(:disabled)" is a no-op filter (virtually every ScrollViewer is enabled) but
+             its conditional pseudo-class promotes this Setter from "Style" to "StyleTrigger"
+             priority, needed to win over any AllowAutoHide default that TreeView/DataGrid/
+             ListBox set on their internal ScrollViewer via "Template" priority. -->
+        <Style Selector="ScrollViewer:not(:disabled)">
+            <Setter Property="AllowAutoHide" Value="False"/>
+        </Style>
+        <Style Selector="ScrollBar:not(:disabled)">
+            <Setter Property="AllowAutoHide" Value="False"/>
+        </Style>
 
     </Application.Styles>
     <Application.Resources>
@@ -128,6 +151,55 @@ limitations under the License. -->
                     </DrawingGroup>
                 </DrawingBrush.Drawing>
             </DrawingBrush>
+            <!-- GroupBox: a HeaderedContentControl that draws a labeled border around content.
+                 Avalonia has no built-in GroupBox; this ControlTheme supplies the visual. -->
+            <ControlTheme x:Key="{x:Type controls:GroupBox}" TargetType="controls:GroupBox">
+                <!-- Defaults; any GroupBox may override BorderBrush/BorderThickness/CornerRadius/Padding. -->
+                <Setter Property="Padding" Value="8"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Bordered content area; its top edge runs behind the header title.
+                                 The top margin drops the border line to the vertical middle of the
+                                 title; the presenter's top margin keeps content clear of the title. -->
+                            <Border Grid.Row="0" Grid.RowSpan="2"
+                                    Margin="0,10,0,4"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    Background="{TemplateBinding Background}">
+                                <ContentPresenter Name="PART_ContentPresenter"
+                                                  Margin="0,6,0,0"
+                                                  Padding="{TemplateBinding Padding}"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+
+                            <!-- Header title sits on top of the border line (ZIndex 1); its
+                                 background masks the line behind it, giving the notched look.
+                                 The background must match the dialog background. -->
+                            <Border Grid.Row="0" ZIndex="1"
+                                    HorizontalAlignment="Left"
+                                    Margin="8,0,0,0"
+                                    Padding="4,0"
+                                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                                <TextBlock Text="{TemplateBinding Header}"
+                                           FontWeight="SemiBold"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter>
+            </ControlTheme>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

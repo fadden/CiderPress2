@@ -47,7 +47,7 @@ limitations under the License.
         <TextBlock Grid.Row="2" Margin="0,4,0,0" Text="{Binding DstSizeText, FallbackValue=DestinationSizeText}"/>
 
         <TextBlock Grid.Row="3" Margin="0,4,0,0" Text="{Binding SizeDiffText, FallbackValue=SizeDiff}"
-                   TextWrapping="Wrap" Foreground="{Binding SizeDiffForeground}"
+                   TextWrapping="Wrap" Classes.invalid="{Binding !IsSizeCompatible}"
                    IsVisible="{Binding IsSizeDiffVisible}"/>
 
         <StackPanel Grid.Row="4" Margin="0,8,0,0"
