@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-  <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <StartupObject>cp2.CP2Main</StartupObject>
+    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,4 +18,16 @@
     <ProjectReference Include="..\DiskArc\DiskArc.csproj" />
   </ItemGroup>
 
+  <!-- copy build output to the app packaging area -->
+  <Target Name="CopyApp" AfterTargets="Publish" Condition="'$(_AllAppsDir)' != ''">
+    <ItemGroup>
+      <_PublishFiles Include="$(PublishDir)**/*" />
+    </ItemGroup>
+    <Message Text="Copying @(_PublishFiles) ..." Importance="High" />
+    <Copy
+      SourceFiles="@(_PublishFiles)"
+      DestinationFolder="$(_AllAppsDir)\%(RecursiveDir)"
+      SkipUnchangedFiles="false" />
+    <Message Text="... to $(_AllAppsDir)" Importance="High" />
+  </Target>
 </Project>

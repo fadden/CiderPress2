@@ -244,7 +244,7 @@ namespace cp2_avalonia.LibTest {
         }
 
         private static string? GetTestRoot() {
-            string exeName = typeof(TestRunner).Assembly.Location;
+            string exeName = AppContext.BaseDirectory;
             AppLog.D("Test runner: assembly location = '" + exeName + "'");
             string? baseDir = Path.GetDirectoryName(exeName);
             if (string.IsNullOrEmpty(baseDir)) {
@@ -279,7 +279,7 @@ namespace cp2_avalonia.LibTest {
         }
 
         private static string? GetDLLLocation() {
-            string exeName = typeof(TestRunner).Assembly.Location;
+            string exeName = AppContext.BaseDirectory;
             return Path.GetDirectoryName(exeName);
         }
     }

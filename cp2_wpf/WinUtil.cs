@@ -131,7 +131,7 @@ namespace cp2_wpf {
         public static string GetRuntimeDataDir() {
             // Normal: "C:\Src\CiderPress2\CiderPress2.dll"
             // Debugger: "C:\Src\CiderPress2\cp2_wpf\bin\Debug\net6.0-windows\CiderPress2.dll"
-            string? exeName = typeof(AboutBox).Assembly.Location;
+            string? exeName = AppContext.BaseDirectory;
             string? baseDir = Path.GetDirectoryName(exeName);
             if (string.IsNullOrEmpty(baseDir)) {
                 return string.Empty;

@@ -239,7 +239,7 @@ namespace cp2_wpf.LibTest {
         }
 
         private static string? GetTestRoot() {
-            string exeName = typeof(TestRunner).Assembly.Location;
+            string exeName = AppContext.BaseDirectory;
             string? baseDir = Path.GetDirectoryName(exeName);
             if (string.IsNullOrEmpty(baseDir)) {
                 throw new IOException("Unable to find dir for: '" + exeName + "'");
@@ -272,7 +272,7 @@ namespace cp2_wpf.LibTest {
         }
 
         private static string? GetDLLLocation() {
-            string exeName = typeof(TestRunner).Assembly.Location;
+            string exeName = AppContext.BaseDirectory;
             return Path.GetDirectoryName(exeName);
         }
     }

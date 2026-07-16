@@ -102,6 +102,7 @@ namespace MakeDist {
             string scStr = isContained ? "_sc" : "_fd";
             string debugStr = isDebug ? "_debug" : "";
             string outputDir = Path.Combine(distPath, rid + scStr + debugStr);
+            outputDir = Path.GetFullPath(outputDir);
             Directory.CreateDirectory(outputDir);
 
             foreach (string target in sTargets) {
@@ -122,12 +123,12 @@ namespace MakeDist {
 
         private static bool BuildTarget(string rid, bool isDebug, bool isContained,
                 string outputDir, string target) {
-            string cmdStr = "dotnet build " + target + " --runtime " + rid +
+            string cmdStr = "dotnet publish " + target + " --runtime " + rid +
                 (isContained ? " --self-contained" : " --no-self-contained") +
                 " --configuration " + (isDebug ? "Debug" : "Release") +
-                (isDebug ? "" : " -p:DebugType=None") +     // suppress PDB generation
+                (isDebug ? "" : " -p:DebugType=none -p:DebugSymbols=false") +
                 //" -p:CodesignKey=-" +
-                " --output " + outputDir;
+                " -p:_AllAppsDir=" + outputDir;
             Console.WriteLine("--- Invoking: " + cmdStr);
             ShellCommand cmd = new ShellCommand("dotnet", cmdStr, string.Empty,
                 new Dictionary<string, string?>());

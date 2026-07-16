@@ -2,11 +2,12 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-  <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <AssemblyName>CiderPress2_wpf</AssemblyName>
     <ApplicationIcon>Res\cp2_app.ico</ApplicationIcon>
+    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,4 +29,16 @@
     <ProjectReference Include="..\FileConv\FileConv.csproj" />
   </ItemGroup>
 
+  <!-- copy build output to the app packaging area -->
+  <Target Name="CopyApp" AfterTargets="Publish" Condition="'$(_AllAppsDir)' != ''">
+    <ItemGroup>
+      <_PublishFiles Include="$(PublishDir)**/*" />
+    </ItemGroup>
+    <Message Text="Copying @(_PublishFiles) ..." Importance="High" />
+    <Copy
+      SourceFiles="@(_PublishFiles)"
+      DestinationFolder="$(_AllAppsDir)\%(RecursiveDir)"
+      SkipUnchangedFiles="false" />
+    <Message Text="... to $(_AllAppsDir)" Importance="High" />
+  </Target>
 </Project>

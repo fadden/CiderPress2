@@ -4,21 +4,21 @@ This is a command-line tool for creating CiderPress II distributions.  It builds
 components for multiple platforms and packages them up.
 
 Usage:
- - `MakeDist build [--debug|--release]`
+ - `MakeDist publish [--debug|--release] [RIDs...]`
  - `MakeDist set-exec <file.zip> <entry-in-archive...>`
  - `MakeDist clobber`
 
 ## Build ##
 
-The build process is performed by running `dotnet build` with various arguments.  The process
+The build process is performed by running `dotnet publish` with various arguments.  The process
 is repeated for each executable target, resulting in a collection of compiled objects.  This
-is repeated for each platform (Windows, Linux, Mac OS), with separate builds for runtime-dependent
+is repeated for each platform (Windows, Linux, macOS), with separate builds for runtime-dependent
 and self-contained binary sets.  Documentation and support files are copied in, and then each
 collection is packaged up in a ZIP file.
 
 https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-build
 
-Each `dotnet build` command takes a "runtime ID" or "RID" option.  This specifies which system
+Each `dotnet publish` command takes a "runtime ID" or "RID" option.  This specifies which system
 should be targeted when doing platform-specific things.  The RID catalog can be found in
 "runtime.json" in the runtime installation.
 
@@ -57,6 +57,10 @@ directory as a ".csproj" file.  This is more thorough than the Visual Studio "ma
 This does not try to remove "MakeDist/bin", since it will likely be executing.
 
 If Visual Studio is active, it will recreate the directory structure immediately.
+
+## Help ##
+
+Shows usage info.
 
 
 # Version Numbers #

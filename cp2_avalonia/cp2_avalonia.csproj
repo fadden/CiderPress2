@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -9,6 +9,7 @@
     <UseAppHost>true</UseAppHost>
     <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -70,6 +71,20 @@
     <Copy SourceFiles="$(MSBuildProjectDirectory)/Res/cp2_app.icns" DestinationFolder="$(_ResourcesDir)" Condition="Exists('$(MSBuildProjectDirectory)/Res/cp2_app.icns')" />
 
     <Message Text="Created: $(_AppDir)" Importance="High" />
+  </Target>
+
+  <!-- copy build output to the app packaging area -->
+  <!-- TODO: this does not work with the .app packaging -->
+  <Target Name="CopyApp" AfterTargets="Publish" Condition="'$(_AllAppsDir)' != ''">
+    <ItemGroup>
+      <_PublishFiles Include="$(PublishDir)**/*" />
+    </ItemGroup>
+    <Message Text="Copying @(_PublishFiles) ..." Importance="High" />
+    <Copy
+      SourceFiles="@(_PublishFiles)"
+      DestinationFolder="$(_AllAppsDir)\%(RecursiveDir)"
+      SkipUnchangedFiles="false" />
+    <Message Text="... to $(_AllAppsDir)" Importance="High" />
   </Target>
 
   <ItemGroup>

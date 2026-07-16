@@ -67,7 +67,7 @@ namespace cp2.Tests {
             parms.AppHook.SetOption(DAAppHook.LIB_TEST_ROOT, Environment.CurrentDirectory);
 
             // Load the DLL from the directory we're being executed from.
-            string exeName = typeof(LibTestRunner).Assembly.Location;
+            string exeName = AppContext.BaseDirectory;
             string? exeDir = Path.GetDirectoryName(exeName);
             if (string.IsNullOrEmpty(exeDir)) {
                 Console.Error.WriteLine("Error: unable to find dir for: '" + exeName + "'");

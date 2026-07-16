@@ -74,15 +74,14 @@ namespace MakeDist {
             }
 
             switch (cmdName) {
-                case "build": {
+                case "publish": {
+                        List<string> rids = sStdRIDs;
                         if (cmdArgs.Length != 0) {
-                            Usage();
-                            break;
+                            rids = cmdArgs.ToList<string>();
                         }
-                        string versionTag = GlobalAppVersion.AppVersion.ToString();//.GetBuildTag();
+                        string versionTag = GlobalAppVersion.AppVersion.ToString();
 
-                        // TODO: take RIDs as command-line arg list, with "std" doing default set
-                        bool result = Build.ExecBuild(versionTag, sStdRIDs, isDebugBuild);
+                        bool result = Build.ExecBuild(versionTag, rids, isDebugBuild);
                         Environment.ExitCode = result ? 0 : 1;
                     }
                     break;
@@ -103,8 +102,13 @@ namespace MakeDist {
                     Clobber();
                     Environment.ExitCode = 0;
                     break;
+                case "help":
+                    Usage();
+                    Environment.ExitCode = 0;
+                    break;
                 default:
                     Usage();
+                    Environment.ExitCode = 2;
                     break;
             }
             if (Environment.ExitCode == 1) {
@@ -116,9 +120,10 @@ namespace MakeDist {
         /// Prints general usage summary.
         /// </summary>
         private static void Usage() {
-            Console.WriteLine("Usage: " + APP_NAME + " build [--debug|--release]");
+            Console.WriteLine("Usage: " + APP_NAME + " publish [--debug|--release] [RID]");
             Console.WriteLine("       " + APP_NAME + " set-exec <file.zip> <entry-in-archive...>");
             Console.WriteLine("       " + APP_NAME + " clobber");
+            Console.WriteLine("       " + APP_NAME + " help");
         }
 
         #region Clobber
