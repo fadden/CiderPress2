@@ -78,6 +78,29 @@ public class FancyTextLogicalDocumentBuilder
     }
 
     /// <summary>
+    /// Appends a run of source text as a single text fragment. Used by the plain-text
+    /// fast path (no annotations, word wrap off), where per-word/whitespace splitting is
+    /// unnecessary because nothing needs line-break opportunities or style boundaries.
+    /// </summary>
+    /// <param name="text">The run text (must not contain line breaks).</param>
+    /// <param name="sourceOffset">The run's starting offset in the source document.</param>
+    public void AddTextRun(string text, int sourceOffset)
+    {
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        FinalizeCurrentFragment();
+        GuaranteeParagraph();
+        currentParagraph!.OnlyWhiteSpace = false;
+
+        var fragment = new FancyTextFragment { StartOffset = sourceOffset };
+        fragment.AppendText(text);
+        currentParagraph!.AppendItem(fragment, state);
+    }
+
+    /// <summary>
     /// Determines whether a paragraph already ends with an explicit new-paragraph annotation.
     /// </summary>
     /// <param name="paragraph">The paragraph to inspect.</param>

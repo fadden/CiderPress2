@@ -76,6 +76,7 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
     private readonly IFilePickerServiceFactory _filePicker = null!;
     private readonly IWorkspaceService _workspaceService = null!;
 
+    private const string ELLIPSIS = "…";
 
     private void ShowHideOptionsButton_Click(object? sender, RoutedEventArgs e)
     {
@@ -110,15 +111,10 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
         mAsciiChartWindow.Focus();
     }
 
-    private void AsciiChartMenuItem_Click(object? sender, RoutedEventArgs e)
-    {
-        ShowAsciiChartWindow();
-    }
-
-    private void AsciiChartNativeMenuItem_Click(object? sender, EventArgs e)
-    {
-        ShowAsciiChartWindow();
-    }
+    // IViewActions: opens (or re-focuses) the ASCII Chart window. Bound to
+    // ShowAsciiChartCommand so the Tools menu item and its Ctrl+Alt+A / Meta+Alt+A
+    // accelerators all route here.
+    public void ShowAsciiChart() => ShowAsciiChartWindow();
 
     private void RestoreAsciiChartWindowSize(AsciiChartWindow window)
     {
@@ -153,6 +149,10 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
     }
 
 
+    // Recent-file menu paths longer than this (in characters) get elided from the root
+    // (the front of the string) rather than being left for the menu to truncate itself.
+    private const int RECENT_FILE_MAX_PATH_CHARS = 40;
+
     /// <summary>
     /// Populates the File &gt; Recent Files submenu with the current list of recent paths.
     /// </summary>
@@ -178,9 +178,16 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
                 {
                     var mi = new MenuItem
                     {
-                        Header = $"_{i + 1}: {recentPaths[i]}",
-                        Command = commands[i]
+                        Header = $"_{i + 1}: {ElidePathFromRoot(recentPaths[i], RECENT_FILE_MAX_PATH_CHARS)}",
+                        Command = commands[i],
+                        InputGesture = new KeyGesture(Key.D1 + i,
+                            KeyModifiers.Control | KeyModifiers.Shift),
                     };
+                    ToolTip.SetTip(mi, new TextBlock {
+                        Text = recentPaths[i],
+                        TextWrapping = TextWrapping.Wrap,
+                        MaxWidth = 600
+                    });
                     recentFilesMenu.Items.Add(mi);
                 }
             }
@@ -211,9 +218,13 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
                     for (int i = 0; i < recentPaths.Count && i < commands.Length; i++)
                     {
                         mNativeRecentFilesItem.Menu.Add(
-                            new NativeMenuItem($"{i + 1}: {recentPaths[i]}")
+                            new NativeMenuItem(
+                                $"{i + 1}: {ElidePathFromRoot(recentPaths[i], RECENT_FILE_MAX_PATH_CHARS)}")
                             {
-                                Command = commands[i]
+                                Command = commands[i],
+                                Gesture = new KeyGesture(Key.D1 + i,
+                                    KeyModifiers.Meta | KeyModifiers.Shift),
+                                ToolTip = recentPaths[i],
                             });
                     }
                 }
@@ -221,7 +232,46 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
         }
     }
 
+    /// <summary>
+    /// Elides a path down to at most <paramref name="maxChars"/> characters, preferring to
+    /// drop whole path segments from the root (the front) so the tail/filename stays intact.
+    /// Falls back to a plain front-truncation if even the bare filename doesn't fit.
+    /// </summary>
+    private static string ElidePathFromRoot(string path, int maxChars)
+    {
+        if (string.IsNullOrEmpty(path) || path.Length <= maxChars)
+        {
+            return path;
+        }
+        char sep = path.Contains('\\') ? '\\' : '/';
+        string[] segments = path.Split(sep);
 
+        string best = ElideCharsFromStart(path, maxChars);
+        for (int keep = 1; keep < segments.Length; keep++)
+        {
+            string candidate = ELLIPSIS + sep + string.Join(sep, segments[^keep..]);
+            if (candidate.Length > maxChars)
+            {
+                break;
+            }
+            best = candidate;
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// Returns <paramref name="text"/> unchanged if it's within <paramref name="maxChars"/>;
+    /// otherwise truncates from the front and prefixes with an ellipsis.
+    /// </summary>
+    private static string ElideCharsFromStart(string text, int maxChars)
+    {
+        if (text.Length <= maxChars)
+        {
+            return text;
+        }
+        int keepChars = Math.Max(0, maxChars - ELLIPSIS.Length);
+        return ELLIPSIS + text.Substring(text.Length - keepChars);
+    }
 
     // ---- File list ----
     // public ObservableCollection<FileListItem> FileList { get; } = new();
@@ -447,14 +497,86 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
                 InfoDataGrid_PointerPressed,
                 RoutingStrategies.Tunnel | RoutingStrategies.Bubble,
                 handledEventsToo: true);
+            // DataGrid manages its PART_HorizontalScrollbar/PART_VerticalScrollbar's
+            // AllowAutoHide itself in code (it wins over any Style setter, however high
+            // priority, since that's a LocalValue write happening after the template
+            // applies). Reach in and override it right after the template is applied so
+            // ours is the one left standing; see App.axaml for why this matters.
+            fileListDataGrid.TemplateApplied += (_, args) => {
+                ScrollBar? hScroll = args.NameScope.Find<ScrollBar>("PART_HorizontalScrollbar");
+                if (hScroll != null) {
+                    hScroll.AllowAutoHide = false;
+                }
+                if (args.NameScope.Find<ScrollBar>("PART_VerticalScrollbar") is { } vScroll) {
+                    vScroll.AllowAutoHide = false;
+                }
+
+                // The DataGrid template lets the rows presenter span the full height,
+                // including the row occupied by the (now always-visible) horizontal
+                // scrollbar, so the bottom data row renders underneath it. Reserve space
+                // by insetting the rows presenter's bottom edge by the scrollbar's height
+                // whenever it is visible. Simpler and more version-robust than retemplating.
+                Control? rowsPresenter = args.NameScope.Find<Control>("PART_RowsPresenter");
+                if (rowsPresenter != null && hScroll != null) {
+                    void SyncBottomInset() {
+                        double inset = hScroll.IsVisible ? hScroll.Bounds.Height : 0;
+                        var m = rowsPresenter.Margin;
+                        if (Math.Abs(m.Bottom - inset) > 0.5) {
+                            rowsPresenter.Margin = new Thickness(m.Left, m.Top, m.Right, inset);
+                        }
+                    }
+                    // Re-sync whenever the scrollbar shows/hides or its measured height
+                    // changes (theme/DPI). Setting the rows-presenter margin cannot change
+                    // the horizontal scrollbar's own visibility or bounds, so no feedback loop.
+                    hScroll.PropertyChanged += (_, pe) => {
+                        if (pe.Property == Visual.IsVisibleProperty ||
+                                pe.Property == Visual.BoundsProperty) {
+                            SyncBottomInset();
+                        }
+                    };
+                    SyncBottomInset();
+                }
+            };
+            SetupNameColumnAutoSize();
             // Directory tree drag-drop (internal move + drop from OS file manager).
             directoryTree.AddHandler(DragDrop.DropEvent, DirectoryTree_Drop);
             directoryTree.AddHandler(DragDrop.DragOverEvent, DirectoryTree_DragOver);
+            // Swallow Enter in the directory tree: it should neither expand/collapse nodes
+            // (TreeView default) nor fire the window's Enter -> ViewFiles binding (which would
+            // shift focus to the file list).  Tunnel so we mark it Handled before either.
+            directoryTree.AddHandler(KeyDownEvent, DirectoryTree_PreviewKeyDown,
+                RoutingStrategies.Tunnel);
+            // Right-click selects the node under the cursor before the context menu opens,
+            // so tree commands act on the clicked node rather than the prior selection.
+            // Tunnel so selection happens before the context menu / TreeView handling.
+            archiveTree.AddHandler(PointerPressedEvent, Tree_SelectOnRightClick,
+                RoutingStrategies.Tunnel);
+            directoryTree.AddHandler(PointerPressedEvent, Tree_SelectOnRightClick,
+                RoutingStrategies.Tunnel);
+            // Alt+Up (Go To Parent).  Handled as a *tunnel* handler so it runs before the
+            // focused TreeView/DataGrid, which would otherwise eat the Up arrow (ignoring Alt) and
+            // just move their own selection -- masquerading as "go to parent".  NavToParent's
+            // selection+focus change also keeps the menu bar out of access-key mode when it
+            // actually navigates.  (Edge case: at the top level there's no parent, so no focus
+            // change, and Alt+Up there still enters menu mode -- an accepted Avalonia limitation.)
+            AddHandler(KeyDownEvent, Window_PreviewKeyDown, RoutingStrategies.Tunnel);
+            // Dismiss the access-key menu mode that the Alt+Up sequence triggers on Alt release.
+            // handledEventsToo so it runs even after AccessKeyHandler processes the Alt key-up.
+            AddHandler(KeyUpEvent, Window_AltKeyUp, RoutingStrategies.Bubble, handledEventsToo: true);
             // File list panel (parent Grid) catches drops on empty space below rows.
             fileListPanel.AddHandler(DragDrop.DropEvent, FileListPanel_Drop);
             fileListPanel.AddHandler(DragDrop.DragOverEvent, FileListPanel_DragOver);
             fileListPanel.AddHandler(PointerPressedEvent, FileListPanel_PointerPressed,
                 RoutingStrategies.Bubble);
+            // The panel's context menu is for the empty area below the file rows; suppress it
+            // when the center pane is showing disk/partition info rather than the file list.
+            fileListPanelContextMenu.Opening += (_, e) =>
+            {
+                if (ViewModel?.ShowCenterFileList != true)
+                {
+                    e.Cancel = true;
+                }
+            };
             if (OperatingSystem.IsLinux())
             {
                 InstallLinuxDrag();
@@ -709,6 +831,64 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
 
     public void FocusDirectoryTree() => directoryTree.Focus();
 
+    // Rooted (field, not a local) so it can't be GC'd before it fires.
+    private DispatcherTimer? mFocusDirTreeTimer;
+
+    // Alt+Up menu-dismissal state (see Window_PreviewKeyDown / Window_AltKeyUp).
+    private bool mDismissMenuAfterAltUp;
+    private DispatcherTimer? mDismissMenuTimer;
+
+    public void FocusDirectoryTreeDeferred()
+    {
+        // Two problems to beat: (1) the file-list DataGrid re-focuses its selected row
+        // asynchronously after the ItemsSource repopulation, so a short timer defers past that
+        // settle; (2) focusing the TreeView itself doesn't put keyboard focus on a navigable
+        // node, so we focus the selected item's TreeViewItem container instead.
+        mFocusDirTreeTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        mFocusDirTreeTimer.Stop();
+        mFocusDirTreeTimer.Tick -= FocusDirTreeTimer_Tick;
+        mFocusDirTreeTimer.Tick += FocusDirTreeTimer_Tick;
+        mFocusDirTreeTimer.Start();
+    }
+
+    private void FocusDirTreeTimer_Tick(object? sender, EventArgs e)
+    {
+        mFocusDirTreeTimer?.Stop();
+        FocusSelectedDirectoryTreeItem();
+    }
+
+    // Focuses the TreeViewItem container for the directory tree's selected item, so keyboard
+    // focus actually lands on a navigable node (plain TreeView.Focus() does not).
+    private void FocusSelectedDirectoryTreeItem()
+    {
+        if (directoryTree.SelectedItem is not DirectoryTreeItem sel) {
+            directoryTree.Focus();
+            return;
+        }
+        // Walk root -> target, resolving each level's container (matches BringItemIntoView).
+        var path = new List<DirectoryTreeItem>();
+        for (DirectoryTreeItem? cur = sel; cur != null; cur = cur.Parent) {
+            path.Insert(0, cur);
+        }
+        ItemsControl container = directoryTree;
+        TreeViewItem? tvi = null;
+        for (int i = 0; i < path.Count; i++) {
+            tvi = container.ContainerFromItem(path[i]) as TreeViewItem;
+            if (tvi == null) {
+                break;
+            }
+            if (i < path.Count - 1) {
+                tvi.IsExpanded = true;   // realize children before descending
+            }
+            container = tvi;
+        }
+        if (tvi != null) {
+            tvi.Focus();
+        } else {
+            directoryTree.Focus();
+        }
+    }
+
     public void FocusArchiveTree() => archiveTree.Focus();
 
     // ---- Toast notification (PostNotification) ----
@@ -750,6 +930,82 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
         if (DataContext is MainViewModel vm) {
             vm.OnDirectoryTreeSelectionChanged(directoryTree.SelectedItem as DirectoryTreeItem);
         }
+    }
+
+    /// <summary>
+    /// Selects the tree item under the pointer on a right-button press so the context menu
+    /// (which acts on the selected node) targets the clicked item.  Shared by both trees;
+    /// left-click selection is handled by the TreeView itself and is unaffected.
+    /// </summary>
+    private void Tree_SelectOnRightClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not TreeView tree) {
+            return;
+        }
+        if (!e.GetCurrentPoint(tree).Properties.IsRightButtonPressed) {
+            return;
+        }
+        if (e.Source is Visual visual) {
+            TreeViewItem? item = visual.FindAncestorOfType<TreeViewItem>(includeSelf: true);
+            if (item?.DataContext != null) {
+                tree.SelectedItem = item.DataContext;
+            }
+        }
+    }
+
+    // Eat Enter/Return in the directory tree so it neither toggles the node nor bubbles up to
+    // the window's Enter -> ViewFiles key binding.  Registered as a tunnel handler so it runs
+    // before the TreeView's own key handling and before the window key bindings.
+    private void DirectoryTree_PreviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Return) {
+            e.Handled = true;
+        }
+    }
+
+    // Tunnel handler for Alt+Up (Go To Parent).  Runs at the window before the event reaches the
+    // focused tree/grid, so those controls can't first consume the Up arrow (ignoring Alt) and
+    // move their own selection instead of navigating to the parent.
+    private void Window_PreviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Handled || e.Key != Key.Up || e.KeyModifiers != KeyModifiers.Alt) {
+            return;
+        }
+        // Consume Alt+Up before the focused tree/grid can treat it as a plain Up arrow, then
+        // navigate to the parent.
+        e.Handled = true;
+        // Because we consumed the Up, Avalonia's AccessKeyHandler sees the Alt as a lone press
+        // and will toggle the menu bar into access-key mode when Alt is released.  Arm the
+        // key-up handler to dismiss it.
+        mDismissMenuAfterAltUp = true;
+        if (DataContext is MainViewModel vm && vm.NavToParentCommand.CanExecute(null)) {
+            vm.NavToParentCommand.Execute(null);
+        }
+    }
+
+    // Bubble key-up handler (handledEventsToo so it runs even though AccessKeyHandler's tunnel
+    // handler already processed the Alt release).  Dismisses the access-key menu mode that the
+    // Alt+Up sequence triggers.
+    private void Window_AltKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (!mDismissMenuAfterAltUp || e.Key is not (Key.LeftAlt or Key.RightAlt)) {
+            return;
+        }
+        mDismissMenuAfterAltUp = false;
+        // The menu grabs focus asynchronously, so dismiss after a short settle: clear the
+        // access-key display and pull keyboard focus back into the directory tree.
+        mDismissMenuTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        mDismissMenuTimer.Stop();
+        mDismissMenuTimer.Tick -= DismissMenuTimer_Tick;
+        mDismissMenuTimer.Tick += DismissMenuTimer_Tick;
+        mDismissMenuTimer.Start();
+    }
+
+    private void DismissMenuTimer_Tick(object? sender, EventArgs e)
+    {
+        mDismissMenuTimer?.Stop();
+        ((IInputRoot)this).ShowAccessKeys = false;
+        FocusSelectedDirectoryTreeItem();
     }
 
     private void FileListDataGrid_DoubleTapped(object? sender, TappedEventArgs e)
@@ -845,56 +1101,143 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
     /// </summary>
     private static void AutoSizeColumnFromHeader(DataGrid grid, Visual? hitVisual)
     {
-        var colHeader = hitVisual?.FindAncestorOfType<DataGridColumnHeader>();
-        if (colHeader == null)
+        DataGridColumn? col = ResolveResizeTargetColumn(grid, hitVisual);
+        if (col != null)
         {
-            return;
+            AutoSizeColumnToContent(grid, col);
         }
+    }
 
-        // Find the column index matching this header.
+    // ---- Name-column pre-sizing (Filename / Pathname) ----
+    //
+    // The file-list DataGrid is virtualized, so an "Auto" width column only measures the
+    // rows currently realized and grows as wider names scroll into view.  To avoid that, we
+    // measure the widest name in the whole model up front and pin the column to a pixel
+    // width (see PreSizeNameColumn).  Once the user manually resizes a name column we stop
+    // managing it and leave their width in place.
+
+    private DataGridColumn? mFileNameColumn;
+    private DataGridColumn? mPathNameColumn;
+    private bool mFileNameColUserSized;
+    private bool mPathNameColUserSized;
+    // A name-column resize-grip drag in progress: the column and its width at grip-down.
+    // (Avalonia 11's DataGridColumn.Width isn't an AvaloniaProperty, so there's no width-
+    // changed notification to hook; we detect a real resize by pointer grip + width delta.)
+    private DataGridColumn? mPendingResizeCol;
+    private double mPendingResizeStartWidth;
+
+    private void SetupNameColumnAutoSize()
+    {
+        foreach (DataGridColumn col in fileListDataGrid.Columns) {
+            switch (col.Header?.ToString()) {
+                case "Filename": mFileNameColumn = col; break;
+                case "Pathname": mPathNameColumn = col; break;
+            }
+        }
+    }
+
+    // Once a name column has been explicitly sized by the user (drag or double-click
+    // auto-fit) we stop pre-sizing it and leave their width in place.
+    private void MarkNameColumnUserSized(DataGridColumn? col)
+    {
+        if (col == mFileNameColumn) {
+            mFileNameColUserSized = true;
+        } else if (col == mPathNameColumn) {
+            mPathNameColUserSized = true;
+        }
+    }
+
+    /// <summary>
+    /// Maps a resize-grip hit (or header) to the column it resizes: the left grip of column X
+    /// resizes the visible column to its left; the right grip resizes column X itself.
+    /// </summary>
+    private static DataGridColumn? ResolveResizeTargetColumn(DataGrid grid, Visual? hitVisual)
+    {
+        var colHeader = hitVisual?.FindAncestorOfType<DataGridColumnHeader>();
+        if (colHeader == null) {
+            return null;
+        }
         string? headerText = colHeader.Content?.ToString();
         int colIndex = -1;
-        for (int i = 0; i < grid.Columns.Count; i++)
-        {
-            if (grid.Columns[i].Header?.ToString() == headerText)
-            {
+        for (int i = 0; i < grid.Columns.Count; i++) {
+            if (grid.Columns[i].Header?.ToString() == headerText) {
                 colIndex = i;
                 break;
             }
         }
-        if (colIndex < 0)
-        {
+        if (colIndex < 0) {
+            return null;
+        }
+        Thumb? thumb = hitVisual as Thumb ?? hitVisual?.FindAncestorOfType<Thumb>();
+        if (thumb != null && thumb.HorizontalAlignment == HorizontalAlignment.Left &&
+                colIndex > 0) {
+            for (int i = colIndex - 1; i >= 0; i--) {
+                if (grid.Columns[i].IsVisible) {
+                    return grid.Columns[i];
+                }
+            }
+            return null;
+        }
+        return grid.Columns[colIndex];
+    }
+
+    public void PreSizeNameColumn()
+    {
+        if (ViewModel == null) {
+            return;
+        }
+        // Only the visible name column matters (Filename in single-dir mode, else Pathname).
+        bool showFileName = ViewModel.ShowSingleDirFileList;
+        DataGridColumn? col = showFileName ? mFileNameColumn : mPathNameColumn;
+        bool userSized = showFileName ? mFileNameColUserSized : mPathNameColUserSized;
+        if (col == null || userSized) {
+            return;
+        }
+        var items = ViewModel.FileList.Items;
+        if (items.Count == 0) {
             return;
         }
 
-        // Determine whether the Thumb is the left or right resize gripper.
-        // In Avalonia's DataGridColumnHeader template the left gripper has
-        // HorizontalAlignment.Left; the right gripper has HorizontalAlignment.Right.
-        // Left gripper of column X  → resize column X-1 (left of divider).
-        // Right gripper of column X → resize column X  (left of divider).
-        Thumb? thumb = hitVisual as Thumb ?? hitVisual?.FindAncestorOfType<Thumb>();
-        if (thumb != null)
-        {
-            Debug.WriteLine($"AutoSize: col={colIndex} '{headerText}', " +
-                $"thumb.Name='{thumb.Name}', HAlign={thumb.HorizontalAlignment}, " +
-                $"Bounds={thumb.Bounds}");
-            bool isLeftGripper =
-                thumb.HorizontalAlignment == HorizontalAlignment.Left;
-            if (isLeftGripper && colIndex > 0)
-            {
-                for (int i = colIndex - 1; i >= 0; i--)
-                {
-                    if (grid.Columns[i].IsVisible)
-                    {
-                        AutoSizeColumnToContent(grid, grid.Columns[i]);
-                        return;
-                    }
-                }
-                return; // no visible column to the left
+        // Measuring every row is wasteful for large lists.  The widest pixel string is
+        // effectively always among the longest by character count, so only measure strings
+        // within a few characters of the longest (slack covers proportional-font variation).
+        int maxLen = 0;
+        foreach (FileListItem it in items) {
+            string s = showFileName ? it.FileName : it.PathName;
+            if (s != null && s.Length > maxLen) {
+                maxLen = s.Length;
+            }
+        }
+        if (maxLen == 0) {
+            return;
+        }
+        int threshold = Math.Max(1, maxLen - 8);
+
+        var measureBlock = new TextBlock {
+            FontFamily = fileListDataGrid.FontFamily,
+            FontSize = fileListDataGrid.FontSize,
+            FontStyle = fileListDataGrid.FontStyle,
+            FontWeight = fileListDataGrid.FontWeight,
+        };
+        // Header width is the floor.
+        measureBlock.Text = col.Header?.ToString() ?? string.Empty;
+        measureBlock.Measure(Size.Infinity);
+        double maxWidth = measureBlock.DesiredSize.Width;
+
+        foreach (FileListItem it in items) {
+            string s = showFileName ? it.FileName : it.PathName;
+            if (string.IsNullOrEmpty(s) || s.Length < threshold) {
+                continue;
+            }
+            measureBlock.Text = s;
+            measureBlock.Measure(Size.Infinity);
+            if (measureBlock.DesiredSize.Width > maxWidth) {
+                maxWidth = measureBlock.DesiredSize.Width;
             }
         }
 
-        AutoSizeColumnToContent(grid, grid.Columns[colIndex]);
+        // Same content padding (cell margins/borders + sort indicator) as AutoSizeColumnToContent.
+        col.Width = new DataGridLength(maxWidth + 14, DataGridLengthUnitType.Pixel);
     }
 
     /// <summary>
@@ -1415,11 +1758,27 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
                 // (replicates WPF behavior).  We handle it here rather than in
                 // DoubleTapped because the Thumb's drag tracking consumes the pointer
                 // events before DoubleTapped can fire.
+                mPendingResizeCol = null;
                 if (isOnGrip && e.ClickCount == 2)
                 {
                     Debug.WriteLine($"FL PointerPressed: thumb double-click on " +
                         $"'{colHeader.Content}', ClickCount={e.ClickCount}");
                     AutoSizeColumnFromHeader(fileListDataGrid, hitVisual);
+                    // Double-click auto-fit is an explicit user sizing; stop pre-sizing it.
+                    MarkNameColumnUserSized(
+                        ResolveResizeTargetColumn(fileListDataGrid, hitVisual));
+                }
+                else if (isOnGrip && e.ClickCount == 1)
+                {
+                    // Track a possible drag-resize of a name column; confirmed on release
+                    // by comparing the width (see FileListDataGrid_PointerReleased).
+                    DataGridColumn? target =
+                        ResolveResizeTargetColumn(fileListDataGrid, hitVisual);
+                    if (target == mFileNameColumn || target == mPathNameColumn)
+                    {
+                        mPendingResizeCol = target;
+                        mPendingResizeStartWidth = target!.ActualWidth;
+                    }
                 }
                 mDragStartPosn = new Point(-1, -1);
                 return;
@@ -1488,6 +1847,18 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
 
     private void FileListDataGrid_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        // If a name-column resize grip was grabbed and the width actually changed, lock that
+        // column so we stop pre-sizing it (the user has given it an explicit width).
+        if (mPendingResizeCol != null)
+        {
+            DataGridColumn col = mPendingResizeCol;
+            mPendingResizeCol = null;
+            if (Math.Abs(col.ActualWidth - mPendingResizeStartWidth) > 0.5)
+            {
+                MarkNameColumnUserSized(col);
+            }
+        }
+
         // Registered for both Tunnel and Bubble, so it can fire twice; clearing the
         // field on the first invocation makes the second a no-op.
         if (mPendingSingleSelect == null)

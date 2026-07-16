@@ -20,7 +20,7 @@ limitations under the License.
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="clr-namespace:cp2_avalonia" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="cp2_avalonia.Views.MainWindow" x:DataType="vm:MainViewModel" Title="{Binding WindowTitle}" Width="1400" Height="900" MinWidth="640" MinHeight="680" Icon="avares://CiderPress2/Res/cp2_app.ico">
+    xmlns:local="clr-namespace:cp2_avalonia" xmlns:common="clr-namespace:cp2_avalonia.Controls" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="cp2_avalonia.Views.MainWindow" x:DataType="vm:MainViewModel" Title="{Binding WindowTitle}" Width="1400" Height="900" MinWidth="640" MinHeight="680" Icon="avares://CiderPress2/Res/cp2_app.ico">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -30,25 +30,70 @@ limitations under the License.
         </ResourceDictionary>
     </Window.Resources>
 
+    <Window.Styles>
+        <!-- Give the pane splitters a visible resting color plus a hover highlight, so it's
+             clear they're draggable. -->
+        <Style Selector="GridSplitter">
+            <Setter Property="Background" Value="{DynamicResource SystemControlForegroundBaseLowBrush}"/>
+        </Style>
+        <Style Selector="GridSplitter:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+        </Style>
+
+        <!-- Options panel show/hide animation.  The ScrollViewer carries the
+             "optionsPanelScroll" class always, and the "collapsed" class is bound to the
+             inverse of Options.ShowOptionsPanel.  Width + Opacity transition between the two
+             states; when collapsed we also set IsEnabled=False so the (zero-width, invisible)
+             controls drop out of tab-order and hit-testing, i.e. become truly inactive. -->
+        <Style Selector="ScrollViewer.optionsPanelScroll">
+            <Setter Property="Width" Value="300"/>
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Width" Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="ScrollViewer.optionsPanelScroll.collapsed">
+            <Setter Property="Width" Value="0"/>
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="IsEnabled" Value="False"/>
+        </Style>
+    </Window.Styles>
+
     <Window.KeyBindings>
+        <!-- These back the InputGesture hints shown in the classic menu. In Avalonia a menu
+             InputGesture only displays text; the actual key handling lives here. -->
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewDiskImageCommand}"/>
+        <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}"/>
+        <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseCommand}"/>
         <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyCommand}"/>
         <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteCommand}"/>
+        <KeyBinding Gesture="Ctrl+F" Command="{Binding FindCommand}"/>
+        <KeyBinding Gesture="Ctrl+A" Command="{Binding SelectAllCommand}"/>
+        <KeyBinding Gesture="F1" Command="{Binding HelpCommand}"/>
         <KeyBinding Gesture="Enter" Command="{Binding ViewFilesCommand}"/>
         <KeyBinding Gesture="Delete" Command="{Binding DeleteFilesCommand}"/>
-        <KeyBinding Gesture="Alt+Up" Command="{Binding NavToParentCommand}"/>
+        <!-- Alt+Up (Go To Parent) is handled in code-behind (Window_PreviewKeyDown, a tunnel
+             handler) rather than here, so it runs before the focused tree/grid can eat the Up
+             arrow.  See MainWindow.axaml.cs. -->
         <KeyBinding Gesture="Ctrl+I" Command="{Binding ToggleInfoCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+A" Command="{Binding AddFilesCommand}"/>
         <KeyBinding Gesture="Ctrl+E" Command="{Binding ExtractFilesCommand}"/>
-        <KeyBinding Gesture="Alt+Enter" Command="{Binding ViewFilesInNewViewerCommand}"/>
+        <!-- Alt+Enter = Rename/Edit Attributes (WPF parity); Ctrl+Enter = new viewer. -->
+        <KeyBinding Gesture="Alt+Enter" Command="{Binding EditAttributesCommand}"/>
+        <KeyBinding Gesture="Ctrl+Enter" Command="{Binding ViewFilesInNewViewerCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding CreateDirectoryCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+W" Command="{Binding CloseSubTreeCommand}"/>
+        <KeyBinding Gesture="Ctrl+Alt+A" Command="{Binding ShowAsciiChartCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding Debug_DiskArcLibTestCommand}"/>
-        <KeyBinding Gesture="Ctrl+Shift+1" Command="{Binding RecentFile1Command}"/>
-        <KeyBinding Gesture="Ctrl+Shift+2" Command="{Binding RecentFile2Command}"/>
-        <KeyBinding Gesture="Ctrl+Shift+3" Command="{Binding RecentFile3Command}"/>
-        <KeyBinding Gesture="Ctrl+Shift+4" Command="{Binding RecentFile4Command}"/>
-        <KeyBinding Gesture="Ctrl+Shift+5" Command="{Binding RecentFile5Command}"/>
-        <KeyBinding Gesture="Ctrl+Shift+6" Command="{Binding RecentFile6Command}"/>
+        <KeyBinding Gesture="Ctrl+Shift+D1" Command="{Binding RecentFile1Command}"/>
+        <KeyBinding Gesture="Ctrl+Shift+D2" Command="{Binding RecentFile2Command}"/>
+        <KeyBinding Gesture="Ctrl+Shift+D3" Command="{Binding RecentFile3Command}"/>
+        <KeyBinding Gesture="Ctrl+Shift+D4" Command="{Binding RecentFile4Command}"/>
+        <KeyBinding Gesture="Ctrl+Shift+D5" Command="{Binding RecentFile5Command}"/>
+        <KeyBinding Gesture="Ctrl+Shift+D6" Command="{Binding RecentFile6Command}"/>
     </Window.KeyBindings>
 
     <NativeMenu.Menu>
@@ -92,7 +137,7 @@ limitations under the License.
                 <NativeMenuItem.Menu>
                     <NativeMenu>
                         <NativeMenuItem Header="View Files" Command="{Binding ViewFilesCommand}"/>
-                        <NativeMenuItem Header="View Files in New Viewer" Command="{Binding ViewFilesInNewViewerCommand}" Gesture="Alt+Enter" />
+                        <NativeMenuItem Header="View Files in New Viewer" Command="{Binding ViewFilesInNewViewerCommand}" Gesture="Ctrl+Enter" />
 
                         <NativeMenuItem Header="Add Files..." Command="{Binding AddFilesCommand}" Gesture="Meta+Shift+A"/>
                         <NativeMenuItem Header="Import Files..." Command="{Binding ImportFilesCommand}"/>
@@ -100,7 +145,7 @@ limitations under the License.
                         <NativeMenuItem Header="Export Files..." Command="{Binding ExportFilesCommand}"/>
                         <NativeMenuItem Header="Delete Files" Command="{Binding DeleteFilesCommand}"/>
                         <NativeMenuItem Header="Test Files" Command="{Binding TestFilesCommand}"/>
-                        <NativeMenuItem Header="Rename / Edit Attributes..." Command="{Binding EditAttributesCommand}"/>
+                        <NativeMenuItem Header="Rename / Edit Attributes..." Command="{Binding EditAttributesCommand}" Gesture="Alt+Enter"/>
                         <NativeMenuItem Header="Create Directory..." Command="{Binding CreateDirectoryCommand}" Gesture="Meta+Shift+N"/>
                         <NativeMenuItemSeparator/>
                         <NativeMenuItem Header="Edit Directory Attributes..." Command="{Binding EditDirAttributesCommand}"/>
@@ -142,7 +187,7 @@ limitations under the License.
             <NativeMenuItem Header="Tools">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="ASCII Chart..." Click="AsciiChartNativeMenuItem_Click"/>
+                        <NativeMenuItem Header="ASCII Chart..." Command="{Binding ShowAsciiChartCommand}" Gesture="Meta+Alt+A"/>
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
@@ -179,11 +224,11 @@ limitations under the License.
         <DockPanel>
             <Menu DockPanel.Dock="Top" Name="mainMenu">
                 <MenuItem Header="_File">
-                    <MenuItem Header="New _Disk Image..." Command="{Binding NewDiskImageCommand}" HotKey="Ctrl+N"/>
+                    <MenuItem Header="New _Disk Image..." Command="{Binding NewDiskImageCommand}" InputGesture="Ctrl+N"/>
                     <MenuItem Header="_New File Archive..." Command="{Binding NewFileArchiveCommand}"/>
-                    <MenuItem Header="_Open" Command="{Binding OpenCommand}" HotKey="Ctrl+O"/>
+                    <MenuItem Header="_Open" Command="{Binding OpenCommand}" InputGesture="Ctrl+O"/>
                     <MenuItem Name="openPhysicalDriveMenuItem" Header="Open Physical Drive..." Command="{Binding OpenPhysicalDriveCommand}" />
-                    <MenuItem Header="_Close" Command="{Binding CloseCommand}" HotKey="Ctrl+W"/>
+                    <MenuItem Header="_Close" Command="{Binding CloseCommand}" InputGesture="Ctrl+W"/>
                     <Separator/>
                     <MenuItem Name="recentFilesMenu" Header="Recent Files">
                         <MenuItem Header="(none)"/>
@@ -193,26 +238,26 @@ limitations under the License.
                 </MenuItem>
 
                 <MenuItem Header="_Edit">
-                    <MenuItem Header="_Copy" Command="{Binding CopyCommand}" HotKey="Ctrl+C"/>
-                    <MenuItem Header="_Paste" Command="{Binding PasteCommand}" HotKey="Ctrl+V"/>
+                    <MenuItem Header="_Copy" Command="{Binding CopyCommand}" InputGesture="Ctrl+C"/>
+                    <MenuItem Header="_Paste" Command="{Binding PasteCommand}" InputGesture="Ctrl+V"/>
                     <Separator/>
-                    <MenuItem Header="_Find" Command="{Binding FindCommand}" HotKey="Ctrl+F"/>
+                    <MenuItem Header="_Find" Command="{Binding FindCommand}" InputGesture="Ctrl+F"/>
                     <Separator/>
-                    <MenuItem Header="Select _All" Command="{Binding SelectAllCommand}" HotKey="Ctrl+A"/>
+                    <MenuItem Header="Select _All" Command="{Binding SelectAllCommand}" InputGesture="Ctrl+A"/>
                     <Separator/>
                     <MenuItem Header="Settings..." Command="{Binding EditAppSettingsCommand}"/>
                 </MenuItem>
 
                 <MenuItem Header="_Actions">
                     <MenuItem Header="_View Files" Command="{Binding ViewFilesCommand}" InputGesture="Enter"/>
-                    <MenuItem Header="_View Files in New Viewer" Command="{Binding ViewFilesInNewViewerCommand}" InputGesture="Alt+Enter"/>
+                    <MenuItem Header="_View Files in New Viewer" Command="{Binding ViewFilesInNewViewerCommand}" InputGesture="Ctrl+Enter"/>
                     <MenuItem Header="_Add Files..." Command="{Binding AddFilesCommand}" InputGesture="Ctrl+Shift+A"/>
                     <MenuItem Header="Import Files..." Command="{Binding ImportFilesCommand}"/>
                     <MenuItem Header="_Extract Files..." Command="{Binding ExtractFilesCommand}" InputGesture="Ctrl+E"/>
                     <MenuItem Header="E_xport Files..." Command="{Binding ExportFilesCommand}"/>
                     <MenuItem Header="_Delete Files" Command="{Binding DeleteFilesCommand}" InputGesture="Delete"/>
                     <MenuItem Header="Test Files" Command="{Binding TestFilesCommand}"/>
-                    <MenuItem Header="Rename / Edit Attributes..." Command="{Binding EditAttributesCommand}"/>
+                    <MenuItem Header="Rename / Edit Attributes..." Command="{Binding EditAttributesCommand}" InputGesture="Alt+Enter"/>
                     <MenuItem Header="Create Directory..." Command="{Binding CreateDirectoryCommand}" InputGesture="Ctrl+Shift+N"/>
                     <Separator/>
                     <MenuItem Header="Edit Directory Attributes..." Command="{Binding EditDirAttributesCommand}"/>
@@ -240,11 +285,11 @@ limitations under the License.
                 </MenuItem>
 
                 <MenuItem Header="_Tools">
-                    <MenuItem Header="ASCII Chart..." Click="AsciiChartMenuItem_Click"/>
+                    <MenuItem Header="ASCII Chart..." Command="{Binding ShowAsciiChartCommand}" InputGesture="Ctrl+Alt+A"/>
                 </MenuItem>
                 
                 <MenuItem Header="_Help">
-                    <MenuItem Header="Help" Command="{Binding HelpCommand}" HotKey="F1"/>
+                    <MenuItem Header="Help" Command="{Binding HelpCommand}" InputGesture="F1"/>
                     <MenuItem Header="_About CiderPress II" Command="{Binding AboutCommand}"/>
                 </MenuItem>
 
@@ -387,7 +432,10 @@ limitations under the License.
                         <ColumnDefinition Width="*" MinWidth="100"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*" MinWidth="150"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <!-- Right options panel: Auto so it's sized entirely by its content
+                             (fixed-width when shown, rotated-button-width when hidden). No
+                             GridSplitter here on purpose — the Show/Hide button is the only
+                             thing that controls this panel's size. -->
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
@@ -411,6 +459,21 @@ limitations under the License.
                             <TextBlock Grid.Row="0" Text="Archive Contents" Margin="0,0,0,4" HorizontalAlignment="Center"/>
                             <Border Grid.Row="1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="1" CornerRadius="2">
                                 <TreeView Name="archiveTree" ItemsSource="{Binding ArchiveTree.TreeRoot}" SelectionChanged="ArchiveTree_SelectionChanged">
+                                    <TreeView.ContextMenu>
+                                        <!-- Operates on the selected archive/disk/partition node.
+                                             Items self-disable via each command's CanExecute. -->
+                                        <ContextMenu>
+                                            <MenuItem Header="Edit Sectors..." Command="{Binding EditSectorsCommand}"/>
+                                            <MenuItem Header="Edit Blocks..." Command="{Binding EditBlocksCommand}"/>
+                                            <MenuItem Header="Save As Disk Image..." Command="{Binding SaveAsDiskImageCommand}"/>
+                                            <MenuItem Header="Replace Partition Contents..." Command="{Binding ReplacePartitionCommand}"/>
+                                            <MenuItem Header="Scan for Bad Blocks" Command="{Binding ScanForBadBlocksCommand}"/>
+                                            <Separator/>
+                                            <MenuItem Header="Scan for Sub-Volumes" Command="{Binding ScanForSubVolCommand}"/>
+                                            <MenuItem Header="Defragment Filesystem" Command="{Binding DefragmentCommand}"/>
+                                            <MenuItem Header="Close File Source" Command="{Binding CloseSubTreeCommand}"/>
+                                        </ContextMenu>
+                                    </TreeView.ContextMenu>
                                     <TreeView.ItemTemplate>
                                         <TreeDataTemplate ItemsSource="{Binding Items}">
                                             <StackPanel Orientation="Horizontal">
@@ -441,6 +504,13 @@ limitations under the License.
                             <TextBlock Grid.Row="0" Text="Directory" Margin="0,0,0,4" HorizontalAlignment="Center"/>
                             <Border Grid.Row="1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="1" CornerRadius="2">
                                 <TreeView Name="directoryTree" DragDrop.AllowDrop="True" ItemsSource="{Binding DirectoryTree.TreeRoot}" SelectionChanged="DirectoryTree_SelectionChanged">
+                                    <TreeView.ContextMenu>
+                                        <!-- Operates on the selected directory node. -->
+                                        <ContextMenu>
+                                            <MenuItem Header="Edit Directory Attributes..." Command="{Binding EditDirAttributesCommand}"/>
+                                            <MenuItem Header="Paste" Command="{Binding PasteCommand}" InputGesture="Ctrl+V"/>
+                                        </ContextMenu>
+                                    </TreeView.ContextMenu>
                                     <TreeView.ItemTemplate>
                                         <TreeDataTemplate ItemsSource="{Binding Items}">
                                             <TextBlock Text="{Binding Name}"/>
@@ -492,6 +562,28 @@ limitations under the License.
                         </Border>
                     </Grid>
                     <Grid Grid.Column="2" Margin="0,4" Name="fileListPanel" DragDrop.AllowDrop="True" Background="Transparent">
+                        <!-- Context menu for the empty area below the file rows (the DataGrid is
+                             transparent there, so right-clicks fall through to this panel). When a
+                             file is highlighted it mirrors the file row menu; with nothing selected
+                             only the non-file items remain. Suppressed in info-panel mode via the
+                             menu's Opening handler wired in code-behind. -->
+                        <Grid.ContextMenu>
+                            <ContextMenu Name="fileListPanelContextMenu">
+                                <MenuItem Header="View Files" Command="{Binding ViewFilesCommand}" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="_View Files in New Viewer" Command="{Binding ViewFilesInNewViewerCommand}" InputGesture="Ctrl+Enter" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="Rename / Edit Attributes..." Command="{Binding EditAttributesCommand}" InputGesture="Alt+Enter" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="Extract Files..." Command="{Binding ExtractFilesCommand}" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="Export Files..." Command="{Binding ExportFilesCommand}" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="Copy" Command="{Binding CopyCommand}" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="Delete Files" Command="{Binding DeleteFilesCommand}" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="Test Files" Command="{Binding TestFilesCommand}" IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <Separator IsVisible="{Binding AreFileEntriesSelected}"/>
+                                <MenuItem Header="Add Files..." Command="{Binding AddFilesCommand}"/>
+                                <MenuItem Header="Import Files..." Command="{Binding ImportFilesCommand}"/>
+                                <MenuItem Header="Paste" Command="{Binding PasteCommand}"/>
+                                <MenuItem Header="Create Directory..." Command="{Binding CreateDirectoryCommand}"/>
+                            </ContextMenu>
+                        </Grid.ContextMenu>
                         <!-- Center panel option 1: file list DataGrid -->
                         <DataGrid Name="fileListDataGrid" IsVisible="{Binding ShowCenterFileList}" ItemsSource="{Binding FileList.Items}" AutoGenerateColumns="False" ClipboardCopyMode="None" IsReadOnly="True" CanUserReorderColumns="False" CanUserResizeColumns="True" CanUserSortColumns="True" SelectionMode="Extended" GridLinesVisibility="Vertical" DragDrop.AllowDrop="True" DoubleTapped="FileListDataGrid_DoubleTapped" SelectionChanged="FileListDataGrid_SelectionChanged" Sorting="FileListDataGrid_Sorting">
                             <DataGrid.Styles>
@@ -531,6 +623,17 @@ limitations under the License.
                                 </Style>
                                 <Style Selector="DataGridColumnHeader">
                                     <Setter Property="FontSize" Value="12"/>
+                                </Style>
+
+                                <!-- The DataGrid package's own theme sets AllowAutoHide on its
+                                     internal scrollbars closer to the control than our
+                                     Application-level override, so it wins the tiebreak; repeat
+                                     it here, local to this DataGrid, to win instead. -->
+                                <Style Selector="ScrollViewer:not(:disabled)">
+                                    <Setter Property="AllowAutoHide" Value="False"/>
+                                </Style>
+                                <Style Selector="ScrollBar:not(:disabled)">
+                                    <Setter Property="AllowAutoHide" Value="False"/>
                                 </Style>
                             </DataGrid.Styles>
                             <DataGrid.Columns>
@@ -587,9 +690,9 @@ limitations under the License.
                                 <!-- TODO: ContextMenuOpening refocus handler -->
                                 <ContextMenu>
                                     <MenuItem Header="View Files" Command="{Binding ViewFilesCommand}"/>
-                                    <MenuItem Header="_View Files in New Viewer" Command="{Binding ViewFilesInNewViewerCommand}" InputGesture="Alt+Enter"/>
+                                    <MenuItem Header="_View Files in New Viewer" Command="{Binding ViewFilesInNewViewerCommand}" InputGesture="Ctrl+Enter"/>
 
-                                    <MenuItem Header="Rename / Edit Attributes..." Command="{Binding EditAttributesCommand}"/>
+                                    <MenuItem Header="Rename / Edit Attributes..." Command="{Binding EditAttributesCommand}" InputGesture="Alt+Enter"/>
                                     <MenuItem Header="Extract Files..." Command="{Binding ExtractFilesCommand}"/>
                                     <MenuItem Header="Export Files..." Command="{Binding ExportFilesCommand}"/>
                                     <MenuItem Header="Copy" Command="{Binding CopyCommand}"/>
@@ -653,13 +756,16 @@ limitations under the License.
                                 <!-- Partition Layout -->
                                 <StackPanel IsVisible="{Binding CenterInfo.ShowPartitionLayout}" Margin="0,8,0,0">
                                     <TextBlock Text="Partition Layout:" Margin="0,0,0,4"/>
-                                    <DataGrid Name="partitionLayoutDataGrid" ItemsSource="{Binding CenterInfo.PartitionList}" MaxHeight="400" IsReadOnly="True" GridLinesVisibility="Vertical" AutoGenerateColumns="False" HeadersVisibility="Column" CanUserReorderColumns="False" DoubleTapped="PartitionLayout_DoubleTapped" Sorting="InfoDataGrid_Sorting">
+                                    <DataGrid Name="partitionLayoutDataGrid" ItemsSource="{Binding CenterInfo.PartitionList}" MaxHeight="400" IsReadOnly="True" GridLinesVisibility="Vertical" AutoGenerateColumns="False" HeadersVisibility="Column" CanUserReorderColumns="False" CanUserResizeColumns="True" DoubleTapped="PartitionLayout_DoubleTapped" Sorting="InfoDataGrid_Sorting">
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="#" Width="30" Binding="{Binding Index}"/>
-                                            <DataGridTextColumn Header="Start Block" Width="80" Binding="{Binding StartBlock}"/>
-                                            <DataGridTextColumn Header="Block Count" Width="80" Binding="{Binding BlockCount}"/>
-                                            <DataGridTextColumn Header="Name" Width="160" Binding="{Binding PartName}"/>
-                                            <DataGridTextColumn Header="Type" Width="*" Binding="{Binding PartType}"/>
+                                            <!-- Auto-size to content/header; do not hard-code widths.
+                                                 Avalonia's font metrics and control padding differ from
+                                                 WPF, so ported pixel widths clip or misalign here. -->
+                                            <DataGridTextColumn Header="#" Width="Auto" CanUserResize="True" Binding="{Binding Index}"/>
+                                            <DataGridTextColumn Header="Start Block" Width="Auto" CanUserResize="True" Binding="{Binding StartBlock}"/>
+                                            <DataGridTextColumn Header="Block Count" Width="Auto" CanUserResize="True" Binding="{Binding BlockCount}"/>
+                                            <DataGridTextColumn Header="Name" Width="Auto" CanUserResize="True" Binding="{Binding PartName}"/>
+                                            <DataGridTextColumn Header="Type" Width="*" CanUserResize="True" Binding="{Binding PartType}"/>
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </StackPanel>
@@ -702,19 +808,27 @@ limitations under the License.
                         </ScrollViewer>
                     </Grid>
 
-                    <!-- Right splitter -->
-                    <GridSplitter Grid.Column="3" Width="4"/>
-
-                    <!-- Right panel: options panel -->
-                    <Border Grid.Column="4" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="1" CornerRadius="2" Margin="0,4">
+                    <!-- Right panel: options panel.  Sized by the Show/Hide button only.  The
+                         ScrollViewer has a fixed expanded width (rather than Auto, so the panel
+                         doesn't resize when combo-box content changes); toggling the "collapsed"
+                         class animates its Width/Opacity to zero (and the button rotates), leaving
+                         the panel at just the rotated button.  See ScrollViewer.optionsPanelScroll
+                         styles in Window.Styles. -->
+                    <Border Grid.Column="3" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="1" CornerRadius="2" Margin="2,4,0,4">
                         <DockPanel>
                             <LayoutTransformControl DockPanel.Dock="Bottom" HorizontalAlignment="Center" Margin="2,2">
                                 <LayoutTransformControl.LayoutTransform>
-                                    <RotateTransform Angle="{Binding Options.ShowHideRotation}"/>
+                                    <RotateTransform Angle="{Binding Options.ShowHideRotation}">
+                                        <RotateTransform.Transitions>
+                                            <Transitions>
+                                                <DoubleTransition Property="Angle" Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                                            </Transitions>
+                                        </RotateTransform.Transitions>
+                                    </RotateTransform>
                                 </LayoutTransformControl.LayoutTransform>
                                 <Button Content="Show/Hide Settings" Width="160" Click="ShowHideOptionsButton_Click"/>
                             </LayoutTransformControl>
-                            <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding Options.ShowOptionsPanel}">
+                            <ScrollViewer DockPanel.Dock="Top" Classes="optionsPanelScroll" Classes.collapsed="{Binding !Options.ShowOptionsPanel}" HorizontalScrollBarVisibility="Disabled">
                                 <StackPanel Margin="2">
                                     <!-- Add/Import Options header -->
                                     <Border Background="{DynamicResource SectionHeaderBrush}" Margin="0,0,0,2">
@@ -725,22 +839,21 @@ limitations under the License.
                                         <CheckBox Content="Use Compression" IsChecked="{Binding Options.AddCompress}"/>
                                         <CheckBox Content="Strip Paths" IsChecked="{Binding Options.AddStripPaths}"/>
                                         <CheckBox Content="Raw (for DOS 3.x)" IsChecked="{Binding Options.AddRaw}"/>
-                                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="2" Margin="0,4,0,0" Padding="4,2">
+                                        <common:GroupBox Header="Preservation Handling" Margin="0,4,0,0">
                                             <StackPanel>
-                                                <TextBlock Text="Preservation Handling" FontWeight="SemiBold" Margin="0,0,0,2"/>
                                                 <CheckBox Content="AppleSingle" IsChecked="{Binding Options.AddPreserveAS}"/>
                                                 <CheckBox Content="AppleDouble" IsChecked="{Binding Options.AddPreserveADF}"/>
                                                 <CheckBox Content="NAPS" IsChecked="{Binding Options.AddPreserveNAPS}"/>
                                             </StackPanel>
-                                        </Border>
-                                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="2" Margin="0,4,0,0" Padding="4,2">
+                                        </common:GroupBox>
+                                        <common:GroupBox Header="Import Configuration" Margin="0,4,0,0">
                                             <StackPanel>
-                                                <TextBlock Text="Import Configuration" FontWeight="SemiBold" Margin="0,0,0,2"/>
                                                 <CheckBox Content="Strip Redundant Extensions" IsChecked="{Binding Options.AddStripExt}" Margin="0,2,0,0"/>
                                                 <TextBlock Text="Conversion mode:" Margin="0,4,0,0"/>
                                                 <ComboBox Margin="0,4,0,0" ItemsSource="{Binding Options.ImportConverters}" SelectedItem="{Binding Options.SelectedImportConverter}" DisplayMemberBinding="{Binding Label}"/>
+                                                <Button Margin="0,4,0,0" HorizontalAlignment="Center" Content="Conversion Settings" Command="{Binding Options.ConfigureImportSettingsCommand}"/>
                                             </StackPanel>
-                                        </Border>
+                                        </common:GroupBox>
                                     </StackPanel>
 
                                     <!-- Extract/Export Options header -->
@@ -751,18 +864,16 @@ limitations under the License.
                                         <CheckBox Content="Strip Paths" IsChecked="{Binding Options.ExtStripPaths}"/>
                                         <CheckBox Content="Add Filename Ext to Exports" IsChecked="{Binding Options.ExtAddExportExt}"/>
                                         <CheckBox Content="Raw (for DOS 3.x)" IsChecked="{Binding Options.ExtRaw}"/>
-                                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="2" Margin="0,4,0,0" Padding="4,2">
+                                        <common:GroupBox Header="Preservation Mode" Margin="0,4,0,0">
                                             <StackPanel>
-                                                <TextBlock Text="Preservation Mode" FontWeight="SemiBold" Margin="0,0,0,2"/>
                                                 <RadioButton Content="None" GroupName="ExtPreserve" IsChecked="{Binding Options.ExtPreserveNone}"/>
                                                 <RadioButton Content="AppleSingle" GroupName="ExtPreserve" IsChecked="{Binding Options.ExtPreserveAS}"/>
                                                 <RadioButton Content="AppleDouble" GroupName="ExtPreserve" IsChecked="{Binding Options.ExtPreserveADF}"/>
                                                 <RadioButton Content="NAPS" GroupName="ExtPreserve" IsChecked="{Binding Options.ExtPreserveNAPS}"/>
                                             </StackPanel>
-                                        </Border>
-                                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="2" Margin="0,4,0,8" Padding="4,2">
+                                        </common:GroupBox>
+                                        <common:GroupBox Header="Export Configuration" Margin="0,4,0,8">
                                             <StackPanel>
-                                                <TextBlock Text="Export Configuration" FontWeight="SemiBold" Margin="0,0,0,2"/>
                                                 <TextBlock Text="Conversion mode:"/>
                                                 <RadioButton Content="Best (automatic)" GroupName="ExportCfg" Margin="0,4,0,0" IsChecked="{Binding Options.IsExportBestChecked}"/>
                                                 <Grid>
@@ -773,8 +884,9 @@ limitations under the License.
                                                     <RadioButton Grid.Column="0" Margin="0,8,0,0" GroupName="ExportCfg" IsChecked="{Binding Options.IsExportComboChecked}"/>
                                                     <ComboBox Grid.Column="1" Margin="0,4,0,0" ItemsSource="{Binding Options.ExportConverters}" SelectedItem="{Binding Options.SelectedExportConverter}" DisplayMemberBinding="{Binding Label}"/>
                                                 </Grid>
+                                                <Button Margin="0,4,0,0" HorizontalAlignment="Center" Content="Conversion Settings" Command="{Binding Options.ConfigureExportSettingsCommand}"/>
                                             </StackPanel>
-                                        </Border>
+                                        </common:GroupBox>
                                     </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>

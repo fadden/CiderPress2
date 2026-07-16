@@ -296,7 +296,7 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
                 BorderThickness="0,0,1,0"
                 Padding="10,0">
 
-            <Grid>
+            <Grid IsEnabled="{Binding !IsLoading}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -315,25 +315,36 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
                               SelectedIndex="{Binding SelectedConverterIndex}"
                               SelectionChanged="ConvComboBox_SelectionChanged" />
                 </StackPanel>
-                <common:GroupBox Grid.Row="1" Header="Options"
+                <!-- Hidden until a converter is configured: shown once there are options
+                     to display or the "no options" message applies. -->
+                <common:GroupBox Name="optionsGroupBox"
+                                 Grid.Row="1" Header="Options"
                                  MinHeight="120"
+                                 IsVisible="False"
                                  IsEnabled="{Binding IsOptionsBoxEnabled}">
+                    <!-- Placeholder option controls start hidden; ConfigureControls shows
+                         the ones a converter actually uses once the document loads. -->
                     <StackPanel>
                         <TextBlock Name="noOptions" Margin="0,20"
                                    Text="No conversion options available."
-                                   HorizontalAlignment="Center" />
+                                   HorizontalAlignment="Center"
+                                   IsVisible="False" />
                         <CheckBox Name="checkBox1"
                                   Content="Check 1"
-                                  Margin="0,2,0,0" />
+                                  Margin="0,2,0,0"
+                                  IsVisible="False" />
                         <CheckBox Name="checkBox2"
                                   Content="Check 2"
-                                  Margin="0,2,0,0" />
+                                  Margin="0,2,0,0"
+                                  IsVisible="False" />
                         <CheckBox Name="checkBox3"
                                   Content="Check 3"
-                                  Margin="0,2,0,0" />
+                                  Margin="0,2,0,0"
+                                  IsVisible="False" />
                         <StackPanel Name="stringInput1"
                                     Orientation="Horizontal"
-                                    Margin="0,2,0,0">
+                                    Margin="0,2,0,0"
+                                    IsVisible="False">
                             <TextBlock Name="stringInput1_Label"
                                        Text="Entry label:"
                                        VerticalAlignment="Center"
@@ -343,7 +354,8 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
                                      Text="100" />
                         </StackPanel>
                         <common:GroupBox Name="multiGroup1"
-                                         Header="Multi Group 1">
+                                         Header="Multi Group 1"
+                                         IsVisible="False">
                             <StackPanel>
                                 <RadioButton Name="radioButton1_1"
                                              GroupName="group1"
@@ -364,7 +376,8 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
                             </StackPanel>
                         </common:GroupBox>
                         <common:GroupBox Name="multiGroup2"
-                                         Header="Multi Group 2">
+                                         Header="Multi Group 2"
+                                         IsVisible="False">
                             <StackPanel>
                                 <RadioButton Name="radioButton2_1"
                                              GroupName="group2"
@@ -401,6 +414,7 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
             <Button DockPanel.Dock="Right"
                     Margin="8,0,0,0"
                     Content="Done" HorizontalContentAlignment="Center"
+                    IsCancel="True"
                     Command="{Binding CloseCommand}" />
             <Button DockPanel.Dock="Right"
                     Content="_Export..." HorizontalContentAlignment="Center"
@@ -452,6 +466,7 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
                                     <ftv:FancyTextViewer Name="dataForkTextViewer"
                                                          Document="{Binding DataTextViewModel.Document}"
                                                          PageWidth="{Binding DataTextViewModel.PageWidth}"
+                                                         WordWrap="{Binding DataTextViewModel.WordWrap, Mode=TwoWay}"
                                                          ShowPageBoundaries="{Binding DataTextViewModel.ShowPageBoundaries, Mode=TwoWay}"
                                                          ShowMarginBoundaries="{Binding DataTextViewModel.ShowMarginBoundaries, Mode=TwoWay}" />
                                 </ScrollViewer>
@@ -496,6 +511,7 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
                                 <ftv:FancyTextViewer Name="rsrcForkTextViewer"
                                                     Document="{Binding RsrcTextViewModel.Document}"
                                                     PageWidth="{Binding RsrcTextViewModel.PageWidth}"
+                                                    WordWrap="{Binding RsrcTextViewModel.WordWrap, Mode=TwoWay}"
                                                     ShowPageBoundaries="{Binding RsrcTextViewModel.ShowPageBoundaries, Mode=TwoWay}"
                                                     ShowMarginBoundaries="{Binding RsrcTextViewModel.ShowMarginBoundaries, Mode=TwoWay}" />
                             </ScrollViewer>
@@ -526,6 +542,25 @@ xmlns:vm="clr-namespace:cp2_avalonia.ViewModels"
                         </Border>
                     </TabItem>
                 </TabControl>
+
+            <!-- Loading overlay: covers the viewer area while a document conversion is
+                 pending or in progress (initial open and file navigation). -->
+            <Border Grid.Row="0"
+                    Grid.Column="1"
+                    IsVisible="{Binding IsLoading}"
+                    Background="{DynamicResource ViewerBackgroundBrush}"
+                    Opacity="0.9">
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="12">
+                    <TextBlock Text="Loading..."
+                               FontSize="16"
+                               HorizontalAlignment="Center" />
+                    <ProgressBar IsIndeterminate="True"
+                                 Width="160" />
+                </StackPanel>
+            </Border>
+
             <!-- Bottom panel -->
             <Grid Grid.Row="1"
                   Grid.Column="1"

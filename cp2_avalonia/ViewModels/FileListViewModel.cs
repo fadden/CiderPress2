@@ -249,6 +249,11 @@ public class FileListViewModel : ObservableObject {
         LastFileCount = fileCount;
 
         mViewActions.ReapplyFileListSort();
+
+        // Preallocate the name column to fit the widest value in the whole model, so it
+        // doesn't grow row-by-row as the virtualized grid scrolls. Done here (synchronously,
+        // before the grid lays out) to avoid a visible width jump.
+        mViewActions.PreSizeNameColumn();
     }
 
     private void PopulateEntriesFromArchive(IArchive arc, ref int dirCount,

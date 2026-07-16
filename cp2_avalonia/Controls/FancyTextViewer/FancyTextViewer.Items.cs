@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using System.Text;
+
 namespace cp2_avalonia.Controls.FancyTextViewer;
 
 public interface ILogicalItem
@@ -64,14 +66,17 @@ public abstract class TextFragmentBase : ILogicalItem
     /// Gets or sets the resolved style for this fragment.
     /// </summary>
     public TextFragmentStyle Style { get; set; } = new();
+    private readonly StringBuilder _text = new();
+    private string? _textCache;
+
     /// <summary>
     /// Gets the text contained in this fragment.
     /// </summary>
-    public string Text { get; private set; } = "";
+    public string Text => _textCache ??= _text.ToString();
     /// <summary>
     /// Gets the exclusive end offset for this fragment in the source text.
     /// </summary>
-    public int EndOffset => StartOffset + Text.Length;
+    public int EndOffset => StartOffset + _text.Length;
 
     /// <summary>
     /// Appends a character to this logical text fragment.
@@ -79,7 +84,19 @@ public abstract class TextFragmentBase : ILogicalItem
     /// <param name="c">The character to append.</param>
     public void AppendCharacter(char c)
     {
-        Text += c;
+        _text.Append(c);
+        _textCache = null;
+    }
+
+    /// <summary>
+    /// Appends a string to this logical text fragment in one operation. Used by the
+    /// plain-text fast path, which emits whole lines as single fragments.
+    /// </summary>
+    /// <param name="text">The text to append.</param>
+    public void AppendText(string text)
+    {
+        _text.Append(text);
+        _textCache = null;
     }
 }
 

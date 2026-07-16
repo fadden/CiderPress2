@@ -143,6 +143,19 @@ public class EditAppSettingsViewModel : ObservableObject
         set { mSettings.SetBool(AppSettings.DOS_TEXT_CONV_ENABLED, value); OnPropertyChanged(); }
     }
 
+    // Debug build defaults the DEBUG menu on, release build defaults it off; either way the
+    // stored setting (this checkbox) wins once set.  Keep the default in sync with
+    // MainViewModel.ApplySettings, which reads the same key to drive ShowDebugMenu.
+#if DEBUG
+    private const bool DEBUG_MENU_DEFAULT = true;
+#else
+    private const bool DEBUG_MENU_DEFAULT = false;
+#endif
+    public bool EnableDebugMenu {
+        get => mSettings.GetBool(AppSettings.DEBUG_MENU_ENABLED, DEBUG_MENU_DEFAULT);
+        set { mSettings.SetBool(AppSettings.DEBUG_MENU_ENABLED, value); OnPropertyChanged(); }
+    }
+
     public EditAppSettingsViewModel(ISettingsService settingsService, IDialogService dialogService)
     {
         _settingsService = settingsService;

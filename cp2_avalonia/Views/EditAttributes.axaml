@@ -24,7 +24,7 @@ limitations under the License.
         xmlns:common="clr-namespace:cp2_avalonia.Controls"
         mc:Ignorable="d"
         Title="Edit Attributes"
-        Width="500" SizeToContent="Height" CanResize="False"
+        Width="550" SizeToContent="Height" CanResize="False"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
 
     <Window.Styles>
@@ -76,7 +76,7 @@ limitations under the License.
         </Grid>
 
         <!-- Row 1: ProDOS Type GroupBox -->
-        <common:GroupBox Grid.Row="1" Header="ProDOS Type (for DOS/Pascal/ProDOS)" Padding="2,4" Margin="0,12,0,0"
+        <common:GroupBox Grid.Row="1" Header="ProDOS Type (for DOS/Pascal/ProDOS)" Margin="0,12,0,0"
                          IsVisible="{Binding IsProTypeVisible}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -91,7 +91,7 @@ limitations under the License.
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="File Type:" Margin="0,2,0,0" VerticalAlignment="Center"/>
-                <ComboBox Grid.Row="0" Grid.Column="1" Name="proTypeCombo" Width="80" Margin="8,0,0,0"
+                <ComboBox Grid.Row="0" Grid.Column="1" Name="proTypeCombo"  Margin="8,0,0,0"
                           HorizontalAlignment="Left"
                           IsEnabled="{Binding IsProTypeListEnabled}"
                           ItemsSource="{Binding ProTypeList}"
@@ -119,7 +119,7 @@ limitations under the License.
         </common:GroupBox>
 
         <!-- Row 2: HFS Type GroupBox -->
-        <common:GroupBox Grid.Row="2" Header="HFS Type" Padding="2,4" Margin="0,12,0,0"
+        <common:GroupBox Grid.Row="2" Header="HFS Type" Margin="0,12,0,0"
                          IsVisible="{Binding IsHFSTypeVisible}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -135,12 +135,12 @@ limitations under the License.
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="File Type:" VerticalAlignment="Center"
                            Classes.invalid="{Binding !IsHFSTypeValid}"/>
-                <TextBox Grid.Row="0" Grid.Column="1" Width="40" Margin="8,0,0,0"
+                <TextBox Grid.Row="0" Grid.Column="1" Width="60" Margin="8,0,0,0"
                          MaxLength="4"
                          Text="{Binding HFSTypeCharsString}"
                          FontFamily="{DynamicResource GeneralMonoFont}"
                          IsReadOnly="{Binding IsAllReadOnly}"/>
-                <TextBox Grid.Row="0" Grid.Column="2" Width="65" Margin="8,0,0,0"
+                <TextBox Grid.Row="0" Grid.Column="2" Width="75" Margin="8,0,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          Text="{Binding HFSTypeHexString}"
                          FontFamily="{DynamicResource GeneralMonoFont}"
@@ -149,12 +149,12 @@ limitations under the License.
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Creator:" Margin="0,4,0,0"
                            VerticalAlignment="Center"
                            Classes.invalid="{Binding !IsHFSCreatorValid}"/>
-                <TextBox Grid.Row="1" Grid.Column="1" Width="40" Margin="8,4,0,0"
+                <TextBox Grid.Row="1" Grid.Column="1" Width="60" Margin="8,4,0,0"
                          MaxLength="4"
                          Text="{Binding HFSCreatorCharsString}"
                          FontFamily="{DynamicResource GeneralMonoFont}"
                          IsReadOnly="{Binding IsAllReadOnly}"/>
-                <TextBox Grid.Row="1" Grid.Column="2" Width="65" Margin="8,4,0,0"
+                <TextBox Grid.Row="1" Grid.Column="2" Width="75" Margin="8,4,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          Text="{Binding HFSCreatorHexString}"
                          FontFamily="{DynamicResource GeneralMonoFont}"
@@ -166,7 +166,7 @@ limitations under the License.
         </common:GroupBox>
 
         <!-- Row 3: Timestamps GroupBox -->
-        <common:GroupBox Grid.Row="3" Header="Timestamp" Padding="2,4" Margin="0,12,0,0"
+        <common:GroupBox Grid.Row="3" Header="Timestamp" Margin="0,12,0,0"
                          IsVisible="{Binding IsTimestampVisible}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -190,7 +190,7 @@ limitations under the License.
                             MinYear="{Binding TimestampStart}"
                             MaxYear="{Binding TimestampEnd}"
                             SelectedDate="{Binding CreateDate}"/>
-                <TextBox Grid.Row="0" Grid.Column="2" Width="60" Margin="16,0,0,0"
+                <TextBox Grid.Row="0" Grid.Column="2" Width="80" Margin="16,0,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          VerticalContentAlignment="Center"
                          IsEnabled="{Binding CreateWhenEnabled}"
@@ -204,7 +204,7 @@ limitations under the License.
                             MinYear="{Binding TimestampStart}"
                             MaxYear="{Binding TimestampEnd}"
                             SelectedDate="{Binding ModDate}"/>
-                <TextBox Grid.Row="1" Grid.Column="2" Width="60" Margin="16,2,0,0"
+                <TextBox Grid.Row="1" Grid.Column="2" Width="80" Margin="16,2,0,0"
                          MaxLength="8" HorizontalAlignment="Left"
                          VerticalContentAlignment="Center"
                          IsEnabled="{Binding ModWhenEnabled}"
@@ -225,7 +225,7 @@ limitations under the License.
         </common:GroupBox>
 
         <!-- Row 4: Access GroupBox -->
-        <common:GroupBox Grid.Row="4" Header="Access" Padding="2,4" Margin="0,12,0,0"
+        <common:GroupBox Grid.Row="4" Header="Access" Margin="0,12,0,0"
                          IsVisible="{Binding IsAccessVisible}">
             <Grid>
                 <Grid.RowDefinitions>
@@ -279,7 +279,7 @@ limitations under the License.
         </common:GroupBox>
 
         <!-- Row 5: Comment GroupBox -->
-        <common:GroupBox Grid.Row="5" Header="Comment" Padding="2,4" Margin="0,12,0,0"
+        <common:GroupBox Grid.Row="5" Header="Comment" Margin="0,12,0,0"
                          IsVisible="{Binding IsCommentVisible}">
             <TextBox Height="120"
                      Text="{Binding CommentText}"

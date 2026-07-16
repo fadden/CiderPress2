@@ -204,7 +204,7 @@ limitations under the License.
                     <TextBlock Text="Configuration" HorizontalAlignment="Center"/>
                 </StackPanel>
 
-                <common:GroupBox Grid.Row="1" Header="Text Conversion" Padding="2,4">
+                <common:GroupBox Grid.Row="1" Header="Text Conversion">
                     <StackPanel>
                         <RadioButton GroupName="TxtConv" Content="High/low ASCII" IsChecked="{Binding IsChecked_ConvHighASCII}"/>
                         <RadioButton GroupName="TxtConv" Content="Mac OS Roman" Margin="0,2,0,0" IsChecked="{Binding IsChecked_ConvMOR}"/>
@@ -212,7 +212,7 @@ limitations under the License.
                     </StackPanel>
                 </common:GroupBox>
 
-                <common:GroupBox Grid.Row="2" Header="Advanced" Padding="2,4">
+                <common:GroupBox Grid.Row="2" Header="Advanced">
                     <StackPanel>
                         <TextBlock Text="Block order:" IsVisible="{Binding IsBlockOrderVisible}"/>
                         <ComboBox Name="blockOrderCombo" HorizontalAlignment="Stretch" Margin="0,2,0,0" IsVisible="{Binding IsBlockOrderVisible}" IsEnabled="{Binding IsBlockOrderEnabled}" ItemsSource="{Binding BlockOrderList}" SelectedIndex="{Binding SelectedBlockOrderIndex}"/>
