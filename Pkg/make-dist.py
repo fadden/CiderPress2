@@ -53,8 +53,8 @@ gMarkExecutable = {
 gIncludeFiles = [
 	"Pkg/README.txt",
     "LegalStuff.txt",
-    "sample.cp2rc",
     "docs/Manual-cp2.md",
+    "Pkg/sample.cp2rc",
 ]
 
 gReleaseConfig = True
