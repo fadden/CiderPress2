@@ -10,8 +10,9 @@
 #    --debug: generate Debug builds instead of Release
 #    RIDs: one or more RID strings
 #
-# NOTE: on Windows+MINGW use "winpty python make-dist.py" to avoid issues with
-# stdin freezing up.  (In theory this was fixed in 3.14, but not in practice.)
+# NOTE: on Windows+MINGW use "winpty python Pkg/make-dist.py" to avoid issues
+# with stdin freezing up.  (In theory this was fixed in python 3.14, but not
+# in practice.)
 #
 # By default, this will build all supported RIDs, in Release mode, and
 # generate appropriate distribution packages (.zip).
@@ -80,7 +81,7 @@ def BuildRid(rid, isSelfContained, distDir):
 	# to _AllAppsDir.  We're building single-file outputs, so none of the files would clash.
 	# (If we left things as DLLs, parameters like ReadyToRun would affect the output.)
 	for target in targets:
-		print("--- publishing " + rid + " " + scArg + " " + target)
+		print("--- publishing " + rid + " " + scArg + " " + target + debugStr)
 		args = [ "dotnet", "publish", target, "-r", rid, scArg, "-c", configArg,
 			"-p:_AllAppsDir=" + outputDir ]
 		if gReleaseConfig:
@@ -135,6 +136,7 @@ def BuildRid(rid, isSelfContained, distDir):
 def Main():
 	""" Main """
 
+	global gReleaseConfig
 	DIST_DIR = "DIST"
 	forceRemove = False
 
