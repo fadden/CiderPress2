@@ -17,6 +17,8 @@
 # By default, this will build all supported RIDs, in Release mode, and
 # generate appropriate distribution packages (.zip).
 #
+# NOTE: this will remove */bin/Release and */obj/Release as part of the build process.
+#
 
 import os
 import os.path
@@ -58,6 +60,7 @@ gIncludeFiles = [
 ]
 
 gReleaseConfig = True
+gForceRemove = False
 
 
 def BuildRid(rid, isSelfContained, distDir):
@@ -133,17 +136,51 @@ def BuildRid(rid, isSelfContained, distDir):
 				newZip.writestr(zinfo, fd.read(), zipfile.ZIP_DEFLATED, COMP_LVL)
 	print()
 
+def ClobberBinObj():
+	""" MakeClean: clobbers the 'Release' dir in 'bin' and 'obj' directories. """
+
+	# "dotnet clean" only operates on a specific RID, and failed to remove the R2R outputs.
+	# We want to just wipe the slate clean, so we remove */bin/Release and */obj/Release.
+
+	print("## Scrubbing obj/Release and bin/Release")
+	scrubList = []
+	with os.scandir('.') as itr:
+		for entry in itr:
+			if (not entry.is_dir):
+				continue
+			objPath = os.path.join(entry.name, "bin", "Release")
+			if os.path.isdir(objPath):
+				scrubList.append(objPath)
+			binPath = os.path.join(entry.name, "obj", "Release")
+			if os.path.isdir(binPath):
+				scrubList.append(binPath)
+
+	if scrubList:
+		if (not gForceRemove):
+			print("These directories will be removed:")
+			for dirName in scrubList:
+				print("  " + dirName)
+			doRm = input("Continue (y/N)? ")
+			if doRm != "y":
+				print("Cancelled")
+				sys.exit(0)
+
+		for dirName in scrubList:
+			shutil.rmtree(dirName)
+	else:
+		print("   (nothing to scrub)")
+
 def Main():
 	""" Main """
 
 	global gReleaseConfig
+	global gForceRemove
 	DIST_DIR = "DIST"
-	forceRemove = False
 
 	args = sys.argv[1:]
 	while args:
 		if args[0] == "-f":
-			forceRemove = True
+			gForceRemove = True
 		elif args[0] == "--debug":
 			gReleaseConfig = False
 		else:
@@ -159,7 +196,7 @@ def Main():
 		sys.exit(1)
 
 	if os.path.exists(DIST_DIR):
-		if not forceRemove:
+		if not gForceRemove:
 			doRm = input("The " + DIST_DIR + " directory exists; remove it (y/N)? ")
 			if doRm != "y":
 				print("Cancelled")
@@ -170,13 +207,24 @@ def Main():
 	distDir = os.path.abspath(DIST_DIR)
 	os.mkdir(distDir)
 
-	print("### Building for version " + VERSION_TAG)
+	print("--> Building for version " + VERSION_TAG)
 
 	startTime = time.perf_counter()
 
+	# You have to clean the outputs when switching between framework-dependent and
+	# self-contained builds.  (This is especially a problem for cp2_avalonia with
+	# ReadyToRun enabled, because the obj/../R2R files differ significantly.)
+
+	ClobberBinObj();
+	print("## Generating framework-dependent binaries...")
 	for rid in ridList:
-		print("### Generating " + rid + "...")
+		print("### Publishing projects for RID=" + rid + "...")
 		BuildRid(rid, False, distDir)
+
+	ClobberBinObj();
+	print("## Generating self-contained binaries...")
+	for rid in ridList:
+		print("### Publishing projects for RID=" + rid + "...")
 		BuildRid(rid, True, distDir)
 
 	endTime = time.perf_counter()

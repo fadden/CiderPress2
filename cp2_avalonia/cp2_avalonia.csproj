@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PublishSelfContained>true</PublishSelfContained>
+    <!-- <PublishSelfContained>true</PublishSelfContained> -->
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
