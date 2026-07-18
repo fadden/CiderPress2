@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- <SelfContained>true</SelfContained> [set on command line] -->
+    <PublishSelfContained>true</PublishSelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
