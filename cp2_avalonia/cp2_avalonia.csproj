@@ -17,10 +17,10 @@
     <AvaloniaMacOSBundleName>CiderPress II</AvaloniaMacOSBundleName>
   </PropertyGroup>
 
-<PropertyGroup>
-  <SelfContained>true</SelfContained>
-  <PublishReadyToRun>true</PublishReadyToRun>
-</PropertyGroup>
+  <PropertyGroup>
+    <!-- <SelfContained>true</SelfContained> [set on command line] -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.*" />
@@ -74,7 +74,6 @@
   </Target>
 
   <!-- copy build output to the app packaging area -->
-  <!-- TODO: this does not work with the .app packaging -->
   <Target Name="CopyApp" AfterTargets="Publish" Condition="'$(_AllAppsDir)' != ''">
     <ItemGroup>
       <_PublishFiles Include="$(PublishDir)**/*" />
@@ -90,10 +89,10 @@
   <ItemGroup>
     <ProjectReference Include="..\AppCommon\AppCommon.csproj" />
     <ProjectReference Include="..\CommonUtil\CommonUtil.csproj" />
-    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" />
     <ProjectReference Include="..\DiskArc\DiskArc.csproj" />
-    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" />
     <ProjectReference Include="..\FileConv\FileConv.csproj" />
+    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" Condition="'$(Configuration)' == 'Debug'" />
+    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
 </Project>

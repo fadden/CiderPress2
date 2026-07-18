@@ -490,6 +490,7 @@ namespace cp2 {
             Console.WriteLine("+ Runtime: " + RuntimeInformation.FrameworkDescription + " / " +
                 RuntimeInformation.RuntimeIdentifier);
             if (parms.Debug) {
+                Console.WriteLine("  BaseDirectory=" + AppContext.BaseDirectory);
                 Console.WriteLine("  E_V=" + Environment.Version);
                 Console.WriteLine("  E_OV=" + Environment.OSVersion);
                 Console.WriteLine("  E_OV_P=" + Environment.OSVersion.Platform);
