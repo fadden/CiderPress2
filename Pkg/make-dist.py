@@ -51,7 +51,7 @@ gMarkExecutable = {
 }
 # Files to add to the distribution.
 gIncludeFiles = [
-	"ndocs/top/README.md",
+	"Pkg/README.txt",
     "LegalStuff.txt",
     "sample.cp2rc",
     "docs/Manual-cp2.md",
