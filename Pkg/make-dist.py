@@ -1,12 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
-# Make distribution packages.  This must be run in the top directory of the
-# source tree.  All generated output files are placed in the "DIST" directory,
-# which is reconstructed from scratch.
+# Build the targets for various platforms, and create ZIP distribution
+# packages.  This must be run in the top directory of the source tree.  All
+# generated output files are placed in the "DIST" directory, which is
+# reconstructed from scratch every time.
+#
+# The cp2_wpf target can only be built on Windows.  When this script is run on
+# other platforms, the target will be skipped.
 #
 # Usage:
 #  make-dist [-f] [--debug] [RIDs]
-#    -f: if DIST directory exists, remove it without asking
+#    -f: remove DIST and obj/bin directories without asking
 #    --debug: generate Debug builds instead of Release
 #    RIDs: one or more RID strings
 #
@@ -22,6 +26,7 @@
 
 import os
 import os.path
+import platform
 import shutil
 import subprocess
 import sys
@@ -63,95 +68,23 @@ gReleaseConfig = True
 gForceRemove = False
 
 
-def BuildRid(rid, isSelfContained, distDir):
-	""" BuildRid: executes the build commands for a given RID. """
-
-	targets = list.copy(gBuildTargets)
-	if rid.startswith("win"):
-		targets += gWinBuildTargets
-
-	# Create output directory.
-	scStr = "_sc" if isSelfContained else "_fd"
-	debugStr = "" if gReleaseConfig else "_debug"
-	pkgName = rid + scStr + debugStr
-	outputDir = os.path.join(distDir, pkgName)
-	os.mkdir(outputDir)
-
-	scArg = "--sc" if isSelfContained else "--no-self-contained"
-	configArg = "Release" if gReleaseConfig else "Debug"
-
-	# Publish all targets.  A post-publish step in the .csproj file copies all of the outputs
-	# to _AllAppsDir.  We're building single-file outputs, so none of the files would clash.
-	# (If we left things as DLLs, parameters like ReadyToRun would affect the output.)
-	for target in targets:
-		print("--- publishing " + rid + " " + scArg + " " + target + debugStr)
-		args = [ "dotnet", "publish", target, "-r", rid, scArg, "-c", configArg,
-			"-p:_AllAppsDir=" + outputDir ]
-		if gReleaseConfig:
-			args.append("-p:DebugSymbols=false")
-		result = subprocess.run(args, capture_output=True, encoding="utf-8")
-		if result.returncode != 0:
-			print("FAILED: ", args)
-			print("STDOUT: ", result.stdout)
-			print("STDERR: ", result.stderr)
-			sys.exit(1)
-
-		print(result.stdout)		# could be shown only with a "verbose" flag?
-
-	# Create a ZIP archive to hold the contents.
-	COMP_LVL=7
-	buildProducts = os.listdir(outputDir)
-	zipFileName = "cp2_" + VERSION_TAG + "_" + pkgName + ".zip"
-	zipPathName = os.path.join(distDir, zipFileName)
-	print("*** creating " + zipFileName)
-	with zipfile.ZipFile(zipPathName, 'x', compression=zipfile.ZIP_DEFLATED,
-			compresslevel=COMP_LVL) as newZip:
-		OS_UNIX = 3
-		S_IFREG = 0o100000      # (S_IFREG) - regular file
-		EXEC_BITS = 0o755       # (S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) - permissions
-		NOEXEC_BITS = 0o644 	# RW owner, R others
-		for fileName in gIncludeFiles:
-			# Add the pack-in files, such as the README.
-			#
-			# In theory, we can just use newZip.write() and skip all the nonsense above.
-			# In practice, this causes the files to be generated with perms 0666, even when
-			# running on Windows, which is dumb and annoying.  I can't see a way to make it
-			# behave correctly, so we do it the hard way.
-			#newZip.write(fileName, os.path.basename(fileName))
-			inputPath = fileName
-			zinfo = zipfile.ZipInfo.from_file(inputPath, os.path.basename(inputPath))
-			zinfo.external_attr = (zinfo.external_attr & 0x0000ffff) | (NOEXEC_BITS << 16)
-			with open(inputPath, "rb") as fd:
-				newZip.writestr(zinfo, fd.read(), zipfile.ZIP_DEFLATED, COMP_LVL)
-		for fileName in buildProducts:
-			# Grab every file in the multi-target output directory.
-			inputPath = os.path.join(outputDir, fileName)
-			zinfo = zipfile.ZipInfo.from_file(inputPath, fileName)
-			# Set the OS to "UNIX" and specify file permissions.  This is most important for the
-			# executables, so that they unzip with the execute bit set on macOS/Linux.
-			zinfo.create_system = OS_UNIX
-			bits = EXEC_BITS if fileName in gMarkExecutable else NOEXEC_BITS
-			zinfo.external_attr = (zinfo.external_attr & 0x0000ffff) | (bits << 16)
-			with open(inputPath, "rb") as fd:
-				newZip.writestr(zinfo, fd.read(), zipfile.ZIP_DEFLATED, COMP_LVL)
-	print()
-
 def ClobberBinObj():
 	""" MakeClean: clobbers the 'Release' dir in 'bin' and 'obj' directories. """
 
 	# "dotnet clean" only operates on a specific RID, and failed to remove the R2R outputs.
 	# We want to just wipe the slate clean, so we remove */bin/Release and */obj/Release.
+	configStr = "Release" if gReleaseConfig else "Debug"
 
-	print("## Scrubbing obj/Release and bin/Release")
+	print("## Scrubbing obj/" + configStr + " and bin/" + configStr)
 	scrubList = []
 	with os.scandir('.') as itr:
 		for entry in itr:
 			if (not entry.is_dir):
 				continue
-			objPath = os.path.join(entry.name, "bin", "Release")
+			objPath = os.path.join(entry.name, "bin", configStr)
 			if os.path.isdir(objPath):
 				scrubList.append(objPath)
-			binPath = os.path.join(entry.name, "obj", "Release")
+			binPath = os.path.join(entry.name, "obj", configStr)
 			if os.path.isdir(binPath):
 				scrubList.append(binPath)
 
@@ -169,6 +102,105 @@ def ClobberBinObj():
 			shutil.rmtree(dirName)
 	else:
 		print("   (nothing to scrub)")
+
+def BuildRid(rid, isSelfContained, distDir):
+	""" BuildRid: executes the build commands for a given RID. """
+
+	targets = list.copy(gBuildTargets)
+	# Can only build cp2_wpf on Windows.
+	if rid.startswith("win") and platform.system() == "Windows":
+		targets += gWinBuildTargets
+
+	# Create output directory.
+	scStr = "_sc" if isSelfContained else "_fd"
+	debugStr = "" if gReleaseConfig else "_debug"
+	pkgName = rid + scStr + debugStr
+	outputDir = os.path.join(distDir, pkgName)
+	os.mkdir(outputDir)
+
+	scArg = "--sc" if isSelfContained else "--no-self-contained"
+	configArg = "Release" if gReleaseConfig else "Debug"
+
+	# Publish all targets.  A post-publish step in the .csproj file copies all of the outputs
+	# to _AllAppsDir.  We're building single-file outputs, so none of the files would clash.
+	# (If we left things as DLLs, parameters like ReadyToRun would affect the output.)
+	for target in targets:
+		print("--- building " + rid + " " + scArg + " " + target + debugStr)
+		args = [ "dotnet", "publish", target, "-r", rid, scArg, "-c", configArg,
+			"-p:_AllAppsDir=" + outputDir ]
+		if gReleaseConfig:
+			args.append("-p:DebugSymbols=false")
+		result = subprocess.run(args, capture_output=True, encoding="utf-8")
+		if result.returncode != 0:
+			print("FAILED: ", args)
+			print("STDOUT: ", result.stdout)
+			print("STDERR: ", result.stderr)
+			sys.exit(1)
+
+		print(result.stdout)		# could be shown only with a "verbose" flag?
+
+	# Copy the pack-in files, like the README.  We could add these directly to the ZIP file,
+	# but we may want to arrange them differently on different platforms.
+	for fileName in gIncludeFiles:
+		shutil.copy(fileName, outputDir)
+
+	if rid.startswith("osx"):
+		# Get a list of files in the output directory.
+		fileList = os.listdir(outputDir)
+
+		# Create the .app directory hierarchy.
+		APP_FILE_NAME = "CiderPress II.app"
+		appDir = os.path.join(outputDir, APP_FILE_NAME)
+		contentsDir = os.path.join(appDir, "Contents")
+		macOSDir = os.path.join(contentsDir, "MacOS")
+		resourcesDir = os.path.join(contentsDir, "Resources")
+
+		os.mkdir(appDir)
+		os.mkdir(contentsDir)
+		os.mkdir(macOSDir)
+		os.mkdir(resourcesDir)
+
+		# Move the build products into the Contents/MacOS sub-folder.
+		for fileName in fileList:
+			shutil.move(os.path.join(outputDir, fileName), macOSDir)
+
+		# Copy Info.plist into Contents.
+		shutil.copy("cp2_avalonia/Res/Info.plist", contentsDir)
+		# Copy app icon into Contents/Resources.
+		shutil.copy("cp2_avalonia/Res/cp2_app.icns", resourcesDir)
+
+	# Create a ZIP archive to hold the contents.
+	zipFileName = "cp2_" + VERSION_TAG + "_" + pkgName + ".zip"
+	zipPathName = os.path.join(distDir, zipFileName)
+	print("*** creating " + zipFileName)
+	MakeZIP(zipPathName, outputDir)
+	print()
+
+def MakeZIP(zipPathName, sourcePath):
+	""" MakeZIP: generate a ZIP file from the contents of a directory hierarchy. """
+
+	COMP_LVL = 7
+	OS_UNIX = 3
+	S_IFREG = 0o100000      # (S_IFREG) - regular file
+	EXEC_BITS = 0o755       # (S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) - permissions
+	NOEXEC_BITS = 0o644 	# RW owner, R others
+
+	with zipfile.ZipFile(zipPathName, 'x', compression=zipfile.ZIP_DEFLATED,
+			compresslevel=COMP_LVL) as newZip:
+		for root, dirs, files in os.walk(sourcePath):
+			for fileName in files:
+				pathName = os.path.join(root, fileName)
+				zinfo = zipfile.ZipInfo.from_file(pathName, os.path.relpath(pathName, sourcePath))
+				# We want the executables binaries to extract with the execute bits (0755) set on
+				# macOS and Linux.  Other files should be 0644.  The default for files created
+				# by zipfile is 0666, which is weird.
+				bits = NOEXEC_BITS;
+				if fileName in gMarkExecutable:
+					zinfo.create_system = OS_UNIX
+					bits = EXEC_BITS
+				zinfo.external_attr = (zinfo.external_attr & 0x0000ffff) | (bits << 16)
+				with open(pathName, "rb") as fd:
+					newZip.writestr(zinfo, fd.read(), zipfile.ZIP_DEFLATED, COMP_LVL)
 
 def Main():
 	""" Main """
