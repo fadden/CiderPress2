@@ -3,8 +3,6 @@
 # This publishes a new version of the web site from the "ndocs" directory
 # to the "docs" directory.  It should be run from "ndocs".
 #
-# The "app_version" should be updated with the release information.
-#
 
 import os
 import os.path
@@ -14,12 +12,19 @@ import subprocess
 import sys
 
 
+def get_version_tag():
+	""" get_version_tag: extracts the version tag from GlobalAppVersion.cs and returns it. """
+
+	pattern = re.compile(r'APP_VERS.*"([^"]*)"')
+	with open("../AppCommon/GlobalAppVersion.cs") as infile:
+		for lineNum, line in enumerate(infile, start=1):
+			found = re.search(pattern, line)
+			if found:
+				return found.group(1)
+
 # Current version string.  Used for text substitution.
-app_version = "1.2.0"
+app_version = get_version_tag()
 pkg_version = app_version
-
-# ----- nothing configurable below -----
-
 
 # Output directory.  The directory will be completely removed and regenerated.
 output_dir = "../docs"

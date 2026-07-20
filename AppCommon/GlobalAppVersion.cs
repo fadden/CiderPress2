@@ -27,7 +27,13 @@ namespace AppCommon {
         /// Overall application version.
         /// </summary>
         public static readonly CommonUtil.Version AppVersion =
-            new CommonUtil.Version(2, 0, 0, CommonUtil.Version.PreRelType.Dev, 2);
+            new CommonUtil.Version(2, 0, 0, CommonUtil.Version.PreRelType.Dev, 3);
         // NOTE: there's an independent version in DiskArc/Defs.cs
+
+        /// <summary>
+        /// Version string that can be extracted for use in shell scripts.  DO NOT change
+        /// the format of this line without updating the build.
+        /// </summary>
+        private const string APP_VERS = "2.0.0-dev3";
     }
 }

@@ -27,13 +27,12 @@
 import os
 import os.path
 import platform
+import re
 import shutil
 import subprocess
 import sys
 import time
 import zipfile
-
-VERSION_TAG = "2.0.0-dev3"		# TODO: generate this automatically
 
 # Default set of Runtime Identifiers.
 gDefaultRids = [
@@ -66,7 +65,17 @@ gIncludeFiles = [
 
 gReleaseConfig = True
 gForceRemove = False
+gVersionTag = "UNKNOWN"
 
+def GetVersionTag():
+	""" GetVersionTag: extracts the version tag from GlobalAppVersion.cs and returns it. """
+
+	pattern = re.compile(r'APP_VERS.*"([^"]*)"')
+	with open("AppCommon/GlobalAppVersion.cs") as inFile:
+		for lineNum, line in enumerate(inFile, start=1):
+			found = re.search(pattern, line)
+			if found:
+				return found.group(1)
 
 def ClobberBinObj():
 	""" MakeClean: clobbers the 'Release' dir in 'bin' and 'obj' directories. """
@@ -170,7 +179,7 @@ def BuildRid(rid, isSelfContained, distDir):
 		shutil.copy("cp2_avalonia/Res/cp2_app.icns", resourcesDir)
 
 	# Create a ZIP archive to hold the contents.
-	zipFileName = "cp2_" + VERSION_TAG + "_" + pkgName + ".zip"
+	zipFileName = "cp2_" + gVersionTag + "_" + pkgName + ".zip"
 	zipPathName = os.path.join(distDir, zipFileName)
 	print("*** creating " + zipFileName)
 	MakeZIP(zipPathName, outputDir)
@@ -194,7 +203,7 @@ def MakeZIP(zipPathName, sourcePath):
 				# We want the executables binaries to extract with the execute bits (0755) set on
 				# macOS and Linux.  Other files should be 0644.  The default for files created
 				# by zipfile is 0666, which is weird.
-				bits = NOEXEC_BITS;
+				bits = NOEXEC_BITS
 				if fileName in gMarkExecutable:
 					zinfo.create_system = OS_UNIX
 					bits = EXEC_BITS
@@ -207,6 +216,11 @@ def Main():
 
 	global gReleaseConfig
 	global gForceRemove
+	global gVersionTag
+
+	gVersionTag = GetVersionTag()
+	print("Building version " + gVersionTag)
+
 	DIST_DIR = "DIST"
 
 	args = sys.argv[1:]
@@ -239,21 +253,19 @@ def Main():
 	distDir = os.path.abspath(DIST_DIR)
 	os.mkdir(distDir)
 
-	print("--> Building for version " + VERSION_TAG)
-
 	startTime = time.perf_counter()
 
 	# You have to clean the outputs when switching between framework-dependent and
 	# self-contained builds.  (This is especially a problem for cp2_avalonia with
 	# ReadyToRun enabled, because the obj/../R2R files differ significantly.)
 
-	ClobberBinObj();
+	ClobberBinObj()
 	print("## Generating framework-dependent binaries...")
 	for rid in ridList:
 		print("### Publishing projects for RID=" + rid + "...")
 		BuildRid(rid, False, distDir)
 
-	ClobberBinObj();
+	ClobberBinObj()
 	print("## Generating self-contained binaries...")
 	for rid in ridList:
 		print("### Publishing projects for RID=" + rid + "...")
