@@ -1,6 +1,6 @@
 CiderPress II
 
-Web site: https://ciderpress2.com/
+Web site: https://ciderpress2.com/ (or https://fadden.github.io/CiderPress2)
 Source: https://github.com/fadden/ciderpress2
 
 CiderPress II is a software tool for working with disk images and file
@@ -24,19 +24,26 @@ to unzip the distribution archive and run the programs immediately.
 
 --- Installation on macOS ---
 
-On macOS, you will need to clear the "quarantine" flag first.  This flag is
-set on all files downloaded from the internet.  From a terminal window,
-change to the directory where the files were unpacked, and then run:
-
-  xattr -dr com.apple.quarantine *
-
 The GUI application is distributed as a ".app", which can be launched from
-the Finder by double-clicking on it.  The command-line tool is currently
-placed inside the .app directory hierarchy, and can be accessed as
-`./CiderPress\ II.app/Contents/MacOS/cp2`.  Creating a symlink elsewhere
-in your path is recommended.
+the Finder by double-clicking on it.  The command-line tool lives inside
+the .app directory hierarchy, as CiderPress\ II.app/Contents/MacOS/cp2.
+Creating a symlink to it elsewhere in your path is recommended.
+
+On macOS, you will need to clear the "quarantine" flag before you can run the
+programs.  This flag is set automatically on all files downloaded from the
+internet.  From a terminal window, change to the directory where the files
+were unpacked, and then run:
+
+  xattr -dr com.apple.quarantine CiderPress\ II.app
+
+Some ZIP extractors, such as the Safari web browser, don't set the file
+permissions bits correctly.  You can fix this with:
+
+  chmod +x CiderPress\ II.app/Contents/MacOS/CiderPress2
+  chmod +x CiderPress\ II.app/Contents/MacOS/cp2
+
 
 --- Troubleshooting ---
 
 If you get an error message indicating that the .NET framework could not be
-found, try using a self-contained build instead.
+found, use a self-contained build rather than a framework-dependent one.
