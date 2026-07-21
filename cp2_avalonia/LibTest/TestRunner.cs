@@ -84,6 +84,13 @@ namespace cp2_avalonia.LibTest {
             mWorker = worker;
             Debug.WriteLine("Test runner starting, retain=" + RetainOutput);
 
+#if !DEBUG
+            _ = SHOW_TIMES;
+            PrintErrMsg("This feature is only available in Debug builds.");
+            PrintFailure();
+            return null;
+#else
+
             // Find directory with test library and data.
             string? testRoot = GetTestRoot();
             if (testRoot == null) {
@@ -101,39 +108,21 @@ namespace cp2_avalonia.LibTest {
                 PrintFailure();
                 return null;
             }
-
-            string? libDir = GetDLLLocation();
-            if (libDir == null) {
-                AppLog.W("Test runner: could not locate library directory");
-                PrintErrMsg("Can't find lib directory");
-                PrintFailure();
-                return null;
-            }
-            AppLog.D("Test runner: library dir = '" + libDir + "'");
-            string libPath = Path.Combine(libDir, testLibName);
-            AppLog.D("Test runner: library path = '" + libPath + "'");
-            if (!File.Exists(libPath)) {
-                AppLog.W("Test runner: library DLL does not exist: '" + libPath + "'");
-                PrintErrMsg("DLL '" + libPath + "' does not exist");
-                PrintFailure();
-                return null;
-            }
-            PrintProgress("Loading library tests from " + libPath + "\r\n");
-
             // Use a new AppHook so we can set test-specific options without disrupting the
             // main application.  We may want to hook up the app debug log viewer.
             AppHook appHook = new AppHook(new SimpleMessageLog());
             appHook.SetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, true);
             appHook.SetOption(DAAppHook.LIB_TEST_ROOT, testRoot);
 
-            // Find the classes with types.
-            Assembly dll = Assembly.LoadFile(libPath);
-            Type? itestType = dll.GetType(testIfaceName);
+            // We used to load the DLLs dynamically, now we link them in Debug builds and
+            // exclude them from Release builds.  Hack up the assembly-qualified name.
+            Type? itestType = Type.GetType(testIfaceName + ", " + testIfaceName.Split('.')[0]);
             if (itestType == null) {
-                PrintErrMsg("Unable to find ITest interface in test library");
+                PrintErrMsg("Interface '" + testIfaceName + "' not found");
                 PrintFailure();
                 return null;
             }
+
             IEnumerable<Type>? typesFound = Mirror.FindImplementingTypes(itestType);
             if (typesFound == null) {
                 PrintErrMsg("Unable to find test classes");
@@ -213,6 +202,7 @@ namespace cp2_avalonia.LibTest {
             GC.Collect();
 
             return mResults;
+#endif
         }
 
         private void PrintProgress(string msg) {

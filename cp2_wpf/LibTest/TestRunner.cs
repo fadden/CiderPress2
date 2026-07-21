@@ -21,7 +21,6 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Media;
 
-using AppCommon;
 using CommonUtil;
 using DiskArc;
 
@@ -81,12 +80,21 @@ namespace cp2_wpf.LibTest {
         /// <summary>
         /// </summary>
         /// <param name="worker">Background worker object from dialog box.</param>
+        /// <param name="testLibName">Test library name</param>
+        /// <param name="testIfaceName">Test interface name</param>
         public List<TestResult> Run(BackgroundWorker worker, string testLibName,
                 string testIfaceName) {
             Debug.Assert(mWorker == null);  // don't re-use this object
             mWorker = worker;
             Debug.WriteLine("Test runner starting, retain=" + RetainOutput);
             PrintProgress("\r\n");  // weird: text box is ignoring first CRLF
+
+#if !DEBUG
+            _ = SHOW_TIMES;
+            PrintErrMsg("This feature is only available in Debug builds.");
+            PrintFailure();
+            return mResults;
+#else
 
             // Find directory with test library and data.
             string? testRoot = GetTestRoot();
@@ -102,31 +110,17 @@ namespace cp2_wpf.LibTest {
                 return mResults;
             }
 
-            string? libDir = GetDLLLocation();
-            if (libDir == null) {
-                PrintErrMsg("Can't find lib directory");
-                PrintFailure();
-                return mResults;
-            }
-            string libPath = Path.Combine(libDir, testLibName);
-            if (!File.Exists(libPath)) {
-                PrintErrMsg("DLL '" + libPath + "' does not exist");
-                PrintFailure();
-                return mResults;
-            }
-            PrintProgress("Loading library tests from " + libPath + "\r\n");
-
             // Use a new AppHook so we can set test-specific options without disrupting the
             // main application.  We may want to hook up the app debug log viewer.
             AppHook appHook = new AppHook(new SimpleMessageLog());
             appHook.SetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, true);
             appHook.SetOption(DAAppHook.LIB_TEST_ROOT, testRoot);
 
-            // Find the classes with types.
-            Assembly dll = Assembly.LoadFile(libPath);
-            Type? itestType = dll.GetType(testIfaceName);
+            // We used to load the DLLs dynamically, now we link them in Debug builds and
+            // exclude them from Release builds.  Hack up the assembly-qualified name.
+            Type? itestType = Type.GetType(testIfaceName + ", " + testIfaceName.Split('.')[0]);
             if (itestType == null) {
-                PrintErrMsg("Unable to find ITest interface in test library");
+                PrintErrMsg("Interface '" + testIfaceName + "' not found");
                 PrintFailure();
                 return mResults;
             }
@@ -207,6 +201,7 @@ namespace cp2_wpf.LibTest {
             GC.Collect();
 
             return mResults;
+#endif
         }
 
         private void PrintProgress(string msg) {

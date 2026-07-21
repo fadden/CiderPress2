@@ -25,28 +25,39 @@ namespace cp2.Tests {
     /// Execute library tests.
     /// </summary>
     /// <remarks>
-    /// <para>The library test assemblies are loaded dynamically.</para>
+    /// <para>The library test assemblies are only included in Debug builds.</para>
     /// </remarks>
     internal static class LibTestRunner {
         /// <summary>
         /// Executes the DiskArc library tests.
         /// </summary>
         public static bool HandleRunDATests(string cmdName, string[] args, ParamsBag parms) {
-            return RunLibTests(cmdName, args, "DiskArcTests.dll", "DiskArcTests.ITest", parms);
+#if DEBUG
+            return RunLibTests(cmdName, args, "DiskArcTests", typeof(DiskArcTests.ITest), parms);
+#else
+            Console.Error.WriteLine("Error: only supported in Debug builds");
+            return false;
+#endif
         }
 
         /// <summary>
         /// Executes the FileConv library tests.
         /// </summary>
         public static bool HandleRunFCTests(string cmdName, string[] args, ParamsBag parms) {
-            return RunLibTests(cmdName, args, "FileConvTests.dll", "FileConvTests.ITest", parms);
+#if DEBUG
+            return RunLibTests(cmdName, args, "FileConvTests", typeof(FileConvTests.ITest), parms);
+#else
+            Console.Error.WriteLine("Error: only supported in Debug builds");
+            return false;
+#endif
         }
 
+#if DEBUG
         /// <summary>
         /// Common library test entry point.
         /// </summary>
         private static bool RunLibTests(string cmdName, string[] args, string libName,
-                string ifaceTypeName, ParamsBag parms) {
+                Type itestType, ParamsBag parms) {
             if (args.Length > 2) {
                 CP2Main.ShowUsage(cmdName);
                 return false;
@@ -66,27 +77,6 @@ namespace cp2.Tests {
             parms.AppHook.SetOptionBool(DAAppHook.WARN_MARKED_BUT_UNUSED, true);
             parms.AppHook.SetOption(DAAppHook.LIB_TEST_ROOT, Environment.CurrentDirectory);
 
-            // Load the DLL from the directory we're being executed from.
-            string exeName = AppContext.BaseDirectory;
-            string? exeDir = Path.GetDirectoryName(exeName);
-            if (string.IsNullOrEmpty(exeDir)) {
-                Console.Error.WriteLine("Error: unable to find dir for: '" + exeName + "'");
-                return false;
-            }
-
-            string libPath = Path.Combine(exeDir, libName);
-            if (!File.Exists(libPath)) {
-                Console.Error.WriteLine("Error: '" + libPath + "' does not exist");
-                return false;
-            }
-
-            Console.WriteLine("Loading DiskArc library tests from '" + libPath + "'");
-            Assembly dll = Assembly.LoadFile(libPath);
-            Type? itestType = dll.GetType(ifaceTypeName);
-            if (itestType == null) {
-                Console.Error.WriteLine("Error: unable to find ITest interface in test library");
-                return false;
-            }
             IEnumerable<Type>? typesFound = Mirror.FindImplementingTypes(itestType);
             if (typesFound == null) {
                 Console.Error.WriteLine("Error: didn't find any test classes");
@@ -111,7 +101,9 @@ namespace cp2.Tests {
                     continue;
                 }
                 Console.WriteLine("Test set: " + type.Name + " ...");
+#pragma warning disable IL2075  // warning that the code trimmer will discard unreferenced tests
                 MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static);
+#pragma warning restore IL2075
                 foreach (MethodInfo meth in methods) {
                     if (!string.IsNullOrEmpty(testMethod) && meth.Name != testMethod) {
                         continue;
@@ -159,11 +151,9 @@ namespace cp2.Tests {
             } else {
                 Console.WriteLine(successCount + " of " + numTests + " tests passed");
             }
-#if !DEBUG
-            Console.WriteLine("NOTE: it's best to test with a DEBUG build");
-#endif
 
             return (failureCount == 0);
         }
+#endif  // DEBUG
     }
 }
