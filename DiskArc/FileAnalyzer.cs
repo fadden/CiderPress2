@@ -15,6 +15,7 @@
  */
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 
@@ -98,7 +99,10 @@ namespace DiskArc {
             /// <param name="name">Short, human-readable name of class.</param>
             /// <param name="implClass">Implementation class.</param>
             /// <exception cref="Exception"></exception>
-            public DiskLayoutEntry(string name, FileSystemType fsType, Type implClass) {
+            public DiskLayoutEntry(string name, FileSystemType fsType,
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
+                        DynamicallyAccessedMemberTypes.PublicMethods)]
+                    Type implClass) {
                 // Make sure we're getting the right thing.
                 Debug.Assert(implClass.GetInterface(nameof(IFileSystem)) != null ||
                              implClass.GetInterface(nameof(IMultiPart)) != null);

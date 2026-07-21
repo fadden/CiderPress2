@@ -15,6 +15,7 @@
  */
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 
@@ -107,7 +108,10 @@ namespace FileConv {
             // Cached reflection reference to constructor.
             private ConstructorInfo mCtorInfo;
 
-            public ConverterEntry(Type implClass) {
+            public ConverterEntry(
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
+                        DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+                    Type implClass) {
                 Debug.Assert(implClass.IsSubclassOf(typeof(Converter)));
 
                 mImplClass = implClass;
