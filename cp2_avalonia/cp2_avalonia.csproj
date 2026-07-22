@@ -9,7 +9,6 @@
     <UseAppHost>true</UseAppHost>
     <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
-    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -18,8 +17,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- <PublishSelfContained>true</PublishSelfContained> -->
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSelfContained>true</PublishSelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+
+    <!-- partial AoT; increases untrimmed/SC size from ~84MB to ~119MB -->
+    <PublishReadyToRun>false</PublishReadyToRun>
+
+    <!-- trimming and AoT options -->
+    <!--<PublishTrimmed>true</PublishTrimmed>-->
+    <!--<TrimMode>partial</TrimMode>-->
+    <!--<JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>-->
+    <!--<PublishAot>true</PublishAot>--> <!--https://docs.avaloniaui.net/docs/deployment/native-aot-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,6 +48,7 @@
     <None Include="Res/Info.plist" />
   </ItemGroup>
 
+  <!-- TODO: superseded by make-dist.py; remove? -->
   <!-- macOS .app bundle: assembled after: dotnet publish -r osx-x64 -c Release -p:SelfContained=true -->
   <Target Name="BundleMacOSApp" AfterTargets="Publish" Condition="$(RuntimeIdentifier.StartsWith('osx'))">
     <PropertyGroup>

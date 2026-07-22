@@ -259,11 +259,11 @@ def Main():
 	# self-contained builds.  (This is especially a problem for cp2_avalonia with
 	# ReadyToRun enabled, because the obj/../R2R files differ significantly.)
 
-	ClobberBinObj()
-	print("## Generating framework-dependent binaries...")
-	for rid in ridList:
-		print("### Publishing projects for RID=" + rid + "...")
-		BuildRid(rid, False, distDir)
+#	ClobberBinObj()
+#	print("## Generating framework-dependent binaries...")
+#	for rid in ridList:
+#		print("### Publishing projects for RID=" + rid + "...")
+#		BuildRid(rid, False, distDir)
 
 	ClobberBinObj()
 	print("## Generating self-contained binaries...")

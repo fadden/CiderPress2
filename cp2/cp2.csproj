@@ -7,6 +7,8 @@
     <Nullable>enable</Nullable>
     <StartupObject>cp2.CP2Main</StartupObject>
     <PublishSingleFile>true</PublishSingleFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <!--<PublishAot>true</PublishAot>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,8 +16,12 @@
     <ProjectReference Include="..\CommonUtil\CommonUtil.csproj" />
     <ProjectReference Include="..\FileConv\FileConv.csproj" />
     <ProjectReference Include="..\DiskArc\DiskArc.csproj" />
-    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" Condition="'$(Configuration)' == 'Debug'" />
-    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" Condition="'$(Configuration)' == 'Debug'" />
+    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" />
+    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" />
+    <!-- This prevents the code trimmer from stripping out the tests, which are
+         referenced via reflection. File size increases by ~250KB. -->
+    <TrimmerRootAssembly Include="DiskArcTests" />
+    <TrimmerRootAssembly Include="FileConvTests" />
   </ItemGroup>
 
   <!-- copy build output to the app packaging area -->

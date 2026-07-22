@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CommonUtil {
     public static class Mirror {
@@ -28,6 +29,7 @@ namespace CommonUtil {
         /// </remarks>
         /// <param name="type">Type to search for.</param>
         /// <returns>List of types.</returns>
+        [RequiresUnreferencedCode("Types might be removed")]    // be careful with code trimming
         public static IEnumerable<Type>? FindImplementingTypes(Type type) {
             return AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(s => s.GetTypes())

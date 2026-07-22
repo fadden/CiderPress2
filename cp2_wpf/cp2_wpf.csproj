@@ -8,6 +8,7 @@
     <AssemblyName>CiderPress2_wpf</AssemblyName>
     <ApplicationIcon>Res\cp2_app.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
+    <!-- "WPF is not supported or recommended with trimming enabled" -->
   </PropertyGroup>
 
   <ItemGroup>

@@ -15,6 +15,7 @@
  */
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using CommonUtil;
@@ -32,30 +33,21 @@ namespace cp2.Tests {
         /// Executes the DiskArc library tests.
         /// </summary>
         public static bool HandleRunDATests(string cmdName, string[] args, ParamsBag parms) {
-#if DEBUG
             return RunLibTests(cmdName, args, "DiskArcTests", typeof(DiskArcTests.ITest), parms);
-#else
-            Console.Error.WriteLine("Error: only supported in Debug builds");
-            return false;
-#endif
         }
 
         /// <summary>
         /// Executes the FileConv library tests.
         /// </summary>
         public static bool HandleRunFCTests(string cmdName, string[] args, ParamsBag parms) {
-#if DEBUG
             return RunLibTests(cmdName, args, "FileConvTests", typeof(FileConvTests.ITest), parms);
-#else
-            Console.Error.WriteLine("Error: only supported in Debug builds");
-            return false;
-#endif
         }
 
-#if DEBUG
         /// <summary>
         /// Common library test entry point.
         /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            Justification = "It's okay if the test classes get excluded.")]
         private static bool RunLibTests(string cmdName, string[] args, string libName,
                 Type itestType, ParamsBag parms) {
             if (args.Length > 2) {
@@ -90,6 +82,8 @@ namespace cp2.Tests {
         /// <summary>
         /// Executes all listed tests.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "It's okay if the test classes get excluded.")]
         private static bool RunTests(IEnumerable<Type> typesFound, string testClass,
                 string testMethod, AppHook appHook) {
             DateTime startWhen = DateTime.Now;
@@ -98,14 +92,14 @@ namespace cp2.Tests {
 
             foreach (Type type in typesFound) {
                 if (!string.IsNullOrEmpty(testClass) && type.Name != testClass) {
+                    // Not the class we want.
                     continue;
                 }
                 Console.WriteLine("Test set: " + type.Name + " ...");
-#pragma warning disable IL2075  // warning that the code trimmer will discard unreferenced tests
                 MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static);
-#pragma warning restore IL2075
                 foreach (MethodInfo meth in methods) {
                     if (!string.IsNullOrEmpty(testMethod) && meth.Name != testMethod) {
+                        // Not the method we want.
                         continue;
                     }
                     if (!meth.Name.StartsWith("Test")) {
@@ -154,6 +148,5 @@ namespace cp2.Tests {
 
             return (failureCount == 0);
         }
-#endif  // DEBUG
     }
 }
