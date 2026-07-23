@@ -53,6 +53,13 @@ namespace cp2_avalonia {
                 AppLog.E("Unobserved task exception", e.Exception);
                 e.SetObserved();
             };
+#if !DEBUG
+            CommonUtil.Crash.AppTag = "CiderPress2";
+            CommonUtil.Crash.AppIdent = "CiderPress II v" +
+                AppCommon.GlobalAppVersion.AppVersion.ToString();
+            AppDomain.CurrentDomain.UnhandledException +=
+                new UnhandledExceptionEventHandler(CommonUtil.Crash.CrashReporter);
+#endif
         }
     }
 }

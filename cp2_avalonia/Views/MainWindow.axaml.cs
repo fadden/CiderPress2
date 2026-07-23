@@ -18,6 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Windows.Input;
@@ -30,15 +31,15 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 
-using Avalonia.Threading;
 using cp2_avalonia.Common;
+using cp2_avalonia.Models;
+using cp2_avalonia.Services;
 using cp2_avalonia.Tools;
 using cp2_avalonia.ViewModels;
-using cp2_avalonia.Models;
 using DiskArc;
-using cp2_avalonia.Services;
 
 namespace cp2_avalonia.Views;
 
@@ -1244,6 +1245,8 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
     /// Auto-sizes a DataGrid column to fit its header and cell content, replicating
     /// the WPF DataGrid double-click-on-resize-grip behavior.
     /// </summary>
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+        Justification = "It's not fatal if the property is trimmed away.")]
     private static void AutoSizeColumnToContent(DataGrid grid, DataGridColumn col)
     {
         IEnumerable? items = grid.ItemsSource as IEnumerable;
@@ -1294,7 +1297,7 @@ public partial class MainWindow : Window, IDialogHost, IViewActions
                     continue;
                 }
 
-                prop ??= item.GetType().GetProperty(propName);
+                prop ??= item.GetType().GetProperty(propName);      // IL2075 warning here
                 if (prop == null)
                 {
                     break;

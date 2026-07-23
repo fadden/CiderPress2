@@ -49,8 +49,7 @@ namespace CommonUtil {
 
             // Move to directory where executable lives.  Maybe not ideal, but it's better
             // than strewing crash reports in random locations.
-            string? exeName = typeof(Crash).Assembly.Location;
-            string? baseDir = Path.GetDirectoryName(exeName);
+            string? baseDir = AppContext.BaseDirectory;
             string crashPath = crashFileName;
             if (!string.IsNullOrEmpty(baseDir)) {
                 crashPath = Path.Combine(baseDir, crashFileName);

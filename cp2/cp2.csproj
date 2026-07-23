@@ -19,7 +19,7 @@
     <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" />
     <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" />
     <!-- This prevents the code trimmer from stripping out the tests, which are
-         referenced via reflection. File size increases by ~250KB. -->
+         referenced via reflection. Remove to reduce file size by ~250KB. -->
     <TrimmerRootAssembly Include="DiskArcTests" />
     <TrimmerRootAssembly Include="FileConvTests" />
   </ItemGroup>

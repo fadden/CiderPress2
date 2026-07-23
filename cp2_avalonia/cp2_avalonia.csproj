@@ -20,13 +20,13 @@
     <PublishSelfContained>true</PublishSelfContained>
     <PublishSingleFile>true</PublishSingleFile>
 
-    <!-- partial AoT; increases untrimmed/SC size from ~84MB to ~119MB -->
+    <!-- partial AoT; increases size by 30-40MB -->
     <PublishReadyToRun>false</PublishReadyToRun>
 
     <!-- trimming and AoT options -->
-    <!--<PublishTrimmed>true</PublishTrimmed>-->
-    <!--<TrimMode>partial</TrimMode>-->
-    <!--<JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>-->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <NoWarn>$(NoWarn);IL2026</NoWarn> <!-- unwise, but hard to see other link messages otherwise -->
     <!--<PublishAot>true</PublishAot>--> <!--https://docs.avaloniaui.net/docs/deployment/native-aot-->
   </PropertyGroup>
 
@@ -100,8 +100,12 @@
     <ProjectReference Include="..\CommonUtil\CommonUtil.csproj" />
     <ProjectReference Include="..\DiskArc\DiskArc.csproj" />
     <ProjectReference Include="..\FileConv\FileConv.csproj" />
-    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" Condition="'$(Configuration)' == 'Debug'" />
-    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" Condition="'$(Configuration)' == 'Debug'" />
+    <ProjectReference Include="..\DiskArcTests\DiskArcTests.csproj" />
+    <ProjectReference Include="..\FileConvTests\FileConvTests.csproj" />
+    <!-- This prevents the code trimmer from stripping out the tests, which are
+         referenced via reflection. Remove to reduce file size by ~250KB. -->
+    <TrimmerRootAssembly Include="DiskArcTests" />
+    <TrimmerRootAssembly Include="FileConvTests" />
   </ItemGroup>
 
 </Project>

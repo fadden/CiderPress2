@@ -80,6 +80,8 @@ namespace cp2_avalonia.LibTest {
         /// </returns>
         [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
             Justification = "It's okay if the test classes get excluded.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2057",
+            Justification = "It's okay if the test classes get excluded.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "It's okay if the test classes get excluded.")]
         public List<TestResult>? Run(BackgroundWorker worker, string testIfaceName) {
