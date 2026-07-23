@@ -23,12 +23,19 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using AppCommon;
 using CommonUtil;
 using DiskArc;
 using Actions;
 using Models;
+
+
+// This class has auto-generated members, and must be at the top level.
+[JsonSerializable(typeof(List<string>))]
+[JsonSerializable(typeof(IEnumerable<string>))]
+internal partial class SerializationContext : JsonSerializerContext { }
 
 public class WorkspaceService : IWorkspaceService {
     private const int MAX_RECENT_FILES = 6;
@@ -128,7 +135,8 @@ public class WorkspaceService : IWorkspaceService {
             return;
         }
         try {
-            object? parsed = JsonSerializer.Deserialize<List<string>>(cereal);
+            object? parsed = JsonSerializer.Deserialize<List<string>>(cereal,
+                SerializationContext.Default.ListString);
             if (parsed != null) {
                 foreach (string s in (List<string>)parsed) {
                     RecentFilePaths.Add(s);
@@ -154,7 +162,8 @@ public class WorkspaceService : IWorkspaceService {
         while (RecentFilePaths.Count > MAX_RECENT_FILES) {
             RecentFilePaths.RemoveAt(MAX_RECENT_FILES);
         }
-        string cereal = JsonSerializer.Serialize<IEnumerable<string>>(RecentFilePaths);
+        string cereal = JsonSerializer.Serialize<IEnumerable<string>>(RecentFilePaths,
+            SerializationContext.Default.IEnumerableString);
         _settings.SetString(AppSettings.RECENT_FILES_LIST, cereal);
     }
 

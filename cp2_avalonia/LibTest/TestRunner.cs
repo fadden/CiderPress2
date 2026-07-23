@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using Avalonia.Media;
@@ -72,24 +73,19 @@ namespace cp2_avalonia.LibTest {
         /// <summary>
         /// </summary>
         /// <param name="worker">Background worker object from dialog box.</param>
-        /// <param name="testLibName">Test library name</param>
-        /// <param name="testIfaceName">Test interface name</param>
+        /// <param name="testIfaceName">Test interface name.</param>
         /// <returns>
         /// The list of test results (empty if all tests passed), or <c>null</c> if the
         /// test run could not be started (e.g. the test data or library could not be found).
         /// </returns>
-        public List<TestResult>? Run(BackgroundWorker worker, string testLibName,
-                string testIfaceName) {
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            Justification = "It's okay if the test classes get excluded.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "It's okay if the test classes get excluded.")]
+        public List<TestResult>? Run(BackgroundWorker worker, string testIfaceName) {
             Debug.Assert(mWorker == null);  // don't re-use this object
             mWorker = worker;
             Debug.WriteLine("Test runner starting, retain=" + RetainOutput);
-
-#if !DEBUG
-            _ = SHOW_TIMES;
-            PrintErrMsg("This feature is only available in Debug builds.");
-            PrintFailure();
-            return null;
-#else
 
             // Find directory with test library and data.
             string? testRoot = GetTestRoot();
@@ -122,7 +118,6 @@ namespace cp2_avalonia.LibTest {
                 PrintFailure();
                 return null;
             }
-
             IEnumerable<Type>? typesFound = Mirror.FindImplementingTypes(itestType);
             if (typesFound == null) {
                 PrintErrMsg("Unable to find test classes");
@@ -202,7 +197,6 @@ namespace cp2_avalonia.LibTest {
             GC.Collect();
 
             return mResults;
-#endif
         }
 
         private void PrintProgress(string msg) {

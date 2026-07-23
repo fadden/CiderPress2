@@ -97,7 +97,6 @@ public class TestManagerViewModel : ObservableObject
     // Private state
 
     private readonly BackgroundWorker mWorker;
-    private readonly string mTestLibName;
     private readonly string mTestIfaceName;
     private List<TestRunner.TestResult> mLastResults = new List<TestRunner.TestResult>();
 
@@ -181,7 +180,7 @@ public class TestManagerViewModel : ObservableObject
         if (e.Argument != null) {
             test.RetainOutput = (bool)e.Argument;
         }
-        List<TestRunner.TestResult>? results = test.Run(worker, mTestLibName, mTestIfaceName);
+        List<TestRunner.TestResult>? results = test.Run(worker, mTestIfaceName);
 
         if (worker.CancellationPending) {
             e.Cancel = true;
@@ -251,8 +250,7 @@ public class TestManagerViewModel : ObservableObject
     // -----------------------------------------------------------------------------------------
     // Constructor
 
-    public TestManagerViewModel(string testLibName, string testIfaceName) {
-        mTestLibName = testLibName;
+    public TestManagerViewModel(string testIfaceName) {
         mTestIfaceName = testIfaceName;
 
         mWorker = new BackgroundWorker();

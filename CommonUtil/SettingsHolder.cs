@@ -16,6 +16,11 @@
 using System;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+
+[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSourceGenerationOptions(WriteIndented = true)]
+internal partial class SettingsContext : JsonSerializerContext { }
 
 namespace CommonUtil {
     /// <summary>
@@ -264,9 +269,12 @@ namespace CommonUtil {
         /// </remarks>
         /// <returns>Serialized settings.</returns>
         public string Serialize() {
-            // Use WriteIndented to improve readability for nosy humans.
-            string cereal = JsonSerializer.Serialize(mSettings, typeof(Dictionary<string, string>),
-                new JsonSerializerOptions() { WriteIndented = true });
+            // We want to use WriteIndented to improve readability for nosy humans.  There is no
+            // JsonSerializer constructor that takes both JsonSerializerContext and
+            // JsonSerializerOptions arguments, so we set it on the Context instead.  (We need
+            // to use a context to appease the trimmer.)
+            string cereal = JsonSerializer.Serialize< Dictionary<string, string>>(mSettings,
+                SettingsContext.Default.DictionaryStringString);
             return cereal;
         }
 
@@ -278,7 +286,7 @@ namespace CommonUtil {
         public static SettingsHolder? Deserialize(string cereal) {
             try {
                 object? parsed = JsonSerializer.Deserialize(cereal,
-                    typeof(Dictionary<string, string>));
+                    SettingsContext.Default.DictionaryStringString);
                 if (parsed == null) {
                     return null;
                 }

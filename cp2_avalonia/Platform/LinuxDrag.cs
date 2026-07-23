@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -33,6 +34,16 @@ using Avalonia.Threading;
 using cp2_avalonia.Services;
 
 namespace cp2_avalonia.Platform;
+
+// These warn about reflection-based algorithms that can fail because the code trimmer didn't
+// know it was supposed to retain something. In this case, the code is fully aware that the
+// classes it references may not exist.
+[UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+    Justification = "We only use the classes if they're included.")]
+[UnconditionalSuppressMessage("Trimming", "IL2060",
+    Justification = "We only use the classes if they're included.")]
+[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+    Justification = "We only use the classes if they're included.")]
 
 /// <summary>
 /// Linux/X11 XDND handler for BOTH receiving and sending file drags.

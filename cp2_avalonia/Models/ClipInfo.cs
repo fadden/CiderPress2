@@ -18,12 +18,17 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using AppCommon;
 
 using cp2_avalonia.Services;
 
 namespace cp2_avalonia.Models {
+    // This class has auto-generated members, and must be at the top level.
+    [JsonSerializable(typeof(ClipInfo))]
+    internal partial class ClipInfoContext : JsonSerializerContext { }
+
     /// <summary>
     /// Clipboard data model for CiderPress II file entries.  Cross-platform version that
     /// uses JSON text instead of Windows-specific binary clipboard formats.
@@ -91,7 +96,8 @@ namespace cp2_avalonia.Models {
         /// Serializes this ClipInfo to a clipboard-ready string with a recognizable prefix.
         /// </summary>
         public string ToClipString() {
-            return CLIP_PREFIX + JsonSerializer.Serialize(this);
+            return CLIP_PREFIX +
+                JsonSerializer.Serialize<ClipInfo>(this, ClipInfoContext.Default.ClipInfo);
         }
 
         /// <summary>
@@ -104,7 +110,7 @@ namespace cp2_avalonia.Models {
             }
             try {
                 ClipInfo? result = JsonSerializer.Deserialize<ClipInfo>(
-                    text[CLIP_PREFIX.Length..]);
+                    text[CLIP_PREFIX.Length..], ClipInfoContext.Default.ClipInfo);
                 if (result?.ClipEntries == null) {
                     AppLog.W("Clipboard data arrived without entries");
                     return null;

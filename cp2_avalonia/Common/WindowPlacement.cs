@@ -17,12 +17,18 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+
 using Avalonia;
 using Avalonia.Controls;
 
 using cp2_avalonia.Services;
 
 namespace cp2_avalonia.Common {
+    // This class has auto-generated members, and must be at the top level.
+    [JsonSerializable(typeof(WindowPlacement.SavedPos))]
+    internal partial class WinPosContext : JsonSerializerContext { }
+
     /// <summary>
     /// Saves and restores main window position and size.  Replaces the WPF Win32
     /// Get/SetWindowPlacement approach with a JSON-based cross-platform implementation.
@@ -48,6 +54,22 @@ namespace cp2_avalonia.Common {
             window.Closed += (_, _) => sNormalBounds.Remove(window);
         }
 
+        [Serializable()]
+        internal class SavedPos {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public double Width { get; set; }
+            public double Height { get; set; }
+            public string State { get; set; }
+            public SavedPos(int x, int y, double width, double height, string state) {
+                X = x;
+                Y = y;
+                Width = width;
+                Height = height;
+                State = state;
+            }
+        }
+
         /// <summary>
         /// Serializes the window's current position and state to a JSON string.
         /// </summary>
@@ -67,11 +89,8 @@ namespace cp2_avalonia.Common {
                 h = window.Height;
             }
 
-            var data = new {
-                X = x, Y = y, Width = w, Height = h,
-                State = window.WindowState.ToString()
-            };
-            return JsonSerializer.Serialize(data);
+            SavedPos data = new SavedPos(x, y, w, h, window.WindowState.ToString());
+            return JsonSerializer.Serialize<SavedPos>(data, WinPosContext.Default.SavedPos);
         }
 
         /// <summary>
@@ -80,15 +99,17 @@ namespace cp2_avalonia.Common {
         /// </summary>
         public static void Restore(Window window, string json) {
             try {
-                var data = JsonSerializer.Deserialize<JsonElement>(json);
-                window.Position = new PixelPoint(
-                    data.GetProperty("X").GetInt32(),
-                    data.GetProperty("Y").GetInt32());
-                window.Width = data.GetProperty("Width").GetDouble();
-                window.Height = data.GetProperty("Height").GetDouble();
-                if (Enum.TryParse<WindowState>(
-                        data.GetProperty("State").GetString(), out var state)) {
-                    window.WindowState = state;
+                SavedPos? data = JsonSerializer.Deserialize<SavedPos>(json,
+                    WinPosContext.Default.SavedPos);
+                if (data == null) {
+                    AppLog.D("Window placement: ignoring invalid saved data '" + json + "'");
+                } else {
+                    window.Position = new PixelPoint(data.X, data.Y);
+                    window.Width = data.Width;
+                    window.Height = data.Height;
+                    if (Enum.TryParse<WindowState>(data.State, out var state)) {
+                        window.WindowState = state;
+                    }
                 }
             } catch (Exception ex) {
                 // Ignore invalid or missing placement data; window stays at default position.

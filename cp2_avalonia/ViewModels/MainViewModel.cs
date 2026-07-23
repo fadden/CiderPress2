@@ -346,13 +346,13 @@ public class MainViewModel : ObservableObject
 
         // 44. Debug_DiskArcLibTestCommand — async, always enabled
         Debug_DiskArcLibTestCommand = new AsyncRelayCommand(async () => {
-            var vm = new TestManagerViewModel("DiskArcTests.dll", "DiskArcTests.ITest");
+            var vm = new TestManagerViewModel("DiskArcTests.ITest");
             await mDialogService.ShowDialogAsync(vm);
         });
 
         // 45. Debug_FileConvLibTestCommand — async, always enabled
         Debug_FileConvLibTestCommand = new AsyncRelayCommand(async () => {
-            var vm = new TestManagerViewModel("FileConvTests.dll", "FileConvTests.ITest");
+            var vm = new TestManagerViewModel("FileConvTests.ITest");
             await mDialogService.ShowDialogAsync(vm);
         });
 
