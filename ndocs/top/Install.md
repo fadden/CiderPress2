@@ -1,127 +1,63 @@
 # CiderPress II Download and Installation Guide #
 
-The command-line and GUI applications are written in C#, targeted to .NET 10.  The .NET
-runtime is available for download from Microsoft for a variety of platforms, including Windows,
-Mac OS, and Linux.  It's even available for the
-[Raspberry PI](https://learn.microsoft.com/en-us/dotnet/iot/deployment).
-The [documentation](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)
-says that .NET 10 is only supported for Windows 10+, MacOS 13+, and recent versions of Linux,
-but in practice the command-line tool has been used successfully on Windows 7 and MacOS 11 (these
-are officially "out of support").
-
-There are two types of downloads here: self-contained and framework-dependent.  The former
-includes all necessary parts of the .NET runtime in the package, so there's no need to have .NET
-installed on your system.  If you happen to have .NET 10 or later already installed, the
-framework-dependent package is significantly smaller.
+The command-line and GUI applications are written in C#, targeted to .NET 10.  Officially, .NET 10
+is supported on Windows 10+, macOS 15+, and recent versions of Linux, but in practice it works
+on older versions, including Windows 7 and macOS 11.  The downloads are are completely
+self-contained, and do not require you to have .NET installed on your system.
 
 You can pick a file to download from the [Releases page](https://github.com/fadden/CiderPress2/releases),
 or use one of the links below to download the most recent stable release.
 
-**Self-Contained** (45-75 MB)
+System       | Link
+------------ | ----
+Windows x86  | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x86.zip
+Windows x64  | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64.zip
+macOS x64    | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64.zip
+macOS ARM64  | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-arm64.zip
+Linux x64    | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64.zip
 
-System        | Link
-------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x86_sc.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64_sc.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_sc.zip
-Mac OS ARM64  | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-arm64_sc.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_sc.zip
+Once downloaded, unzip the file somewhere convenient.  There is no installer; the commands are
+executed directly from where they are unzipped.  The graphical UI tools can be launched by
+double-clicking on them.  On some systems, an additional step may be necessary to complete the
+installation.  If so, you will need a command-line shell:
 
-**Framework-Dependent** (~10 MB)
-
-System        | Link
-------------- | ----
-Windows x86   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x86_fd.zip
-Windows x64   | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_win-x64_fd.zip
-Mac OS x64    | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-x64_fd.zip
-Mac OS ARM64  | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_osx-arm64_fd.zip
-Linux x64     | https://github.com/fadden/CiderPress2/releases/download/v${VERSION}/cp2_${PKG_VERSION}_linux-x64_fd.zip
-
-Once downloaded, unzip the file somewhere convenient (Safari on the Mac will do the unzip
-for you).  There is no installer; the commands are executed directly from where they are unzipped.
-On some systems an additional step may be necessary.
-
-You will need a command-line shell to run "cp2":
-
- - Windows: hit Windows+R to open the "run" window.  Enter "cmd" for a classic DOS shell or
-   "powershell" for something fancier, and hit return.
- - Linux: use "xterm", "gnome-terminal", or whatever you like.
- - Mac OS: from the Finder, in the Go menu, select Utilities.  Double-click Terminal to launch it.
+ - Windows: hit Windows+R to open the "run" window.  Enter `cmd` for a classic DOS shell or
+   `powershell` for something fancier, and hit return.
+ - Linux: use `xterm`, `gnome-terminal`, or whatever you like.
+ - macOS: from the Finder, in the Go menu, select Utilities.  Double-click Terminal to launch it.
 
 In the shell, change to the directory where the files were unzipped.  Then:
 
- - Windows: run `./cp2 version` to confirm it works.  You will probably need to click through some
-   security warnings.  If you're interested in the GUI version, double-click `CiderPress2.exe`.
+ - Windows: no additional steps required.  Run `./cp2 version` to confirm it works.  You will
+   probably need to click through some security warnings.
  - Linux: the command should have been made executable when unzipped; if not, use
-   `chmod +x cp2 CiderPress2` to fix it.  Run `./cp2 version` to confirm it works.  `CiderPress2`
-   can be run from the command-line or by double-clicking on it.
- - Mac OS: the command should have been made executable when unzipped; if not, use
-   `chmod +x cp2 CiderPress2` to make it executable.  The system adds a "quarantine" flag to
-   anything downloaded from the Internet, so you need to do an extra step before you can execute
-   the program.  From a Terminal window, in the directory where the files were unpacked, run
-   `xattr -d com.apple.quarantine *`.  Run `./cp2 version` to confirm this was successful.  The
-   x64 version requires Rosetta 2 to run on Apple Silicon macs; if you've never run an Intel-based
-   program on your Mac, it won't be present, and you will see "bad CPU type in executable"
-   messages.  [Apple support](https://support.apple.com/en-us/102527) has instructions for getting
-   Rosetta 2 installed.
+   `chmod +x cp2 CiderPress2` to fix it.  Run `./cp2 version` to confirm it works.
+ - macOS: the commands should have been marked executable when unzipped.  If you're getting an
+   error message that says the program isn't working, this probably didn't happen.  Fix it with
+   `chmod +x CiderPress\ II.app/Contents/MacOS/cp2` and
+   `chmod +x CiderPress\ II.app/Contents/MacOS/CiderPress2`.  In addition, the system adds a
+   "quarantine" flag to anything downloaded from the Internet, so you need  do an extra step
+   before you can execute the program (if you don't do this, you will get a message that says
+   the program is damaged and should be deleted).  From a Terminal window, in the directory where
+   the files were unpacked, run `xattr -dr com.apple.quarantine CiderPress\ II.app`.  To confirm
+   it worked, run `./CiderPress\ II.app/Contents/MacOS/cp2 version`.
 
 The commands are:
 
  - `cp2`: command-line interface
  - `CiderPress2`: desktop graphical interface
- - `CiderPress2_wpf`: desktop graphical interface for Windows (will be going away)
+ - `CiderPress2_wpf`: older desktop graphical interface for Windows (will be going away)
 
 The download includes the manual for the cp2 command-line utility, `Manual-cp2.md`, formatted for
 80 columns for ease of viewing in a terminal window.  The file is in "Markdown" format, which is
-perfectly readable as a plain text file.  The manual for the GUI, and tutorials for both forms of
-the application, can be found on the [web site](https://ciderpress2.com/).
+perfectly readable as a plain text file.  The manuals and tutorials for both sets of tools can be
+found on the [web site](https://ciderpress2.com/).
 
-### Installing .NET ###
+## Building For Other Systems ##
 
-Should you wish to use the framework-dependent packages, you'll need to install the .NET runtime.
-Get it here: https://dotnet.microsoft.com/en-us/download .  Find the "all .NET 10.0 downloads"
-link (or whatever version is current) and click on it.  In the ".NET Runtime" section (or, if
-you wan to run the old Windows-only GUI, ".NET Desktop Runtime" section), download the appropriate
-item from the Installers column.  You can also download a more complete package, such as the SDK
-or the ASP.NET Core Runtime, but they're larger and have things you won't need if you just want to
-run CiderPress II.  The downloads in the Binaries column will give you a "dotnet" executable and
-libraries without an installer, which means you'll have the runtime but may not have it
-automatically configured in your shell path.
-
-
-## Tested Systems ##
-
-The CiderPress II command-line utility was developed on x64 CPUs with:
-
- - Windows 10 (build 19044)
- - macOS 11.6.3 "Big Sur" (x86) and 15.2 "Sequoia" (Apple silicon)
- - Linux Ubuntu 20.04.6 LTS
-
-Compatibility is determined mostly by the .NET runtime, so more recent versions of the operating
-systems are expected to work.  Older versions of the operating systems may or may not work.  For
-example, the CLI application has been successfully run on Windows 7 32-bit (x86), but this will
-not be tested regularly.
-
-## Support for Other Systems ##
-
-The contents of the framework-dependent download packages for different systems are almost
-entirely identical.  The application itself is compiled to platform-agnostic bytecode.  Each
-platform has a system-specific "cp2" executable that gets the runtime up and pointed in the
-right direction.  The only significant difference is between 32-bit code and 64-bit code; you
-cannot run a 64-bit package on a 32-bit runtime.
-
-If you want to run the command-line app on a platform that doesn't have a system-specific
-binary on the Releases page, you need to install the .NET runtime for your system, and then
-download one of the framework-dependent packages (e.g. `win-x86_fd` or `win-x64_fd` depending
-on whether your target is 32-bit or 64-bit, respectively).  You can then run the program with
-`dotnet cp2.dll <args>`.  For convenience, you can wrap that up in a shell script, like this:
-
-    #!/bin/sh
-    exec PATH/TO/dotnet PATH/TO/cp2.dll $@
-
-If you would prefer to build the sources from scratch, the steps for doing so are:
+If you would like to build the "cp2" utility from scratch, the steps for doing so are:
 
  1. Install the .NET 10 SDK for your system.  If you're using a package manager, look for
     a package with "dotnet-sdk" in the name.
  2. Clone the source tree: `git clone https://github.com/fadden/CiderPress2`.
- 3. From the `CiderPress2` directory, run the `mkcp2.sh` shell script.
+ 3. From the root directory of the source tree, run the `mkcp2.sh` shell script.

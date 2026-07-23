@@ -123,7 +123,7 @@ def BuildRid(rid, isSelfContained, distDir):
 	# Create output directory.
 	scStr = "_sc" if isSelfContained else "_fd"
 	debugStr = "" if gReleaseConfig else "_debug"
-	pkgName = rid + scStr + debugStr
+	pkgName = rid + debugStr
 	outputDir = os.path.join(distDir, pkgName)
 	os.mkdir(outputDir)
 
@@ -255,18 +255,12 @@ def Main():
 
 	startTime = time.perf_counter()
 
-	# You have to clean the outputs when switching between framework-dependent and
-	# self-contained builds.  (This is especially a problem for cp2_avalonia with
-	# ReadyToRun enabled, because the obj/../R2R files differ significantly.)
-
-#	ClobberBinObj()
-#	print("## Generating framework-dependent binaries...")
-#	for rid in ridList:
-#		print("### Publishing projects for RID=" + rid + "...")
-#		BuildRid(rid, False, distDir)
-
+	# Clobber the contents of the bin/obj directories to ensure we're always
+	# doing a clean build.  Strictly speaking, this is only necessary if
+	# the build parameters (like PublishSelfContained or PublishReadToRun)
+	# are altered.
 	ClobberBinObj()
-	print("## Generating self-contained binaries...")
+
 	for rid in ridList:
 		print("### Publishing projects for RID=" + rid + "...")
 		BuildRid(rid, True, distDir)
