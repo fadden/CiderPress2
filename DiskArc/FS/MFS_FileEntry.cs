@@ -46,7 +46,11 @@ namespace DiskArc.FS {
 
         public string FileName {
             get => mFileName;
-            set => throw new IOException();
+            set {
+                CheckChangeAllowed();
+                SetFileName(value);
+                MarkDirty();
+            }
         }
         public char DirectorySeparatorChar { get => IFileEntry.NO_DIR_SEP; set { } }
         public string FullPathName {
@@ -60,11 +64,29 @@ namespace DiskArc.FS {
         }
         public byte[] RawFileName {
             get {
-                byte[] result = new byte[mFileName.Length];
+                byte[] result = new byte[mRawFileName[0]];
                 Array.Copy(mRawFileName, 1, result, 0, result.Length);
                 return result;
             }
-            set => throw new IOException();
+            set {
+                CheckChangeAllowed();
+                if (value == null) {
+                    throw new ArgumentNullException(nameof(value));
+                }
+                if (value.Length < 1 || value.Length > MFS.MAX_FILE_NAME_LEN) {
+                    throw new ArgumentException("Invalid raw filename length " + value.Length);
+                }
+                byte[] raw = new byte[MFS.MAX_FILE_NAME_LEN + 1];
+                raw[0] = (byte)value.Length;
+                Array.Copy(value, 0, raw, 1, value.Length);
+                string cooked = GenerateCookedName(raw, false);
+                if (cooked.Length == 0) {
+                    throw new ArgumentException("Invalid raw filename");
+                }
+                Array.Copy(raw, mRawFileName, raw.Length);
+                mFileName = cooked;
+                MarkDirty();
+            }
         }
 
         public bool HasProDOSTypes => false;
@@ -75,11 +97,19 @@ namespace DiskArc.FS {
         public bool HasHFSTypes => true;
         public uint HFSFileType {
             get { return RawData.GetU32BE(mFinderInfo, 0); }    // fdType
-            set => throw new IOException();
+            set {
+                CheckChangeAllowed();
+                RawData.SetU32BE(mFinderInfo, 0, value);
+                MarkDirty();
+            }
         }
         public uint HFSCreator {
             get { return RawData.GetU32BE(mFinderInfo, 4); }    // fdCreator
-            set => throw new IOException();
+            set {
+                CheckChangeAllowed();
+                RawData.SetU32BE(mFinderInfo, 4, value);
+                MarkDirty();
+            }
         }
 
         public byte Access {
@@ -87,15 +117,33 @@ namespace DiskArc.FS {
                 return (mFlags & (byte)FileFlags.Locked) != 0 ?
                     FileAttribs.FILE_ACCESS_LOCKED : FileAttribs.FILE_ACCESS_UNLOCKED;
             }
-            set => throw new IOException();
+            set {
+                CheckChangeAllowed();
+                // MFS only represents a single "locked" bit.  Treat the file as locked when the
+                // write-enable bit is clear.
+                if ((value & (byte)FileAttribs.AccessFlags.Write) == 0) {
+                    mFlags |= (byte)FileFlags.Locked;
+                } else {
+                    mFlags = (byte)(mFlags & ~(byte)FileFlags.Locked);
+                }
+                MarkDirty();
+            }
         }
         public DateTime CreateWhen {
             get { return TimeStamp.ConvertDateTime_HFS(mCreateWhen); }
-            set => throw new IOException();
+            set {
+                CheckChangeAllowed();
+                mCreateWhen = TimeStamp.ConvertDateTime_HFS(value);
+                MarkDirty();
+            }
         }
         public DateTime ModWhen {
             get { return TimeStamp.ConvertDateTime_HFS(mModWhen); }
-            set => throw new IOException();
+            set {
+                CheckChangeAllowed();
+                mModWhen = TimeStamp.ConvertDateTime_HFS(value);
+                MarkDirty();
+            }
         }
 
         public long StorageSize => mDataPhysicalLen + mRsrcPhysicalLen;
@@ -165,6 +213,26 @@ namespace DiskArc.FS {
         internal uint DataLogicalLen => mDataLogicalLen;
         internal ushort RsrcStartBlock => mRsrcStartBlock;
         internal uint RsrcLogicalLen => mRsrcLogicalLen;
+
+        internal uint FileNumber { get => mFileNumber; set => mFileNumber = value; }
+
+        /// <summary>
+        /// Updates the on-disk geometry fields for one fork.  Called by the file descriptor
+        /// when a fork is modified.  Marks the directory dirty.
+        /// </summary>
+        internal void UpdateFork(FilePart part, ushort startBlock, uint logicalLen,
+                uint physicalLen) {
+            if (part == FilePart.RsrcFork) {
+                mRsrcStartBlock = startBlock;
+                mRsrcLogicalLen = logicalLen;
+                mRsrcPhysicalLen = physicalLen;
+            } else {
+                mDataStartBlock = startBlock;
+                mDataLogicalLen = logicalLen;
+                mDataPhysicalLen = physicalLen;
+            }
+            MarkDirty();
+        }
 
         //
         // Implementation-specific.
@@ -361,7 +429,95 @@ namespace DiskArc.FS {
         }
 
         // IFileEntry
-        public void SaveChanges() { }
+        public void SaveChanges() {
+            // Changes are stored alongside all others in the volume directory.  Flush the whole
+            // thing if anything has been modified.
+            FileSystem.FlushDirectory();
+        }
+
+        /// <summary>
+        /// Throws an exception if attribute changes are not allowed.
+        /// </summary>
+        private void CheckChangeAllowed() {
+            if (FileSystem == null || FileSystem.IsReadOnly || IsDubious || IsDamaged) {
+                throw new IOException("Changes not allowed");
+            }
+        }
+
+        /// <summary>
+        /// Marks the file entry as dirty.  We don't keep a per-entry flag because any change
+        /// requires rewriting the whole directory; instead we notify the filesystem object.
+        /// </summary>
+        internal void MarkDirty() {
+            FileSystem.IsVolDirDirty = true;
+        }
+
+        /// <summary>
+        /// Number of bytes this entry occupies when serialized into a directory block, including
+        /// the trailing pad byte needed to keep the following entry 16-bit-word aligned.
+        /// </summary>
+        internal int GetStoredLength() {
+            int len = ENTRY_BASE_LEN + 1 + mRawFileName[0];     // header + name-length byte + name
+            if ((len & 0x01) != 0) {
+                len++;      // pad to even
+            }
+            return len;
+        }
+
+        /// <summary>
+        /// Serializes this file entry into a directory buffer (inverse of ExtractFileEntry).
+        /// The start of the entry must be 16-bit-word aligned; a trailing pad byte is written
+        /// when necessary to keep the following entry aligned.
+        /// </summary>
+        internal void StoreEntry(byte[] buf, ref int offset) {
+            int startOffset = offset;
+            buf[offset++] = mFlags;
+            buf[offset++] = mVersion;
+            Array.Copy(mFinderInfo, 0, buf, offset, FINDER_INFO_LEN);
+            offset += FINDER_INFO_LEN;
+            RawData.WriteU32BE(buf, ref offset, mFileNumber);
+            RawData.WriteU16BE(buf, ref offset, mDataStartBlock);
+            RawData.WriteU32BE(buf, ref offset, mDataLogicalLen);
+            RawData.WriteU32BE(buf, ref offset, mDataPhysicalLen);
+            RawData.WriteU16BE(buf, ref offset, mRsrcStartBlock);
+            RawData.WriteU32BE(buf, ref offset, mRsrcLogicalLen);
+            RawData.WriteU32BE(buf, ref offset, mRsrcPhysicalLen);
+            RawData.WriteU32BE(buf, ref offset, mCreateWhen);
+            RawData.WriteU32BE(buf, ref offset, mModWhen);
+            Debug.Assert(offset - startOffset == ENTRY_BASE_LEN);
+
+            byte nameLen = mRawFileName[0];
+            buf[offset++] = nameLen;
+            Array.Copy(mRawFileName, 1, buf, offset, nameLen);
+            offset += nameLen;
+            if (((offset - startOffset) & 0x01) != 0) {
+                buf[offset++] = 0;      // pad to keep next entry word-aligned
+            }
+        }
+
+        /// <summary>
+        /// Creates a new, empty file entry (both forks zero-length).
+        /// </summary>
+        internal static MFS_FileEntry CreateEntry(MFS fs, IFileEntry parentDir, string fileName,
+                uint fileNumber, DateTime createWhen) {
+            byte[]? rawName = GenerateRawName(fileName);
+            if (rawName == null) {
+                throw new ArgumentException("Invalid MFS filename '" + fileName + "'");
+            }
+            MFS_FileEntry newEntry = new MFS_FileEntry(fs);
+            newEntry.ContainingDir = parentDir;
+            newEntry.mFlags = (byte)FileFlags.EntryUsed;
+            newEntry.mVersion = 0;
+            newEntry.mFileNumber = fileNumber;
+            newEntry.mDataStartBlock = 0;       // empty fork
+            newEntry.mRsrcStartBlock = 0;       // empty fork
+            uint when = TimeStamp.ConvertDateTime_HFS(createWhen);
+            newEntry.mCreateWhen = when;
+            newEntry.mModWhen = when;
+            Array.Copy(rawName, newEntry.mRawFileName, rawName.Length);
+            newEntry.mFileName = fileName;
+            return newEntry;
+        }
 
         // IFileEntry
         public void AddConflict(uint chunk, IFileEntry entry) {
@@ -412,6 +568,93 @@ namespace DiskArc.FS {
             }
 
             return MacChar.MacToUnicode(rawFileName, 1, nameLen, MacChar.Encoding.RomanShowCtrl);
+        }
+
+        /// <summary>
+        /// Returns true if the string is a valid MFS filename.
+        /// </summary>
+        public static bool IsFileNameValid(string name) {
+            if (name.Length < 1 || name.Length > MFS.MAX_FILE_NAME_LEN) {
+                return false;
+            }
+            // MFS is a flat filesystem, so ':' is permitted.  Mac OS Roman characters only,
+            // control characters allowed via the control-pictures group.
+            return MacChar.IsStringValid(name, MacChar.Encoding.RomanShowCtrl);
+        }
+
+        /// <summary>
+        /// Validates a filename and updates this entry's raw + cooked name fields.  Does not
+        /// mark the directory dirty (the caller does that).
+        /// </summary>
+        /// <exception cref="ArgumentException">The name is not a valid MFS filename.</exception>
+        private void SetFileName(string fileName) {
+            byte[]? rawName = GenerateRawName(fileName);
+            if (rawName == null) {
+                throw new ArgumentException("Invalid MFS filename '" + fileName + "'");
+            }
+            Array.Copy(rawName, mRawFileName, rawName.Length);
+            mFileName = GenerateCookedName(mRawFileName, false);
+        }
+
+        /// <summary>
+        /// Generates the "raw" MFS filename (length byte followed by Mac OS Roman characters).
+        /// </summary>
+        /// <returns>Raw filename buffer, or null if the name is invalid.</returns>
+        public static byte[]? GenerateRawName(string fileName) {
+            if (!IsFileNameValid(fileName)) {
+                return null;
+            }
+            byte[] rawName = new byte[MFS.MAX_FILE_NAME_LEN + 1];
+            rawName[0] = (byte)fileName.Length;
+            MacChar.UnicodeToMac(fileName, rawName, 1, MacChar.Encoding.RomanShowCtrl);
+            return rawName;
+        }
+
+        /// <summary>
+        /// Returns true if the string is a valid MFS volume name.
+        /// </summary>
+        public static bool IsVolumeNameValid(string name) {
+            if (name.Length < 1 || name.Length > MFS.MAX_VOL_NAME_LEN) {
+                return false;
+            }
+            // Same character rules as filenames, just a shorter maximum length.
+            return MacChar.IsStringValid(name, MacChar.Encoding.RomanShowCtrl);
+        }
+
+        /// <summary>
+        /// Generates the "raw" MFS volume name (length byte followed by Mac OS Roman characters),
+        /// in a buffer sized for the MDB's drVN field.
+        /// </summary>
+        /// <returns>Raw volume name buffer, or null if the name is invalid.</returns>
+        public static byte[]? GenerateRawVolumeName(string volumeName) {
+            if (!IsVolumeNameValid(volumeName)) {
+                return null;
+            }
+            byte[] rawName = new byte[MFS.MAX_VOL_NAME_LEN + 1];
+            rawName[0] = (byte)volumeName.Length;
+            MacChar.UnicodeToMac(volumeName, rawName, 1, MacChar.Encoding.RomanShowCtrl);
+            return rawName;
+        }
+
+        /// <summary>
+        /// Adjusts a filename to be compatible with MFS, replacing invalid characters and
+        /// clamping the length.
+        /// </summary>
+        public static string AdjustFileName(string fileName) {
+            if (string.IsNullOrEmpty(fileName)) {
+                return "Q";
+            }
+            char[] chars = fileName.ToCharArray();
+            for (int i = 0; i < chars.Length; i++) {
+                if (!MacChar.IsCharValid(chars[i], MacChar.Encoding.RomanShowCtrl)) {
+                    chars[i] = '?';
+                }
+            }
+            string cleaned = new string(chars);
+            if (cleaned.Length > MFS.MAX_FILE_NAME_LEN) {
+                cleaned = cleaned.Substring(0, MFS.MAX_FILE_NAME_LEN);
+            }
+            return cleaned;
         }
 
         #endregion Filenames

@@ -423,6 +423,8 @@ namespace DiskArc {
                 return DOS_FileEntry.AdjustFileName(fileName);
             } else if (fs is HFS) {
                 return HFS_FileEntry.AdjustFileName(fileName);
+            } else if (fs is MFS) {
+                return MFS_FileEntry.AdjustFileName(fileName);
             } else if (fs is Pascal) {
                 return Pascal_FileEntry.AdjustFileName(fileName);
             } else if (fs is ProDOS) {

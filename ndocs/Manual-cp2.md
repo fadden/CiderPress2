@@ -1671,6 +1671,9 @@ The filesystems that may be formatted onto a disk image are:
  - "hfs" - Macintosh Hierarchical Filesystem volume.  Volumes may be fairly
    small or unreasonably large.  Here they must be at least 128KB but no
    more than 4GB.
+ - "mfs" - Macintosh File System volume, the flat filesystem used before HFS.
+   Sizes from 16KB to 1440KB are allowed; the standard sizes are 400KB and
+   800KB.  Disks are not bootable (the boot area is left empty).
  - "pascal" - Apple Pascal volume.  Recommended sizes are 140KB or 800KB,
    but anything from 6 blocks to 32MB is allowed.  Disks are limited to 77
    files, regardless of size.
@@ -1679,7 +1682,7 @@ The filesystems that may be formatted onto a disk image are:
    created as an even number of megabytes, so an "oversized" 65536-block
    image is also allowed.
 
-Creation of Gutenberg, MFS, and RDOS disks is not supported.
+Creation of Gutenberg and RDOS disks is not supported.
 
 ### Export Specifications ###
 

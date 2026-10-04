@@ -33,13 +33,18 @@ namespace DiskArc.FS {
         internal const long MIN_VOL_SIZE = 16 * 2 * BLOCK_SIZE;     // 16KB (arbitrary)
         internal const long MAX_VOL_SIZE = 1440 * 2 * BLOCK_SIZE;   // 1440KB (arbitrary)
 
+        /// <summary>Minimum size of the file directory, in logical blocks (used by Format).</summary>
+        private const int MIN_DIR_LENGTH = 4;
+        /// <summary>Default clump size, in allocation blocks (used by Format).</summary>
+        private const int DEFAULT_CLUMP_ABLKS = 8;
+
         private const string VOLNAME_RULES =
             "1-27 characters.";
         private const string FILENAME_RULES =
             "1-255 characters.";
         private static FSCharacteristics sCharacteristics = new FSCharacteristics(
             name: "MFS",
-            canWrite: false,
+            canWrite: true,
             isHierarchical: false,
             dirSep: IFileEntry.NO_DIR_SEP,
             hasResourceForks: true,
@@ -58,9 +63,14 @@ namespace DiskArc.FS {
 
         public Notes Notes { get; } = new Notes();
 
-        public bool IsReadOnly => true;
+        public bool IsReadOnly => ChunkAccess.IsReadOnly || IsDubious;
 
         public bool IsDubious { get; internal set; }
+
+        /// <summary>
+        /// True if the in-memory volume directory has pending changes that need to be written.
+        /// </summary>
+        internal bool IsVolDirDirty { get; set; }
 
         public long FreeSpace { get; private set; }
 
@@ -196,7 +206,59 @@ namespace DiskArc.FS {
         }
 
         // IFileSystem
-        public void Flush() { }
+        public void Flush() {
+            mOpenFiles.FlushAll();
+            FlushDirectory();
+        }
+
+        /// <summary>
+        /// Writes the volume directory and MDB back to disk, if they have been modified.
+        /// </summary>
+        /// <exception cref="DiskFullException">The volume directory is full.</exception>
+        internal void FlushDirectory() {
+            if (!IsVolDirDirty) {
+                return;
+            }
+            Debug.Assert(IsPreppedForFileAccess);
+            MFS_MDB mdb = VolMDB!;
+
+            int dirBlockCount = mdb.DirectoryLength;
+            byte[] buf = new byte[dirBlockCount * BLOCK_SIZE];      // zero-filled
+
+            // Pack the entries into the directory blocks.  Entries can't cross block boundaries,
+            // and each is aligned to a 16-bit word (handled by StoreEntry).
+            MFS_FileEntry volDir = (MFS_FileEntry)mVolDirEntry;
+            int curBlock = 0;
+            int blockOffset = 0;
+            foreach (IFileEntry ientry in volDir.ChildList) {
+                MFS_FileEntry entry = (MFS_FileEntry)ientry;
+                int entryLen = entry.GetStoredLength();
+                if (entryLen > BLOCK_SIZE) {
+                    throw new IOException("Directory entry too large to store");
+                }
+                if (blockOffset + entryLen > BLOCK_SIZE) {
+                    // Advance to the next directory block.
+                    curBlock++;
+                    blockOffset = 0;
+                    if (curBlock >= dirBlockCount) {
+                        throw new DiskFullException("Volume directory is full");
+                    }
+                }
+                int bufOffset = curBlock * BLOCK_SIZE + blockOffset;
+                entry.StoreEntry(buf, ref bufOffset);
+                blockOffset = bufOffset - curBlock * BLOCK_SIZE;
+            }
+
+            // Write the directory blocks back to disk.
+            for (int i = 0; i < dirBlockCount; i++) {
+                ChunkAccess.WriteBlock(mdb.DirectoryStart + (uint)i, buf, i * BLOCK_SIZE);
+            }
+
+            // Persist MDB changes (free counts, file count, next file number, alloc map).
+            mdb.Write();
+            FreeSpace = (long)mdb.FreeAllocBlocks * mdb.AllocBlockSize;
+            IsVolDirDirty = false;
+        }
 
         // IFileSystem
         public void PrepareFileAccess(bool doScan) {
@@ -317,7 +379,82 @@ namespace DiskArc.FS {
 
         // IFileSystem
         public void Format(string volumeName, int volumeNum, bool makeBootable) {
-            throw new IOException("Not supported for this filesystem");
+            // We only reject the call if the underlying storage is read-only.  If the filesystem
+            // is read-only because of file damage, reformatting it is fine.
+            if (ChunkAccess.IsReadOnly) {
+                throw new IOException("Can't format read-only data");
+            }
+            if (IsPreppedForFileAccess) {
+                throw new IOException("Must be in raw access mode");
+            }
+            if (!IsSizeAllowed(ChunkAccess.FormattedLength)) {
+                throw new ArgumentException("size not valid");
+            }
+            if (!MFS_FileEntry.IsVolumeNameValid(volumeName)) {
+                throw new ArgumentException("Invalid volume name");
+            }
+
+            int totalBlocks = (int)(ChunkAccess.FormattedLength / BLOCK_SIZE);
+
+            // Zero the boot blocks.  MFS boot code lives here on startup disks, but we have no
+            // Mac boot image to install, so the area is always left empty (matching how real MFS
+            // formats non-bootable disks).
+            byte[] zeroBlock = new byte[BLOCK_SIZE];
+            ChunkAccess.WriteBlock(0, zeroBlock, 0);
+            ChunkAccess.WriteBlock(1, zeroBlock, 0);
+
+            // Compute the volume geometry.
+            //
+            // Layout: 2 boot blocks, the 2-block MDB, the fixed-size file directory, the
+            // allocation-block area, and finally a 2-block backup copy of the MDB at the end.
+            // The directory begins immediately after the MDB (block 4).
+            const int DIR_START = (int)MFS_MDB.MDB_BLOCK_NUM + 2;       // block 4
+            const int NON_DIR_OVERHEAD = 2 /*boot*/ + 2 /*MDB*/ + 2 /*backup MDB*/;
+
+            // Directory length.  Real MFS uses 12 directory blocks on a 400KB disk and 26 on an
+            // 800KB disk; this interpolates between (and extrapolates from) those reference
+            // points, keeping the allocation-block count close to Apple's.
+            int dirLength = (7 * totalBlocks - 600) / 400;
+            if (dirLength < MIN_DIR_LENGTH) {
+                dirLength = MIN_DIR_LENGTH;
+            }
+
+            int allocRegion = totalBlocks - NON_DIR_OVERHEAD - dirLength;
+            if (allocRegion < 1) {
+                throw new ArgumentException("size not valid");      // shouldn't happen
+            }
+
+            // Choose the allocation block size: the smallest power-of-two multiple of the logical
+            // block size for which the allocation map (one 12-bit entry per block) still fits
+            // within the two-block MDB.  This reproduces Apple's standard geometry: a 1KB
+            // allocation block for 400KB disks, 2KB for 800KB.
+            int logicalPerAlloc = 1;
+            int numAllocBlocks = allocRegion / logicalPerAlloc;
+            while (numAllocBlocks > MFS_MDB.MAX_ALLOC_BLOCKS) {
+                logicalPerAlloc *= 2;
+                numAllocBlocks = allocRegion / logicalPerAlloc;
+            }
+            int allocBlockSize = logicalPerAlloc * BLOCK_SIZE;
+            int allocBlockStart = DIR_START + dirLength;
+
+            // The clump size is a hint for how much to allocate at a time.  Our allocator works
+            // one block at a time and ignores it, but we set a reasonable value (matching the
+            // 8-allocation-block clump seen on real 800KB MFS disks).
+            int clumpSize = allocBlockSize * DEFAULT_CLUMP_ABLKS;
+
+            // Zero the file directory blocks so the scanner sees an empty directory.
+            for (int i = 0; i < dirLength; i++) {
+                ChunkAccess.WriteBlock((uint)(DIR_START + i), zeroBlock, 0);
+            }
+
+            // Fill out and write the MDB (primary + backup copies).
+            MFS_MDB mdb = new MFS_MDB(ChunkAccess);
+            mdb.Format(volumeName, DateTime.Now, DIR_START, (ushort)dirLength,
+                (ushort)numAllocBlocks, (uint)allocBlockSize, (uint)clumpSize,
+                (ushort)allocBlockStart, totalBlocks);
+
+            // Reset state.
+            PrepareRawAccess();
         }
 
         /// <summary>
@@ -415,6 +552,9 @@ namespace DiskArc.FS {
             if (!mOpenFiles.RemoveDescriptor(ifd)) {
                 throw new IOException("Open file record not found: " + fd);
             }
+
+            // Take the opportunity to flush the volume directory, in case the file was modified.
+            FlushDirectory();
         }
 
         // IFileSystem
@@ -425,7 +565,49 @@ namespace DiskArc.FS {
         // IFileSystem
         public IFileEntry CreateFile(IFileEntry idirEntry, string fileName, CreateMode mode) {
             CheckFileAccess("create", idirEntry, true, FilePart.Unknown);
-            throw new IOException("Filesystem is read-only");
+            if (idirEntry != mVolDirEntry) {
+                throw new ArgumentException("Invalid directory entry for MFS");
+            }
+            // MFS is a flat filesystem with no subdirectories; files always have both forks.
+            if (mode != CreateMode.File && mode != CreateMode.Extended) {
+                throw new ArgumentException("Invalid MFS creation mode: " + mode);
+            }
+            if (fileName == null || !MFS_FileEntry.IsFileNameValid(fileName)) {
+                throw new ArgumentException("Invalid filename '" + fileName + "'");
+            }
+
+            MFS_MDB mdb = VolMDB!;
+            MFS_FileEntry volDir = (MFS_FileEntry)mVolDirEntry;
+
+            // Reject duplicate names.
+            foreach (IFileEntry entry in volDir) {
+                if (entry.CompareFileName(fileName) == 0) {
+                    throw new IOException("A file with that name already exists");
+                }
+            }
+
+            // Create a zero-length entry (both forks empty) with a fresh file number.
+            uint fileNumber = mdb.NextFileNum;
+            MFS_FileEntry newEntry = MFS_FileEntry.CreateEntry(this, mVolDirEntry, fileName,
+                fileNumber, DateTime.Now);
+
+            volDir.ChildList.Add(newEntry);
+            mdb.NextFileNum = fileNumber + 1;
+            mdb.NumFiles = (ushort)(mdb.NumFiles + 1);
+            IsVolDirDirty = true;
+            try {
+                FlushDirectory();
+            } catch {
+                // Probably a full directory.  Roll back the in-memory changes.  Nothing was
+                // written to disk (FlushDirectory throws before writing), so on-disk state is
+                // unchanged.
+                volDir.ChildList.Remove(newEntry);
+                newEntry.Invalidate();
+                mdb.NextFileNum = fileNumber;
+                mdb.NumFiles = (ushort)(mdb.NumFiles - 1);
+                throw;
+            }
+            return newEntry;
         }
 
         // IFileSystem
@@ -436,13 +618,67 @@ namespace DiskArc.FS {
         // IFileSystem
         public void MoveFile(IFileEntry ientry, IFileEntry destDir, string newFileName) {
             CheckFileAccess("move", ientry, true, FilePart.Unknown);
-            throw new IOException("Filesystem is read-only");
+            if (ientry == mVolDirEntry) {
+                throw new IOException("Cannot rename the volume directory");
+            }
+            // MFS is a flat filesystem; the only valid destination is the volume directory, so
+            // "move" degenerates to "rename".
+            if (destDir != mVolDirEntry) {
+                throw new IOException("MFS is a flat filesystem; cannot move files into a folder");
+            }
+            if (newFileName == null || !MFS_FileEntry.IsFileNameValid(newFileName)) {
+                throw new ArgumentException("Invalid filename '" + newFileName + "'");
+            }
+
+            MFS_FileEntry entry = (MFS_FileEntry)ientry;
+            MFS_FileEntry volDir = (MFS_FileEntry)mVolDirEntry;
+
+            // Reject a name that collides with a different existing file (a case-only change to
+            // the same entry is allowed).
+            foreach (IFileEntry other in volDir) {
+                if (other != entry && other.CompareFileName(newFileName) == 0) {
+                    throw new IOException("A file with that name already exists");
+                }
+            }
+
+            byte[] oldRawName = entry.RawFileName;      // saved for rollback
+            entry.FileName = newFileName;               // validates, updates name, marks dirty
+            try {
+                FlushDirectory();
+            } catch {
+                // A longer name may have overflowed the fixed-size directory area.  Nothing was
+                // written (FlushDirectory throws before writing), so restoring the in-memory name
+                // leaves the volume consistent.
+                entry.RawFileName = oldRawName;
+                throw;
+            }
         }
 
         // IFileSystem
         public void DeleteFile(IFileEntry ientry) {
             CheckFileAccess("delete", ientry, true, FilePart.Unknown);
-            throw new IOException("Filesystem is read-only");
+            if (ientry == mVolDirEntry) {
+                throw new IOException("Cannot delete the volume directory");
+            }
+
+            MFS_FileEntry entry = (MFS_FileEntry)ientry;
+            MFS_MDB mdb = VolMDB!;
+            MFS_FileEntry volDir = (MFS_FileEntry)mVolDirEntry;
+
+            // Release both fork block chains (either may be empty).
+            mdb.FreeChain(entry.DataStartBlock);
+            mdb.FreeChain(entry.RsrcStartBlock);
+
+            // Remove the entry from the directory and update the file count.
+            volDir.ChildList.Remove(entry);
+            mdb.NumFiles = (ushort)(mdb.NumFiles - 1);
+            IsVolDirDirty = true;
+
+            // Removing an entry can only shrink the directory, so this won't overflow.
+            FlushDirectory();
+
+            // Invalidate the object so stale application references fail fast.
+            entry.Invalidate();
         }
 
         #region Miscellaneous
