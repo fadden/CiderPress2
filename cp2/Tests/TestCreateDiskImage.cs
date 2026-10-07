@@ -54,6 +54,9 @@ namespace cp2.Tests {
             new string[] { "800k-hfs.po", "800k", "hfs" },
             new string[] { "32m-hfs.po", "32M", "hfs" },
 
+            new string[] { "400k-mfs.po", "400k", "mfs" },
+            new string[] { "800k-mfs.po", "800k", "mfs" },
+
             new string[] { "140k-pascal.do", "140KB", "pascal" },
             new string[] { "800k-pascal.po", "800KB", "pascal" },
 

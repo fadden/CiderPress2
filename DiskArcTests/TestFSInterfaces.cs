@@ -130,14 +130,289 @@ namespace DiskArcTests {
         }
 
         public static void TestMFS(AppHook appHook) {
+            // Exercise the full MFS read-write path: create + write + set-attrs, then rename and
+            // delete, with a raw-access round trip after each mutation to force a re-read from
+            // disk and a full re-scan (which cross-checks the allocation map and free counts).
+            // The compressed test image is decompressed into a writable memory stream.
             using (Stream dataFile = Helper.OpenTestFile("mfs/Workstation Installer.IMG",
-                    true, appHook)) {
+                    false, appHook)) {
                 using (IDiskImage diskImage = FileAnalyzer.PrepareDiskImage(dataFile,
                         FileKind.DiskCopy, appHook)!) {
                     diskImage.AnalyzeDisk();
                     IFileSystem fs = (IFileSystem)diskImage.Contents!;
+                    fs.PrepareFileAccess(true);
+                    if (fs.IsReadOnly || fs.IsDubious) {
+                        throw new Exception("MFS write test needs a healthy read-write fs");
+                    }
 
-                    TestReadOnly(fs, "Desktop", "NO.SUCH.FILE", appHook);
+                    const string kName = "CP2 Test File";
+                    const string kNewName = "CP2 Renamed File";
+                    byte[] payload = Patterns.sBytePattern;
+                    long startFree = fs.FreeSpace;
+
+                    // Create a file, set HFS types, and write the data fork.
+                    IFileEntry volDir = fs.GetVolDirEntry();
+                    IFileEntry newFile = fs.CreateFile(volDir, kName, CreateMode.File);
+                    newFile.HFSFileType = 0x54455354;       // 'TEST'
+                    newFile.HFSCreator = 0x43503242;        // 'CP2B'
+                    using (DiskFileStream fd = fs.OpenFile(newFile, FileAccessMode.ReadWrite,
+                            FilePart.DataFork)) {
+                        fd.Write(payload, 0, payload.Length);
+                    }
+                    newFile.SaveChanges();
+                    if (fs.FreeSpace >= startFree) {
+                        throw new Exception("Free space did not shrink after write");
+                    }
+                    long afterWriteFree = fs.FreeSpace;
+
+                    // Round-trip through raw access to force a re-read from disk.
+                    fs.PrepareRawAccess();
+                    fs.PrepareFileAccess(true);
+                    if (fs.IsDubious) {
+                        throw new Exception("Volume became dubious after write");
+                    }
+                    if (fs.FreeSpace != afterWriteFree) {
+                        throw new Exception("Free space not persisted: " + fs.FreeSpace +
+                            " vs " + afterWriteFree);
+                    }
+                    volDir = fs.GetVolDirEntry();
+                    IFileEntry check = fs.FindFileEntry(volDir, kName);
+                    if (check.DataLength != payload.Length) {
+                        throw new Exception("Data fork length mismatch: " + check.DataLength);
+                    }
+                    if (check.HFSFileType != 0x54455354 || check.HFSCreator != 0x43503242) {
+                        throw new Exception("HFS types were not preserved");
+                    }
+                    byte[] readBack = new byte[payload.Length];
+                    using (DiskFileStream fd = fs.OpenFile(check, FileAccessMode.ReadOnly,
+                            FilePart.DataFork)) {
+                        fd.ReadExactly(readBack, 0, readBack.Length);
+                    }
+                    for (int i = 0; i < payload.Length; i++) {
+                        if (readBack[i] != payload[i]) {
+                            throw new Exception("Data fork mismatch at offset " + i);
+                        }
+                    }
+
+                    // Rename the file, and confirm it round-trips.
+                    fs.MoveFile(check, volDir, kNewName);
+                    fs.PrepareRawAccess();
+                    fs.PrepareFileAccess(true);
+                    if (fs.IsDubious) {
+                        throw new Exception("Volume became dubious after rename");
+                    }
+                    volDir = fs.GetVolDirEntry();
+                    try {
+                        fs.FindFileEntry(volDir, kName);
+                        throw new Exception("Old name still present after rename");
+                    } catch (FileNotFoundException) { /*expected*/ }
+                    check = fs.FindFileEntry(volDir, kNewName);
+                    if (check.DataLength != payload.Length) {
+                        throw new Exception("Data fork length changed by rename");
+                    }
+
+                    // Delete the file, and confirm the storage is reclaimed.
+                    fs.DeleteFile(check);
+                    fs.PrepareRawAccess();
+                    fs.PrepareFileAccess(true);
+                    if (fs.IsDubious) {
+                        throw new Exception("Volume became dubious after delete");
+                    }
+                    if (fs.FreeSpace != startFree) {
+                        throw new Exception("Free space not fully reclaimed: " + fs.FreeSpace +
+                            " vs " + startFree);
+                    }
+                    volDir = fs.GetVolDirEntry();
+                    try {
+                        fs.FindFileEntry(volDir, kNewName);
+                        throw new Exception("File still present after delete");
+                    } catch (FileNotFoundException) { /*expected*/ }
+                }
+            }
+        }
+
+        public static void TestMFS_Creation(AppHook appHook) {
+            // Format brand-new MFS volumes at the two standard floppy sizes, verify the resulting
+            // geometry and a clean scan, then write a file and round-trip it through raw access.
+            // 400KB -> 800 blocks; 800KB -> 1600 blocks.
+            TestMFS_CreateOne(appHook, 800, expAllocSize: 1024, expAllocBlocks: 391);
+            TestMFS_CreateOne(appHook, 1600, expAllocSize: 2048, expAllocBlocks: 392);
+        }
+
+        private static void TestMFS_CreateOne(AppHook appHook, uint blocks, int expAllocSize,
+                int expAllocBlocks) {
+            using (IFileSystem fs = Helper.CreateTestImage("My Volume", FileSystemType.MFS,
+                    blocks, appHook, out MemoryStream memFile)) {
+                // A freshly formatted volume must scan cleanly with no files.
+                Helper.CheckNotes(fs, 0, 0);
+                if (fs.IsReadOnly || fs.IsDubious) {
+                    throw new Exception("Freshly formatted MFS volume is not healthy");
+                }
+                IFileEntry volDir = fs.GetVolDirEntry();
+                if (volDir.Count != 0) {
+                    throw new Exception("New MFS volume is not empty: " + volDir.Count);
+                }
+                if (volDir.FileName != "My Volume") {
+                    throw new Exception("Volume name wrong: '" + volDir.FileName + "'");
+                }
+                long fullFree = fs.FreeSpace;
+                if (fullFree != (long)expAllocBlocks * expAllocSize) {
+                    throw new Exception("Unexpected free space: " + fullFree);
+                }
+
+                // Write a small file, then round-trip through raw access to force a re-read.
+                byte[] payload = Patterns.sBytePattern;
+                IFileEntry newFile = fs.CreateFile(volDir, "Test", CreateMode.File);
+                using (DiskFileStream fd = fs.OpenFile(newFile, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    fd.Write(payload, 0, payload.Length);
+                }
+                newFile.SaveChanges();
+
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+                if (fs.IsDubious) {
+                    throw new Exception("Volume became dubious after write");
+                }
+                volDir = fs.GetVolDirEntry();
+                IFileEntry check = fs.FindFileEntry(volDir, "Test");
+                if (check.DataLength != payload.Length) {
+                    throw new Exception("Data length mismatch: " + check.DataLength);
+                }
+                byte[] readBack = new byte[payload.Length];
+                using (DiskFileStream fd = fs.OpenFile(check, FileAccessMode.ReadOnly,
+                        FilePart.DataFork)) {
+                    fd.ReadExactly(readBack, 0, readBack.Length);
+                }
+                for (int i = 0; i < payload.Length; i++) {
+                    if (readBack[i] != payload[i]) {
+                        throw new Exception("Data mismatch at " + i);
+                    }
+                }
+
+                // Delete it and confirm all storage is reclaimed.
+                fs.DeleteFile(check);
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+                if (fs.FreeSpace != fullFree) {
+                    throw new Exception("Free space not fully reclaimed: " + fs.FreeSpace);
+                }
+            }
+        }
+
+        private static readonly DateTime MFS_CREATE_DATE = new DateTime(1984, 1, 24, 9, 0, 0);
+        private static readonly DateTime MFS_MOD_DATE = new DateTime(1986, 9, 15, 13, 30, 0);
+
+        public static void TestMFS_Properties(AppHook appHook) {
+            // On a freshly formatted volume, create a file with both forks, set every attribute
+            // the "add"/"set-attr" paths drive (HFS type/creator, create/mod dates, locked flag),
+            // then round-trip through raw access and confirm each property and both forks persist.
+            using (IFileSystem fs = Helper.CreateTestImage("Props Vol", FileSystemType.MFS,
+                    1600, appHook, out MemoryStream memFile)) {
+                Helper.CheckNotes(fs, 0, 0);
+
+                const string kName = "Props File";
+                byte[] dataPayload = Patterns.sBytePattern;
+                byte[] rsrcPayload = Patterns.sRunPattern;
+
+                IFileEntry volDir = fs.GetVolDirEntry();
+                IFileEntry newFile = fs.CreateFile(volDir, kName, CreateMode.File);
+
+                // Write both forks.  MFS files always have both forks available.
+                using (DiskFileStream fd = fs.OpenFile(newFile, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    fd.Write(dataPayload, 0, dataPayload.Length);
+                }
+                using (DiskFileStream fd = fs.OpenFile(newFile, FileAccessMode.ReadWrite,
+                        FilePart.RsrcFork)) {
+                    fd.Write(rsrcPayload, 0, rsrcPayload.Length);
+                }
+
+                // Set the attributes.
+                newFile.HFSFileType = 0x54455854;       // 'TEXT'
+                newFile.HFSCreator = 0x4d505320;        // 'MPS '
+                newFile.CreateWhen = MFS_CREATE_DATE;
+                newFile.ModWhen = MFS_MOD_DATE;
+                newFile.Access = FileAttribs.FILE_ACCESS_LOCKED;
+                newFile.SaveChanges();
+
+                // Round-trip through raw access to force a re-read from disk.
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+                if (fs.IsDubious) {
+                    throw new Exception("Volume became dubious after setting properties");
+                }
+
+                volDir = fs.GetVolDirEntry();
+                IFileEntry check = fs.FindFileEntry(volDir, kName);
+                if (check.HFSFileType != 0x54455854 || check.HFSCreator != 0x4d505320) {
+                    throw new Exception("HFS types not preserved");
+                }
+                if (check.CreateWhen != MFS_CREATE_DATE) {
+                    throw new Exception("Create date not preserved: " + check.CreateWhen);
+                }
+                if (check.ModWhen != MFS_MOD_DATE) {
+                    throw new Exception("Mod date not preserved: " + check.ModWhen);
+                }
+                if ((check.Access & (byte)FileAttribs.AccessFlags.Write) != 0) {
+                    throw new Exception("Locked flag not preserved: Access=" + check.Access);
+                }
+                if (check.DataLength != dataPayload.Length) {
+                    throw new Exception("Data fork length mismatch: " + check.DataLength);
+                }
+                if (check.RsrcLength != rsrcPayload.Length) {
+                    throw new Exception("Rsrc fork length mismatch: " + check.RsrcLength);
+                }
+
+                // Verify both forks' contents survived the round trip.
+                CheckForkContents(fs, check, FilePart.DataFork, dataPayload);
+                CheckForkContents(fs, check, FilePart.RsrcFork, rsrcPayload);
+
+                // Unlock the file and confirm the flag clears and persists.
+                check.Access = FileAttribs.FILE_ACCESS_UNLOCKED;
+                check.SaveChanges();
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+                volDir = fs.GetVolDirEntry();
+                check = fs.FindFileEntry(volDir, kName);
+                if ((check.Access & (byte)FileAttribs.AccessFlags.Write) == 0) {
+                    throw new Exception("Unlock did not persist: Access=" + check.Access);
+                }
+
+                // Truncate the data fork and confirm the length and storage shrink.
+                long beforeTruncFree = fs.FreeSpace;
+                using (DiskFileStream fd = fs.OpenFile(check, FileAccessMode.ReadWrite,
+                        FilePart.DataFork)) {
+                    fd.SetLength(100);
+                }
+                check.SaveChanges();
+                fs.PrepareRawAccess();
+                fs.PrepareFileAccess(true);
+                Helper.CheckNotes(fs, 0, 0);
+                volDir = fs.GetVolDirEntry();
+                check = fs.FindFileEntry(volDir, kName);
+                if (check.DataLength != 100) {
+                    throw new Exception("Truncate did not set length: " + check.DataLength);
+                }
+                if (fs.FreeSpace <= beforeTruncFree) {
+                    throw new Exception("Truncate did not reclaim storage");
+                }
+            }
+        }
+
+        private static void CheckForkContents(IFileSystem fs, IFileEntry entry, FilePart part,
+                byte[] expected) {
+            byte[] readBack = new byte[expected.Length];
+            using (DiskFileStream fd = fs.OpenFile(entry, FileAccessMode.ReadOnly, part)) {
+                fd.ReadExactly(readBack, 0, readBack.Length);
+            }
+            for (int i = 0; i < expected.Length; i++) {
+                if (readBack[i] != expected[i]) {
+                    throw new Exception(part + " content mismatch at offset " + i);
                 }
             }
         }
