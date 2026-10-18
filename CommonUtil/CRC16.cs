@@ -18,7 +18,7 @@ using System.Diagnostics;
 
 namespace CommonUtil {
     /// <summary>
-    /// Compute a CRC-16 (polynomial 0x1021).
+    /// Compute a 16-bit CRC, using various permutations.
     /// </summary>
     /// <remarks>
     /// <para>This is way more complicated than you might expect it to be.</para>
@@ -27,10 +27,13 @@ namespace CommonUtil {
     /// and seeded with zero.  Seeding it with 0xffff computes CRC-16/IBM-3740, also known as
     /// CRC-16/CCITT-FALSE because it's commonly mistaken for CRC-CCITT.</para>
     /// <para>CRC-CCITT, or CRC-16/KERMIT, is LSB-first and seeded with zero.</para>
+    /// <para>CRC-16/ARC, or CRC-IBM, is LSB-first and seeded with zero.  It's used by some
+    /// archiving software, such as Arc and StuffIt.</para>
     /// </remarks>
     public static class CRC16 {
+        private static readonly ushort[] sARC_Tab = ComputeTableLSB(0xa001);    // reversed 0x8005
+        private static readonly ushort[] sCCITT_Tab = ComputeTableLSB(0x8408);  // reversed 0x1021
         private static readonly ushort[] sXMODEM_Tab = ComputeTableMSB(0x1021);
-        private static readonly ushort[] sCCITT_Tab = ComputeTableLSB(0x8408);  // reversed poly
 
         /// <summary>
         /// Generates 256-entry LSB-first CRC table.
@@ -70,6 +73,26 @@ namespace CommonUtil {
                 table[i] = val;
             }
             return table;
+        }
+
+        /// <summary>
+        /// Computes a CRC-16/ARC on part of a buffer of data.
+        /// </summary>
+        /// <param name="crc">Previously computed CRC value. Use 0x0000 as initial value.</param>
+        /// <param name="buffer">Data to compute CRC on.</param>
+        /// <param name="offset">Start offset within buffer.</param>
+        /// <param name="count">Number of bytes to process.</param>
+        /// <returns>Computed CRC value.</returns>
+        public static ushort ARC_OnBuffer(ushort crc, byte[] buffer, int offset, int count) {
+            if (count <= 0) {
+                return crc;
+            }
+            do {
+                byte data = (byte)(buffer[offset++] ^ crc);
+                crc = (ushort)(sARC_Tab[data] ^ (crc >> 8));
+            } while (--count != 0);
+
+            return crc;
         }
 
         /// <summary>
@@ -127,24 +150,31 @@ namespace CommonUtil {
         /// zero.  It's not uncommon for data to start with a bunch of leading zeroes, and we'd
         /// like the CRC to detect if the number of them is wrong.</para>
         /// </remarks>
-        public static void DebugEvalFuncs() {
+        public static bool DebugEvalFuncs() {
             // "0123456789"
             byte[] pattern = new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
 
             // CRC-16/XMODEM
             // init=0x0000 refin=false refout=false xorout=0x0000 check=0x31c3
             ushort crc_xmodem = XMODEM_OnBuffer(0x0000, pattern, 0, pattern.Length);
-            Debug.Assert(crc_xmodem == 0x31c3);
+            if (crc_xmodem != 0x31c3) { return false; }
 
             // CRC-16/IBM-3740, a/k/a CRC-16/CCITT-FALSE
             // init=0xffff refin=false refout=false xorout=0x0000 check=0x29b1
             ushort crc_3740 = XMODEM_OnBuffer(0xffff, pattern, 0, pattern.Length);
-            Debug.Assert(crc_3740 == 0x29b1);
+            if (crc_3740 != 0x29b1) { return false; }
 
             // CRC-16/KERMIT, a/k/a CRC-16/CCITT
             // init=0x0000 refin=true refout=true xorout=0x0000 check=0x2189
             ushort crc_kermit = CCITT_OnBuffer(0x0000, pattern, 0, pattern.Length);
-            Debug.Assert(crc_kermit == 0x2189);
+            if (crc_kermit != 0x2189) { return false; }
+
+            // CRC-16/ARC, a/k/a CRC-16/LHA
+            // init=0x0000 refin=true refout=true xorout=0x0000 check=0xbb3d
+            ushort crc_arc = ARC_OnBuffer(0x0000, pattern, 0, pattern.Length);
+            if (crc_arc != 0xbb3d) { return false; }
+
+            return true;
         }
     }
 }

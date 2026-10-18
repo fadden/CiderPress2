@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 using CommonUtil;
@@ -303,7 +304,8 @@ namespace DiskArc.Arc {
         /// <param name="appHook">Application hook reference.</param>
         /// <param name="eocd">Result: EOCD record.</param>
         /// <returns>True if this appears to be a ZIP archive.</returns>
-        private static bool AnalyzeFile(Stream stream, AppHook appHook, out EndOfCentralDir? eocd) {
+        private static bool AnalyzeFile(Stream stream, AppHook appHook,
+                [NotNullWhen(true)] out EndOfCentralDir? eocd) {
             eocd = null;
             if (stream.Length < EndOfCentralDir.LENGTH) {
                 return false;
@@ -365,7 +367,6 @@ namespace DiskArc.Arc {
         /// <para>This should not throw an exception on bad data.  Damaged records should be
         /// flagged instead.</para>
         /// </remarks>
-        /// <param name="cdStart">File offset of start of Central Directory.</param>
         private void Scan() {
             Debug.Assert(DataStream != null);
 

@@ -156,6 +156,8 @@ namespace cp2_wpf {
             Debug.Assert(TimeStamp.DebugTestDates());
             Debug.Assert(DiskArc.Disk.TrackInit.DebugCheckInterleave());
             Debug.Assert(DiskArc.Disk.Wozoof_Meta.DebugTest());
+            Debug.Assert(CommonUtil.CRC16.DebugEvalFuncs());
+            Debug.Assert(CommonUtil.CRC32.DebugEvalFuncs());
             AppHook.LogI("--- unit tests complete ---");
 
             RemoveStaleTempFiles();

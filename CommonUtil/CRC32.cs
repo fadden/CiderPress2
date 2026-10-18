@@ -127,14 +127,16 @@ namespace CommonUtil {
         /// <para>See the "CRC RevEng" catalog at
         /// <see href="https://reveng.sourceforge.io/crc-catalogue/"/> for alternatives.</para>
         /// </remarks>
-        public static void DebugEvalFuncs() {
+        public static bool DebugEvalFuncs() {
             // "0123456789"
             byte[] pattern = new byte[] { 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
 
             // CRC-32/ISO-HDLC, a/k/a CRC-32
             // init=0xffffffff refin=true refout=true xorout=0xffffffff check=0xcbf43926
             uint crc32 = OnBuffer(0, pattern, 0, pattern.Length);
-            Debug.Assert(crc32 == 0xcbf43926);
+            if (crc32 != 0xcbf43926) { return false; }
+
+            return true;
         }
     }
 }

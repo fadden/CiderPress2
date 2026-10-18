@@ -302,6 +302,22 @@ namespace AppCommon {
                     return "Implode";
                 case Defs.CompressionFormat.LZHuf:
                     return "LZHuf";
+                case Defs.CompressionFormat.StuffRLE:
+                    return "RLE";
+                case Defs.CompressionFormat.StuffLZC:
+                    return "LZC-14";
+                case Defs.CompressionFormat.StuffHuff:
+                    return "Huffman";
+                case Defs.CompressionFormat.StuffLZAH:
+                    return "LZAH";
+                case Defs.CompressionFormat.StuffFixedHuff:
+                    return "FixdHuf";
+                case Defs.CompressionFormat.StuffMW:
+                    return "MW";
+                case Defs.CompressionFormat.StuffLZHuffman:
+                    return "LZ+Huff";
+                case Defs.CompressionFormat.StuffArsenic:
+                    return "Arsenic";
                 default:
                     return "?" + format.ToString();
             }

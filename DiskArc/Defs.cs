@@ -129,6 +129,7 @@ namespace DiskArc {
             // Multi-file archives.
             Zip,                        // .zip
             NuFX,                       // .shk, .sdk, .bxy, .sea, .bse
+            StuffIt,                    // .sit
             Binary2,                    // .bny, .bqy
             AppleLink,                  // .acu
             AudioRecording,             // .wav
@@ -236,9 +237,10 @@ namespace DiskArc {
             AccessFlags.Read;
 
         /// <summary>
-        /// Compression formats, with values as defined by NuFX archive specification.
+        /// Compression formats.
         /// </summary>
         public enum CompressionFormat : byte {
+            // Values from the NuFX archive specification.
             Uncompressed = 0,
             Squeeze = 1,
             NuLZW1 = 2,
@@ -246,8 +248,8 @@ namespace DiskArc {
             LZC12 = 4,
             LZC16 = 5,
 
-            // NuFX Addendum additions.  (The enums are used by other archive implementations, but
-            // for those the specific value doesn't matter.)
+            // NuFX Addendum additions.  (These enums are used by other archive implementations,
+            // but for those the specific value doesn't matter.)
             Deflate = 6,
             Bzip2 = 7,
             ZX0 = 8,
@@ -258,6 +260,17 @@ namespace DiskArc {
 
             // Others.
             LZHuf = 30,
+
+            // StuffIt algorithms.
+            StuffRLE = 41,          // a/k/a RLE90
+            StuffLZC = 42,          // 14-bit LZC
+            StuffHuff = 43,         // simple Huffman encoding
+            StuffLZAH = 45,         // LZH Dynamic (same alg as LHArc "lh1"?)
+            StuffFixedHuff = 46,    // PackBits + Huffman?
+            StuffMW = 48,           // LZMW?
+            StuffLZHuffman = 53,    // same as classic LZHuf?
+            // StuffInstaller = 54,
+            StuffArsenic = 55,      // RLE + BWT + arithmetic encoding
 
             Unknown = 0x7e,
             Default = 0x7f

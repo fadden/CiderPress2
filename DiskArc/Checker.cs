@@ -83,6 +83,26 @@ namespace DiskArc {
     }
 
     /// <summary>
+    /// Checks a CRC using the CRC-16/ARC algorithm.
+    /// </summary>
+    internal class CheckARC : Checker {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="seed">Initial value for CRC (usually zero).</param>
+        /// <param name="expectedValue">Expected result, if this being used for verification.
+        ///   Otherwise pass zero.</param>
+        public CheckARC(ushort seed, ushort expectedValue) {
+            mCRC = mSeed = seed;
+            mExpectedValue = expectedValue;
+        }
+
+        public override void Update(byte[] buf, int offset, int length) {
+            mCRC = CRC16.ARC_OnBuffer((ushort)mCRC, buf, offset, length);
+        }
+    }
+
+    /// <summary>
     /// Checks a CRC using the CRC-32 algorithm.
     /// </summary>
     internal class CheckCRC32 : Checker {

@@ -108,6 +108,8 @@ namespace DiskArc {
                 return GZip_FileEntry.IsFileNameValid(fileName);
             } else if (archive is NuFX) {
                 return NuFX_FileEntry.IsFileNameValid(fileName);
+            } else if (archive is StuffIt) {
+                return StuffIt_FileEntry.IsFileNameValid(fileName);
             } else if (archive is Zip) {
                 return Zip_FileEntry.IsFileNameValid(fileName);
             } else {
@@ -127,6 +129,8 @@ namespace DiskArc {
                 return Binary2.AdjustFileName(fileName);
             } else if (archive is NuFX) {
                 return NuFX.AdjustFileName(fileName);
+            } else if (archive is StuffIt) {
+                return StuffIt.AdjustFileName(fileName);
             } else if (archive is Zip) {
                 return Zip.AdjustFileName(fileName);
             } else {
@@ -706,6 +710,8 @@ namespace DiskArc {
                 return ((MacBinary_FileEntry)entry).Archive;
             } else if (entry is NuFX_FileEntry) {
                 return ((NuFX_FileEntry)entry).Archive;
+            } else if (entry is StuffIt_FileEntry) {
+                return ((StuffIt_FileEntry)entry).Archive;
             } else if (entry is Zip_FileEntry) {
                 return ((Zip_FileEntry)entry).Archive;
             } else {

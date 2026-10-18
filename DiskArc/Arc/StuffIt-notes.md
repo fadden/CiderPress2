@@ -2,34 +2,193 @@
 
 ## Primary References ##
 
-- The source code for "unar", which appears to be based on a reverse-engineering effort:
+- StuffIt 1.5 User's Guide
+- Wiki archive for "theunarchiver": https://code.google.com/archive/p/theunarchiver/wikis
+- The source code for "unar", notably:
   https://github.com/ashang/unar/blob/master/XADMaster/XADStuffItParser.m and
-  https://github.com/ashang/unar/blob/473488cc612c3f47e1c76f9baf92d268db259dc1/XADMaster/XADStuffIt5Parser.m#L29
+  https://github.com/ashang/unar/blob/master/XADMaster/XADStuffIt5Parser.m
 
 ## General ##
 
-[StuffIt](https://en.wikipedia.org/wiki/StuffIt) began in 1987, as an application for the
-Macintosh developed by Raymond Lau.  The program was so successful that Aladdin Systems was formed
-to sell it.  Various incarnations of the software were made available as freeware (e.g. StuffIt
-Expander), shareware (StuffIt Classic), or commercial (StuffIt Deluxe) until it was discontinued
-in 2020.
+[StuffIt](https://en.wikipedia.org/wiki/StuffIt) is a data archiving application developed for
+the Macintosh by Raymond Lau.  Development began in mid-1987.  The program was distributed as
+shareware until version 1.5.1 in 1988, after which the program was split into StuffIt Classic
+(shareware) and StuffIt Deluxe (commercial), with the latter published by the newly-formed Aladdin
+Systems.  A limited version of the application that could only unpack archives, called StuffIt
+Expander, was bundled with Mac OS for several years.  The program was published in various
+incarnations until it was discontinued in 2020.
 
-The archive file formats are proprietary.  The format changed significantly in version 5 of the
-application.  A major update, the "StuffIt X" format, was introduced in 2002.
+The file format for v1.5 was described in detail in the User's Guide, but the (significant) changes
+to later versions of the program, notably v5.5, have not been published.  A major update, the
+"StuffIt X" format, was introduced in 2002.  Some of the compression algorithms used are similar
+or identical to those used in other programs, but others are unique.
 
 StuffIt archives found on the Internet typically use the ".sit" extension.  StuffIt X files
 use ".sitx", and self-extracting archives use ".sea".  On HFS, archives used the creator `SIT!`
 with file type `SIT!` or `SITD`.
 
 Support for various compression algorithms was added over the years.  Early versions supported
-LZC and the typical RLE / Huffman variants, later versions included arithmetic encoding, LZH,
-BWT, and others.
+RLE, simple Huffman, and LZC.  Later versions included arithmetic encoding, LZH, BWT, and others.
 
 Because the format is proprietary, very few programs (other than those developed by Aladdin or
-its successors) can unpack StuffIt archives.  One of the few is
+its successors) can unpack post-1.5 StuffIt archives.  One of the few is
 "[The Unarchiver](https://theunarchiver.com/command-line)", an open-source project based in
 part on an Amiga unarchiving system called [XAD](https://en.wikipedia.org/wiki/XAD_(software)).
 
-## File Structure ##
+## File Structure (v1.5) ##
 
-[ TODO ]
+StuffIt archives begin with a fixed-length archive header, followed by file records.  Each record
+starts with a fixed-length file header, followed by the compressed resource fork data, and then
+the compressed data fork data.
+
+All multi-byte values are in big-endian order.
+
+Archive header (22 bytes):
+```
++$00 / 4: signature ("SIT!")
++$04 / 2: number of files in archive
++$06 / 4: length of entire archive file, including this header
++$0a / 4: signature2 ("rLau")
++$0e / 1: version number (1 for &lt;= v1.5, 2 for 1.6 - 4.5)
++$0f / 7: reserved
+```
+
+File header (112 bytes):
+```
++$00 / 1: resource fork compression method
++$01 / 1: data fork compression method
++$02 /64: filename, stored as a length byte followed by text
++$42 / 4: file type
++$46 / 4: creator
++$4a / 2: Finder flags (from FInfo block)
++$4c / 4: creation date
++$50 / 4: modification date
++$54 / 4: uncompressed resource fork length
++$58 / 4: uncompressed data fork length
++$5c / 4: compressed resource fork length
++$60 / 4: compressed data fork length
++$64 / 2: CRC-16/XMODEM of uncompressed resource fork
++$66 / 2: CRC-16/XMODEM of uncompressed data fork
++$68 / 1: rPad (used for encrypted entries)
++$69 / 1: dPad (used for encrypted entries)
++$6a / 4: reserved
++$6e / 2: CRC-16/XMODEM of previous bytes
+```
+
+Filenames use the Macintosh character set, e.g. Mac OS Roman.
+
+Timestamps are in HFS/MFS format, i.e. unsigned 32-bit values indicating the time in seconds since
+midnight on Jan 1, 1904, in local time.
+
+Compression methods:
+ - 0: no compression
+ - 1: RLE
+ - 2: LZC
+ - 3: Huffman
+ - 5: (&gt;v1.5.1) LZAH
+ - 6: (&gt;v1.5.1) Fixed Huffman
+ - 8: (&gt;v1.5.1) MW
+ - 13: (&gt;v1.5.1) LZ+Huffman
+ - 14: (&gt;v1.5.1) Installer
+ - 15: (&gt;v1.5.1) Arsenic
+ - 16: (bit set if encrypted)
+ - 32: marks start of a folder
+ - 33: marks end of folder
+
+### Hierarchy Maintained Folder (HMF) ###
+
+File headers have a fixed-width field for the filename, which is fine for a flat filesystem but
+comes up short on a system with subdirectories.  StuffIt 1.5 added the ability to preserve
+directory layouts, using a feature called Hierarchy Maintained Folder (HMF).
+
+With HMF, if you add a folder full of files, the number of entries in the archive header is
+set to 1.  The HMF folder entry, which is identified by the value 32 in the compression format
+field, is immediately followed by file header entries for all of the files contained within it,
+and the compressed and uncompressed length fields for the HMF entry are set to the total of
+the entries they encapsulate.  Sub-folders within the top-level folder are treated slightly
+differently.  The last file header within an HMF encapsulation uses compression format 33.
+
+When extracting to an HFS volume, the directory layout was reconstructed, but when extracting to
+MFS the directory information was ignored.
+
+
+## File Format (v5+) ##
+
+The file format generated by version 5 and later versions of StuffIt is proprietary.  Some
+information about this format has been determined through reverse-engineering by the contributors
+to the "unar" utility.
+
+Archive header (98 bytes):
+```
++$00 /80: header, text string starting with "StuffIt (c)1997-"
++$50 / 2: (unknown)
++$52 / 1: version (5 for v5)
++$53 / 1: flags
++$54 / 4: total length of archive file
++$58 / 4: (unknown)
++$5c / 2: number of entries in root directory
++$5e / 4: offset of first entry in root directory
+```
+
+The `flags` field is a bit vector:
+```
+  $10 - if set, archive header has an additional 14 bytes (unknown purpose)
+  $20 - if set, archive header has a comment; 16-bit length and buffer length appended to header
+  $40 - if set, archive header has a 16-bit count, followed by that many 20-byte structs)
+  $80 - if set, archive is encrypted (8-bit hash size appended to header)
+```
+
+The comment, if present, follows the archive header.
+
+The archive header is followed by a series of entries for files and folders.  The meaning of
+many of the fields is uncertain.
+
+The record layout is:
+```
++$00 / 4: signature ($a5 a5 a5 a5)
++$04 / 1: version
++$05 / 1: (unknown)
++$06 / 2: header length
++$08 / 1: (unknown)
++$09 / 1: record type
++$0a / 4: creation date
++$0e / 4: modification date
++$12 / 4: offset of previous entry
++$16 / 4: offset of next entry
++$1a / 4: offset of directory entry
++$1e / 2: filename size
++$20 / 2: header CRC
++$22 / 4: uncompressed data fork length
++$26 / 4: compressed data fork length
++$2a / 2: data fork CRC
++$2c / 2: (unknown)
+(if folder)
+  +$2e / 2: number of files
+  (if data fork length is $ffffffff, stop here)
+(if regular file)
+  +$2e / 1: data fork compression method
+  +$2f / 1: password data length
+  +$30 /nn: password information
++$xx /nn: filename
++$xx /nn: comment data (16-bit length and buffer size, followed by text)
++$xx / 2: more flags; if bit $01 is set, a resource fork is present
++$xx / 2: (unknown)
++$xx / 4: file type
++$xx / 4: creator
++$xx / 2: Finder flags
++$xx /??: gap of 18 or 22 bytes, based on version
+(if has resource fork)
+  +$xx / 4: uncompressed resource fork length
+  +$xx / 4: compressed resource fork length
+  +$xx / 2: resource fork CRC
+  +$xx / 2: (unknown)
+  +$xx / 1: resource fork compression method
+  +$xx / 1: password data length
+  +$xx /nn: password information
+```
+
+
+## Self-Extracting Archives ##
+
+Some versions of StuffIt can create self-extracting archives, which were customarily wrapped with
+MacBinary or BinHex to preserve the file type data.  The ".sea" format is not documented.

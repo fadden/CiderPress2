@@ -164,7 +164,7 @@ The array of headers is followed by the data for each thread, in the same order.
 
 The thread CRC is computed for the compressed data in version 2 records, and for uncompressed
 data in version 3 records.  It's only set when the thread class is $0002 (data_thread).  The
-initial value of the CRC should be set to $ffff for this computation.
+initial value of the CRC should be set to $ffff for this computation.  This uses CRC-16/XMODEM.
 
 Considered together, the class/kind fields have the following definitions:
  - $0000/0000: ASCII text (deprecated)

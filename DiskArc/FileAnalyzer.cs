@@ -381,6 +381,9 @@ namespace DiskArc {
                     okayForCreate = false;      // don't allow wrapper creation
                     fileKind1 = FileKind.NuFX;
                     break;
+                case ".sit":
+                    fileKind1 = FileKind.StuffIt;
+                    break;
                 case ".bny":
                 case ".bqy":
                     fileKind1 = FileKind.Binary2;
@@ -508,6 +511,7 @@ namespace DiskArc {
             FileKind.Moof,
             FileKind.Zip,
             FileKind.NuFX,
+            FileKind.StuffIt,
             FileKind.GZip,
             FileKind.AppleSingle,
             FileKind.DiskCopy,
@@ -559,6 +563,8 @@ namespace DiskArc {
                     return Moof.TestKind(stream, appHook);
                 case FileKind.NuFX:
                     return NuFX.TestKind(stream, appHook);
+                case FileKind.StuffIt:
+                    return StuffIt.TestKind(stream, appHook);
                 case FileKind.Trackstar:
                     return Trackstar.TestKind(stream, appHook);
                 case FileKind.TwoIMG:
@@ -966,6 +972,9 @@ namespace DiskArc {
                         break;
                     case FileKind.NuFX:
                         archive = NuFX.OpenArchive(stream, appHook);
+                        break;
+                    case FileKind.StuffIt:
+                        archive = StuffIt.OpenArchive(stream, appHook);
                         break;
                     case FileKind.Zip:
                         archive = Zip.OpenArchive(stream, appHook);
