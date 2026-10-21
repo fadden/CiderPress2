@@ -155,10 +155,14 @@ namespace cp2_wpf {
                         break;
                     case FileTypeValue.ProDOSBlock:
                     case FileTypeValue.SimpleBlock:
-                        // Try to create as sectors, since this could be a DOS filesystem.
-                        if (GetNumTracksSectors(out tracks, out sectors)) {
-                            diskImage = UnadornedSector.CreateSectorImage(stream, tracks, sectors,
-                                SectorOrder.ProDOS_Block, mAppHook);
+                        // Try to create as sectors, since this could be a DOS filesystem.  The
+                        // UnadornedSector code only accepts DOS ordering for non-16-sector disks,
+                        // so we need to check that.
+                        if (GetNumTracksSectors(out tracks, out sectors) &&
+                                UnadornedSector.CanCreateSectorImage(tracks,
+                                    sectors, SectorOrder.ProDOS_Block, out string unused)) {
+                            diskImage = UnadornedSector.CreateSectorImage(stream, tracks,
+                                sectors, SectorOrder.ProDOS_Block, mAppHook);
                         } else if (GetNumBlocks(out blocks)) {
                             diskImage = UnadornedSector.CreateBlockImage(stream, blocks, mAppHook);
                         } else {
