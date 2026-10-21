@@ -1290,7 +1290,7 @@ namespace DiskArc.Arc {
                 case CompressionFormat.LZC12:
                 case CompressionFormat.LZC16:
                     expander = new LZCStream(Archive.DataStream, CompressionMode.Decompress,
-                        true, thread.mCompThreadEof, 16, true);
+                        true, false, thread.mCompThreadEof, 16, true);
                     break;
                 case CompressionFormat.ZX0:
                     expander = new ZX0Stream(Archive.DataStream, CompressionMode.Decompress,
@@ -1656,11 +1656,11 @@ namespace DiskArc.Arc {
                     break;
                 case CompressionFormat.LZC12:
                     compStream = new LZCStream(outputStream, CompressionMode.Compress, true,
-                        -1, 12, true);
+                        false, -1, 12, true);
                     break;
                 case CompressionFormat.LZC16:
                     compStream = new LZCStream(outputStream, CompressionMode.Compress, true,
-                        -1, 16, true);
+                        false, -1, 16, true);
                     break;
                 case CompressionFormat.Deflate:
                     compStream = new DeflateStream(outputStream, CompressionMode.Compress, true);

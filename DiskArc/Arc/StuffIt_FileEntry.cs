@@ -31,6 +31,8 @@ namespace DiskArc.Arc {
         internal const char SEP_CHAR = ':';
         internal const int MAX_FILENAME_LEN = 63;
         internal const int FILE_HEADER_LEN = 112;
+        internal const int START_FOLDER = 32;
+        internal const int END_FOLDER = 33;
 
 
         //
@@ -41,7 +43,7 @@ namespace DiskArc.Arc {
         public bool IsDubious { get; private set; }
         public bool IsDamaged { get; private set; }
 
-        public bool IsDirectory => false;       // TODO? handle HMF
+        public bool IsDirectory => mCompDMethod == START_FOLDER;
 
         public bool HasDataFork => true;
         public bool HasRsrcFork => RsrcLength > 0;
@@ -55,7 +57,7 @@ namespace DiskArc.Arc {
                 if (!IsValid) {
                     throw new InvalidOperationException("Invalid object");
                 }
-                return mFileName;
+                return FolderPrefix + mFileName;
             }
             set {
                 // The application is expected to prevent duplicate names.  We don't make any
@@ -189,6 +191,16 @@ namespace DiskArc.Arc {
         /// </remarks>
         internal bool IsDirty { get; private set; }
 
+        /// <summary>
+        /// True if this is an end-folder marker.
+        /// </summary>
+        internal bool IsEndFolder => mCompDMethod == END_FOLDER;
+
+        /// <summary>
+        /// Blank string, or directory partial path ending with ':'.
+        /// </summary>
+        internal string FolderPrefix { get; set; } = string.Empty;
+
 
         //
         // Fields from the file header.  Names come from StuffIt.h excerpt in the 1.5 User's Guide.
@@ -231,6 +243,8 @@ namespace DiskArc.Arc {
                 case 8: return CompressionFormat.StuffMW;
                 case 13: return CompressionFormat.StuffLZHuffman;
                 case 15: return CompressionFormat.StuffArsenic;
+                case START_FOLDER: return CompressionFormat.Uncompressed;
+                case END_FOLDER: return CompressionFormat.Uncompressed;
                 default: return CompressionFormat.Unknown;
             }
         }
@@ -352,13 +366,15 @@ namespace DiskArc.Arc {
                 return false;
             }
 
-            // Seek past the compressed data.
-            long skipLen = mCompRLength + mCompDLength;
-            if (stream.Length - stream.Position < skipLen) {
-                Archive.Notes.AddE("Compressed data truncated");
-                return false;
+            // If this is not a directory entry, seek past the compressed data.
+            if (mCompDMethod != START_FOLDER && mCompDMethod != END_FOLDER) {
+                long skipLen = mCompRLength + mCompDLength;
+                if (stream.Length - stream.Position < skipLen) {
+                    Archive.Notes.AddE("Compressed data truncated");
+                    return false;
+                }
+                stream.Seek(skipLen, SeekOrigin.Current);
             }
-            stream.Seek(skipLen, SeekOrigin.Current);
 
             return true;
         }
@@ -408,7 +424,7 @@ namespace DiskArc.Arc {
             switch (format) {
                 case CompressionFormat.StuffLZC:
                     expander = new LZCStream(Archive.DataStream, CompressionMode.Decompress,
-                        true, compLen, 16, true);
+                        true, true, compLen, 14, true);
                     break;
                 default:
                     throw new NotSupportedException("Compression format not supported");
@@ -555,6 +571,8 @@ namespace DiskArc.Arc {
             mFileName = fileName;
             mRawFileName = new byte[fileName.Length];
             MacChar.UnicodeToMac(fileName, mRawFileName, 0, MacChar.Encoding.RomanShowCtrl);
+
+            // TODO: deal with filename prefix for HMF
         }
 
         /// <summary>
@@ -601,7 +619,12 @@ namespace DiskArc.Arc {
             sb.Append("[StuffIt-entry '");
             sb.Append(FileName);
             sb.Append("' ");
-            // TODO
+            if (IsDirectory) {
+                sb.Append(" STF");
+            }
+            if (IsEndFolder) {
+                sb.Append(" ENF");
+            }
             sb.Append("]");
             return sb.ToString();
         }

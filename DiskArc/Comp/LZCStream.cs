@@ -58,6 +58,11 @@ namespace DiskArc.Comp {
         private bool mLeaveOpen;
 
         /// <summary>
+        /// Are we working on StuffIt data?  (max 14 bits, block mode, no header)
+        /// </summary>
+        private bool mStuffItMode;
+
+        /// <summary>
         /// To compress or not to compress?
         /// </summary>
         private CompressionMode mCompressionMode;
@@ -100,17 +105,23 @@ namespace DiskArc.Comp {
         /// <param name="maxBits">Compression: maximum code width, must be in the range
         ///   [9,16].</param>
         /// <param name="blockMode">Compression: use block mode (recommended)?</param>
+        /// <param name="stuffItMode">If true, set max bits to 14 and omit header.</param>
         public LZCStream(Stream compDataStream, CompressionMode mode, bool leaveOpen,
-                long compDataStreamLen, int maxBits, bool blockMode) {
+                bool stuffItMode, long compDataStreamLen, int maxBits, bool blockMode) {
             if (mode == CompressionMode.Compress && (maxBits < INIT_BITS || maxBits > BITS)) {
                 throw new ArgumentOutOfRangeException(nameof(maxBits), maxBits, "must be [9,16]");
             }
             mCompDataStream = compDataStream;
             mCompressionMode = mode;
             mLeaveOpen = leaveOpen;
+            mStuffItMode = stuffItMode;
             mExpInputRemaining = compDataStreamLen;
             mCompBitLimit = maxBits;
             mComp_block_compress = blockMode;
+
+            if (mStuffItMode && maxBits != 14) {
+                throw new Exception("bad maxBits for StuffIt");
+            }
 
             if (mode == CompressionMode.Compress) {
                 Debug.Assert(compDataStream.CanWrite);
@@ -238,7 +249,7 @@ namespace DiskArc.Comp {
             mComp_maxcode = MAXCODE(mComp_n_bits);
             mComp_free_ent = mComp_block_compress ? FIRST : 256;
 
-            mCompHeaderWritten = false;
+            mCompHeaderWritten = mStuffItMode;
             mFirstByteRead = false;
         }
 
@@ -547,7 +558,7 @@ namespace DiskArc.Comp {
             int readCount = 0;      // total number of bytes we've placed in the read buffer
 
             if (!mExpHeaderRead) {
-                ReadHeader();
+                ReadHeader();       // also sets globals
                 mExp_free_ent = mExp_block_compress ? FIRST : 256;
             }
 
@@ -584,21 +595,26 @@ namespace DiskArc.Comp {
         /// Reads values from the LZC header.  Sets globals.  EOF will cause an exception.
         /// </summary>
         private void ReadHeader() {
-            int hdr0 = mCompDataStream.ReadByte();
-            int hdr1 = mCompDataStream.ReadByte();
-            if (hdr0 != HEADER0 || hdr1 != HEADER1) {
-                throw new InvalidDataException("This is not an LZC stream");
-            }
-            int flags = mCompDataStream.ReadByte();
-            mExp_maxbits = flags & BIT_MASK;
-            mExp_block_compress = (flags & BLOCK_MASK) != 0;
-            if (mExp_maxbits < INIT_BITS || mExp_maxbits > BITS) {
-                throw new InvalidDataException("Invalid maxbits in LZC header (" +
-                    mExp_maxbits + ")");
+            if (!mStuffItMode) {
+                int hdr0 = mCompDataStream.ReadByte();
+                int hdr1 = mCompDataStream.ReadByte();
+                if (hdr0 != HEADER0 || hdr1 != HEADER1) {
+                    throw new InvalidDataException("This is not an LZC stream");
+                }
+                int flags = mCompDataStream.ReadByte();
+                mExp_maxbits = flags & BIT_MASK;
+                mExp_block_compress = (flags & BLOCK_MASK) != 0;
+                if (mExp_maxbits < INIT_BITS || mExp_maxbits > BITS) {
+                    throw new InvalidDataException("Invalid maxbits in LZC header (" +
+                        mExp_maxbits + ")");
+                }
+                mExpInputRemaining -= 3;
+            } else {
+                Debug.Assert(mExp_maxbits == 14);
+                mExp_block_compress = true;
             }
             mExp_maxmaxcode = 1 << mExp_maxbits;
             mExpHeaderRead = true;
-            mExpInputRemaining -= 3;
         }
 
         /// <summary>

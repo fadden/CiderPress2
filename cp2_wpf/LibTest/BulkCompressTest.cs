@@ -255,9 +255,9 @@ namespace cp2_wpf.LibTest {
                         return new DeflateStream(compStream, CompressionMode.Decompress, true);
                     }
                 case CompressionFormat.LZC12:
-                    return new LZCStream(compStream, mode, true, compressedLength, 12, true);
+                    return new LZCStream(compStream, mode, true, false, compressedLength, 12, true);
                 case CompressionFormat.LZC16:
-                    return new LZCStream(compStream, mode, true, compressedLength, 16, true);
+                    return new LZCStream(compStream, mode, true, false, compressedLength, 16, true);
                 case CompressionFormat.LZHuf:
                     return new LZHufStream(compStream, mode, true, true);
                 case CompressionFormat.ZX0:

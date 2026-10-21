@@ -17,18 +17,25 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 using CommonUtil;
 using static DiskArc.Defs;
 
 namespace DiskArc.Arc {
     /// <summary>
-    /// StuffIt archive handling.  Only v1.5-era archives are handled.
+    /// StuffIt archive handling.  Only v1.5-format archives are handled.
     /// </summary>
+    /// <remarks>
+    /// <para>The Hierarchy Maintained Folder (HMF) approach uses a hierarchical structure, which
+    /// is unusual for file archives.  The DiskArc API allows applications to treat file archive
+    /// contents as a linear list of entries with partial pathnames, so we need to generate that
+    /// from the tree when reading, and then reconstruct the tree when comitting changes.  This
+    /// can require reshuffling entries when a file's partial path is renamed.</para>
+    /// <para>Even though we can reconstruct directory entries as needed, we want to try to
+    /// preserve the original startFolder entries to retain file dates.</para>
+    /// </remarks>
     public class StuffIt : IArchiveExt {
-        private const string FILENAME_RULES = "Filename only, Mac OS character set, avoid ':'.";
-
+        private const string FILENAME_RULES = "Mac OS characters, partial paths separated by ':'.";
         private static readonly ArcCharacteristics sCharacteristics = new ArcCharacteristics(
             name: "StuffIt",
             canWrite: false,
@@ -284,20 +291,50 @@ namespace DiskArc.Arc {
         private void Scan() {
             Debug.Assert(DataStream != null);
 
-            for (int i = 0; i < mArchiveHeader.EntryCount; i++) {
+            string pathPrefix = string.Empty;
+            // Because of HMF, we don't know how many files are actually stored here.  We need
+            // to process data until we run out of archive.  We want to use the value stored in
+            // the archive header so we can notify the user of truncation or accretion.
+            while (DataStream.Position < mArchiveHeader.FileLength) {
                 StuffIt_FileEntry? newEntry = StuffIt_FileEntry.ReadNextRecord(this);
                 if (newEntry == null) {
-                    Notes.AddE("Read " + i + " of " + mArchiveHeader.EntryCount + " records");
                     IsDubious = true;
                     break;
                 }
-                // TODO: handle HMF
-                RecordList.Add(newEntry);
+                if (newEntry.IsEndFolder) {
+                    // Remove one level from path.
+                    if (string.IsNullOrEmpty(pathPrefix)) {
+                        Notes.AddW("Found spurious endFolder at top level");
+                    } else {
+                        int lastSepIndex = pathPrefix.LastIndexOf(StuffIt_FileEntry.SEP_CHAR,
+                            pathPrefix.Length - 2);
+                        if (lastSepIndex < 0) {
+                            pathPrefix = string.Empty;
+                        } else {
+                            pathPrefix = pathPrefix.Substring(0, lastSepIndex + 1);
+                        }
+                    }
+                    // Don't add endFolder entries to the list.  We're not trying to retain the
+                    // original hierarchy; it's not important if we're just extracting files, and
+                    // it's tough to maintain when entries with partial paths get renamed.
+                } else {
+                    RecordList.Add(newEntry);
+                }
+                if (newEntry.IsDirectory) {
+                    // startFolder entry, update the path prefix.  We want to use the simple
+                    // filename here, so do this before setting the folder prefix.
+                    string newPrefix = pathPrefix + newEntry.FileName + StuffIt_FileEntry.SEP_CHAR;
+                    // Now set the entry's prefix using the old path prefix.
+                    newEntry.FolderPrefix = pathPrefix;
+                    pathPrefix = newPrefix;
+                } else {
+                    newEntry.FolderPrefix = pathPrefix;
+                }
             }
 
-            if (!IsDubious && DataStream.Position != mArchiveHeader.FileLength) {
+            if (DataStream.Position != mArchiveHeader.FileLength) {
                 Notes.AddW("Consumed " + DataStream.Position +
-                    " bytes, but total length field value is " + mArchiveHeader.FileLength);
+                    " bytes, but length in archive header is " + mArchiveHeader.FileLength);
                 // keep going
             }
         }

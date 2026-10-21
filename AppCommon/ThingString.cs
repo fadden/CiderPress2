@@ -44,6 +44,8 @@ namespace AppCommon {
                 return "MacBinary";
             } else if (arc is NuFX) {
                 return "ShrinkIt";
+            } else if (arc is StuffIt) {
+                return "StuffIt";
             } else if (arc is Zip) {
                 return "ZIP";
             } else {
@@ -256,6 +258,8 @@ namespace AppCommon {
                     return "ZIP";
                 case Defs.FileKind.NuFX:
                     return "NuFX (ShrinkIt)";
+                case Defs.FileKind.StuffIt:
+                    return "StuffIt 1.5";
                 case Defs.FileKind.Binary2:
                     return "Binary II";
                 case Defs.FileKind.AppleLink:
@@ -305,7 +309,7 @@ namespace AppCommon {
                 case Defs.CompressionFormat.StuffRLE:
                     return "RLE";
                 case Defs.CompressionFormat.StuffLZC:
-                    return "LZC-14";
+                    return "LZW";
                 case Defs.CompressionFormat.StuffHuff:
                     return "Huffman";
                 case Defs.CompressionFormat.StuffLZAH:

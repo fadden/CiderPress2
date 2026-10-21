@@ -247,11 +247,15 @@ namespace AppCommon {
                             wasCancelled = true;
                             return false;
                         }
-                    } catch (IOException ex) {
+                    } catch (Exception ex) when (ex is IOException || ex is InvalidDataException) {
                         ReportFailure("Error during extraction of '" +
                             entry.FullPathName + "': " + ex.Message);
                         return false;
                     }
+                } catch (NotSupportedException ex) {
+                    ReportFailure("Error during extraction of '" +
+                        entry.FullPathName + "': " + ex.Message);
+                    return false;
                 } finally {
                     dataStream?.Dispose();
                     rsrcStream?.Dispose();
