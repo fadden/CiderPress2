@@ -210,7 +210,7 @@ namespace DiskArc.Arc {
         private byte[] mRawFileName = new byte[MAX_FILENAME_LEN + 1];
         private uint mFileType;
         private uint mCreator;
-        private ushort mFndrFlags;
+        private ushort mFndrFlags;      // TODO: preserve these when interacting with HFS/MFS
         private uint mCreationDate;
         private uint mModDate;
         private uint mRsrcLength;

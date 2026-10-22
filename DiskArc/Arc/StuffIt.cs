@@ -82,7 +82,7 @@ namespace DiskArc.Arc {
             }
 
             /// <summary>
-            /// Unpacks the archive header from the buffer.
+            /// Unpacks the archive header from the buffer.  Performs basic validation checks.
             /// </summary>
             public bool Load(byte[] buf, int offset) {
                 int startOffset = offset;
@@ -93,6 +93,9 @@ namespace DiskArc.Arc {
                 }
                 EntryCount = RawData.ReadU16BE(buf, ref offset);
                 FileLength = RawData.ReadU32BE(buf, ref offset);
+                if (FileLength < LENGTH) {
+                    return false;
+                }
                 for (int i = 0; i < SIGNATURE2.Length; i++) {
                     if (buf[offset++] != SIGNATURE2[i]) {
                         return false;
@@ -164,6 +167,11 @@ namespace DiskArc.Arc {
         private bool mIsTransactionOpen;
 
         /// <summary>
+        /// True if a MacBinary wrapper is present.
+        /// </summary>
+        private bool mHasMacBinary;
+
+        /// <summary>
         /// Modified entry list.  This will become the new list of entries when the transaction is
         /// committed.
         /// </summary>
@@ -182,8 +190,7 @@ namespace DiskArc.Arc {
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>True if this looks like StuffIt.</returns>
         public static bool TestKind(Stream stream, AppHook appHook) {
-            stream.Position = 0;
-            return AnalyzeFile(stream, appHook, out ArchiveHeader? unused);
+            return AnalyzeFile(stream, appHook, out bool unused1, out ArchiveHeader? unused2);
         }
 
         /// <summary>
@@ -214,17 +221,33 @@ namespace DiskArc.Arc {
         /// <returns>Archive instance.</returns>
         /// <exception cref="NotSupportedException">Stream is not a StuffIt archive.</exception>
         public static StuffIt OpenArchive(Stream stream, AppHook appHook) {
-            stream.Position = 0;
-            if (!AnalyzeFile(stream, appHook, out ArchiveHeader? header)) {
+            if (!AnalyzeFile(stream, appHook, out bool hasMacBinary, out ArchiveHeader? header)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
             StuffIt archive = new StuffIt(stream, appHook, header);
-            archive.Scan();
+            archive.mHasMacBinary = hasMacBinary;
+            long headerPosn = stream.Position;      // should be positioned just past archive header
+            long streamLen;
+            if (hasMacBinary) {
+                // We know that MacBinary headers are 128 bytes, and the data fork starts
+                // immediately, so there's no need to formally treat it as archive-in-archive.
+                // We do need to pull the length of the data fork out, because it might be
+                // followed by a resource fork.
+                stream.Position = MacBinary.DATA_FORK_LEN_OFFSET;
+                streamLen = RawData.ReadU32BE(stream, out bool ok);
+                if (!ok) {
+                    // Not expected.
+                    throw new NotSupportedException("Failed reading data fork len");
+                }
+                stream.Position = headerPosn;
+            } else {
+                streamLen = stream.Length;
+            }
+            archive.Scan(streamLen - ArchiveHeader.LENGTH);
             return archive;
         }
 
         // IArchive
-
         public Stream? ReopenStream(Stream newStream) {
             Debug.Assert(DataStream != null);
             Stream? oldStream = DataStream;
@@ -259,16 +282,31 @@ namespace DiskArc.Arc {
         /// </summary>
         /// <param name="stream">Archive data stream.</param>
         /// <param name="appHook">Application hook reference.</param>
+        /// <param name="hasMacBinary">Result: true if file has MacBinary wrapper.</param>
         /// <param name="header">Result: archive header record.</param>
         /// <returns>True if this appears to be a StuffIt archive.</returns>
-        private static bool AnalyzeFile(Stream stream, AppHook appHook,
+        private static bool AnalyzeFile(Stream stream, AppHook appHook, out bool hasMacBinary,
                 [NotNullWhen(true)] out ArchiveHeader? header) {
+            hasMacBinary = false;
             if (stream.Length < ArchiveHeader.LENGTH) {
                 header = null;
                 return false;
             }
-            // TODO: automatically detect and skip past MacBinary?
 
+            stream.Position = 0;
+            if (TestHeader(stream, out header)) {
+                return true;
+            }
+            stream.Position = MacBinary.HEADER_LEN;
+            if (TestHeader(stream, out header)) {
+                hasMacBinary = true;
+                return true;
+            }
+            return false;
+        }
+
+        private static bool TestHeader(Stream stream,
+                [NotNullWhen(true)] out ArchiveHeader? header) {
             // Read the header and test the two signature words.
             byte[] buf = new byte[ArchiveHeader.LENGTH];
             stream.ReadExactly(buf);
@@ -288,14 +326,19 @@ namespace DiskArc.Arc {
         /// <para>This should not throw an exception on bad data.  Damaged records should be
         /// flagged instead.</para>
         /// </remarks>
-        private void Scan() {
+        /// <param name="remainingLen">Bytes remaining in stream (equal to length of archive minus
+        ///   the length of the archive header chunk).</param>
+        private void Scan(long remainingLen) {
             Debug.Assert(DataStream != null);
+            Debug.Assert(remainingLen >= 0);
+            long startPosn = DataStream.Position;
+            long endPosn = startPosn + remainingLen;
 
             string pathPrefix = string.Empty;
             // Because of HMF, we don't know how many files are actually stored here.  We need
             // to process data until we run out of archive.  We want to use the value stored in
             // the archive header so we can notify the user of truncation or accretion.
-            while (DataStream.Position < mArchiveHeader.FileLength) {
+            while (DataStream.Position < endPosn) {
                 StuffIt_FileEntry? newEntry = StuffIt_FileEntry.ReadNextRecord(this);
                 if (newEntry == null) {
                     IsDubious = true;
@@ -332,8 +375,8 @@ namespace DiskArc.Arc {
                 }
             }
 
-            if (DataStream.Position != mArchiveHeader.FileLength) {
-                Notes.AddW("Consumed " + DataStream.Position +
+            if (DataStream.Position != endPosn) {
+                Notes.AddW("Consumed " + (DataStream.Position - startPosn + ArchiveHeader.LENGTH) +
                     " bytes, but length in archive header is " + mArchiveHeader.FileLength);
                 // keep going
             }

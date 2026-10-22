@@ -480,7 +480,7 @@ DXInfo / FndrOpaqueInfo (16 bytes)
 +$0c / 4: frPutAway
 ```
 
-FInfo / FndrFileInfo (16 bytes)
+FInfo / FndrFileInfo (16 bytes) - see 7-47 in IM:MTE
 ```
 +$00 / 4: fdType
 +$04 / 4: fdCreator
@@ -490,7 +490,7 @@ FInfo / FndrFileInfo (16 bytes)
 +$0e / 2: fdFldr / opaque
 ```
 
-FXInfo / FndrOpaqueInfo (16 bytes)
+FXInfo / FndrOpaqueInfo (16 bytes) - see 7-49 in IM:MTE
 ```
 +$00 / 2: fdIconID
 +$02 / 6: fdUnused[3]

@@ -511,14 +511,14 @@ namespace DiskArc {
             FileKind.Moof,
             FileKind.Zip,
             FileKind.NuFX,
-            FileKind.StuffIt,
+            FileKind.StuffIt,           // test before MacBinary
             FileKind.GZip,
             FileKind.AppleSingle,
             FileKind.DiskCopy,
             FileKind.DART,
             FileKind.AppleLink,
             FileKind.Binary2,           // test after NuFX (.BXY > .BNY)
-            FileKind.MacBinary,         // very weak format detection
+            FileKind.MacBinary,         // very weak format detection; often contains StuffIt
             // These are less definite, depending primarily on the size of the file.
             FileKind.Trackstar,
             FileKind.UnadornedNibble525,

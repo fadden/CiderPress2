@@ -46,7 +46,7 @@ All multi-byte values are in big-endian order.
 Archive header (22 bytes):
 ```
 +$00 / 4: signature ("SIT!")
-+$04 / 2: number of files in archive
++$04 / 2: number of files at the top level of the archive
 +$06 / 4: length of entire archive file, including this header
 +$0a / 4: signature2 ("rLau")
 +$0e / 1: version number (1 for &lt;= v1.5, 2 for 1.6 - 4.5)
@@ -67,12 +67,12 @@ File header (112 bytes):
 +$58 / 4: uncompressed data fork length
 +$5c / 4: compressed resource fork length
 +$60 / 4: compressed data fork length
-+$64 / 2: CRC-16/XMODEM of uncompressed resource fork
-+$66 / 2: CRC-16/XMODEM of uncompressed data fork
++$64 / 2: CRC-16/ARC of uncompressed resource fork
++$66 / 2: CRC-16/ARC of uncompressed data fork
 +$68 / 1: rPad (used for encrypted entries)
 +$69 / 1: dPad (used for encrypted entries)
 +$6a / 4: reserved
-+$6e / 2: CRC-16/XMODEM of previous bytes in this header
++$6e / 2: CRC-16/ARC of previous bytes in this header
 ```
 
 Filenames use the Macintosh character set, e.g. Mac OS Roman.
@@ -83,6 +83,8 @@ midnight on Jan 1, 1904, in local time.
 The meaning of the compression method field is described in a later section, but note that
 bit 4 (the value 16) indicates an encrypted entry, while methods 32 and 33 are used to indicate
 "startFolder" and "endFolder", respectively.
+
+The resource fork is only used to store file comments, in a plain-text `SitC` resource.
 
 ### Hierarchy Maintained Folder (HMF) ###
 

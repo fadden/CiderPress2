@@ -30,6 +30,8 @@ namespace DiskArc.Arc {
 
         public const int TYPE_OFFSET = 0x41;
         public const int CREATOR_OFFSET = 0x45;
+        public const int DATA_FORK_LEN_OFFSET = 0x53;
+        public const int RSRC_FORK_LEN_OFFSET = 0x57;
 
         // The file format allows up to 63 characters, but that may have been a concession to
         // MFS, which allowed 255.  MacBinary III limits it to 31.
