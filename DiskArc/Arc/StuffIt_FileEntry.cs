@@ -422,9 +422,13 @@ namespace DiskArc.Arc {
 
             Stream expander;
             switch (format) {
+                case CompressionFormat.StuffRLE:
+                    expander = new RLE90Stream(Archive.DataStream, CompressionMode.Decompress,
+                        true, compLen);
+                    break;
                 case CompressionFormat.StuffLZC:
                     expander = new LZCStream(Archive.DataStream, CompressionMode.Decompress,
-                        true, true, compLen, 14, true);
+                        true, compLen, true, 14, true);
                     break;
                 default:
                     throw new NotSupportedException("Compression format not supported");

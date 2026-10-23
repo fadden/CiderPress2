@@ -11,13 +11,13 @@ codec is a Stream sub-class that can be read from or written to, but not both at
    end-of-file signal (zero-length Read() result).
 
 The codec Stream is not seekable, and the codecs do not change the position of the input or
-output streams.
+output streams, except by reading or writing bytes of data.
 
-It's necessary to close the codec when compressing to provide a signal that all input has been
-provided.  This allows the codec to flush any pending data.  When expanding, the codec will
-know when all data has been decompressed, either by seeing a special symbol in the stream or
-by having processed a certain amount of data (but not necessarily by EOF, as the stream may be
-for the file archive as a whole).
+It's necessary for the caller to close the codec when compressing to provide a signal that all
+input has been provided.  This allows the codec to flush any pending data.  When expanding, the
+codec will know when all data has been decompressed, either by seeing a special symbol in the
+stream or by having processed a certain amount of data (but not necessarily by stream EOF, as the
+stream may be for the file archive as a whole).
 
 Some compression algorithms, such as Squeeze and NuFX LZW/1, are not fully streamable in one or
 both directions.  These will not be able to produce any output until all input has been provided,

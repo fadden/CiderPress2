@@ -259,13 +259,15 @@ namespace cp2_avalonia.LibTest {
                         return new DeflateStream(compStream, CompressionMode.Decompress, true);
                     }
                 case CompressionFormat.LZC12:
-                    return new LZCStream(compStream, mode, true, false, compressedLength, 12, true);
+                    return new LZCStream(compStream, mode, true, compressedLength, false, 12, true);
                 case CompressionFormat.LZC16:
-                    return new LZCStream(compStream, mode, true, false, compressedLength, 16, true);
+                    return new LZCStream(compStream, mode, true, compressedLength, false, 16, true);
                 case CompressionFormat.LZHuf:
                     return new LZHufStream(compStream, mode, true, true);
                 case CompressionFormat.ZX0:
                     return new ZX0Stream(compStream, mode, true, compressedLength, true);
+                case CompressionFormat.StuffRLE:
+                    return new RLE90Stream(compStream, mode, true, compressedLength);
                 default:
                     throw new NotImplementedException("Compression format not implemented");
             }

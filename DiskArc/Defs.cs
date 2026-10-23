@@ -263,12 +263,12 @@ namespace DiskArc {
 
             // StuffIt algorithms.
             StuffRLE = 41,          // a/k/a RLE90
-            StuffLZC = 42,          // 14-bit LZC
+            StuffLZC = 42,          // 14-bit LZC, block mode, no header
             StuffHuff = 43,         // simple Huffman encoding
             StuffLZAH = 45,         // LZH Dynamic (same alg as LHArc "lh1"?)
             StuffFixedHuff = 46,    // PackBits + Huffman?
             StuffMW = 48,           // LZMW?
-            StuffLZHuffman = 53,    // same as classic LZHuf?
+            StuffLZHuffman = 53,    // LZ77 + fixed Huffman
             // StuffInstaller = 54,
             StuffArsenic = 55,      // RLE + BWT + arithmetic encoding
 

@@ -255,13 +255,15 @@ namespace cp2_wpf.LibTest {
                         return new DeflateStream(compStream, CompressionMode.Decompress, true);
                     }
                 case CompressionFormat.LZC12:
-                    return new LZCStream(compStream, mode, true, false, compressedLength, 12, true);
+                    return new LZCStream(compStream, mode, true, compressedLength, false, 12, true);
                 case CompressionFormat.LZC16:
-                    return new LZCStream(compStream, mode, true, false, compressedLength, 16, true);
+                    return new LZCStream(compStream, mode, true, compressedLength, false, 16, true);
                 case CompressionFormat.LZHuf:
                     return new LZHufStream(compStream, mode, true, true);
                 case CompressionFormat.ZX0:
                     return new ZX0Stream(compStream, mode, true, compressedLength, true);
+                case CompressionFormat.StuffRLE:
+                    return new RLE90Stream(compStream, mode, true, compressedLength);
                 default:
                     throw new NotImplementedException("Compression format not implemented");
             }
@@ -321,7 +323,8 @@ namespace cp2_wpf.LibTest {
                 if (srcStream.Length != expStream.Length ||
                         !RawData.CompareBytes(mSrcBuf, 0, mExpBuf, 0, (int)srcStream.Length)) {
                     mFailureCount++;
-                    PrintLogLine("ERROR: data mismatch: " + pathName);
+                    PrintLogLine("ERROR: data mismatch: " + pathName + " (" +
+                        srcStream.Length + " bytes)");
                 }
 
                 if (mVerbose) {

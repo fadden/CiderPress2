@@ -23,7 +23,7 @@ using static DiskArc.Defs;
 
 namespace DiskArc.Arc {
     /// <summary>
-    /// StuffIt archive handling.  Only v1.5-format archives are handled.
+    /// StuffIt archive handling.  Only v1.5-format archives are supported.
     /// </summary>
     /// <remarks>
     /// <para>The Hierarchy Maintained Folder (HMF) approach uses a hierarchical structure, which
@@ -133,7 +133,8 @@ namespace DiskArc.Arc {
         public Stream? DataStream { get; internal set; }
 
         public bool IsValid { get; private set; } = true;
-        public bool IsReadOnly => IsDubious || (DataStream != null && !DataStream.CanWrite);
+        //public bool IsReadOnly => IsDubious || (DataStream != null && !DataStream.CanWrite);
+        public bool IsReadOnly => true;
         public bool IsDubious { get; internal set; }
 
         public Notes Notes { get; } = new Notes();

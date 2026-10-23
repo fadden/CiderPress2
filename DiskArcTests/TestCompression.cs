@@ -70,6 +70,16 @@ namespace DiskArcTests {
             }
         }
 
+        public static void TestRLE90(AppHook appHook) {
+            WorkBuffers bufs = new WorkBuffers();
+            CodecStreamCreator creator =
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                        long expandedLength) {
+                            return new RLE90Stream(compStream, mode, true, compressedLength);
+                        };
+            TestBasics(bufs, creator);
+        }
+
         public static void TestSqueeze(AppHook appHook) {
             WorkBuffers bufs = new WorkBuffers();
             CodecStreamCreator creator =
@@ -225,29 +235,29 @@ namespace DiskArcTests {
             CodecStreamCreator creator =
                 delegate (Stream compStream, CompressionMode mode, long compressedLength,
                     long expandedLength) {
-                        return new LZCStream(compStream, mode, true, false,
-                            compressedLength, 16, true);
+                        return new LZCStream(compStream, mode, true, compressedLength,
+                            false, 16, true);
                     };
             TestBasics(bufs, creator);
 
             creator = delegate (Stream compStream, CompressionMode mode, long compressedLength,
                     long expandedLength) {
-                        return new LZCStream(compStream, mode, true, false,
-                            compressedLength, 12, true);
+                        return new LZCStream(compStream, mode, true, compressedLength,
+                            false, 12, true);
                     };
             TestBasics(bufs, creator);
 
             creator = delegate (Stream compStream, CompressionMode mode, long compressedLength,
                     long expandedLength) {
-                        return new LZCStream(compStream, mode, true, false,
-                            compressedLength, 9, true);
+                        return new LZCStream(compStream, mode, true, compressedLength,
+                            false, 9, true);
                     };
             TestBasics(bufs, creator);
 
             creator = delegate (Stream compStream, CompressionMode mode, long compressedLength,
                     long expandedLength) {
-                        return new LZCStream(compStream, mode, true, false,
-                            compressedLength, 16, false);
+                        return new LZCStream(compStream, mode, true, compressedLength,
+                            false, 16, false);
                     };
             TestBasics(bufs, creator);
 

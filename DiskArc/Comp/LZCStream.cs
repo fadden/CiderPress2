@@ -58,14 +58,14 @@ namespace DiskArc.Comp {
         private bool mLeaveOpen;
 
         /// <summary>
-        /// Are we working on StuffIt data?  (max 14 bits, block mode, no header)
-        /// </summary>
-        private bool mStuffItMode;
-
-        /// <summary>
         /// To compress or not to compress?
         /// </summary>
         private CompressionMode mCompressionMode;
+
+        /// <summary>
+        /// Are we working on StuffIt data?  (max 14 bits, block mode, no header)
+        /// </summary>
+        private bool mStuffItMode;
 
         //
         // Shared constants.
@@ -102,20 +102,20 @@ namespace DiskArc.Comp {
         /// <param name="leaveOpen">Flag that determines whether we close the compressed
         ///   data stream when we are disposed.</param>
         /// <param name="compDataStreamLen">Decompression: length of compressed data.</param>
+        /// <param name="stuffItMode">If true, set max bits to 14 and omit header.</param>
         /// <param name="maxBits">Compression: maximum code width, must be in the range
         ///   [9,16].</param>
         /// <param name="blockMode">Compression: use block mode (recommended)?</param>
-        /// <param name="stuffItMode">If true, set max bits to 14 and omit header.</param>
         public LZCStream(Stream compDataStream, CompressionMode mode, bool leaveOpen,
-                bool stuffItMode, long compDataStreamLen, int maxBits, bool blockMode) {
+                long compDataStreamLen, bool stuffItMode, int maxBits, bool blockMode) {
             if (mode == CompressionMode.Compress && (maxBits < INIT_BITS || maxBits > BITS)) {
                 throw new ArgumentOutOfRangeException(nameof(maxBits), maxBits, "must be [9,16]");
             }
             mCompDataStream = compDataStream;
             mCompressionMode = mode;
             mLeaveOpen = leaveOpen;
-            mStuffItMode = stuffItMode;
             mExpInputRemaining = compDataStreamLen;
+            mStuffItMode = stuffItMode;
             mCompBitLimit = maxBits;
             mComp_block_compress = blockMode;
 

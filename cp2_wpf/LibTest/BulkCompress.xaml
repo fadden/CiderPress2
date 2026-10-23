@@ -38,6 +38,7 @@ limitations under the License.
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
@@ -48,7 +49,7 @@ limitations under the License.
             <Button Grid.Column="0" Grid.Row="0" Name="chooseFileButton" Margin="0,0,16,0"
                     Content="Select File..." Width="120"
                     Click="ChooseFileButton_Click"/>
-            <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" Name="pathNameBox" Width="500" HorizontalAlignment="Left"
+            <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="3" Name="pathNameBox" Width="500" HorizontalAlignment="Left"
                      Text="{Binding PathName, UpdateSourceTrigger=PropertyChanged}"/>
             <StackPanel Grid.Column="0" Grid.Row="2" Orientation="Vertical">
                 <RadioButton Name="radioCompressSqueeze" GroupName="Comp" Content="_Squeeze" Margin="0,4,0,0"
@@ -70,7 +71,11 @@ limitations under the License.
                 <RadioButton Name="radioCompressZX0" GroupName="Comp" Content="ZX0 (&quot;quick&quot;)" Margin="0,4,0,0"
                              Checked="CompGroup_CheckedChanged"/>
             </StackPanel>
-            <Button Grid.Column="2" Grid.Row="2" Name="runButton" HorizontalAlignment="Left" Margin="16,0,0,0"
+            <StackPanel Grid.Column="2" Grid.Row="2" Orientation="Vertical">
+                <RadioButton Name="radioCompressStuffRLE" GroupName="Comp" Content="StuffIt RLE" Margin="0,4,0,0"
+                             Checked="CompGroup_CheckedChanged"/>
+            </StackPanel>
+            <Button Grid.Column="3" Grid.Row="2" Name="runButton" HorizontalAlignment="Left" Margin="16,0,0,0"
                     Content="{Binding RunButtonLabel, FallbackValue=Run Test}"
                     Width="120" Height="40" FontWeight="Bold" IsEnabled="{Binding CanStartRunning}"
                     Click="RunCancelButton_Click"/>
