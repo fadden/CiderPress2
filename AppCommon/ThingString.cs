@@ -46,6 +46,8 @@ namespace AppCommon {
                 return "ShrinkIt";
             } else if (arc is StuffIt) {
                 return "StuffIt";
+            } else if (arc is StuffIt5) {
+                return "StuffIt5";
             } else if (arc is Zip) {
                 return "ZIP";
             } else {
@@ -259,7 +261,9 @@ namespace AppCommon {
                 case Defs.FileKind.NuFX:
                     return "NuFX (ShrinkIt)";
                 case Defs.FileKind.StuffIt:
-                    return "StuffIt 1.5";
+                    return "StuffIt v1.5";
+                case Defs.FileKind.StuffIt5:
+                    return "StuffIt v5";
                 case Defs.FileKind.Binary2:
                     return "Binary II";
                 case Defs.FileKind.AppleLink:

@@ -46,7 +46,6 @@ namespace DiskArc.Arc {
             hasRecordComments: false,
             defaultDirSep: StuffIt_FileEntry.SEP_CHAR,
             fnSyntax: FILENAME_RULES,
-            // If we supported higher-resolution timestamps, this range would be larger.
             tsStart: TimeStamp.HFS_MIN_TIMESTAMP,
             tsEnd: TimeStamp.HFS_MAX_TIMESTAMP
         );
@@ -341,7 +340,8 @@ namespace DiskArc.Arc {
             // the archive header so we can notify the user of truncation or accretion.
             while (DataStream.Position < endPosn) {
                 StuffIt_FileEntry? newEntry = StuffIt_FileEntry.ReadNextRecord(this);
-                if (newEntry == null) {
+                if (newEntry == null || DataStream.Position > endPosn) {
+                    // Failed to read, or ran past end of archive data without hitting actual EOF.
                     IsDubious = true;
                     break;
                 }

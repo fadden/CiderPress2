@@ -383,6 +383,7 @@ namespace DiskArc {
                     break;
                 case ".sit":
                     fileKind1 = FileKind.StuffIt;
+                    fileKind2 = FileKind.StuffIt5;
                     break;
                 case ".bny":
                 case ".bqy":
@@ -512,6 +513,7 @@ namespace DiskArc {
             FileKind.Zip,
             FileKind.NuFX,
             FileKind.StuffIt,           // test before MacBinary
+            FileKind.StuffIt5,          // test before MacBinary
             FileKind.GZip,
             FileKind.AppleSingle,
             FileKind.DiskCopy,
@@ -565,6 +567,8 @@ namespace DiskArc {
                     return NuFX.TestKind(stream, appHook);
                 case FileKind.StuffIt:
                     return StuffIt.TestKind(stream, appHook);
+                case FileKind.StuffIt5:
+                    return StuffIt5.TestKind(stream, appHook);
                 case FileKind.Trackstar:
                     return Trackstar.TestKind(stream, appHook);
                 case FileKind.TwoIMG:
@@ -975,6 +979,9 @@ namespace DiskArc {
                         break;
                     case FileKind.StuffIt:
                         archive = StuffIt.OpenArchive(stream, appHook);
+                        break;
+                    case FileKind.StuffIt5:
+                        archive = StuffIt5.OpenArchive(stream, appHook);
                         break;
                     case FileKind.Zip:
                         archive = Zip.OpenArchive(stream, appHook);

@@ -8,3 +8,6 @@ compression methods supported by StuffIt v1.5.1.
 
 `simple_45.sit.bin`: a single file compressed with StuffIt Deluxe 4.5.
 Has an archive comment and is wrapped with MacBinary.
+
+`simple_5.sit`: three files compressed with StuffIt Deluxe 5.0.  This uses
+the v5 format, and has a file comment.

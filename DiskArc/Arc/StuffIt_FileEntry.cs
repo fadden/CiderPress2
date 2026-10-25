@@ -85,7 +85,7 @@ namespace DiskArc.Arc {
             }
         }
 
-        public string FullPathName { get { return FileName; } }     // TODO? handle HMF
+        public string FullPathName { get { return FileName; } }
 
         public bool HasProDOSTypes => false;
 
@@ -232,7 +232,10 @@ namespace DiskArc.Arc {
         /// <summary>
         /// Converts a StuffIt compression method value to a CompressionFormat enum value.
         /// </summary>
-        private static CompressionFormat GetCompressionFormat(byte methodByte) {
+        /// <remarks>
+        /// This is shared with StuffIt5.
+        /// </remarks>
+        internal static CompressionFormat GetCompressionFormat(byte methodByte) {
             switch (methodByte) {
                 case 0: return CompressionFormat.Uncompressed;
                 case 1: return CompressionFormat.StuffRLE;
@@ -248,7 +251,6 @@ namespace DiskArc.Arc {
                 default: return CompressionFormat.Unknown;
             }
         }
-
 
         /// <summary>
         /// Private constructor.
@@ -382,10 +384,6 @@ namespace DiskArc.Arc {
         /// <summary>
         /// Creates an object for reading the contents of the entry out of the archive.
         /// </summary>
-        /// <remarks>
-        /// <para>We allow access to file forks and disk images.  We don't allow direct access
-        /// to filename or comment threads, or arbitrary threads we don't recognize.</para>
-        /// </remarks>
         /// <exception cref="FileNotFoundException">Part does not exist.</exception>
         /// <exception cref="NotSupportedException">Compression format not supported.</exception>
         internal ArcReadStream CreateReadStream(FilePart part) {
@@ -580,7 +578,7 @@ namespace DiskArc.Arc {
         }
 
         /// <summary>
-        /// Determines whether the string is a valid NuFX filename.
+        /// Determines whether the string is a valid StuffIt filename.
         /// </summary>
         /// <param name="fileName">Filename to check.</param>
         /// <returns>True if all is well.</returns>

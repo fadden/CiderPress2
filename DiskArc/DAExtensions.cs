@@ -712,6 +712,8 @@ namespace DiskArc {
                 return ((NuFX_FileEntry)entry).Archive;
             } else if (entry is StuffIt_FileEntry) {
                 return ((StuffIt_FileEntry)entry).Archive;
+            } else if (entry is StuffIt5_FileEntry) {
+                return ((StuffIt5_FileEntry)entry).Archive;
             } else if (entry is Zip_FileEntry) {
                 return ((Zip_FileEntry)entry).Archive;
             } else {

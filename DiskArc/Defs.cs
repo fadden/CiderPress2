@@ -130,6 +130,7 @@ namespace DiskArc {
             Zip,                        // .zip
             NuFX,                       // .shk, .sdk, .bxy, .sea, .bse
             StuffIt,                    // .sit
+            StuffIt5,                   // .sit
             Binary2,                    // .bny, .bqy
             AppleLink,                  // .acu
             AudioRecording,             // .wav
@@ -269,7 +270,7 @@ namespace DiskArc {
             StuffFixedHuff = 46,    // PackBits + Huffman?
             StuffMW = 48,           // LZMW?
             StuffLZHuffman = 53,    // LZ77 + fixed Huffman
-            // StuffInstaller = 54,
+            //StuffInstaller = 54,    // code used for installers; LZ77+huff -or- Deflate?
             StuffArsenic = 55,      // RLE + BWT + arithmetic encoding
 
             Unknown = 0x7e,
