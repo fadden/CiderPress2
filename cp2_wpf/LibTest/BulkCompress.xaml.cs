@@ -164,6 +164,8 @@ namespace cp2_wpf.LibTest {
                 mFormat = CompressionFormat.ZX0;
             } else if (radioCompressStuffRLE.IsChecked == true) {
                 mFormat = CompressionFormat.StuffRLE;
+            } else if (radioCompressStuffHuff.IsChecked == true) {
+                mFormat = CompressionFormat.StuffHuff;
             } else {
                 // Shouldn't happen unless nothing is checked.
                 mFormat = CompressionFormat.Uncompressed;

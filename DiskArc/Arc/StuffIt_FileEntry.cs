@@ -428,6 +428,10 @@ namespace DiskArc.Arc {
                     expander = new LZCStream(Archive.DataStream, CompressionMode.Decompress,
                         true, compLen, true, 14, true);
                     break;
+                case CompressionFormat.StuffHuff:
+                    expander = new StuffHuffStream(Archive.DataStream, CompressionMode.Decompress,
+                        true, uncompLen);
+                    break;
                 default:
                     throw new NotSupportedException("Compression format not supported");
             }

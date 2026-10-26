@@ -264,6 +264,8 @@ namespace cp2_wpf.LibTest {
                     return new ZX0Stream(compStream, mode, true, compressedLength, true);
                 case CompressionFormat.StuffRLE:
                     return new RLE90Stream(compStream, mode, true, compressedLength);
+                case CompressionFormat.StuffHuff:
+                    return new StuffHuffStream(compStream, mode, true, expandedLength);
                 default:
                     throw new NotImplementedException("Compression format not implemented");
             }

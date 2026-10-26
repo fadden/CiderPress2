@@ -80,6 +80,16 @@ namespace DiskArcTests {
             TestBasics(bufs, creator);
         }
 
+        public static void TestStuffHuff(AppHook appHook) {
+            WorkBuffers bufs = new WorkBuffers();
+            CodecStreamCreator creator =
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                        long expandedLength) {
+                            return new StuffHuffStream(compStream, mode, true, expandedLength);
+                        };
+            TestBasics(bufs, creator);
+        }
+
         public static void TestSqueeze(AppHook appHook) {
             WorkBuffers bufs = new WorkBuffers();
             CodecStreamCreator creator =
