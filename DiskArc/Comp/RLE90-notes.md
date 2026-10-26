@@ -1,4 +1,4 @@
-# RLE 90 Compression #
+# RLE-90 Compression #
 
 ## Primary References ##
 

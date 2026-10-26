@@ -73,7 +73,7 @@ namespace DiskArc.Comp {
         ///   expanding data.</param>
         /// <param name="leaveOpen">Flag that determines whether we close the compressed
         ///   data stream when we are disposed.</param>
-        /// <param name="compDataStreamLen">Decompression: length of compressed data.</param>
+        /// <param name="uncompDataStreamLen">Decompression: length of uncompressed data.</param>
         public StuffHuffStream(Stream compDataStream, CompressionMode mode, bool leaveOpen,
                 long uncompDataStreamLen) {
             mCompDataStream = compDataStream;

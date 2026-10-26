@@ -28,7 +28,8 @@ The run-length encoder will transform any run of more than two bytes to:
 
 Where 0x90 is the chosen delimiter.  If the delimiter itself appears in the file, it will be
 escaped by following it with a count of zero.  A run of delimiters is a worst-case scenario,
-resulting in a 2x expansion.
+resulting in a 2x expansion.  The count includes the value that was output before the
+delimiter, so a count of 1 would be a no-op.  (This is identical to [RLE-90](RLE90-notes.md).)
 
 A frequency analysis pass is performed on the output of the run-length encoder to create the
 Huffman encoding tree.  By its nature, the compression algorithm requires two passes through

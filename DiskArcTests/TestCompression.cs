@@ -139,7 +139,8 @@ namespace DiskArcTests {
 
             // Generate bytes with frequencies that match the Fibonacci sequence.  This creates
             // a degenerate binary tree, which should cause the encoding pass to fail and
-            // re-scale.  (The pre-1.5 SQ code would generate bad output for this case.)
+            // re-scale, because the output code would exceed 16 bits.  (The pre-1.5 SQ code
+            // would generate bad output for this case.)
             bufs.Reset();
             int count = 1;
             int prevCount = 1;

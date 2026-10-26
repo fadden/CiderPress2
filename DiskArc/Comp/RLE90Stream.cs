@@ -21,7 +21,7 @@ using CommonUtil;
 
 namespace DiskArc.Comp {
     /// <summary>
-    /// Streaming implementation of RLE 90 compression, as found in StuffIt and Arc.
+    /// Streaming implementation of RLE-90 compression, as found in StuffIt and Arc.
     /// </summary>
     public class RLE90Stream : Stream {
         // Stream characteristics.

@@ -242,3 +242,7 @@ the v1.5 layout.  Method 13 seems to be fairly common in both v1.5 and v5 archiv
 - 33: (marks end of folder)
 
 Bit 4 (value=16) is set if the entry is encrypted.
+
+StuffIt v1.5 tried RLE, LZC, and Huffman, and kept whichever worked best.  Later versions switched
+to LZ+Huffman, which generally outperforms the others.  StuffIt v5 archives seem to use either
+LZ+Huffman or Arsenic.

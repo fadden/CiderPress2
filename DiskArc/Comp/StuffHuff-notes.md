@@ -35,8 +35,9 @@ a hierarchy in depth-first order, decoded like this:
 The tree will require up to 320 bytes to represent: 256 bytes for the values, 32 bytes (256
 bits) for the 1 bits before each value, and 32 bytes (256 bits) for the 0 bits before each
 middle node in a degenerate tree.  In practice, the actual size depends on the number of
-different symbols in the tree and the complexity of the distribution.
+different symbols in the tree and the complexity of the distribution.  There is no cap on the
+code length.
 
 The encoded data is just a bit stream with Huffman sequences.  There is no end-of-stream marker,
-so decompression continues until the expected amount of data has been produced.  Input of length
-zero is not handled by the algorith, but returning zero bytes of output is reasonable.
+so decompression continues until the expected amount of data has been produced.  Handling of
+zero-length input is not defined by the algorithm, but returning zero bytes of output is reasonable.
