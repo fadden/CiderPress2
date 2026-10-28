@@ -64,6 +64,12 @@ namespace cp2 {
                 Type = type;
                 CurValue = DefValue = defValue;
             }
+            public Option(Option src) {
+                Name = src.Name;
+                Type = src.Type;
+                DefValue = src.DefValue;
+                CurValue = src.CurValue;
+            }
         }
 
         /// <summary>
@@ -78,6 +84,10 @@ namespace cp2 {
         /// </summary>
         private Dictionary<string, Option> mOptions = InitOptions();
 
+        //
+        // Options with default values.  These specific object instances should only be used to
+        // create new objects.
+        //
         private static Option OptAddExt = new Option("add-ext", OptionType.Bool, true);
         private static Option OptClassic = new Option("classic", OptionType.Bool, false);
         private static Option OptCompress = new Option("compress", OptionType.Bool, true);
@@ -119,35 +129,35 @@ namespace cp2 {
         /// </summary>
         private static Dictionary<string, Option> InitOptions() {
             Dictionary<string, Option> opts = new Dictionary<string, Option> {
-                { OptAddExt.Name, OptAddExt },
-                { OptClassic.Name, OptClassic },
-                { OptCompress.Name, OptCompress },
-                { OptConvertDOSText.Name, OptConvertDOSText },
-                { OptDebug.Name, OptDebug },
-                { OptDepth.Name, OptDepth },
-                { OptExDir.Name, OptExDir },
-                { OptFastScan.Name, OptFastScan },
-                { OptFromADF.Name, OptFromADF },
-                { OptFromAS.Name, OptFromAS },
-                { OptFromHost.Name, OptFromHost },
-                { OptFromNAPS.Name, OptFromNAPS },
-                { OptInteractive.Name, OptInteractive },
-                { OptLatch.Name, OptLatch },
-                { OptMacZip.Name, OptMacZip },
-                { OptReserveBoot.Name, OptReserveBoot },
-                { OptOverwrite.Name, OptOverwrite },
-                { OptPreserve.Name, OptPreserve },
-                { OptRaw.Name, OptRaw },
-                { OptRecurse.Name, OptRecurse },
-                { OptSectors.Name, OptSectors },
-                { OptSetInt.Name, OptSetInt },
-                { OptShowLog.Name, OptShowLog },
-                { OptShowNotes.Name, OptShowNotes },
-                { OptSkipSimple.Name, OptSkipSimple },
-                { OptStripExt.Name, OptStripExt },
-                { OptStripPaths.Name, OptStripPaths },
-                { OptVerbose.Name, OptVerbose },
-                { OptWide.Name, OptWide },
+                { OptAddExt.Name, new Option(OptAddExt) },
+                { OptClassic.Name, new Option(OptClassic) },
+                { OptCompress.Name, new Option(OptCompress) },
+                { OptConvertDOSText.Name, new Option(OptConvertDOSText) },
+                { OptDebug.Name, new Option(OptDebug) },
+                { OptDepth.Name, new Option(OptDepth) },
+                { OptExDir.Name, new Option(OptExDir) },
+                { OptFastScan.Name, new Option(OptFastScan) },
+                { OptFromADF.Name, new Option(OptFromADF) },
+                { OptFromAS.Name, new Option(OptFromAS) },
+                { OptFromHost.Name, new Option(OptFromHost) },
+                { OptFromNAPS.Name, new Option(OptFromNAPS) },
+                { OptInteractive.Name, new Option(OptInteractive) },
+                { OptLatch.Name, new Option(OptLatch) },
+                { OptMacZip.Name, new Option(OptMacZip) },
+                { OptReserveBoot.Name, new Option(OptReserveBoot) },
+                { OptOverwrite.Name, new Option(OptOverwrite) },
+                { OptPreserve.Name, new Option(OptPreserve) },
+                { OptRaw.Name, new Option(OptRaw) },
+                { OptRecurse.Name, new Option(OptRecurse) },
+                { OptSectors.Name, new Option(OptSectors) },
+                { OptSetInt.Name, new Option(OptSetInt) },
+                { OptShowLog.Name, new Option(OptShowLog) },
+                { OptShowNotes.Name, new Option(OptShowNotes) },
+                { OptSkipSimple.Name, new Option(OptSkipSimple) },
+                { OptStripExt.Name, new Option(OptStripExt) },
+                { OptStripPaths.Name, new Option(OptStripPaths) },
+                { OptVerbose.Name, new Option(OptVerbose) },
+                { OptWide.Name, new Option(OptWide) },
             };
 
             if (!HasHostPreservation) {

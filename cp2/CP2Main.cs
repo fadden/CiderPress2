@@ -90,6 +90,11 @@ namespace cp2 {
                 usage: "<ext-archive>",
                 needsArchive: true, acceptsMultipleArgs: false,
                 handler: Catalog.HandleCatalog),
+            new Command(names: new string[] { "cmd-list" },
+                summary: "executes a list of commands from a file",
+                usage: "[<command-file>]",
+                needsArchive: false, acceptsMultipleArgs: true,
+                handler: HandleCmdList),
             new Command(names: new string[] { "copy", "cp" },
                 summary: "copies files from one archive to another",
                 usage: "<src-ext-archive> [file-in-archive...] <dst-ext-archive>",
@@ -376,6 +381,108 @@ namespace cp2 {
         }
 
         /// <summary>
+        /// Handles the "cmd-list" command.
+        /// </summary>
+        private static bool HandleCmdList(string cmdName, string[] args, ParamsBag parms) {
+            if (args.Length > 1) {
+                ShowUsage(cmdName);
+                return false;
+            }
+
+            // Read the list of commands, from stdin or a file.
+            List<string> lines;
+            if (args.Length == 0) {
+                lines = new List<string>();
+                string? line;
+                while ((line = Console.In.ReadLine()) != null) {
+                    lines.Add(line);
+                }
+            } else {
+                try {
+                    string[] array = File.ReadAllLines(args[0]);
+                    lines = array.ToList();
+                }
+                catch (IOException ex) {
+                    Console.Error.WriteLine("Failed to read command file: " + ex.Message);
+                    return false;
+                }
+            }
+
+            int index = 0;
+            foreach (string line in lines) {
+                index++;
+                if (parms.Verbose) {
+                    Console.WriteLine("Processing: " + line);
+                }
+                string[] execArgs = ShellCommand.SplitCommandLine(line);
+                if (execArgs.Length == 0) {
+                    // Comment.
+                    continue;
+                }
+
+                string execCmdName = execArgs[0];
+                Command? execCmd = null;
+                foreach (Command cmdEntry in sCommands) {
+                    foreach (string name in cmdEntry.Names) {
+                        if (execCmdName == name) {
+                            execCmd = cmdEntry;
+                            break;
+                        }
+                    }
+                }
+                if (execCmd == null) {
+                    Console.Error.WriteLine("Line " + index + ": unknown command '" +
+                        execCmdName + "'");
+                    return false;
+                }
+
+                // Each command will have its options processed independently.  We don't want the
+                // options specified for "cmd-list" to be passed through, but we do want options
+                // specified in the config file.  It would be more efficient to cache the config
+                // stuff, but the difference should be negligible.
+                ParamsBag execParms = new ParamsBag(parms.AppHook);
+                ProcessConfigFile(execCmd, execParms);
+
+                // This part is cloned from Main().
+                int argStart = execParms.ParseOptions(execArgs, 1);
+                if (argStart < 0) {
+                    return false;
+                }
+                string[] extraArgs = new string[execArgs.Length - argStart];
+                for (int i = 0; i < extraArgs.Length; i++) {
+                    extraArgs[i] = execArgs[argStart + i];
+                }
+
+                // Do a simple arg count check.
+                int minArgs = 0;
+                int maxArgs = int.MaxValue;
+                if (execCmd.NeedsArchive) {
+                    minArgs++;
+                }
+                if (!execCmd.AcceptsMultipleArgs) {
+                    maxArgs = minArgs;
+                }
+                if (extraArgs.Length < minArgs || extraArgs.Length > maxArgs) {
+                    Console.Error.WriteLine("Line " + index + ": malformed command '" +
+                        line + "'");
+                    return false;
+                }
+
+                //for (int i = 0; i < extraArgs.Length; i++) {
+                //    Console.WriteLine(i + ": '" + extraArgs[i] + "'");
+                //}
+
+                // Invoke appropriate command handler.
+                CommandHandler handler = execCmd.Handler;
+                if (!handler(execCmdName, extraArgs, execParms)) {
+                    Console.Error.WriteLine("Line " + index + ": command failed");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Handles the "help" command.
         /// </summary>
         private static bool HandleHelp(string cmdName, string[] args, ParamsBag parms) {
@@ -430,7 +537,7 @@ namespace cp2 {
                 }
             }
             if (matchCmd == null) {
-                Console.WriteLine("Internal error: unknown command '" + cmdName + "'");
+                Console.WriteLine("Unknown command '" + cmdName + "'");
                 return;
             }
 

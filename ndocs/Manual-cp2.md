@@ -13,6 +13,7 @@ Contents:
    - [add | a](#adda)
    - [bless](#bless)
    - [catalog | v](#catalogv)
+   - [cmd-list](#cmd-list)
    - [copy | cp](#copycp)
    - [copy-blocks](#copy-blocks)
    - [copy-sectors](#copy-sectors)
@@ -454,6 +455,9 @@ blocks in the disk image are blank (all zeroes), or the current contents
 exactly match the new contents.  To replace an old boot image with a new one,
 the `--overwrite` option must be used.
 
+Options:
+ - `--overwrite`, `--no-overwrite`
+
 Examples:
  - `cp2 bless newhd.dsk "System Folder" -`
  - `cp2 bless -f oldhd.dsk "Folder2" newboot.bin`
@@ -491,6 +495,40 @@ Options:
 Examples:
  - `cp2 catalog archive.shk`
  - `cp2 v --depth=shallow file.do`
+
+----
+### `cmd-list`
+
+Executes a list of command from a file or stdin.
+
+Usage: `cp2 cmd-list [options] [<command-file>]`
+
+Commands are read from the file and executed, just as if they were issued on
+the command line.  This is useful when a large number of commands need to be
+executed, and the overhead of launching the program dominates the execution
+time.
+
+The command file should have one command per line.  Blank lines and lines
+starting with '#' are ignored.  Arguments with spaces in them may be quoted
+by placing a backslash ('\\') before the space, or by enclosing the entire
+argument in double quotes ("My File").  Double quotes that are meant to be
+part of the argument string must be quoted with a backslash.
+
+If the command-file argument is omitted, the command list will be read from
+standard input.
+
+Options are set independently for each command, and are not inherited from
+the cmd-list invocation.  For example, `cp2 cmd-list --verbose` will make the
+cmd-list command execute in verbose mode, but will not affect the commands
+being executed.
+
+Processing will terminate immediately if a command fails.
+
+Options: (none)
+
+Examples:
+ - `cp2 cmd-list commands.txt`
+ - `echo "catalog file.po" | cp2 cmd-list`
 
 ----
 #### `copy`|`cp`

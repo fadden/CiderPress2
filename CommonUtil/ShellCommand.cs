@@ -216,5 +216,75 @@ namespace CommonUtil {
                 }
             }
         }
+
+        /// <summary>
+        /// Splits a string into pieces as if we were processing a shell command line.
+        /// </summary>
+        /// <remarks>
+        /// We want to ignore leading/trailing and repeated whitespace.  We want to handle
+        /// backslash quotes for individual characters (specifically spaces and double-quotes),
+        /// and allow double-quoting args with spaces.  Blank lines, and lines starting with '#',
+        /// should be ignored.
+        /// </remarks>
+        /// <param name="line">String to process.</param>
+        /// <returns>Array of strings, one entry per argument.</returns>
+        public static string[] SplitCommandLine(string line) {
+            List<string> args = new List<string>();
+            StringBuilder sb = new StringBuilder();
+            bool inQuote = false;
+            bool inSpaces = true;
+            bool quoteNext = false;
+
+            foreach (char ch in line) {
+                if (ch == '#' && args.Count == 0 && sb.Length == 0) {
+                    // Comment char at start of line.
+                    return Array.Empty<string>();
+                } else if (ch == ' ') {
+                    if (inQuote || quoteNext) {
+                        // In quoted text, pass through unmodified.
+                        sb.Append(ch);
+                        quoteNext = false;
+                    } else if (inSpaces) {
+                        // Multiple consecutive spaces between tokens, ignore.
+                    } else {
+                        // End of a token.
+                        args.Add(sb.ToString());
+                        sb.Clear();
+                        inSpaces = true;
+                    }
+                } else if (ch == '"') {
+                    if (quoteNext) {
+                        // Previous was backslash, pass through unmodified.
+                        sb.Append(ch);
+                        quoteNext = false;
+                    } else if (inQuote) {
+                        // End of quoted text.  May not be end of token.
+                        inQuote = false;
+                    } else {
+                        // Start of quoted text.
+                        inQuote = true;
+                    }
+                } else if (ch == '\\') {
+                    if (quoteNext) {
+                        sb.Append(ch);
+                        quoteNext = false;
+                    } else {
+                        quoteNext = true;
+                    }
+                } else {
+                    sb.Append(ch);
+                    inSpaces = false;
+                }
+            }
+            if (sb.Length > 0) {
+                args.Add(sb.ToString());
+            }
+            if (inQuote) {
+                Debug.WriteLine("Warning: unterminated quote");
+            } else if (quoteNext) {
+                Debug.WriteLine("Warning: can't backslash-quote EOL");
+            }
+            return args.ToArray();
+        }
     }
 }
