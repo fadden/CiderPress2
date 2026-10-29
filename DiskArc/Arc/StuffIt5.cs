@@ -156,7 +156,6 @@ namespace DiskArc.Arc {
 
                         Comment = MacChar.MacToUnicode(CommentText, 0, commentLen,
                             MacChar.Encoding.Roman);
-                        Debug.WriteLine("Comment: '" + Comment + "'");
                     }
 
                     long endPosn = stream.Position;

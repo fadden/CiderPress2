@@ -322,7 +322,7 @@ namespace AppCommon {
                     return "FixdHuf";
                 case Defs.CompressionFormat.StuffMW:
                     return "MW";
-                case Defs.CompressionFormat.StuffLZHuffman:
+                case Defs.CompressionFormat.StuffLZHuff:
                     return "LZ+Huff";
                 case Defs.CompressionFormat.StuffArsenic:
                     return "Arsenic";

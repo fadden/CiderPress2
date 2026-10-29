@@ -424,7 +424,7 @@ namespace DiskArc.Arc {
             } else if (part == FilePart.DataFork) {
                 fileOffset = mDataForkOffset;
                 uncompLen = mDataUncompLen;
-                compLen = mRsrcCompLen;
+                compLen = mDataCompLen;
                 crc = mDataCRC;
                 format = StuffIt_FileEntry.GetCompressionFormat(mDataMethod);
             } else {
@@ -451,6 +451,15 @@ namespace DiskArc.Arc {
                     expander = new LZCStream(Archive.DataStream, CompressionMode.Decompress,
                         true, compLen, true, 14, true);
                     break;
+                case CompressionFormat.StuffHuff:
+                    expander = new StuffHuffStream(Archive.DataStream, CompressionMode.Decompress,
+                        true, uncompLen);
+                    break;
+                case CompressionFormat.StuffLZHuff:
+                    expander = new StuffLZHuffStream(Archive.DataStream, CompressionMode.Decompress,
+                        true, compLen, -1);
+                    break;
+
                 default:
                     throw new NotSupportedException("Compression format not supported");
             }

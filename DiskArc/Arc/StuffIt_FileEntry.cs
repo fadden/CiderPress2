@@ -140,9 +140,9 @@ namespace DiskArc.Arc {
 
         public long StorageSize { get { return mCompRLength + mCompDLength; } }
 
-        public long DataLength => mDataLength;
+        public long DataLength => IsDirectory ? 0 : mDataLength;
 
-        public long RsrcLength => mRsrcLength;
+        public long RsrcLength => IsDirectory ? 0 : mRsrcLength;
 
         public string Comment {
             get { return string.Empty; }
@@ -244,7 +244,7 @@ namespace DiskArc.Arc {
                 case 5: return CompressionFormat.StuffLZAH;
                 case 6: return CompressionFormat.StuffFixedHuff;
                 case 8: return CompressionFormat.StuffMW;
-                case 13: return CompressionFormat.StuffLZHuffman;
+                case 13: return CompressionFormat.StuffLZHuff;
                 case 15: return CompressionFormat.StuffArsenic;
                 case START_FOLDER: return CompressionFormat.Uncompressed;
                 case END_FOLDER: return CompressionFormat.Uncompressed;
@@ -364,7 +364,7 @@ namespace DiskArc.Arc {
                 return false;
             }
             if (mCompRLength > stream.Length || mCompDLength > stream.Length) {
-                Archive.Notes.AddW("Entry has impossibly long fork");
+                Archive.Notes.AddW("Entry has impossibly long fork (was archive truncated?)");
                 return false;
             }
 
@@ -392,7 +392,12 @@ namespace DiskArc.Arc {
             uint compLen;
             ushort crc;
             CompressionFormat format;
-            if (part == FilePart.RsrcFork) {
+            if (IsDirectory) {
+                fileOffset = mHeaderOffset;
+                uncompLen = compLen = 0;
+                crc = 0;
+                format = CompressionFormat.Uncompressed;
+            } else if (part == FilePart.RsrcFork) {
                 fileOffset = mHeaderOffset + FILE_HEADER_LEN;
                 uncompLen = mRsrcLength;
                 compLen = mCompRLength;
@@ -432,6 +437,10 @@ namespace DiskArc.Arc {
                     expander = new StuffHuffStream(Archive.DataStream, CompressionMode.Decompress,
                         true, uncompLen);
                     break;
+                case CompressionFormat.StuffLZHuff:
+                    expander = new StuffLZHuffStream(Archive.DataStream, CompressionMode.Decompress,
+                        true, compLen, -1);
+                    break;
                 default:
                     throw new NotSupportedException("Compression format not supported");
             }
@@ -441,7 +450,11 @@ namespace DiskArc.Arc {
         // IFileEntry
         public bool GetPartInfo(FilePart part, out long length, out long storageSize,
                 out CompressionFormat format) {
-            if (part == FilePart.DataFork) {
+            if (IsDirectory) {
+                length = storageSize = 0;
+                format = CompressionFormat.Uncompressed;
+                return true;
+            } else if (part == FilePart.DataFork) {
                 length = mDataLength;
                 storageSize = mCompDLength;
                 format = GetCompressionFormat(mCompDMethod);
@@ -490,6 +503,7 @@ namespace DiskArc.Arc {
                 case CompressionFormat.StuffRLE:
                 case CompressionFormat.StuffLZC:
                 case CompressionFormat.StuffHuff:
+                case CompressionFormat.StuffLZHuff:
                     break;
                 default:
                     throw new ArgumentException("Compression format " + compressFmt +

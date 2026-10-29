@@ -269,7 +269,7 @@ namespace DiskArc {
             StuffLZAH = 45,         // LZH Dynamic (same alg as LHArc "lh1"?)
             StuffFixedHuff = 46,    // PackBits + Huffman?
             StuffMW = 48,           // LZMW?
-            StuffLZHuffman = 53,    // LZ77 + fixed Huffman
+            StuffLZHuff = 53,    // LZ77 + fixed Huffman
             //StuffInstaller = 54,    // code used for installers; LZ77+huff -or- Deflate?
             StuffArsenic = 55,      // RLE + BWT + arithmetic encoding
 
