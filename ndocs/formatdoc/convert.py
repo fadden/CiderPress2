@@ -7,9 +7,10 @@
 # This formats various Markdown documents as HTML.  This is done via the
 # github REST API, using code from
 # https://github.com/phseiff/github-flavored-markdown-to-html .  You need to
-# have that program installed ("pip3 install gh-md-to-html") for this to work.
+# have that program installed ("pip3 install gh-md-to-html") so that this
+# script can include it as a module.
 #
-# The file needs to be fixed up a bit before and after the conversion.  This
+# The files need to be fixed up a bit before and after the conversion.  This
 # script takes care of that.
 #
 # ---
@@ -21,7 +22,7 @@
 #  - Create a fine-grained personal access token.  Instructions:
 #    https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
 #  - Locate the installed gh-md-to-html module.  In Windows, I found this in
-#    ~/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0/LocalCache/local-packages/Python312/site-packages/gh_md_to_html
+#    ~/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/gh_md_to_html
 #  - Edit the __init__.py file.  Find the "markdown_to_html_via_github_api"
 #    function.  Add two entries to "headers", substituting the token in:
 #      "Authorization": "Bearer github_pat_####",
@@ -54,10 +55,14 @@ gFileList = [
         "DiskArc/Comp/LZC-notes.md",
         "DiskArc/Comp/LZHuf-notes.md",
         "DiskArc/Comp/NuLZW-notes.md",
+        "DiskArc/Comp/RLE90-notes.md",
         "DiskArc/Comp/Squeeze-notes.md",
+        "DiskArc/Comp/StuffHuff-notes.md",
+        "DiskArc/Comp/StuffLZHuff-notes.md",
         "DiskArc/Comp/ZX0-notes.md",
         "DiskArc/Disk/DART-notes.md",
         "DiskArc/Disk/DiskCopy-notes.md",
+        "DiskArc/Disk/Moof-notes.md",
         "DiskArc/Disk/Nibble-notes.md",
         "DiskArc/Disk/Trackstar-notes.md",
         "DiskArc/Disk/TwoIMG-notes.md",

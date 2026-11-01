@@ -231,11 +231,11 @@ the v1.5 layout.  Method 13 seems to be fairly common in both v1.5 and v5 archiv
 - 1: [RLE-90](../Comp/RLE90-notes.md).
 - 2: [LZC](../Comp/LZC-notes.md). Output matches the old "compress" command, but the three-byte
      header is omitted.  It always uses max 14-bit codes with block compression enabled.
-- 3: Huffman. Simple byte-based Huffman encoding.
+- 3: [Huffman](../Comp/StuffHuff-notes.md). Simple byte-based Huffman encoding.
 - 5: LZAH.
 - 6: Fixed Huffman.
 - 8: MW (an LZW variant)
-- 13: LZ+Huffman.  A custom LZ77 + fixed huffman scheme.
+- 13: [LZ+Huffman](../Comp/StuffLZHuff-notes.md).  A custom LZ77 + Huffman encoder.
 - 14: "Installer"
 - 15: Arsenic (RLE + BWT + arithmetic encoding).
 - 32: (marks start of a folder)

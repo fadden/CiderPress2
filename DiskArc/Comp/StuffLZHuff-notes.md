@@ -7,9 +7,9 @@
 
 ## General ##
 
-StuffIt's compression method 13, referred to as "LZ+Huffman", combines an LZ77 compressor with
-fixed Huffman encoding.  The algorithm is proprietary to StuffIt and has not been published,
-but it has been reverse engineered.
+StuffIt's compression method 13, referred to as "LZ+Huffman", combines LZ77 string matching with
+fixed or static Huffman encoding.  The algorithm is proprietary to StuffIt and has not been
+published, but it has been reverse engineered.
 
 ## Details ##
 
