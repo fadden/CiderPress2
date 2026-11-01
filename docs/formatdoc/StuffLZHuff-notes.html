@@ -1,0 +1,132 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">StuffIt LZ+Huffman Compression</h1><a aria-label="Permalink: StuffIt LZ+Huffman Compression" class="anchor" href="#user-content-stuffit-lzhuffman-compression" id="user-content-stuffit-lzhuffman-compression" name="user-content-stuffit-lzhuffman-compression"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>The source code for "unar", notably:
+<a href="https://github.com/ashang/unar/blob/master/XADMaster/XADStuffIt13Handle.m">https://github.com/ashang/unar/blob/master/XADMaster/XADStuffIt13Handle.m</a>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>StuffIt's compression method 13, referred to as "LZ+Huffman", combines LZ77 string matching with
+fixed or static Huffman encoding.  The algorithm is proprietary to StuffIt and has not been
+published, but it has been reverse engineered.</p>
+<div class="markdown-heading"><h2 class="heading-element">Details</h2><a aria-label="Permalink: Details" class="anchor" href="#user-content-details" id="user-content-details" name="user-content-details"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The first byte in the compressed data stream determines the parameters used by the codec.  The
+value has the form <code>IIIIFSSS</code>, where <code>IIII</code> is the table index (0-5).  Indices 1-5 indicate that
+a set of hard-coded tables should be used, while index 0 tells the decoder that the encoding
+tables should be read from the file itself.  When index is zero, the <code>F</code> bit indicates whether
+the file holds one or two literal/length tables, and <code>SSS</code> determines the number of symbols
+in the offset-encoding table.</p>
+<p>If the encoding tables are contained within the file, they come next.  The tables are themselves
+encoded with Huffman, using a hard-coded table.</p>
+<p>The literal/length tables have 321 symbols.  Entries 0-255 are used to encode literals, entries
+256-319 are used to encode match lengths, and entry 320 is used to mark the end of the stream.</p>
+<p>To decode a file, set the current decoder to the "first" 321-symbol tree, and loop until EOF:</p>
+<ul>
+<li>Decode the next symbol using the current tree.</li>
+<li>If the value is 320, we've reached the end of the file.  Stop.</li>
+<li>If the value is &lt; 256, we have a literal.
+<ul>
+<li>Make the "first" tree the current tree.</li>
+<li>Output the value, updating the sliding window contents.</li>
+</ul>
+</li>
+<li>If the value is &gt;= 256, we have a match.
+<ul>
+<li>Make the "second" tree the current tree.</li>
+<li>Get the match length from the value:
+<ul>
+<li>If value is in the range [256,317], set length to <code>(value - 256 + 3)</code> (range 3 - 64).</li>
+<li>If value is 318, read the next 10 bits from the input, and set
+<code>length = bits + 65</code> (range 65 - 1088).</li>
+<li>If value is 319, read the next 15 bits from the input, and set
+<code>length = bits + 65</code> (range 65 - 32832).</li>
+</ul>
+</li>
+<li>Decode the next symbol using the "offset" code tree.
+<ul>
+<li>If 0, set offset=1.</li>
+<li>If 1, set offset=2</li>
+<li>Otherwise, the decoded value indicates the length, in bits, of the match offset.  To get
+the match length, read <code>(value - 1)</code> bits from the input, add to it the next power of 2,
+and add one.  For example, if the decoded value is four, the offset would be
+<code>(next 3 bits from input) + (1 &lt;&lt; 3) + 1</code>.  In other words, it's <code>(offset - 1)</code> stored in
+the stream, using the fewest bits possible, without the most significant '1' bit.</li>
+</ul>
+</li>
+<li>Output the match, updating the sliding window contents.</li>
+</ul>
+</li>
+</ul>
+<p>The match offset specifies the distance back from the current position (so an offset of zero isn't
+valid).  The sliding window should be at least 64KB, which is the next power of 2 above the
+longest possible match length, which would allow an offset up to 16 bits.  However, the actual
+maximum offset is limited by the number of symbols in the offset code tree, which varies from
+11 to 14 in the hard-coded tables, and can be from 10 to 17 in the file-stored table (note 17
+symbols allows a maximum 16-bit offset).  In practice, 64KB seems to be the right window size.</p>
+<p>Bits are read from bytes starting with the least-significant bit.</p>
+<p>Files are handled as a continuous stream, with no block boundaries.  This means the symbol
+probability distributions are fixed for the entire file, making compression less effective on
+files that contain different types of data in different sections.</p>
+<div class="markdown-heading"><h3 class="heading-element">Unpacking File-Stored Tables</h3><a aria-label="Permalink: Unpacking File-Stored Tables" class="anchor" href="#user-content-unpacking-file-stored-tables" id="user-content-unpacking-file-stored-tables" name="user-content-unpacking-file-stored-tables"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The various tables are encoded with a "meta code" tree that has 37 symbols.  The tree is generated
+from arrays that hold the symbol codes and lengths.</p>
+<p>The encoding trees are again stored as a list of lengths, one per symbol, but they are encoded in
+the file in a way that allows runs of identical lengths to be stored efficiently.  The tables are
+decoded like this:</p>
+<ul>
+<li>Set "length" to zero.</li>
+<li>While symbols remain (e.g. 321 for the literal/length tables):
+<ul>
+<li>Decode the next symbol using the "meta" code tree.</li>
+<li>If value is [0,30], set length to <code>(value + 1)</code>.</li>
+<li>If value is 31, set length to -1.</li>
+<li>If value is 32, increment length.</li>
+<li>If value is 33, decrement length.</li>
+<li>If value is 34, read the next bit from the stream.  If the bit is 1, output length.</li>
+<li>If value is 35, read the next 3 bits from the stream.  Output length N+2 times (2 - 9).</li>
+<li>If value is 36, read the next 6 bits from the stream.  Output length N+10 times (10 - 73).</li>
+<li>Output length.</li>
+</ul>
+</li>
+</ul>
+<p>This generates an array with length values for each symbol, which can then be fed into the
+routine that creates a Huffman tree from an array of lengths.</p>
+<p>If the <code>F</code> flag in the first byte of the file is 1, the "first" and "second" trees share the same
+definition.  If the <code>F</code> flag is 0, the second tree is stored immediately after the first.</p>
+<p>The number of the symbols in the "offset" tree is determined by adding 10 to the low three bits
+(<code>SSS</code>) of the value found in the first byte of the file.</p>
+<div class="markdown-heading"><h3 class="heading-element">Compression Approach</h3><a aria-label="Permalink: Compression Approach" class="anchor" href="#user-content-compression-approach" id="user-content-compression-approach" name="user-content-compression-approach"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The algorithm used by StuffIt to decide between using generated tables or one of the hard-coded
+tables is unknown.  Because the entire file is compressed as a single piece, the literal/length
+table must either include all 256 possible values, or must be generated by scanning the entire
+file before encoding begins.</p>
+<div class="markdown-heading"><h2 class="heading-element">Miscellaneous</h2><a aria-label="Permalink: Miscellaneous" class="anchor" href="#user-content-miscellaneous" id="user-content-miscellaneous" name="user-content-miscellaneous"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Sometimes the compressed data stored in StuffIt archives has an extra pair of $00 bytes at the
+end.  Because decompression halts when the stop symbol is found, the extra bytes don't affect
+the output.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/StuffLZHuff-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>

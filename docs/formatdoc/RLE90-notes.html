@@ -1,0 +1,51 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">RLE-90 Compression</h1><a aria-label="Permalink: RLE-90 Compression" class="anchor" href="#user-content-rle-90-compression" id="user-content-rle-90-compression" name="user-content-rle-90-compression"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Source documentation for The Unarchiver:
+<a href="https://code.google.com/archive/p/theunarchiver/wikis/Rle90Algorithm.wiki" rel="nofollow">https://code.google.com/archive/p/theunarchiver/wikis/Rle90Algorithm.wiki</a>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Algorithm</h2><a aria-label="Permalink: Algorithm" class="anchor" href="#user-content-algorithm" id="user-content-algorithm" name="user-content-algorithm"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>This is a simple run-length encoding algorithm used by Arc and StuffIt.  It's also part of the
+<a href="Squeeze-notes.html">Squeeze</a> algorithm.  It's very fast, but ineffective on most types of files.</p>
+<p>In brief:</p>
+<ul>
+<li>Non-run data is just output as plain bytes.</li>
+<li>If a run of 3 or more bytes is detected, the value is output, followed by 0x90, followed
+by a byte with the total run length.  The length includes the byte previously output,
+so the value is effectively (count - 1).  This allows runs up to 255 bytes in length to
+be represented as a 3-byte sequence.</li>
+<li>When the input is 0x90, the sequence 0x90 0x00 is output.</li>
+</ul>
+<p>It is not possible to encode a series of delimiter bytes as a run, so the worst-case
+expansion is 2x.</p>
+<p>Because count-1 is used, the sequence 0x90 0x01 is useless and should never appear, and
+the sequence 0x90 0x02 would represent a two-byte run with three bytes.</p>
+<p>We do not expect to see 0x90 followed by a count at the start of a file, since that would
+represent a run of undefined bytes.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/RLE90-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>

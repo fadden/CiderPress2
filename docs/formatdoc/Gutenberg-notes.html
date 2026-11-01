@@ -20,20 +20,22 @@
 <li>Reverse engineering, primarily by David Schmidt</li>
 </ul>
 <div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
-<p>The Gutenberg word processor (reviewed <a href="https://www.atarimagazines.com/creative/v9n6/64_Gutenberg.php" rel="nofollow">here</a>)
-is a somewhat obtuse program with some very advanced features.  For example, you could draw
+<p>The Gutenberg word processor, published in 1981 (see a review
+<a href="https://www.atarimagazines.com/creative/v9n6/64_Gutenberg.php" rel="nofollow">here</a>), is a somewhat obtuse
+program with some very advanced features for its time.  For example, you could draw
 graphics, insert them into a document, and flow columns around them.  The full version, and a
 more limited version called Gutenberg, Jr., used a custom filesystem.</p>
 <p>The disk directory is held in a file called <code>DIR</code>.  To get a list of files on a disk from within
 the program, you open the file like you would any other document.  (It's not <em>exactly</em> the same,
-as the volume name header is skipped over, but it's very close to being formatted text.)</p>
+as the volume name header is skipped over, but the directory format is very similar to
+formatted text.)</p>
 <p>The directory holds the filename, type, and initial track/sector of each file.  References to
 track or sector zero are stored as $40, probably because $00 has a special meaning in a document.
 The software displays the full contents of the directory file on screen, including the
 track/sector numbers; this works because bytes with the high bit clear are considered printable
 "alternate" character values.</p>
 <p>There are two types of files: programs and documents.  Fonts and non-resident commands are
-programs, and use file type 'P', or sometimes 'M'.  Documents use file type ' ' (space), or 'L' if
+programs, and use file type 'P', or (rarely) 'M'.  Documents use file type ' ' (space), or 'L' if
 they have been locked.</p>
 <p>Disks have a volume name that can be up to nine characters long.  Filenames can be up to 12
 characters, and may be any high-ASCII value other than slashes ('/'), spaces (' '), and control
@@ -42,7 +44,7 @@ slots can be identified by checking the first byte of the filename.  (Having sla
 <em>volume</em> name is apparently allowed, since the program disks do this themselves.)</p>
 <p>The program doesn't appear to allow lower-case characters to be used in filenames.</p>
 <div class="markdown-heading"><h2 class="heading-element">Disk Structure</h2><a aria-label="Permalink: Disk Structure" class="anchor" href="#user-content-disk-structure" id="user-content-disk-structure" name="user-content-disk-structure"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
-<p>The filesystem used an unusual approach: every 256-byte sector that is part of a file is arranged
+<p>The filesystem uses an unusual approach: every 256-byte sector that is part of a file is arranged
 in a doubly-linked list.  The first six bytes of every file sector hold the track/sector numbers
 of the previous, current, and next sector in the list.  The list is circular.  The high bit of the
 next track number is set when it points to the first sector in the file, and the high bit of the

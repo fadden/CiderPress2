@@ -43,7 +43,7 @@ the resource fork and/or file attributes.  Version 1 of the AppleDouble specific
 prefixed with "R.", MS-DOS should end in ".ADF" (AppleDouble File), UNIX should prefix with "%".
 Some applications put the files in a parallel ".AppleDouble" folder.  On modern systems, the
 trend is to store the header file next to the data file, prefixing it with "._" and treating it
-as hidden.</p>
+as hidden.  Some utilities may instead append ".rsrc".</p>
 <p>Modern Mac OS ZIP archive tools create AppleDouble header files when adding files with resource
 forks or extended attributes, but prefix them with <code>__MACOSX/</code>, so that they appear as a parallel
 tree when extracted.  These are v2 files with a non-empty file system string of <code>Mac OS X</code>.  They

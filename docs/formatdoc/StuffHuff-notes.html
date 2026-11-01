@@ -1,0 +1,63 @@
+<!-- ?xml version='1.0' encoding='UTF-8'? -->
+<link href="github-css.css" rel="stylesheet"/>
+<meta charset="utf-8" content="text/html"/>
+<div class="gist">
+<style> .gist-file { max-width: 25cm; margin: 0 auto; } </style>
+<style class="formula-style">
+        svg.gh-md-to-html-formula {
+            fill: black;
+        }
+    </style>
+<div class="gist-file"> <!-- This is the class that is responsible for the boxing! -->
+<div class="gist-data">
+<div class="js-gist-file-update-container js-task-list-container file-box">
+<div class="file" id="user-content-article-tempfile">
+<div class="Box-body readme blob js-code-block-container p-5 p-xl-6" id="user-content-file-docker-image-pull-md-readme" style="margin-left: 40px; margin-right: 40px; margin-top: 20px; margin-bottom: 20px">
+<article class="markdown-body entry-content container-lg" itemprop="text">
+<div class="markdown-heading"><h1 class="heading-element">PackIt/StuffIt Huffman Compression</h1><a aria-label="Permalink: PackIt/StuffIt Huffman Compression" class="anchor" href="#user-content-packitstuffit-huffman-compression" id="user-content-packitstuffit-huffman-compression" name="user-content-packitstuffit-huffman-compression"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<div class="markdown-heading"><h2 class="heading-element">Primary References</h2><a aria-label="Permalink: Primary References" class="anchor" href="#user-content-primary-references" id="user-content-primary-references" name="user-content-primary-references"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Source code for PackIt, retrieved (via archive.org) from network172.com</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">General</h2><a aria-label="Permalink: General" class="anchor" href="#user-content-general" id="user-content-general" name="user-content-general"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>As noted in the StuffIt v1.5 user manual:</p>
+<blockquote>
+<p>Huffman used by StuffIt is the same algorithm as used by PackIt II except that it’s performed on
+each fork individually.</p>
+</blockquote>
+<p>The <a href="https://en.wikipedia.org/wiki/PackIt" rel="nofollow">PackIt</a> application was written for the Macintosh
+by Harry R. Chesley in 1986.  It collected a group of files into a single archive, and applied
+compression to the entire archive.  The application was widely used until it was supplanted by
+StuffIt in 1987.</p>
+<p>StuffIt 1.5 was able to unpack PackIt archives, and used the same algorithm for compression
+method #3 in its own archives.</p>
+<div class="markdown-heading"><h2 class="heading-element">Details</h2><a aria-label="Permalink: Details" class="anchor" href="#user-content-details" id="user-content-details" name="user-content-details"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>The algorithm operates in two passes.  The first scans the file contents, counting up the number
+of times each byte value appears.  The counts are used to generate a Huffman prefix tree, and
+the second pass reads the file and outputs the encoded form.</p>
+<p>The output is a bit stream, with bits output to the high bit first.  The data contains a
+description of the tree, followed immediately by the encoded data.  The tree is represented as
+a hierarchy in depth-first order, decoded like this:</p>
+<ul>
+<li>get next bit</li>
+<li>if bit is 1, this is a leaf node; read the next 8 bits to get the symbol value</li>
+<li>if bit is 0, this is a middle node; recurse to handle the left tree, then the right tree</li>
+</ul>
+<p>The tree will require up to 320 bytes to represent: 256 bytes for the values, 32 bytes (256
+bits) for the 1 bits before each value, and 32 bytes (256 bits) for the 0 bits before each
+middle node in a degenerate tree.  In practice, the actual size depends on the number of
+different symbols in the tree and the complexity of the distribution.  There is no cap on the
+code length.</p>
+<p>The encoded data is just a bit stream with Huffman sequences.  There is no end-of-stream marker,
+so decompression continues until the expected amount of data has been produced.  Handling of
+zero-length input is not defined by the algorithm, but returning zero bytes of output is reasonable.</p>
+</article>
+</div>
+</div>
+</div>
+</div>
+<div class="gist-meta">
+<p><a href="../doc-index.html">Return to documentation index</a> | <a href="https://github.com/fadden/CiderPress2/blob/main/DiskArc/Comp/StuffHuff-notes.md">View in source tree</a></p>
+</div>
+</div>
+</div>

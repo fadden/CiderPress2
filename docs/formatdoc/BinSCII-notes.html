@@ -109,14 +109,15 @@ There is no full-file checksum.</p>
 <div class="markdown-heading"><h2 class="heading-element">Software</h2><a aria-label="Permalink: Software" class="anchor" href="#user-content-software" id="user-content-software" name="user-content-software"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>David Whitney's <code>BinSCII</code>, written for ProDOS 8, was the original implementation.</p>
 <p>Marcel J. E. Mol wrote the <code>sciibin</code> decoder for UNIX systems.</p>
-<p>On the Apple IIgs, the <code>GScii+</code> NDA could unpack BinSCII, uuencode, and MacBin files.</p>
+<p>On the Apple IIgs, the <code>GScii+</code> NDA by Derek Taubert could unpack BinSCII, uuencode, and
+MacBin files.</p>
 <p>While BinSCII can preserve ProDOS file attributes, it's generally better to store files in a
 ShrinkIt archive before encoding them, because it may otherwise be difficult to tell if you've
 successfully decoded all file segments.  The primary exception to this rule is the distribution
 of ShrinkIt itself.</p>
 <p>While it's theoretically possible to encode resource forks directly in BinSCII by setting the
 storage type, most (if not all) decoders won't or can't handle them, so storing forked files in
-ShinkIt archives is recommended.</p>
+ShrinkIt archives is recommended.</p>
 </article>
 </div>
 </div>
