@@ -125,5 +125,20 @@ namespace CommonUtil {
             int shiftCount = (4 - byteLen) * 8;
             return (val << shiftCount) >> shiftCount;
         }
+
+        /// <summary>
+        /// Reverses the order of bits in a 32-bit integer.
+        /// </summary>
+        /// <param name="val">Value to reverse.</param>
+        /// <returns>Bit-reserved form.</returns>
+        public static uint ReverseBits(uint val) {
+            // Fast non-iterative version.
+            val = ((val >> 1) & 0x55555555) | ((val & 0x55555555) << 1);
+            val = ((val >> 2) & 0x33333333) | ((val & 0x33333333) << 2);
+            val = ((val >> 4) & 0x0f0f0f0f) | ((val & 0x0f0f0f0f) << 4);
+            val = ((val >> 8) & 0x00ff00ff) | ((val & 0x00ff00ff) << 8);
+            val = (val >> 16) | (val << 16);
+            return val;
+        }
     }
 }

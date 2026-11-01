@@ -28,8 +28,10 @@ namespace DiskArc.Comp {
     /// The Unarchiver and its
     /// <see href="https://github.com/ashang/unar/blob/master/XADMaster/XADStuffIt13Handle.m">method 13</see>
     /// decompressor.  The Sit13Decoder/Sit13Encoder implementations in
-    /// <see href="https://docs.rs/crate/stuffit/latest/source/src/lib.rs"/> were very helpful.
-    /// </para>
+    /// <see href="https://github.com/benletchford/stuffit-rs">stuffit-rs</see> (v0.4.0) were
+    /// very helpful.</para>
+    /// <para>The file sizes used in StuffIt v1.5/v5 archives are 32 bits, so we don't currently
+    /// try to handle files larger than 2GB.</para>
     /// </remarks>
     public class StuffLZHuffStream : Stream {
         // Stream characteristics.
@@ -72,7 +74,8 @@ namespace DiskArc.Comp {
         /// <param name="leaveOpen">Flag that determines whether we close the compressed
         ///   data stream when we are disposed.</param>
         /// <param name="compDataStreamLen">Decompression: length of compressed data.</param>
-        /// <param name="index">Compression: encoding table index.</param>
+        /// <param name="index">Compression: encoding table index. Pass 0 for adaptive, 1-5
+        ///   for fixed tables, or -1 to allow the algorithm to decide.</param>
         public StuffLZHuffStream(Stream compDataStream, CompressionMode mode, bool leaveOpen,
                 long compDataStreamLen, int index) {
             mCompDataStream = compDataStream;
@@ -81,7 +84,7 @@ namespace DiskArc.Comp {
 
             if (mode == CompressionMode.Compress) {
                 Debug.Assert(compDataStream.CanWrite);
-                InitCompress();
+                InitCompress(index);
             } else if (mode == CompressionMode.Decompress) {
                 Debug.Assert(compDataStream.CanRead);
                 if (compDataStreamLen < 0) {
@@ -143,20 +146,174 @@ namespace DiskArc.Comp {
             throw new NotSupportedException();
         }
 
+        //
+        // Common members.
+        //
+
+        //
+        // LZ77 matches against strings we've seen in the past, but can also do a match
+        // where a string overlaps with itself (like filling RAM with an overlapping memory
+        // move).  Given a maximum match offset of O, and a maximum match length of L, we
+        // want to hold O bytes of data we've already processed (string dictionary), and L
+        // bytes of data we haven't processed yet (repeating-string opportunity).
+        //
+        // The largest value for O is 16 bits (64KB), and the largest value for L is
+        // 32767+65=32832, so we can accommodate this with a 128KB sliding window.  We can use
+        // a smaller window if we want to maintain the string dictionary data in a separate
+        // structure.
+        //
+        // The largest possible offset using one of the fixed encoding tables is 13 bits (8KB),
+        // so can currently get away with a 64KB window (which is easier to mentally factor
+        // when debugging).
+        //
+        private const int WINDOW_SIZE = 64*1024;            // must be power of 2
+        private const int WINDOW_MASK = WINDOW_SIZE - 1;
+
+        private const int STOP_SYMBOL = 320;
+
 
         #region Compress
+
+        //
+        // String match dictionary.
+        //
+        // Match lengths can be from 3 to 32832 bytes, and be at an offset from 1 to 65536 bytes
+        // back from the current position.  Matches that overlap with the current position are
+        // allowed.  While the maximum match length doesn't change, the maximum offset can vary.
+        //
+        // To narrow the search for match candidates, we hash the first three bytes, and use
+        // that value to access a list of all strings with the same hash code.  Matches that
+        // fall outside the maximum offset can be discarded.  The most recently-discovered
+        // strings should be prioritized, because smaller offsets can take fewer bits to encode.
+        //
+        // A simple arrangement is to have a pool of match nodes, with a number of elements
+        // equal to the maximum offset.  For every byte of input, we grab the node at
+        // (file_position % max_offset), remove it from an existing chain, then insert it
+        // at the head of the chain for the hash value.
+        //
+
+        /// <summary>
+        /// Each node is a link in a chain.
+        /// </summary>
+        /// <remarks>
+        /// NOTE: this is a struct, not a class, because we need a big array of them and don't
+        /// need to pass them around individually.  These use the default initializer, so you
+        /// can identify a new node by mPrev==mNext==0.
+        /// </remarks>
+        private struct MatchNode {
+            /// <summary>
+            /// Position in file where this string starts.
+            /// </summary>
+            public int mPosn;
+
+            /// <summary>
+            /// Array index of previous node in chain, or -1 if this is referenced by hash table.
+            /// </summary>
+            public int mPrev;
+
+            /// <summary>
+            /// Array index of next node in chain, or -1 if none.
+            /// </summary>
+            public int mNext;
+
+            /// <summary>
+            /// Hash value for this string.
+            /// </summary>
+            public uint mHash;
+
+            public override string ToString() {
+                return "[posn=" + mPosn + " prev=" + mPrev + " next=" + mNext +
+                    " (hash=$" + mHash.ToString("x6") + ")";
+            }
+        }
+
+        /// <summary>
+        /// Maps a string hash value to the head of a node chain.
+        /// </summary>
+        private Dictionary<uint, int> mCompMatchDict = new Dictionary<uint, int>(0);
+
+        /// <summary>
+        /// Match string dictionary, one element for every possible match position.
+        /// </summary>
+        private MatchNode[] mCompMatchNodes = Array.Empty<MatchNode>();
+
+        /// <summary>
+        /// Simple wrapper to hold the two parts of the encoding data together.
+        /// </summary>
+        private class EncoderTable {
+            public uint[] Codes { get; private set; }
+            public int[] Lengths { get; private set; }
+            public EncoderTable(uint[] codes, int[] lengths) {
+                Debug.Assert(codes.Length == lengths.Length);
+                Codes = codes;
+                Lengths = lengths;
+            }
+        }
+        private static readonly EncoderTable NO_ENCODER =
+            new EncoderTable(Array.Empty<uint>(), Array.Empty<int>());
+
+        private const int MIN_MATCH_LEN = 3;
+        private const int MAX_MATCH_LEN = 32767 + 65;
+        private int mMaxOffset;     // determined when encoder is set
+
+        private EncoderTable mCompFirstEncoder = NO_ENCODER;
+        private EncoderTable mCompSecondEncoder = NO_ENCODER;
+        private EncoderTable mCompOffsetEncoder = NO_ENCODER;
+        private EncoderTable mCompCurEncoder = NO_ENCODER;
+
+        private int mCompTableIndex;
+        private bool mCompHeaderWritten;
+        private BitWriter? mCompBitWriter;
+        private byte[] mCompWindow = Array.Empty<byte>();
+        private int mCompReadPos;
+        private int mCompWritePos;
+
 
         /// <summary>
         /// Prepares object for compression.
         /// </summary>
-        private void InitCompress() {
+        private void InitCompress(int tableIndex) {
+            if (tableIndex == -1) {
+                tableIndex = 1;
+            } else if (tableIndex == 0) {
+                throw new NotImplementedException("mode 0 not supported");
+            } else if (tableIndex > 5) {
+                throw new ArgumentOutOfRangeException(nameof(tableIndex),
+                    "index should be 0-5, or -1 for default");
+            }
+            mCompTableIndex = tableIndex;
+            mCompHeaderWritten = false;
+            mCompBitWriter = new BitWriter(mCompDataStream);
+            mCompWindow = new byte[WINDOW_SIZE];
+
+            mCompReadPos = mCompWritePos = 0;
         }
 
         /// <summary>
         /// Receives uncompressed data to be compressed.  (Stream call.)
         /// </summary>
         public override void Write(byte[] buffer, int offset, int count) {
-            throw new Exception("TODO");
+            //
+            // Copy incoming data into the buffer.  We need to stay 32832 bytes ahead of the
+            // "read" pointer to foster overlapping matches, and we need to preserve the 65536
+            // bytes behind the "read" pointer because that's our string dictionary.
+            //
+            while (count > 0) {
+                // Copy the next byte in.
+                mCompWindow[mCompWritePos++ & WINDOW_MASK] = buffer[offset++];
+                count--;
+
+                if (mCompWritePos < 0) {
+                    // This can happen due to integer overflow if we exceed 2GB.  We can avoid
+                    // this situation by changing all file positions from int to long.
+                    throw new InvalidDataException("input may not exceed 2GB");
+                }
+
+                // If we're far enough ahead of the read pointer, process some data.
+                if (mCompWritePos - mCompReadPos > MAX_MATCH_LEN) {
+                    CompressData(false);
+                }
+            }
         }
 
         /// <summary>
@@ -164,20 +321,279 @@ namespace DiskArc.Comp {
         /// indicating that all data has been provided.
         /// </summary>
         private void FinishCompression() {
-            throw new Exception("TODO");
+            CompressData(true);
+        }
+
+        /// <summary>
+        /// Compresses some or all of the pending data.
+        /// </summary>
+        /// <param name="finishing">True if called from FinishCompression().</param>
+        private void CompressData(bool finishing) {
+            Debug.Assert(mCompBitWriter != null);
+
+            //
+            // The current approach is to use a fixed table, specified by the caller, because
+            // taking it as an argument makes it easier to exercise the different tables using
+            // the API.  We don't currently handle index==0, which would require performing a
+            // frequency analysis and generating a Huffman tree.
+            //
+            if (!mCompHeaderWritten) {
+                // Write the header byte.  Just need the table index in the high nibble.
+                mCompBitWriter.WriteByteLE((byte)(mCompTableIndex << 4));
+
+                // Set up encoder tables.  (At some point we may want to select a table based
+                // on the buffer contents.)
+                mCompFirstEncoder = new EncoderTable(
+                    GenerateCodesFromLengths(FirstCodeLengths[mCompTableIndex - 1]),
+                    FirstCodeLengths[mCompTableIndex - 1]);
+                mCompSecondEncoder = new EncoderTable(
+                    GenerateCodesFromLengths(SecondCodeLengths[mCompTableIndex - 1]),
+                    SecondCodeLengths[mCompTableIndex - 1]);
+                mCompOffsetEncoder = new EncoderTable(
+                    GenerateCodesFromLengths(OffsetCodeLengths[mCompTableIndex - 1]),
+                    OffsetCodeLengths[mCompTableIndex - 1]);
+                mCompCurEncoder = mCompFirstEncoder;
+
+                // Maximum length of an offset is determined by the offset encoder, which is used
+                // to encode the length in bits of the offset value (minus one, because offset==0
+                // isn't valid).  The table has N symbols, starting from zero, so the longest
+                // offset must fit in (N-1) bits.
+                mMaxOffset = 1 << (mCompOffsetEncoder.Codes.Length - 1);
+                // The max offset determines how many entries there are in our string-matching set.
+                mCompMatchNodes = new MatchNode[mMaxOffset];
+                mCompMatchDict = new Dictionary<uint, int>(mMaxOffset);
+
+                mCompHeaderWritten = true;
+            }
+
+            //
+            // We loop until we get low on data, unless we're finishing the file.
+            //
+            while ((finishing && mCompReadPos < mCompWritePos) ||
+                    mCompWritePos - mCompReadPos > MAX_MATCH_LEN) {
+                // Find the best match for the current file position.
+                bool found = FindBestMatch(out int matchOffset, out int matchLength);
+
+                // Add the string at the current offset to the hash table.
+                UpdateStringDict(mCompReadPos);
+
+                if (found) {
+                    //Debug.WriteLine("MATCH @$" + mCompReadPos.ToString("x6") + " (" + mCompReadPos +
+                    //    " ) off=" + matchOffset + " len=" + matchLength);
+                    // Encode match.
+                    EncodeMatch(matchOffset, matchLength);
+
+                    mCompCurEncoder = mCompSecondEncoder;       // switch to second tree
+
+                    // Add the strings we're skipping over to the hash table.
+                    for (int i = 1; i < matchLength; i++) {
+                        UpdateStringDict(mCompReadPos + i);
+                    }
+
+                    mCompReadPos += matchLength;
+                } else {
+                    // Encode literal.
+                    byte value = mCompWindow[mCompReadPos & WINDOW_MASK];
+                    EncodeSymbol(value, mCompCurEncoder);
+                    mCompCurEncoder = mCompFirstEncoder;        // switch to first tree
+
+                    mCompReadPos++;
+                }
+            }
+
+            if (finishing) {
+                Debug.Assert(mCompReadPos == mCompWritePos);
+                EncodeSymbol(STOP_SYMBOL, mCompCurEncoder);
+                mCompBitWriter.Finish();
+            }
+        }
+
+        /// <summary>
+        /// Updates the string dictionary, setting the entry for the specified position.
+        /// </summary>
+        /// <param name="fileOffset"></param>
+        private void UpdateStringDict(int fileOffset) {
+            int index = fileOffset & (mMaxOffset - 1);
+            if (mCompMatchNodes[index].mPrev == 0 && mCompMatchNodes[index].mNext == 0) {
+                // This is the first time we're using this node (fields initialized to zero).
+            } else if (mCompMatchNodes[index].mPrev == -1) {
+                // No "prev" link, hash table points directly to this node.
+                if (mCompMatchNodes[index].mNext == -1) {
+                    // No "next" link, we're solo.  Remove the hash table reference.
+                    mCompMatchDict.Remove(mCompMatchNodes[index].mHash);
+                } else {
+                    // We're at the head of a list with multiple nodes.  This means we're removing
+                    // an entry that isn't the oldest in the hash chain, which doesn't make sense.
+                    throw new Exception("whoops");
+                }
+            } else {
+                // Last element in a chain.  Remove the link to us from the previous entry.
+                mCompMatchNodes[mCompMatchNodes[index].mPrev].mNext = -1;
+            }
+
+            mCompMatchNodes[index].mPrev = mCompMatchNodes[index].mNext = -1;
+
+            // Calculate the hash code.  This will fail if we're too close to the end of input.
+            if (!CalcHash(mCompReadPos, out uint hash)) {
+                return;
+            }
+
+            mCompMatchNodes[index].mHash = hash;
+            mCompMatchNodes[index].mPosn = fileOffset;
+
+            // Look for an existing entry for this hash code.
+            if (mCompMatchDict.TryGetValue(hash, out int nodeIndex)) {
+                // Entry exists, insert us at the head of the chain.
+                mCompMatchNodes[index].mNext = nodeIndex;
+                mCompMatchNodes[nodeIndex].mPrev = index;
+            }
+            mCompMatchDict[hash] = index;
+        }
+
+        /// <summary>
+        /// Calculates a hash code on the string starting at the specified file offset.
+        /// </summary>
+        private bool CalcHash(int fileOffset, out uint hash) {
+            if (fileOffset + 2 >= mCompWritePos) {
+                hash = 0;
+                return false;
+            }
+            hash = (uint)(mCompWindow[fileOffset & WINDOW_MASK] |
+                (mCompWindow[(fileOffset + 1) & WINDOW_MASK] << 8) |
+                (mCompWindow[(fileOffset + 2) & WINDOW_MASK] << 16));
+            return true;
+        }
+
+        /// <summary>
+        /// Finds the best match for the string at the current file offset.
+        /// </summary>
+        /// <param name="matchOffset">Result: offset from current position.</param>
+        /// <param name="matchLength">Result: length of match.</param>
+        /// <returns>True if a match was found.</returns>
+        private bool FindBestMatch(out int matchOffset, out int matchLength) {
+            matchOffset = matchLength = -1;
+
+            // Calculate a hash on the string at the current position.
+            if (!CalcHash(mCompReadPos, out uint hash)) {
+                return false;
+            }
+            // See if we have an entry in the table.
+            if (!mCompMatchDict.TryGetValue(hash, out int checkIndex)) {
+                return false;
+            }
+
+            int maxMatchLen = MAX_MATCH_LEN;
+            if (maxMatchLen > mCompWritePos - mCompReadPos) {
+                maxMatchLen = mCompWritePos - mCompReadPos;
+            }
+
+            // Walk the chain, stopping if we find a potential match that starts too far away.
+            int bestLength = 0;
+            int bestPosn = 0;
+            while (checkIndex >= 0) {
+                int testPosn = mCompMatchNodes[checkIndex].mPosn;
+                int testOffset = mCompReadPos - testPosn;
+                if (testOffset > mMaxOffset) {
+                    break;
+                }
+
+                // Calculate the match length.  Depending on the hashing approach, we might be able
+                // to skip testing the first few bytes.
+                int testLen;
+                for (testLen = 0; testLen < maxMatchLen; testLen++) {
+                    if (mCompWindow[(mCompReadPos + testLen) & WINDOW_MASK] !=
+                            mCompWindow[(testPosn + testLen) & WINDOW_MASK]) {
+                        break;
+                    }
+                }
+                if (testLen >= MIN_MATCH_LEN && testLen > bestLength) {
+                    bestLength = testLen;
+                    bestPosn = testPosn;
+                }
+                if (testLen == maxMatchLen) {
+                    break;      // not going to get any better
+                }
+
+                // Chase links.
+                int nextIndex = mCompMatchNodes[checkIndex].mNext;
+                checkIndex = nextIndex;
+            }
+
+            if (bestLength < MIN_MATCH_LEN) {
+                return false;
+            }
+            matchOffset = mCompReadPos - bestPosn;
+            matchLength = bestLength;
+            Debug.Assert(matchOffset > 0);
+            return true;
+        }
+
+        /// <summary>
+        /// Encodes a match.
+        /// </summary>
+        private void EncodeMatch(int offset, int length) {
+            Debug.Assert(mCompBitWriter != null);
+            Debug.Assert(length >= MIN_MATCH_LEN);
+            Debug.Assert(offset > 0);
+
+            // Encode the match length.
+            if (length <= 64) {
+                EncodeSymbol(256 + length - 3, mCompCurEncoder);
+            } else if (length <= 65 + 1023) {
+                EncodeSymbol(318, mCompCurEncoder);
+                mCompBitWriter.WriteBitsLE((uint)(length - 65), 10);
+            } else if (length <= 65 + 32767) {
+                EncodeSymbol(319, mCompCurEncoder);
+                mCompBitWriter.WriteBitsLE((uint)(length - 65), 15);
+            } else {
+                throw new Exception("internal error: invalid length");
+            }
+
+            // Encode the match offset.
+            int bitLen;
+            if (offset == 1) {
+                bitLen = 0;
+            } else if (offset == 2) {
+                bitLen = 1;
+            } else {
+                bitLen = System.Numerics.BitOperations.Log2((uint)(offset - 1)) + 1;
+            }
+            Debug.Assert(bitLen < mCompOffsetEncoder.Codes.Length);
+
+            EncodeSymbol(bitLen, mCompOffsetEncoder);
+
+            if (bitLen > 1) {
+                // Output the rest of the integer.  Remove the leading '1' bit, and subtract 1,
+                // to get a value that fits in (bitLen - 1) bits.
+                int encOffset = offset - (1 << (bitLen - 1)) - 1;
+                mCompBitWriter.WriteBitsLE((uint)encOffset, bitLen - 1);
+            }
+        }
+
+        /// <summary>
+        /// Encodes a symbol using the specified table.
+        /// </summary>
+        private void EncodeSymbol(int symbol, EncoderTable encoder) {
+            Debug.Assert(mCompBitWriter != null);
+            if (encoder.Lengths[symbol] <= 0) {
+                throw new Exception("internal error: invalid symbol " + symbol);
+            }
+
+            //Debug.WriteLine("Encode sym=" + symbol + ": code=$" +
+            //    encoder.Codes[symbol].ToString("x") + " len=" + encoder.Lengths[symbol]);
+            mCompBitWriter.WriteBitsLE(encoder.Codes[symbol], encoder.Lengths[symbol]);
         }
 
         #endregion Compress
 
+
         #region Expand
 
-        private const int WINDOW_SIZE = 65536;          // must be power of 2
-
         private static readonly int[,] EMPTY_TREE = new int[0, 0];
-        private int[,] mFirstCodeTree = EMPTY_TREE;
-        private int[,] mSecondCodeTree = EMPTY_TREE;
-        private int[,] mOffsetCodeTree = EMPTY_TREE;
-        private int[,] mCurCodeTree = EMPTY_TREE;       // points to either first or second
+        private int[,] mExpFirstCodeTree = EMPTY_TREE;
+        private int[,] mExpSecondCodeTree = EMPTY_TREE;
+        private int[,] mExpOffsetCodeTree = EMPTY_TREE;
+        private int[,] mExpCurCodeTree = EMPTY_TREE;        // points to either first or second
 
         private bool mExpHeaderRead;
         private BitReader? mExpBitReader;
@@ -233,7 +649,7 @@ namespace DiskArc.Comp {
         /// multiple encoding trees.
         /// </summary>
         private void ReadHeader() {
-            int firstByte = mCompDataStream.ReadByte();
+            int firstByte = mExpBitReader!.ReadByte();
             int index = firstByte >> 4;
             if (index < 0 || index > 5) {
                 throw new InvalidDataException("Unexpected configuration byte: $" +
@@ -242,17 +658,18 @@ namespace DiskArc.Comp {
 
             if (index == 0) {
                 int[,] metaTree = GenerateTreeFromCodes(MetaCodes, MetaCodeLengths);
-                mFirstCodeTree = ReadTreeFromStream(metaTree, LIT_LEN_SYM_COUNT);
+                mExpFirstCodeTree = ReadTreeFromStream(metaTree, LIT_LEN_SYM_COUNT);
                 if ((firstByte & 0x08) == 0) {
-                    mSecondCodeTree = ReadTreeFromStream(metaTree, LIT_LEN_SYM_COUNT);
+                    mExpSecondCodeTree = ReadTreeFromStream(metaTree, LIT_LEN_SYM_COUNT);
                 } else {
-                    mSecondCodeTree = mFirstCodeTree;
+                    mExpSecondCodeTree = mExpFirstCodeTree;
                 }
-                mOffsetCodeTree = ReadTreeFromStream(metaTree, (firstByte & 0x07) + 10);
+                mExpOffsetCodeTree = ReadTreeFromStream(metaTree, (firstByte & 0x07) + 10);
             } else {
-                GenerateTrees(index, out mFirstCodeTree, out mSecondCodeTree, out mOffsetCodeTree);
+                GenerateTrees(index,
+                    out mExpFirstCodeTree, out mExpSecondCodeTree, out mExpOffsetCodeTree);
             }
-            mCurCodeTree = mFirstCodeTree;
+            mExpCurCodeTree = mExpFirstCodeTree;
         }
 
         /// <summary>
@@ -315,33 +732,32 @@ namespace DiskArc.Comp {
         private int GetNextByte() {
             Debug.Assert(mExpBitReader != null);
 
-            const int windowMask = WINDOW_SIZE - 1;     // assumes power of 2
-
             // If we're expanding in a match, continue with that.  Otherwise, decode the next
             // bit of input.
 
             if (mExpMatchLen == 0) {
-                int val = DecodeSymbol(mCurCodeTree);
+                int val = DecodeSymbol(mExpCurCodeTree);
                 //Debug.WriteLine("DECODE $" + val.ToString("x2"));
                 if (val < 256) {
                     // Literal value.
-                    mCurCodeTree = mFirstCodeTree;      // switch to first tree!
-                    mExpWindow[mExpOutCount++ & windowMask] = (byte)val;
+                    mExpCurCodeTree = mExpFirstCodeTree;      // switch to first tree!
+                    mExpWindow[mExpOutCount++ & WINDOW_MASK] = (byte)val;
                     return val;
                 } else {
                     // Match.  Start by decoding the length.
-                    mCurCodeTree = mSecondCodeTree;     // switch to second tree!
+                    mExpCurCodeTree = mExpSecondCodeTree;     // switch to second tree!
                     if (val < 318) {
-                        // Length encoded directly.
+                        // Length encoded directly (3-64).
                         mExpMatchLen = val - 256 + 3;
                     } else if (val == 318 /*$13e*/) {
-                        // Length is 10 bits (up to 1023+65=1088).
+                        // Length is 10 bits (65 - 1023+65=1088).
                         mExpMatchLen = (int)mExpBitReader.ReadBitsLE(10) + 65;
                     } else if (val == 319 /*$13f*/) {
-                        // Length is 15 bits (up to 32767+65=32832).
+                        // Length is 15 bits (65 - 32767+65=32832).
                         mExpMatchLen = (int)mExpBitReader.ReadBitsLE(15) + 65;
-                    } else if (val == 320 /*$140*/) {
-                        //Debug.WriteLine("Found stop symbol, remaining="+ mExpBitReader.Remaining);
+                    } else if (val == STOP_SYMBOL /*$140*/) {
+                        //Debug.WriteLine("Found stop symbol, remaining="
+                        //    + mExpBitReader.RemainingBits);
                         return -1;
                     } else {
                         throw new InvalidDataException("Unexpected symbol " + val);
@@ -349,7 +765,7 @@ namespace DiskArc.Comp {
 
                     // Decode the offset.  The length of the offset is encoded with Huffman,
                     // and is followed by the variable-length offset bits.
-                    int bitLen = DecodeSymbol(mOffsetCodeTree);
+                    int bitLen = DecodeSymbol(mExpOffsetCodeTree);
                     if (bitLen == 0) {
                         mExpMatchOffset = 1;
                     } else if (bitLen == 1) {
@@ -365,8 +781,8 @@ namespace DiskArc.Comp {
 
             // Grab the next byte from the match.
             int pos = mExpOutCount - mExpMatchOffset;
-            byte copyVal = mExpWindow[pos & windowMask];
-            mExpWindow[mExpOutCount++ & windowMask] = copyVal;
+            byte copyVal = mExpWindow[pos & WINDOW_MASK];
+            mExpWindow[mExpOutCount++ & WINDOW_MASK] = copyVal;
             mExpMatchLen--;
             return copyVal;
         }
@@ -379,9 +795,12 @@ namespace DiskArc.Comp {
         /// <exception cref="InvalidDataException">Unable to decode bit stream.</exception>
         private int DecodeSymbol(int[,] codeTree) {
             int nodeIndex = 0;
+            int debugBitCount = 0;
             while (true) {
                 // If we reached a leaf, return the value.
                 if (codeTree[nodeIndex, 0] == codeTree[nodeIndex, 1]) {
+                    //Debug.WriteLine("Decode sym=" + codeTree[nodeIndex, 0] +
+                    //    " len=" + debugBitCount);
                     return codeTree[nodeIndex, 0];
                 }
 
@@ -391,6 +810,7 @@ namespace DiskArc.Comp {
                     throw new InvalidDataException("failed to decode symbol");
                 }
                 nodeIndex = nextIndex;
+                debugBitCount++;
             }
         }
 
@@ -740,12 +1160,17 @@ namespace DiskArc.Comp {
         private const int MAX_TREE_COUNT = LIT_LEN_SYM_COUNT * 2 - 1;
 
         /// <summary>
+        /// Maximum allows length of a Huffman code.
+        /// </summary>
+        private const int MAX_CODE_LENGTH = 32;     // should be 24, to work with bit rd/wr?
+
+        /// <summary>
         /// A null reference in the tree.
         /// </summary>
         private const int NULL_REF = -1;
 
         /// <summary>
-        /// Generates Huffman code trees for the specified index.
+        /// Generates Huffman decoder trees for the fixed table specified by index.
         /// </summary>
         /// <param name="index">Table index (1-5).</param>
         /// <param name="firstCode">Result: first code tree.</param>
@@ -762,7 +1187,7 @@ namespace DiskArc.Comp {
         }
 
         /// <summary>
-        /// Generates a Huffman code tree for a set of symbols, given the lengths for each.
+        /// Generates a Huffman decoder tree for a set of symbols, given the lengths for each.
         /// </summary>
         /// <remarks>
         /// The standard description of this algorithm involves sorting the list of symbols
@@ -770,8 +1195,8 @@ namespace DiskArc.Comp {
         /// Instead, we iterate through the array multiple times.  Should be fast enough.
         /// </remarks>
         /// <param name="lengths">Length of each symbol's encoding, in bits.  Max 32.</param>
+        /// <returns>The decoder tree, as a two-dimensional array (left/right ref).</returns>
         private static int[,] GenerateTreeFromLengths(int[] lengths) {
-            const int MAX_LENGTH = 32;
             const int ROOT_NODE = 0;
             int symbolsLeft = lengths.Length;
 
@@ -786,14 +1211,15 @@ namespace DiskArc.Comp {
             int code = 0;
 
             // Find all symbols of a given length, starting with the shortest.
-            for (int length = 1; length <= MAX_LENGTH; length++) {
+            for (int length = 1; length <= MAX_CODE_LENGTH; length++) {
                 // Search through all entries in the array.
                 for (int idx = 0; idx < lengths.Length; idx++) {
                     if (lengths[idx] != length) {
                         continue;
                     }
-                    // Walk the tree, starting at the root.  The code is MSB-first, so we want
-                    // to walk the tree that way.  If we step out of the tree, create a new node.
+                    // Walk the tree, starting at the root.  The "code" variable is effectively
+                    // MSBit-first, so we want to process bits from the left, not the LSBit.
+                    // If we step out of the tree, create a new node.
                     int nodeIndex = ROOT_NODE;
                     for (int bitPos = length - 1; bitPos >= 0; bitPos--) {
                         int bit = (code >> bitPos) & 1;
@@ -828,8 +1254,9 @@ namespace DiskArc.Comp {
             return tree;
         }
 
+
         /// <summary>
-        /// Generates a Huffman encoding tree for a given set of codes.  Codes are described
+        /// Generates a Huffman decoder tree for a given set of codes.  Codes are described
         /// with an LSB-first bit pattern and a length value.
         /// </summary>
         private static int[,] GenerateTreeFromCodes(int[] codes, int[] lengths) {
@@ -867,6 +1294,44 @@ namespace DiskArc.Comp {
             }
 
             return tree;
+        }
+
+        /// <summary>
+        /// Generates Huffman codes for a set of symbols, given the lengths for each.  Useful
+        /// when encoding.
+        /// </summary>
+        /// <param name="lengths">Length of each symbol's encoding, in bits.  Max 32.</param>
+        /// <returns>An array of code patterns.</returns>
+        private static uint[] GenerateCodesFromLengths(int[] lengths) {
+            uint[] codes = new uint[lengths.Length];
+            int symbolsLeft = lengths.Length;
+            // Huffman code for next symbol.
+            int code = 0;
+
+            // Find all symbols of a given length, starting with the shortest.
+            for (int length = 1; length <= MAX_CODE_LENGTH; length++) {
+                // Search through all entries in the array.
+                for (int idx = 0; idx < lengths.Length; idx++) {
+                    if (lengths[idx] != length) {
+                        continue;
+                    }
+                    // Generate the next available code with the current length.  Our variable
+                    // is effectively MSBit-first, so we need to flip it around.
+                    uint rev = BitTwiddle.ReverseBits((uint)code) >> (32 - length);
+                    codes[idx] = (uint)rev;
+
+                    code++;
+
+                    // If we've processed all symbols, bail.
+                    if (--symbolsLeft == 0) {
+                        return codes;
+                    }
+                }
+                code <<= 1;
+            }
+
+            Debug.Assert(false, "shouldn't be here for fixed tables");
+            return codes;
         }
 
         #endregion Code Tables

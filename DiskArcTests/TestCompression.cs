@@ -41,12 +41,14 @@ namespace DiskArcTests {
             public MemoryStream Comp { get; }
             public MemoryStream Exp { get; }
 
-            public WorkBuffers() {
-                SrcBuf = new byte[DEFAULT_SIZE];
+            public WorkBuffers() : this(DEFAULT_SIZE) { }
+
+            public WorkBuffers(int size) {
+                SrcBuf = new byte[size];
                 Src = new MemoryStream(SrcBuf);
-                CompBuf = new byte[DEFAULT_SIZE];
+                CompBuf = new byte[size];
                 Comp = new MemoryStream(CompBuf);
-                ExpBuf = new byte[DEFAULT_SIZE];
+                ExpBuf = new byte[size];
                 Exp = new MemoryStream(ExpBuf);
             }
 
@@ -323,6 +325,27 @@ namespace DiskArcTests {
             TestBasics(bufs, creator1);
         }
 
+        public static void TestStuffLZHuff(AppHook appHook) {
+            WorkBuffers bufs = new WorkBuffers(256 * 1024);
+            CodecStreamCreator creator =
+                delegate (Stream compStream, CompressionMode mode, long compressedLength,
+                        long expandedLength) {
+                            return new StuffLZHuffStream(compStream, mode, true, compressedLength,
+                                1);
+                        };
+            TestBasics(bufs, creator);
+
+            // Exercise the window buffer with some bulkier content.
+            const int BIG_SIZE = 200 * 1024;
+            byte[] patternBuffer = new byte[BIG_SIZE];
+            Patterns.GenerateUncompressible(patternBuffer, 0, BIG_SIZE);
+            bufs.ResetSrc(patternBuffer, 0, BIG_SIZE);
+            TestCopyStream(bufs, creator);
+            Patterns.GenerateTestPattern1(patternBuffer, 0, BIG_SIZE);
+            bufs.ResetSrc(patternBuffer, 0, BIG_SIZE);
+            TestCopyStream(bufs, creator);
+        }
+
         public static void TestZX0(AppHook appHook) {
             bool doFullTest = false;
             WorkBuffers bufs = new WorkBuffers();
@@ -455,7 +478,10 @@ namespace DiskArcTests {
 
             if (bufs.Exp.Length != bufs.Src.Length ||
                     !RawData.CompareBytes(bufs.SrcBuf, 0, bufs.ExpBuf, 0, (int)bufs.Src.Length)) {
-                throw new Exception("Source and expanded data don't match");
+                int diffIndex = RawData.FirstDiff(bufs.SrcBuf, 0, bufs.ExpBuf, 0,
+                    (int)Math.Min(bufs.Exp.Length, bufs.Src.Length));
+                throw new Exception("Source and expanded data don't match (first diff @" +
+                    diffIndex + ")");
             }
         }
 

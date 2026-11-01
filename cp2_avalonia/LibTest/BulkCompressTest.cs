@@ -270,6 +270,8 @@ namespace cp2_avalonia.LibTest {
                     return new RLE90Stream(compStream, mode, true, compressedLength);
                 case CompressionFormat.StuffHuff:
                     return new StuffHuffStream(compStream, mode, true, expandedLength);
+                case CompressionFormat.StuffLZHuff:
+                    return new StuffLZHuffStream(compStream, mode, true, compressedLength, -1);
                 default:
                     throw new NotImplementedException("Compression format not implemented");
             }

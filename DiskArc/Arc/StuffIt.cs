@@ -59,13 +59,13 @@ namespace DiskArc.Arc {
         /// </summary>
         private class ArchiveHeader {
             public const int LENGTH = 22;
-            // Archive header signature #1, "SIT!".
-            public static readonly byte[] SIGNATURE1 = new byte[] { 0x53, 0x49, 0x54, 0x21 };
-            // Archive header signature #2, "rLau".
-            public static readonly byte[] SIGNATURE2 = new byte[] { 0x72, 0x4c, 0x61, 0x75 };
+            public static readonly uint SIGNATURE1 = MacChar.IntifyMacConstantString("SIT!");
+            public static readonly uint SIGNATURE2 = MacChar.IntifyMacConstantString("rLau");
 
+            public uint Signature1 { get; set; }
             public ushort EntryCount { get; set; }
             public uint FileLength { get; set; }
+            public uint Signature2 { get; set; }
             public byte Version { get; set; }
             public byte[] Reserved { get; set; } = new byte[7];
 
@@ -83,27 +83,35 @@ namespace DiskArc.Arc {
             /// <summary>
             /// Unpacks the archive header from the buffer.  Performs basic validation checks.
             /// </summary>
-            public bool Load(byte[] buf, int offset) {
+            public void Load(byte[] buf, int offset) {
                 int startOffset = offset;
-                for (int i = 0; i < SIGNATURE1.Length; i++) {
-                    if (buf[offset++] != SIGNATURE1[i]) {
-                        return false;
-                    }
-                }
+                Signature1 = RawData.ReadU32BE(buf, ref offset);
                 EntryCount = RawData.ReadU16BE(buf, ref offset);
                 FileLength = RawData.ReadU32BE(buf, ref offset);
-                if (FileLength < LENGTH) {
-                    return false;
-                }
-                for (int i = 0; i < SIGNATURE2.Length; i++) {
-                    if (buf[offset++] != SIGNATURE2[i]) {
-                        return false;
-                    }
-                }
+                Signature2 = RawData.ReadU32BE(buf, ref offset);
                 Version = RawData.ReadU8(buf, ref offset);
                 Array.Copy(buf, offset, Reserved, 0, Reserved.Length);
                 offset += Reserved.Length;
                 Debug.Assert(offset - startOffset == LENGTH);
+            }
+
+            /// <summary>
+            /// Validates the archive header.
+            /// </summary>
+            public bool Validate(Notes? notes) {
+                if (Signature1 != SIGNATURE1) {
+                    return false;
+                }
+                if (Signature2 != SIGNATURE2) {
+                    notes?.AddW("Malformed archive header signature");
+                    // keep going
+                }
+                if (FileLength < LENGTH) {
+                    return false;
+                }
+                if (Version < 1 || Version > 2) {
+                    notes?.AddI("Unexpected archive header version: " + Version);
+                }
                 return true;
             }
 
@@ -112,12 +120,10 @@ namespace DiskArc.Arc {
             /// </summary>
             public void Store(byte[] buf, int offset) {
                 int startOffset = offset;
-                Array.Copy(SIGNATURE1, buf, SIGNATURE1.Length);
-                offset += SIGNATURE1.Length;
+                RawData.WriteU32BE(buf, ref offset, Signature1);
                 RawData.WriteU16BE(buf, ref offset, EntryCount);
                 RawData.WriteU32BE(buf, ref offset, FileLength);
-                Array.Copy(SIGNATURE2, buf, SIGNATURE2.Length);
-                offset += SIGNATURE2.Length;
+                RawData.WriteU32BE(buf, ref offset, Signature2);
                 RawData.WriteU8(buf, ref offset, Version);
                 Array.Copy(Reserved, 0, buf, offset, Reserved.Length);
                 offset += Reserved.Length;
@@ -136,7 +142,7 @@ namespace DiskArc.Arc {
         public bool IsReadOnly => true;
         public bool IsDubious { get; internal set; }
 
-        public Notes Notes { get; } = new Notes();
+        public Notes Notes { get; private set; } = new Notes();
 
         public bool IsReconstructionNeeded => true;
 
@@ -190,7 +196,7 @@ namespace DiskArc.Arc {
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>True if this looks like StuffIt.</returns>
         public static bool TestKind(Stream stream, AppHook appHook) {
-            return AnalyzeFile(stream, appHook, out bool unused1, out ArchiveHeader? unused2);
+            return AnalyzeFile(stream, appHook, out bool unused1, out ArchiveHeader? unused2, null);
         }
 
         /// <summary>
@@ -221,10 +227,13 @@ namespace DiskArc.Arc {
         /// <returns>Archive instance.</returns>
         /// <exception cref="NotSupportedException">Stream is not a StuffIt archive.</exception>
         public static StuffIt OpenArchive(Stream stream, AppHook appHook) {
-            if (!AnalyzeFile(stream, appHook, out bool hasMacBinary, out ArchiveHeader? header)) {
+            Notes notes = new Notes();
+            if (!AnalyzeFile(stream, appHook, out bool hasMacBinary, out ArchiveHeader? header,
+                    notes)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
             StuffIt archive = new StuffIt(stream, appHook, header);
+            archive.Notes = notes;
             archive.mHasMacBinary = hasMacBinary;
             long headerPosn = stream.Position;      // should be positioned just past archive header
             long streamLen;
@@ -286,19 +295,15 @@ namespace DiskArc.Arc {
         /// <param name="header">Result: archive header record.</param>
         /// <returns>True if this appears to be a StuffIt archive.</returns>
         private static bool AnalyzeFile(Stream stream, AppHook appHook, out bool hasMacBinary,
-                [NotNullWhen(true)] out ArchiveHeader? header) {
+                [NotNullWhen(true)] out ArchiveHeader? header, Notes? notes) {
             hasMacBinary = false;
-            if (stream.Length < ArchiveHeader.LENGTH) {
-                header = null;
-                return false;
-            }
-
             stream.Position = 0;
-            if (TestHeader(stream, out header)) {
+            if (TestHeader(stream, out header, notes)) {
                 return true;
             }
+
             stream.Position = MacBinary.HEADER_LEN;
-            if (TestHeader(stream, out header)) {
+            if (TestHeader(stream, out header, notes)) {
                 hasMacBinary = true;
                 return true;
             }
@@ -306,16 +311,19 @@ namespace DiskArc.Arc {
         }
 
         private static bool TestHeader(Stream stream,
-                [NotNullWhen(true)] out ArchiveHeader? header) {
+                [NotNullWhen(true)] out ArchiveHeader? header, Notes? notes) {
             // Read the header and test the two signature words.
+            if (stream.Length - stream.Position < ArchiveHeader.LENGTH) {
+                header = null;
+                return false;
+            }
+
             byte[] buf = new byte[ArchiveHeader.LENGTH];
             stream.ReadExactly(buf);
 
             header = new ArchiveHeader();
-            if (!header.Load(buf, 0)) {
-                return false;
-            }
-            return true;
+            header.Load(buf, 0);
+            return header.Validate(notes);
         }
 
         /// <summary>

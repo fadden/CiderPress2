@@ -266,6 +266,8 @@ namespace cp2_wpf.LibTest {
                     return new RLE90Stream(compStream, mode, true, compressedLength);
                 case CompressionFormat.StuffHuff:
                     return new StuffHuffStream(compStream, mode, true, expandedLength);
+                case CompressionFormat.StuffLZHuff:
+                    return new StuffLZHuffStream(compStream, mode, true, compressedLength, -1);
                 default:
                     throw new NotImplementedException("Compression format not implemented");
             }
@@ -325,7 +327,10 @@ namespace cp2_wpf.LibTest {
                 if (srcStream.Length != expStream.Length ||
                         !RawData.CompareBytes(mSrcBuf, 0, mExpBuf, 0, (int)srcStream.Length)) {
                     mFailureCount++;
-                    PrintLogLine("ERROR: data mismatch: " + pathName + " (" +
+                    int diffIndex = RawData.FirstDiff(mSrcBuf, 0, mExpBuf, 0,
+                        (int)Math.Min(srcStream.Length, expStream.Length));
+
+                    PrintLogLine("ERROR: data mismatch @" + diffIndex + ": " + pathName + " (" +
                         srcStream.Length + " bytes)");
                 }
 

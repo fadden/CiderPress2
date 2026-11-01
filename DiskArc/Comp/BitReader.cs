@@ -31,9 +31,9 @@ namespace DiskArc.Comp {
         private uint mBits;
 
         /// <summary>
-        /// Returns the amount of data left in the stream.
+        /// Returns the amount of data left to read, in bits.
         /// </summary>
-        public int Remaining => mStreamLength;
+        public int RemainingBits => mStreamLength * 8 + mBitCount;
 
         /// <summary>
         /// Constructor.
@@ -42,6 +42,7 @@ namespace DiskArc.Comp {
         /// <param name="length">Length of data stream.  May be shorter than the actual length
         ///   of the stream.</param>
         public BitReader(Stream input, int length) {
+            Debug.Assert(input.CanRead);
             mStream = input;
             mStreamLength = length;
             mBitCount = 0;
@@ -64,11 +65,11 @@ namespace DiskArc.Comp {
         /// </remarks>
         /// <param name="count">Number of bits to read (max 24).</param>
         public uint ReadBitsLE(int count) {
-            Debug.Assert(count <= BUF_BITS);
+            Debug.Assert(count <= BUF_BITS);    // count may be zero, though that would be weird
             if (mBitCount < BUF_BITS) {
                 LoadBitsLE();
             }
-            if (count >= mBitCount) {
+            if (count > mBitCount) {
                 throw new IOException("ran out of bits");
             }
             // Grab from the little end.
@@ -76,6 +77,13 @@ namespace DiskArc.Comp {
             mBits >>= count;
             mBitCount -= count;
             return result;
+        }
+
+        /// <summary>
+        /// Reads the next byte from the input stream.
+        /// </summary>
+        public byte ReadByte() {
+            return (byte)ReadBitsLE(8);
         }
 
         /// <summary>

@@ -399,8 +399,8 @@ namespace DiskArc.Arc {
             //Notes.AddI("final posn=$" + DataStream.Position.ToString("X"));
 
             if (DataStream.Position != endPosn) {
-                Notes.AddW("Consumed " + (DataStream.Position - startPosn) +
-                    " bytes, but expected " + (endPosn - startPosn));
+                Notes.AddW("File scan consumed " + (DataStream.Position - startPosn) +
+                    " bytes, but file length is " + (endPosn - startPosn));
                 // keep going
             }
 

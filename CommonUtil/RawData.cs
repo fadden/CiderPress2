@@ -627,6 +627,20 @@ namespace CommonUtil {
         }
 
         /// <summary>
+        /// Compares two byte arrays.
+        /// </summary>
+        /// <returns>The offset of the first byte that differs.</returns>
+        public static int FirstDiff(byte[] ar1, int offset1, byte[] ar2, int offset2,
+                int count) {
+            for (int i = 0; i < count; i++) {
+                if (ar1[offset1 + i] != ar2[offset2 + i]) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
         /// Compares the contents of two byte arrays.
         /// </summary>
         /// <param name="ar1">First array.</param>
