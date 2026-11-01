@@ -385,8 +385,8 @@ namespace DiskArc.Arc {
             }
 
             if (DataStream.Position != endPosn) {
-                Notes.AddW("Consumed " + (DataStream.Position - startPosn + ArchiveHeader.LENGTH) +
-                    " bytes, but length in archive header is " + mArchiveHeader.FileLength);
+                Notes.AddW("Found " + (DataStream.Position - startPosn + ArchiveHeader.LENGTH) +
+                    " bytes, but length declared in header is " + mArchiveHeader.FileLength);
                 // keep going
             }
         }

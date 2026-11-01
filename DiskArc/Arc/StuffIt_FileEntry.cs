@@ -353,19 +353,20 @@ namespace DiskArc.Arc {
             if (calcHdrCrc != mHdrCRC) {
                 Archive.Notes.AddW("Corrupted header: expected CRC=$" + mHdrCRC.ToString("X4") +
                     ", actual=$" + calcHdrCrc.ToString("X4"));
+                IsDubious = true;
                 //return false;   // try anyway?
             }
             if (mCompRMethod == 0 && mRsrcLength != mCompRLength) {
                 Archive.Notes.AddW("Length mismatch on uncompresed rsrc fork");
-                return false;
+                IsDamaged = true;
             }
             if (mCompDMethod == 0 && mDataLength != mCompDLength) {
                 Archive.Notes.AddW("Length mismatch on uncompresed data fork");
-                return false;
+                IsDamaged = true;
             }
             if (mCompRLength > stream.Length || mCompDLength > stream.Length) {
                 Archive.Notes.AddW("Entry has impossibly long fork (was archive truncated?)");
-                return false;
+                IsDamaged = true;
             }
 
             // If this is not a directory entry, seek past the compressed data.
@@ -566,12 +567,12 @@ namespace DiskArc.Arc {
 
         // IFileEntry
         public int CompareFileName(string fileName) {
-            return string.Compare(mFileName, fileName, StringComparison.OrdinalIgnoreCase);
+            return string.Compare(FileName, fileName, StringComparison.OrdinalIgnoreCase);
         }
 
         // IFileEntry
         public int CompareFileName(string fileName, char fileNameSeparator) {
-            return PathName.ComparePathNames(mFileName, SEP_CHAR, fileName,
+            return PathName.ComparePathNames(FileName, SEP_CHAR, fileName,
                 fileNameSeparator, PathName.CompareAlgorithm.OrdinalIgnoreCase);
         }
 

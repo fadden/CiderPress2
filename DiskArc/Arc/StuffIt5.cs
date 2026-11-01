@@ -84,7 +84,7 @@ namespace DiskArc.Arc {
             /// <summary>
             /// Unpacks the archive header from the stream.  Performs basic validation checks.
             /// </summary>
-            public bool Load(Stream stream) {
+            public bool Load(Stream stream, Notes? notes) {
                 try {
                     long startPosn = stream.Position;
 
@@ -114,11 +114,12 @@ namespace DiskArc.Arc {
                     FirstOffset = RawData.ReadU32BE(buf, ref offset);
                     HeaderCRC = RawData.ReadU16BE(buf, ref offset);
 
-                    if (Version != EXPECTED_VERSION) {
-                        return false;
-                    }
                     if (FileLength < FIXED_LEN) {
                         return false;
+                    }
+                    if (Version != EXPECTED_VERSION) {
+                        notes?.AddW("Unexpected file version: " + Version);
+                        // keep going
                     }
                     Debug.Assert(offset == FIXED_LEN);
 
@@ -160,7 +161,7 @@ namespace DiskArc.Arc {
 
                     long endPosn = stream.Position;
                     if (endPosn - startPosn != FirstOffset) {
-                        Debug.WriteLine("Warning: StuffIt5 header consumed " +
+                        notes?.AddW("StuffIt5 header consumed " +
                             (endPosn - startPosn) + " bytes, expected " + FirstOffset);
                     }
 
@@ -183,7 +184,7 @@ namespace DiskArc.Arc {
         public bool IsReadOnly => true;
         public bool IsDubious { get; internal set; }
 
-        public Notes Notes { get; } = new Notes();
+        public Notes Notes { get; private set; } = new Notes();
 
         public bool IsReconstructionNeeded => true;
 
@@ -226,7 +227,7 @@ namespace DiskArc.Arc {
         /// <param name="appHook">Application hook reference.</param>
         /// <returns>True if this looks like StuffIt5.</returns>
         public static bool TestKind(Stream stream, AppHook appHook) {
-            return AnalyzeFile(stream, appHook, out bool unused1, out ArchiveHeader? unused2);
+            return AnalyzeFile(stream, appHook, out bool unused1, out ArchiveHeader? unused2, null);
         }
 
         /// <summary>
@@ -257,10 +258,13 @@ namespace DiskArc.Arc {
         /// <returns>Archive instance.</returns>
         /// <exception cref="NotSupportedException">Stream is not a StuffIt archive.</exception>
         public static StuffIt5 OpenArchive(Stream stream, AppHook appHook) {
-            if (!AnalyzeFile(stream, appHook, out bool hasMacBinary, out ArchiveHeader? header)) {
+            Notes notes = new Notes();
+            if (!AnalyzeFile(stream, appHook, out bool hasMacBinary, out ArchiveHeader? header,
+                    notes)) {
                 throw new NotSupportedException("Incompatible data stream");
             }
             StuffIt5 archive = new StuffIt5(stream, appHook, header);
+            archive.Notes = notes;
             archive.mHasMacBinary = hasMacBinary;
             long headerPosn = stream.Position;      // should be positioned just past archive header
             long streamLen;
@@ -321,7 +325,7 @@ namespace DiskArc.Arc {
         /// <param name="header">Result: archive header record.</param>
         /// <returns>True if this appears to be a StuffIt5 archive.</returns>
         private static bool AnalyzeFile(Stream stream, AppHook appHook, out bool hasMacBinary,
-                [NotNullWhen(true)] out ArchiveHeader? header) {
+                [NotNullWhen(true)] out ArchiveHeader? header, Notes? notes) {
             hasMacBinary = false;
             if (stream.Length < ArchiveHeader.FIXED_LEN) {
                 header = null;
@@ -329,11 +333,11 @@ namespace DiskArc.Arc {
             }
 
             stream.Position = 0;
-            if (TestHeader(stream, out header)) {
+            if (TestHeader(stream, out header, notes)) {
                 return true;
             }
             stream.Position = MacBinary.HEADER_LEN;
-            if (TestHeader(stream, out header)) {
+            if (TestHeader(stream, out header, notes)) {
                 hasMacBinary = true;
                 return true;
             }
@@ -341,10 +345,10 @@ namespace DiskArc.Arc {
         }
 
         private static bool TestHeader(Stream stream,
-                [NotNullWhen(true)] out ArchiveHeader? header) {
+                [NotNullWhen(true)] out ArchiveHeader? header, Notes? notes) {
             // Read the header from the current stream position, and validate it.
             header = new ArchiveHeader();
-            if (!header.Load(stream)) {
+            if (!header.Load(stream, notes)) {
                 return false;
             }
             return true;
@@ -399,8 +403,8 @@ namespace DiskArc.Arc {
             //Notes.AddI("final posn=$" + DataStream.Position.ToString("X"));
 
             if (DataStream.Position != endPosn) {
-                Notes.AddW("File scan consumed " + (DataStream.Position - startPosn) +
-                    " bytes, but file length is " + (endPosn - startPosn));
+                Notes.AddW("File scan read " + (DataStream.Position - startPosn) +
+                    " bytes, but file length should be " + (endPosn - startPosn));
                 // keep going
             }
 

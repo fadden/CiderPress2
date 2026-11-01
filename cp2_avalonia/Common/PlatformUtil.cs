@@ -29,7 +29,7 @@ namespace cp2_avalonia.Common {
         // File filter extensions, matching WinUtil.cs verbatim.
         public const string FILE_FILTER_ALL = "All files|*.*";
         public const string FILE_FILTER_KNOWN = "Known formats|" +
-            "*.shk;*.sdk;*.sea;*.bny;*.bqy;*.bxy;*.bse;*.wav;" +
+            "*.shk;*.sdk;*.sea;*.bny;*.bqy;*.bxy;*.bse;*.wav;*.sit;" +
             "*.dsk;*.po;*.do;*.d13;*.2mg;*.img;*.iso;*.hdv;*.dc;*.dc42;*.dc6;*.image;*.ddd;" +
             "*.nib;*.nb2;*.raw;*.app;*.woz;*.moof;" +
             "*.gz;*.zip;*.as;*.bin;*.macbin;*.acu";
