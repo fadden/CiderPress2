@@ -49,7 +49,8 @@ namespace AppCommon {
             // if the .gz itself is stored in an archive.
             //
             // NuFX disk images require special exclusion handling by the caller.
-            ".zip", ".bny", ".bqy", ".shk", ".bxy", ".bse", ".sea", ".acu", ".gz", ".as", ".wav"
+            ".zip", ".bny", ".bqy", ".shk", ".bxy", ".bse", ".sea", ".acu", ".gz", ".as", ".wav",
+            ".sit"
         };
 
         /// <summary>
@@ -64,6 +65,10 @@ namespace AppCommon {
             if (entry.HasHFSTypes) {
                 hasProType = FileAttribs.ProDOSFromHFS(entry.HFSFileType, entry.HFSCreator,
                         out proType, out proAux);
+                if (entry.HFSCreator == FileAttribs.CREATOR_SIT_) {
+                    // Type should be SIT!, SITD, or SIT5.
+                    looksGood = true;
+                }
             }
             if (!looksGood && !hasProType && entry.HasProDOSTypes) {
                 proType = entry.FileType;
@@ -82,7 +87,16 @@ namespace AppCommon {
             } else {
                 ext = Path.GetExtension(entry.FileName).ToLowerInvariant();
                 if (string.IsNullOrEmpty(ext)) {
+                    // No extension to check.
                     return false;
+                }
+                if (ext == ".bin") {
+                    /* check for .sit.bin manually */
+                    string ext2 =
+                        Path.GetExtension(Path.GetFileNameWithoutExtension(entry.FileName));
+                    if (ext2.ToLowerInvariant() == ".sit") {
+                        looksGood = true;
+                    }
                 }
             }
 

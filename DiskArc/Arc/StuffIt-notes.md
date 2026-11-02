@@ -19,13 +19,13 @@ Expander, was bundled with Mac OS for several years.  The program was published 
 incarnations until it was discontinued in 2020.
 
 The file format for v1.5 was described in detail in the User's Guide, but the (significant) changes
-to later versions of the program, notably v5.5, have not been published.  A major update, the
+to later versions of the program, notably v5, have not been published.  A major update, the
 "StuffIt X" format, was introduced in 2002.  Some of the compression algorithms used are similar
 or identical to those used in other programs, but others are unique.
 
 StuffIt archives found on the Internet typically use the ".sit" extension.  StuffIt X files
 use ".sitx", and self-extracting archives use ".sea".  On HFS, archives used the creator `SIT!`
-with file type `SIT!` or `SITD`.
+with file type `SIT!` (StuffIt 1.5), `SITD` (StuffIt 4.5) or `SIT5` (StuffIt 5.0).
 
 Support for various compression algorithms was added over the years.  Early versions supported
 RLE, simple Huffman, and LZC.  Later versions included arithmetic encoding, LZH, BWT, and others.

@@ -93,6 +93,8 @@ edit blocks or sectors, and view raw tracks, as well as copy and replace whole d
     <tr> <td>gzip</td> <td>.gz</td> <td>read/add/extract</td> </tr>
     <tr> <td>MacBinary</td> <td>.bin .macbin</td> <td>read</td> </tr>
     <tr> <td>NuFX (ShrinkIt)</td> <td>.shk .sdk .bxy .sea .bse</td> <td>full</td> </tr>
+    <tr> <td>StuffIt v1.5</td> <td>.sit</td> <td>read</td> </tr>
+    <tr> <td>StuffIt v5</td> <td>.sit</td> <td>read (LZ+Huffman)</td> </tr>
     <tr> <td>ZIP</td> <td>.zip</td> <td>full (includes __MACOSX handling)</td> </tr>
 </table>
 
@@ -110,7 +112,8 @@ as AppleSingle.</p>
 forks and HFS/ProDOS file attributes.</p>
 
 <p>Compression modes supported are LZW/1 and LZW/2 for NuFX,
-Squeeze for Binary II, Deflate for ZIP/gzip, and LZHUF for DART.</p>
+Squeeze for Binary II, Deflate for ZIP/gzip, LZHUF for DART,
+and RLE, LZW, Huffman, and LZ+Huffman for StuffIt.</p>
 
 
 <h4>Disk Images</h4>

@@ -89,6 +89,7 @@ namespace DiskArc {
         public const uint CREATOR_PDOS = 0x70646f73;        // 'pdos' (ProDOS)
         public const uint CREATOR_DART = 0x44415254;        // 'DART' (DART)
         public const uint CREATOR_DCPY = 0x64437079;        // 'dCpy' (DiskCopy)
+        public const uint CREATOR_SIT_ = 0x53495421;        // 'SIT!'
         public const uint TYPE_AIFC = 0x41494643;           // 'AIFC'
         public const uint TYPE_AIFF = 0x41494646;           // 'AIFF'
         public const uint TYPE_BINA = 0x42494e41;           // 'BINA'
