@@ -63,7 +63,7 @@ namespace DiskArc.FS {
         private ushort drAtrb;
 
         /// <summary>drNmFls: number of files in directory.</summary>
-        public ushort NumFiles => drNmFls;
+        public ushort NumFiles { get => drNmFls; internal set { drNmFls = value; IsDirty = true; } }
         private ushort drNmFls;
 
         /// <summary>drDrSt: first block of directory.</summary>
@@ -91,11 +91,11 @@ namespace DiskArc.FS {
         private ushort drAlBlSt;
 
         /// <summary>drNxtFNum: next unused file number.</summary>
-        public uint NextFileNum => drNxtFNum;
+        public uint NextFileNum { get => drNxtFNum; internal set { drNxtFNum = value; IsDirty = true; } }
         private uint drNxtFNum;
 
         /// <summary>drFreeBks: number of unused allocation blocks.</summary>
-        public ushort FreeAllocBlocks => drFreeBks;
+        public ushort FreeAllocBlocks { get => drFreeBks; internal set { drFreeBks = value; IsDirty = true; } }
         private ushort drFreeBks;
 
         /// <summary>drVN: volume name; length byte followed by up to 27 characters.</summary>
@@ -175,6 +175,12 @@ namespace DiskArc.FS {
         private IChunkAccess mChunkAccess;
 
         /// <summary>
+        /// True if the in-memory copy of the MDB (volume info and/or allocation map) has been
+        /// modified and needs to be written back to disk.
+        /// </summary>
+        public bool IsDirty { get; internal set; }
+
+        /// <summary>
         /// Optional volume usage tracking.
         /// </summary>
         public VolumeUsage? VolUsage { get; private set; }
@@ -196,6 +202,130 @@ namespace DiskArc.FS {
             mChunkAccess.ReadBlock(MDB_BLOCK_NUM + 1, mDiskBuf, BLOCK_SIZE);
             LoadVolumeInfo(mDiskBuf, 0);
             LoadAllocMap(mDiskBuf, INFO_LENGTH);
+        }
+
+        /// <summary>
+        /// Serializes the 64-byte Volume Information chunk (inverse of LoadVolumeInfo).
+        /// </summary>
+        private void StoreVolumeInfo(byte[] buf, int offset) {
+            int startOffset = offset;
+            RawData.WriteU16BE(buf, ref offset, drSigWord);
+            RawData.WriteU32BE(buf, ref offset, drCrDate);
+            RawData.WriteU32BE(buf, ref offset, drLsBkUp);
+            RawData.WriteU16BE(buf, ref offset, drAtrb);
+            RawData.WriteU16BE(buf, ref offset, drNmFls);
+            RawData.WriteU16BE(buf, ref offset, drDrSt);
+            RawData.WriteU16BE(buf, ref offset, drBlLen);
+            RawData.WriteU16BE(buf, ref offset, drNmAlBlks);
+            RawData.WriteU32BE(buf, ref offset, drAlBlkSiz);
+            RawData.WriteU32BE(buf, ref offset, drClpSiz);
+            RawData.WriteU16BE(buf, ref offset, drAlBlSt);
+            RawData.WriteU32BE(buf, ref offset, drNxtFNum);
+            RawData.WriteU16BE(buf, ref offset, drFreeBks);
+            Array.Copy(drVN, 0, buf, offset, drVN.Length);
+            offset += drVN.Length;
+            Debug.Assert(offset == startOffset + INFO_LENGTH);
+        }
+
+        /// <summary>
+        /// Serializes the Volume Allocation Block Map into packed 12-bit form (inverse of
+        /// LoadAllocMap).
+        /// </summary>
+        private void StoreAllocMap(byte[] buf, int offset) {
+            int startOffset = offset;
+            for (int i = 0; i < MAX_ALLOC_BLOCKS; i += 2) {
+                ushort v0 = mAllocBlockMap[i];
+                ushort v1 = mAllocBlockMap[i + 1];
+                buf[offset++] = (byte)((v0 >> 4) & 0xff);
+                buf[offset++] = (byte)(((v0 & 0x0f) << 4) | ((v1 >> 8) & 0x0f));
+                buf[offset++] = (byte)(v1 & 0xff);
+            }
+            Debug.Assert(offset - startOffset == VABM_LENGTH);
+        }
+
+        /// <summary>
+        /// Writes the MDB (volume info + allocation map) back to blocks 2 and 3, if it has been
+        /// modified.
+        /// </summary>
+        /// <remarks>
+        /// <para>MFS keeps a backup copy of the MDB at the last two logical blocks of the disk,
+        /// but it is a point-in-time snapshot (written at format/backup time), not a live mirror
+        /// of the primary.  On real disks it commonly still reflects the freshly-initialized
+        /// state (zero files, all blocks free) even after files have been added.  We deliberately
+        /// do not update it: CiderPress II only ever reads the primary copy, so keeping the
+        /// backup in sync would gain nothing and would actually make our disks diverge from how
+        /// real MFS leaves the backup, while adding a risk of clobbering file storage if the
+        /// backup location were miscalculated.</para>
+        /// </remarks>
+        public void Write() {
+            if (!IsDirty) {
+                return;
+            }
+            StoreVolumeInfo(mDiskBuf, 0);
+            StoreAllocMap(mDiskBuf, INFO_LENGTH);
+            mChunkAccess.WriteBlock(MDB_BLOCK_NUM, mDiskBuf, 0);
+            mChunkAccess.WriteBlock(MDB_BLOCK_NUM + 1, mDiskBuf, BLOCK_SIZE);
+            IsDirty = false;
+        }
+
+        /// <summary>
+        /// Initializes the volume information and allocation map for a freshly-formatted volume,
+        /// and writes both the primary copy (blocks 2-3) and the backup copy (the last two
+        /// logical blocks of the disk).
+        /// </summary>
+        /// <remarks>
+        /// The backup copy is written here as a point-in-time snapshot, matching how real MFS
+        /// initialization behaves; it is deliberately not kept in sync afterward (see the remarks
+        /// on <see cref="Write"/>).
+        /// </remarks>
+        /// <param name="volumeName">Volume name (already validated).</param>
+        /// <param name="createWhen">Volume creation date/time.</param>
+        /// <param name="dirStart">First logical block of the file directory.</param>
+        /// <param name="dirLength">Length of the file directory, in logical blocks.</param>
+        /// <param name="numAllocBlocks">Number of allocation blocks in the volume.</param>
+        /// <param name="allocBlockSize">Size of an allocation block, in bytes.</param>
+        /// <param name="clumpSize">Clump size hint, in bytes.</param>
+        /// <param name="allocBlockStart">First logical block of the allocation-block area.</param>
+        /// <param name="diskBlockCount">Total number of logical blocks on the disk.</param>
+        public void Format(string volumeName, DateTime createWhen, ushort dirStart,
+                ushort dirLength, ushort numAllocBlocks, uint allocBlockSize, uint clumpSize,
+                ushort allocBlockStart, int diskBlockCount) {
+            uint hfsTime = TimeStamp.ConvertDateTime_HFS(createWhen);
+            drSigWord = SIGNATURE;
+            drCrDate = hfsTime;
+            drLsBkUp = hfsTime;
+            drAtrb = 0;
+            drNmFls = 0;
+            drDrSt = dirStart;
+            drBlLen = dirLength;
+            drNmAlBlks = numAllocBlocks;
+            drAlBlkSiz = allocBlockSize;
+            drClpSiz = clumpSize;
+            drAlBlSt = allocBlockStart;
+            drNxtFNum = 1;                          // file numbers start at 1
+            drFreeBks = numAllocBlocks;             // all blocks free
+
+            // Set the volume name.  The caller is expected to have validated it already.
+            byte[]? rawName = MFS_FileEntry.GenerateRawVolumeName(volumeName);
+            if (rawName == null) {
+                throw new ArgumentException("Invalid MFS volume name '" + volumeName + "'");
+            }
+            Array.Clear(drVN, 0, drVN.Length);
+            Array.Copy(rawName, drVN, drVN.Length);
+            mVolumeName = MFS_FileEntry.GenerateCookedName(drVN, true);
+
+            // All allocation blocks start out free (map entry 0).
+            Array.Clear(mAllocBlockMap, 0, mAllocBlockMap.Length);
+
+            // Serialize and write the primary copy (blocks 2-3) and an identical backup copy at
+            // the end of the disk.
+            StoreVolumeInfo(mDiskBuf, 0);
+            StoreAllocMap(mDiskBuf, INFO_LENGTH);
+            mChunkAccess.WriteBlock(MDB_BLOCK_NUM, mDiskBuf, 0);
+            mChunkAccess.WriteBlock(MDB_BLOCK_NUM + 1, mDiskBuf, BLOCK_SIZE);
+            mChunkAccess.WriteBlock((uint)(diskBlockCount - 2), mDiskBuf, 0);
+            mChunkAccess.WriteBlock((uint)(diskBlockCount - 1), mDiskBuf, BLOCK_SIZE);
+            IsDirty = false;
         }
 
         /// <summary>
@@ -230,6 +360,93 @@ namespace DiskArc.FS {
                     "range is [2," + (NumAllocBlocks + RESERVED_BLOCKS - 1) + "]");
             }
             return mAllocBlockMap[index - RESERVED_BLOCKS];
+        }
+
+        /// <summary>
+        /// Sets the 12-bit allocation map entry for allocation block N.  Allocation blocks
+        /// start at 2.  The value is another allocation block number (chain link), 1 (end of
+        /// chain), or 0 (free).
+        /// </summary>
+        public void SetAllocMapEntry(int index, ushort value) {
+            if (index < RESERVED_BLOCKS || index >= NumAllocBlocks + RESERVED_BLOCKS) {
+                throw new ArgumentOutOfRangeException(nameof(index), index,
+                    "range is [2," + (NumAllocBlocks + RESERVED_BLOCKS - 1) + "]");
+            }
+            mAllocBlockMap[index - RESERVED_BLOCKS] = value;
+            IsDirty = true;
+        }
+
+        /// <summary>
+        /// Allocates one free allocation block.  The block is marked as end-of-chain (value 1)
+        /// in the allocation map, and the free-block count is decremented.  The caller is
+        /// responsible for linking it into a file's block chain.
+        /// </summary>
+        /// <param name="entry">File entry to associate with the block in the volume usage
+        ///   map (used only if usage tracking is active).</param>
+        /// <returns>Absolute allocation block number (>= RESERVED_BLOCKS).</returns>
+        /// <exception cref="DiskFullException">No free allocation blocks remain.</exception>
+        public ushort AllocBlock(IFileEntry entry) {
+            for (int i = 0; i < NumAllocBlocks; i++) {
+                if (mAllocBlockMap[i] == 0) {
+                    mAllocBlockMap[i] = 1;      // in use, end of chain
+                    drFreeBks--;
+                    IsDirty = true;
+                    VolUsage?.AllocChunk((uint)i, entry);
+                    return (ushort)(i + RESERVED_BLOCKS);
+                }
+            }
+            throw new DiskFullException("No free allocation blocks");
+        }
+
+        /// <summary>
+        /// Frees a single allocation block, marking it unused in the map and incrementing the
+        /// free-block count.  The caller is responsible for fixing up any chain links.
+        /// </summary>
+        /// <param name="allocBlockNum">Absolute allocation block number (>= RESERVED_BLOCKS).</param>
+        public void FreeBlock(ushort allocBlockNum) {
+            int idx = allocBlockNum - RESERVED_BLOCKS;
+            if (idx < 0 || idx >= NumAllocBlocks) {
+                throw new ArgumentOutOfRangeException(nameof(allocBlockNum), allocBlockNum,
+                    "invalid allocation block");
+            }
+            if (mAllocBlockMap[idx] != 0) {
+                mAllocBlockMap[idx] = 0;
+                drFreeBks++;
+                IsDirty = true;
+                VolUsage?.FreeChunk((uint)idx);
+            }
+        }
+
+        /// <summary>
+        /// Frees an entire fork block chain, starting from the given allocation block.  Each
+        /// block in the chain is marked unused and the free-block count is incremented.
+        /// </summary>
+        /// <remarks>
+        /// The walk is bounded and tolerant of a corrupt link: if a link points outside the
+        /// valid range it stops rather than throwing, so a delete can't be derailed midway by a
+        /// slightly damaged chain (which matters when the volume was opened with --fast, i.e.
+        /// without a full block-chain scan).
+        /// </remarks>
+        /// <param name="startAblk">First allocation block of the fork, or 0 for an empty
+        ///   fork.</param>
+        public void FreeChain(ushort startAblk) {
+            if (startAblk == 0) {
+                return;             // empty fork, nothing to free
+            }
+            ushort ablk = startAblk;
+            int guard = 0;
+            while (guard++ <= NumAllocBlocks) {
+                int idx = ablk - RESERVED_BLOCKS;
+                if (idx < 0 || idx >= NumAllocBlocks) {
+                    break;          // corrupt link; stop rather than throw
+                }
+                ushort next = mAllocBlockMap[idx];
+                FreeBlock(ablk);
+                if (next == 1 || next == 0) {
+                    break;          // end of chain (1) or already-free (0, corrupt)
+                }
+                ablk = next;
+            }
         }
 
         /// <summary>

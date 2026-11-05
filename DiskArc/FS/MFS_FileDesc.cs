@@ -236,7 +236,91 @@ namespace DiskArc.FS {
 
         // Stream
         public override void Write(byte[] buffer, int offset, int count) {
-            throw new NotSupportedException("File was opened read-only");
+            CheckValid();
+            if (mIsReadOnly) {
+                throw new NotSupportedException("File was opened read-only");
+            }
+            if (offset < 0) {
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, "bad offset");
+            }
+            if (count < 0) {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "bad count");
+            }
+            if (buffer == null) {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (count == 0) {
+                return;
+            }
+            if (offset >= buffer.Length || count > buffer.Length - offset) {
+                throw new ArgumentException("Buffer overrun");
+            }
+            if ((long)mMark + count > MFS.MAX_FILE_LEN) {
+                throw new IOException("Write would exceed max file size (mark=" +
+                    mMark + " len=" + count + ")");
+            }
+
+            MFS_MDB mdb = FileSystem.VolMDB!;
+            uint logPerAlloc = mdb.LogicalPerAllocBlock;
+
+            while (count > 0) {
+                int logicalIndex = mMark / BLOCK_SIZE;      // 512-byte block index within fork
+                int blockOffset = mMark % BLOCK_SIZE;
+                int abIndex = (int)(logicalIndex / logPerAlloc);
+
+                // Make sure the fork has enough allocation blocks to hold this position.
+                EnsureAllocated(abIndex);
+
+                uint blockNum = GetLogicalBlockNum((uint)logicalIndex);
+
+                byte[] writeSource;
+                int writeSourceOff;
+                int writeLen;
+                if (blockOffset != 0 || count < BLOCK_SIZE) {
+                    // Partial write: read-modify-write the logical block.
+                    FileSystem.ChunkAccess.ReadBlock(blockNum, mTmpBlockBuf, 0);
+                    writeLen = BLOCK_SIZE - blockOffset;
+                    if (writeLen > count) {
+                        writeLen = count;
+                    }
+                    Array.Copy(buffer, offset, mTmpBlockBuf, blockOffset, writeLen);
+                    writeSource = mTmpBlockBuf;
+                    writeSourceOff = 0;
+                } else {
+                    // Full-block write straight from the caller's buffer.
+                    writeSource = buffer;
+                    writeSourceOff = offset;
+                    writeLen = BLOCK_SIZE;
+                }
+
+                FileSystem.ChunkAccess.WriteBlock(blockNum, writeSource, writeSourceOff);
+
+                mMark += writeLen;
+                offset += writeLen;
+                count -= writeLen;
+                if (mMark > mEOF) {
+                    mEOF = mMark;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ensures the fork's block chain contains at least (abIndex + 1) allocation blocks,
+        /// allocating and linking new blocks as needed.
+        /// </summary>
+        /// <exception cref="DiskFullException">No free allocation blocks remain.</exception>
+        private void EnsureAllocated(int abIndex) {
+            MFS_MDB mdb = FileSystem.VolMDB!;
+            while (mBlockList.Count <= abIndex) {
+                ushort newAblk = mdb.AllocBlock(FileEntry);     // marked as end-of-chain
+                if (mBlockList.Count == 0) {
+                    mStartBlock = newAblk;      // first block of this fork
+                } else {
+                    // Link the previous last block to the new one.
+                    mdb.SetAllocMapEntry(mBlockList[mBlockList.Count - 1], newAblk);
+                }
+                mBlockList.Add(newAblk);
+            }
         }
 
         // Stream
@@ -275,12 +359,75 @@ namespace DiskArc.FS {
         }
 
         // Stream
-        public override void SetLength(long value) {
-            throw new NotSupportedException("File was opened read-only");
+        public override void SetLength(long newEof) {
+            CheckValid();
+            if (mIsReadOnly) {
+                throw new NotSupportedException("File was opened read-only");
+            }
+            if (newEof < 0 || newEof > MFS.MAX_FILE_LEN) {
+                throw new ArgumentOutOfRangeException(nameof(newEof), newEof, "Invalid length");
+            }
+            if (newEof == mEOF) {
+                return;
+            }
+
+            if (newEof > mEOF) {
+                // Grow, zero-filling the new storage via the normal Write path.
+                int origEOF = mEOF;
+                try {
+                    FSUtil.ExtendFile(this, newEof, (int)FileSystem.VolMDB!.AllocBlockSize);
+                } catch {
+                    // Probably a DiskFullException.  Roll back the growth and re-throw.
+                    mEOF = origEOF;
+                    TruncateStorage();
+                    throw;
+                }
+            } else {
+                // Shrink: drop the EOF, then release any now-unused allocation blocks.
+                mEOF = (int)newEof;
+                TruncateStorage();
+            }
+
+            mEOF = (int)newEof;
+            Flush();
+        }
+
+        /// <summary>
+        /// Releases allocation blocks that are no longer needed to hold the current EOF, and
+        /// fixes up the chain terminator (or start block, if the fork is now empty).
+        /// </summary>
+        private void TruncateStorage() {
+            MFS_MDB mdb = FileSystem.VolMDB!;
+            uint allocBlockSize = mdb.AllocBlockSize;
+            int needed = (mEOF == 0) ? 0 :
+                (int)(((long)mEOF + allocBlockSize - 1) / allocBlockSize);
+            while (mBlockList.Count > needed) {
+                ushort ablk = mBlockList[mBlockList.Count - 1];
+                mdb.FreeBlock(ablk);
+                mBlockList.RemoveAt(mBlockList.Count - 1);
+            }
+            if (mBlockList.Count == 0) {
+                mStartBlock = 0;
+            } else {
+                // The new last block terminates the chain.
+                mdb.SetAllocMapEntry(mBlockList[mBlockList.Count - 1], 1);
+            }
         }
 
         // Stream
-        public override void Flush() { }
+        public override void Flush() {
+            CheckValid();
+            if (mIsReadOnly) {
+                return;
+            }
+            // Storage (block chain) is updated eagerly during writes; reconcile the entry's
+            // fork geometry here and persist the directory.
+            MFS_MDB mdb = FileSystem.VolMDB!;
+            uint physicalLen = (uint)mBlockList.Count * mdb.AllocBlockSize;
+            ushort startBlock = (mBlockList.Count == 0) ? (ushort)0 : mBlockList[0];
+            FileEntry.UpdateFork(Part, startBlock, (uint)mEOF, physicalLen);
+            FileEntry.SaveChanges();
+        }
 
         // IDisposable generic finalizer.
         ~MFS_FileDesc() {
@@ -289,6 +436,14 @@ namespace DiskArc.FS {
         protected override void Dispose(bool disposing) {
             if (disposing) {
                 if (!mInternalOpen) {
+                    try {
+                        // Flush pending changes to the file entry and directory.
+                        if (!mIsReadOnly) {
+                            Flush();
+                        }
+                    } catch (Exception ex) {
+                        Debug.WriteLine("FileDesc dispose-time flush failed: " + ex.Message);
+                    }
                     try {
                         // Tell the OS to forget about us.
                         FileSystem.CloseFile(this);

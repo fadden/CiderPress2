@@ -107,6 +107,9 @@ namespace cp2 {
                     case "hfs":
                         fsType = FileSystemType.HFS;
                         break;
+                    case "mfs":
+                        fsType = FileSystemType.MFS;
+                        break;
                     case "pascal":
                         fsType = FileSystemType.Pascal;
                         break;
