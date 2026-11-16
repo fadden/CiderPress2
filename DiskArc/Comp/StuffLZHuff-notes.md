@@ -63,6 +63,9 @@ Files are handled as a continuous stream, with no block boundaries.  This means 
 probability distributions are fixed for the entire file, making compression less effective on
 files that contain different types of data in different sections.
 
+The switch between the two decoding trees happens whenever we see a literal or a match.  This
+effectively allows the encoding to be adjusted for sequences of literals vs. sequences of matches.
+
 ### Unpacking File-Stored Tables ###
 
 The various tables are encoded with a "meta code" tree that has 37 symbols.  The tree is generated

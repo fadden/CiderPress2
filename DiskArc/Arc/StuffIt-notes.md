@@ -225,7 +225,7 @@ MacBinary or BinHex to preserve the file type data.  The ".sea" format is not do
 ## Compression Algorithms ##
 
 Only methods 1-3 were supported by StuffIt v1.5.1, but later algorithms do appear in archives with
-the v1.5 layout.  Method 13 seems to be fairly common in both v1.5 and v5 archives.
+the v1.5 layout.  Method 13 seems to be fairly common in both v1.5- and v5-format archives.
 
 - 0: (uncompressed)
 - 1: [RLE-90](../Comp/RLE90-notes.md).
@@ -234,10 +234,12 @@ the v1.5 layout.  Method 13 seems to be fairly common in both v1.5 and v5 archiv
 - 3: [Huffman](../Comp/StuffHuff-notes.md). Simple byte-based Huffman encoding.
 - 5: LZAH.
 - 6: Fixed Huffman.
-- 8: MW (an LZW variant)
-- 13: [LZ+Huffman](../Comp/StuffLZHuff-notes.md).  A custom LZ77 + Huffman encoder.
-- 14: "Installer"
-- 15: Arsenic (RLE + BWT + arithmetic encoding).
+- 8: MW (an LZW variant).
+- 13: [LZ+Huffman](../Comp/StuffLZHuff-notes.md).  A custom LZ77 + Huffman encoder, introduced
+      in version v3.0.
+- 14: Installer package; was initially a simple LZ+Huffman variant, but was replaced with
+      Deflate in v5.0.
+- 15: [Arsenic](../Comp/Arsenic-notes.md) (RLE + BWT + arithmetic encoding), introduced in v5.0.
 - 32: (marks start of a folder)
 - 33: (marks end of folder)
 

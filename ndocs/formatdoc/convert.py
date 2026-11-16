@@ -52,6 +52,7 @@ gFileList = [
         "DiskArc/Arc/NuFX-notes.md",
         "DiskArc/Arc/StuffIt-notes.md",
         "DiskArc/Arc/Zip-notes.md",
+        "DiskArc/Comp/Arsenic-notes.md",
         "DiskArc/Comp/LZC-notes.md",
         "DiskArc/Comp/LZHuf-notes.md",
         "DiskArc/Comp/NuLZW-notes.md",

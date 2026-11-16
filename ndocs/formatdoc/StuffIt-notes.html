@@ -194,7 +194,7 @@ are variable length.</p>
 MacBinary or BinHex to preserve the file type data.  The ".sea" format is not documented.</p>
 <div class="markdown-heading"><h2 class="heading-element">Compression Algorithms</h2><a aria-label="Permalink: Compression Algorithms" class="anchor" href="#user-content-compression-algorithms" id="user-content-compression-algorithms" name="user-content-compression-algorithms"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>Only methods 1-3 were supported by StuffIt v1.5.1, but later algorithms do appear in archives with
-the v1.5 layout.  Method 13 seems to be fairly common in both v1.5 and v5 archives.</p>
+the v1.5 layout.  Method 13 seems to be fairly common in both v1.5- and v5-format archives.</p>
 <ul>
 <li>0: (uncompressed)</li>
 <li>1: <a href="RLE90-notes.html">RLE-90</a>.</li>
@@ -203,10 +203,12 @@ header is omitted.  It always uses max 14-bit codes with block compression enabl
 <li>3: <a href="StuffHuff-notes.html">Huffman</a>. Simple byte-based Huffman encoding.</li>
 <li>5: LZAH.</li>
 <li>6: Fixed Huffman.</li>
-<li>8: MW (an LZW variant)</li>
-<li>13: <a href="StuffLZHuff-notes.html">LZ+Huffman</a>.  A custom LZ77 + Huffman encoder.</li>
-<li>14: "Installer"</li>
-<li>15: Arsenic (RLE + BWT + arithmetic encoding).</li>
+<li>8: MW (an LZW variant).</li>
+<li>13: <a href="StuffLZHuff-notes.html">LZ+Huffman</a>.  A custom LZ77 + Huffman encoder, introduced
+in version v3.0.</li>
+<li>14: Installer package; was initially a simple LZ+Huffman variant, but was replaced with
+Deflate in v5.0.</li>
+<li>15: <a href="Arsenic-notes.html">Arsenic</a> (RLE + BWT + arithmetic encoding), introduced in v5.0.</li>
 <li>32: (marks start of a folder)</li>
 <li>33: (marks end of folder)</li>
 </ul>

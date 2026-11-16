@@ -83,6 +83,8 @@ symbols allows a maximum 16-bit offset).  In practice, 64KB seems to be the righ
 <p>Files are handled as a continuous stream, with no block boundaries.  This means the symbol
 probability distributions are fixed for the entire file, making compression less effective on
 files that contain different types of data in different sections.</p>
+<p>The switch between the two decoding trees happens whenever we see a literal or a match.  This
+effectively allows the encoding to be adjusted for sequences of literals vs. sequences of matches.</p>
 <div class="markdown-heading"><h3 class="heading-element">Unpacking File-Stored Tables</h3><a aria-label="Permalink: Unpacking File-Stored Tables" class="anchor" href="#user-content-unpacking-file-stored-tables" id="user-content-unpacking-file-stored-tables" name="user-content-unpacking-file-stored-tables"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>The various tables are encoded with a "meta code" tree that has 37 symbols.  The tree is generated
 from arrays that hold the symbol codes and lengths.</p>
