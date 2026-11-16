@@ -15,6 +15,7 @@
  */
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -598,6 +599,9 @@ namespace cp2 {
                 RuntimeInformation.RuntimeIdentifier);
             if (parms.Debug) {
                 Console.WriteLine("  BaseDirectory=" + AppContext.BaseDirectory);
+                Console.WriteLine("  TargetFrameworkName=" + AppContext.TargetFrameworkName);
+                Console.WriteLine("  RF_IDCS=" + RuntimeFeature.IsDynamicCodeSupported +
+                    ", RF_IDCC=" + RuntimeFeature.IsDynamicCodeCompiled);    // both false for AoT
                 Console.WriteLine("  E_V=" + Environment.Version);
                 Console.WriteLine("  E_OV=" + Environment.OSVersion);
                 Console.WriteLine("  E_OV_P=" + Environment.OSVersion.Platform);

@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -2907,6 +2908,10 @@ namespace cp2_wpf {
                 (string.IsNullOrEmpty(Defs.BUILD_TYPE) ? "" : " (" + Defs.BUILD_TYPE + ")"));
             sb.AppendLine("+ Runtime: " + RuntimeInformation.FrameworkDescription + " / " +
                 RuntimeInformation.RuntimeIdentifier);
+            sb.AppendLine("  BaseDirectory=" + AppContext.BaseDirectory);
+            sb.AppendLine("  TargetFrameworkName=" + AppContext.TargetFrameworkName);
+            sb.AppendLine("  RF_IDCS=" + RuntimeFeature.IsDynamicCodeSupported +
+                ", RF_IDCC=" + RuntimeFeature.IsDynamicCodeCompiled);    // both false for AoT
             sb.AppendLine("  E_V=" + Environment.Version);
             sb.AppendLine("  E_OV=" + Environment.OSVersion);
             sb.AppendLine("  E_OV_P=" + Environment.OSVersion.Platform);

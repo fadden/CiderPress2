@@ -376,6 +376,12 @@ public class MainViewModel : ObservableObject
                 System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription +
                 " / " +
                 System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
+            sb.AppendLine("  BaseDirectory=" + AppContext.BaseDirectory);
+            sb.AppendLine("  TargetFrameworkName=" + AppContext.TargetFrameworkName);
+            sb.AppendLine("  RF_IDCS=" +
+                System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported +
+                ", RF_IDCC=" +
+                System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled);
             sb.AppendLine("  E_V=" + Environment.Version);
             sb.AppendLine("  E_OV=" + Environment.OSVersion);
             sb.AppendLine("  E_OV_P=" + Environment.OSVersion.Platform);
